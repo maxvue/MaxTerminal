@@ -215,6 +215,8 @@ pub async fn command_block_error_context(
             "O limite de linhas do contexto de erro deve estar entre 1 e 200.",
         ));
     }
+    // Aceita blocos `Failed`, inclusive os finalizados em modo `Proc` por PTY encerrado com `exit_code != 0` (T-07);
+    // blocos `Unknown` continuam recusados com `shell.block_not_failed`.
     shell.error_context(block_id, max_lines).await
 }
 

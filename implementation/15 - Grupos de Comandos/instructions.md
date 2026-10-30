@@ -36,7 +36,7 @@ Todo o backend vive no módulo `groups` do crate `mt-commands` (criado na Fase 1
 | # | Item | Detalhe |
 |---|------|---------|
 | I-01 | Modelo de domínio | `CommandGroup`, `CommandGroupItem`, `GroupScope`, `ExecutionMode`, `SequentialSeparator`, `GroupRunId` (newtype local do crate), DTOs de entrada/saída (spec §3). |
-| I-02 | Migration | `NNNN_15_command_groups.sql` com `command_groups`, `command_group_labels`, `command_group_items`, `command_group_runs`, `command_group_run_items`, `CHECK` de escopo/projeto, índices únicos por nome (spec §5). |
+| I-02 | Migration | `0009_15_command_groups.sql` com `command_groups`, `command_group_labels`, `command_group_items`, `command_group_runs`, `command_group_run_items`, `CHECK` de escopo/projeto, índices únicos por nome (spec §5; sequência contígua D-01). |
 | I-03 | Repositório | `CommandGroupRepo` (trait) + `SqliteCommandGroupRepo` sobre `mt-db`; CRUD transacional, reordenação, substituição atômica de itens. |
 | I-04 | Validação | Nome (1–80), ≤ 50 itens, comando 1–8192 bytes sem `\n`/`\r`/NUL, `cwd` relativo e confinado, chaves de env POSIX, detecção de segredos literais via `mt_db::sanitizer` (bloqueia gravação). |
 | I-05 | Sequencial | `SequentialComposer` prepara cada item para o shell real; `SequentialRunner` aguarda término + prompt no mesmo PTY; `&&`/`;` são políticas de fila. Overrides isolados em shell filho com `env -C`; shell desconhecido ou ausência de correlação confiável bloqueiam o modo (spec §4). |
@@ -84,8 +84,8 @@ Todo o backend vive no módulo `groups` do crate `mt-commands` (criado na Fase 1
 | 05 | `TabStatus` para apresentação; prompt pronto, término de bloco/exit code e identidade PTY/sessão para correlação. Status da aba sozinho não autoriza escrita. |
 | 06 | Tabela `projects(id)`, `useProjectsStore` (projeto ativo, pasta raiz, stack). |
 | 07 | `TabOpenRequest`, `TabOpenOverrides`, `WorkspaceManager::{open_tab, close_tab, restart_pane}`, templates shell e flag contínua, `useTabsStore`, sessões e observadores. |
-| 12 | `ai_generate_structured`, `StructuredRequest`, `StructuredResponse`, `AiService.structured.generate`, cancelamento via registro da Fase 12 e configuração padrão. |
-| 13 (opcional) | Fonte de comandos recorrentes encapsulada em `RecurringCommandsSource`; indisponibilidade não bloqueia CRUD/execução/IA. |
+| 12 | `ai_generate_structured`, `StructuredRequest`, `StructuredResponse`, `AiService::generate_structured`, schema `command-group.suggestion.v1`, cancelamento via registro da Fase 12 e configuração padrão. |
+| 13 | Pré-requisito de persistência obrigatório: migration `0008_13_agents_skills_memory.sql` antes de `0009_15_command_groups.sql` (D-01). Serviço de comandos recorrentes opcional via `RecurringCommandsSource`; ausência não bloqueia CRUD/execução/IA. |
 | 14 | Crate `mt-commands` existente, `ErrorCode` com prefixo `commands.*`, gatilho `>` registrado, utilitário `fuzzyScore` (se exportado). |
 
 ### 3.2. Ferramentas
@@ -113,7 +113,7 @@ Todo o backend vive no módulo `groups` do crate `mt-commands` (criado na Fase 1
 - `src-tauri/crates/mt-commands/src/groups/service.rs` — `CommandGroupService` (orquestração).
 - `src-tauri/src/command_groups/adapters.rs` — ligação com PTYs, shell integration, workspace e IA existentes.
 - `src-tauri/crates/mt-commands/tests/groups_{repo,validate,compose,runner,service}.rs`.
-- `src-tauri/crates/mt-db/migrations/NNNN_15_command_groups.sql` (próximo número livre).
+- `src-tauri/crates/mt-db/migrations/0009_15_command_groups.sql` (versão 9 fixa; D-01).
 - `src-tauri/src/commands/command_groups.rs` — comandos Tauri; registro no builder `tauri-specta`.
 - `src-tauri/src/events/command_groups.rs` — `TauriGroupEventSink`, `ChannelRunObserver`.
 - `src-tauri/capabilities/default.json` — permissões `command_group_*` restritas à janela `main`.
@@ -142,7 +142,7 @@ Todo o backend vive no módulo `groups` do crate `mt-commands` (criado na Fase 1
 - [ ] CA-08 `groups_runner.rs`: saída de 2 MiB de um item resulta em `output_tail` ≤ 256 KiB, sanitizado (token `ghp_…` impresso vira `[REDACTED]`), sem bloquear o leitor do PTY.
 - [ ] CA-09 `groups_service.rs`: ao iniciar com linhas `status = 'running'` órfãs (simulação de crash), `recover_interrupted()` marca execução e itens como `interrupted`.
 - [ ] CA-10 `npm run typecheck`, `npm run typecheck:vue`, `npm run lint`, `npm run lint:style` sem erros; `src/types/bindings.ts` regenerado e sem drift (`git diff --exit-code`).
-- [ ] CA-11 `npx vitest run tests/commandGroups` verde com cobertura ≥ 90% de linhas em `src/stores/commandGroups.ts` e `commandGroupsTrigger.ts`, ≥ 80% em `src/components/commandGroups/**`.
+- [ ] CA-11 `npx --no-install vitest run tests/commandGroups` verde com cobertura ≥ 90% de linhas em `src/stores/commandGroups.ts` e `commandGroupsTrigger.ts`, ≥ 80% em `src/components/commandGroups/**`.
 - [ ] CA-12 `commandGroupsTrigger.spec.ts`: buffer `>>` abre o provider de grupos mesmo com o provider `>` registrado; `>` sozinho continua no Artisan; `>>` → Backspace → `>` volta ao Artisan com a sessão de grupos abortada (`AbortSignal.aborted === true`); `\>>` não abre popup; ` >>` (espaço inicial) não abre; `>>>dev` usa a query `>dev`; em modo `passthrough` nada abre.
 - [ ] CA-13 `commandGroupsTrigger.spec.ts`: seção "Deste projeto" sempre antes de "Globais"; filtro fuzzy `dvup` encontra "Dev Up"; os itens "Criar grupo de comandos local" e "Criar grupo de comandos global" estão sempre presentes no fim (inclusive com 0 resultados); sem projeto ativo, a opção local fica desabilitada com dica.
 - [ ] CA-14 `commandGroupsStore.spec.ts`: eventos `command-group://changed` invalidam somente o cache do projeto afetado (ou globais); `run-item-changed` fora de ordem (`seq` menor) é descartado.

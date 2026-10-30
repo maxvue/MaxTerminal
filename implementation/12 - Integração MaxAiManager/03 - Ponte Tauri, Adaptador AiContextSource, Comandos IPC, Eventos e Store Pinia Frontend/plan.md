@@ -11,11 +11,11 @@
 - [ ] **Passo 1 — Conectar `mt-ai` ao Binário `maxterminal` e Implementar `TauriAiContextSource`:**
   1. Adicionar `mt-ai = { path = "crates/mt-ai" }` em `src-tauri/Cargo.toml`.
   2. Criar `src-tauri/src/ai_context.rs` implementando `TauriAiContextSource` (`AiContextSource`) integrado aos serviços das Fases 05, 06 e 07.
-  3. Conectar o listener de ciclo de vida do `WorkspaceObserver` (Fase 07) para chamar `ai_service.requests.cancel_pane(pane_id)` ao fechar painel/aba, substituir PTY ou arquivar sessão.
+  3. Registrar `WorkspaceLifecycleObserver::on_signal` (Fase 07) antes de restaurar/abrir abas; manter projeção síncrona de vínculos por painel e chamar `ai_service.requests.cancel_pane(pane_id)` ao fechar painel/aba, substituir PTY ou arquivar sessão.
 
 - [ ] **Passo 2 — Implementar os 17 Comandos Tauri IPC e Emissão de Eventos (`src-tauri/src/commands/ai.rs`):**
   1. Criar `src-tauri/src/commands/ai.rs` com os 17 comandos anotados com `#[tauri::command]` e `#[specta::specta]`: `ai_health`, `ai_settings_get`, `ai_settings_update`, `ai_catalog_get`, `ai_catalog_refresh`, `ai_context_preview`, `ai_suggest_command`, `ai_cancel`, `ai_classify_risk`, `ai_diagnose_block`, `ai_diagnosis_dismiss`, `ai_rag_list_slugs`, `ai_rag_search`, `ai_generate_structured`, `ai_history_list`, `ai_history_clear`, `ai_cache_clear`.
-  2. Configurar em `src-tauri/src/state.rs` a inicialização de `AiService` e uma task leve que observa `ai_service.subscribe_status()` e emite `ai://status-changed` via `AppHandle::emit` em toda transição de `GatewayStatus`.
+  2. Criar `src-tauri/src/ai_state.rs` com `AppAiState { service: Arc<AiService> }`; inicializar e registrar por `app.manage(...)` no setup de `src-tauri/src/lib.rs`. Uma task observa `ai_service.subscribe_status()` e emite `ai://status-changed`; o `AppState` da Fase 01 não agrega serviços (D-09).
   3. Registrar os 17 comandos e os 3 eventos (`ai://status-changed`, `ai://catalog-updated`, `ai://settings-changed`) em `src-tauri/src/specta.rs` e regerar `src/types/bindings.ts` (`CA-02`, `CA-04`).
 
 - [ ] **Passo 3 — Criar o Wrapper IPC (`src/ipc/ai.ts`) e o Adaptador Frontend (`src/composables/ai/adapters.ts`):**
@@ -27,12 +27,12 @@
   2. Implementar controle de revisão monotônica (`configRevision`, `editRevision`), cancelamento precoce antes do aceite IPC, debounce de `150 ms` em `editCommand` com `editedRisk = null` enquanto pendente, e limpeza de cards ao encerrar sessão/painel.
 
 - [ ] **Passo 5 — Implementar o Composable `useAiGenerate<T>` (`src/composables/ai/useAiGenerate.ts`):**
-  1. Criar `src/composables/ai/useAiGenerate.ts` com `loading`, `error`, `result`, `repaired`, `run()` e `cancel()`.
-  2. Garantir execução obrigatória do `decode(response.value)` de runtime (capturando exceções do decoder como erro `AI_SCHEMA_VALIDATION`) e validação de `getFormRevision()` antes de escrever em `result.value` (`CA-28`, `CA-36`).
+  1. Criar `src/composables/ai/useAiGenerate.ts` com 3 argumentos obrigatórios (`schemaId`, `schema`, `decode`), `loading`, `error`, `result`, `repaired`, `run(prompt, opts?: AiGenerateRunOptions): Promise<T | null>` e `cancel()`; opções incluem `signal?: AbortSignal`.
+  2. Garantir execução obrigatória do `decode(response.value)` de runtime (capturando exceções do decoder como erro `ai.schema_validation`) e validação de `getFormRevision()` antes de escrever em `result.value` (`CA-28`, `CA-36`).
 
 - [ ] **Passo 6 — Escrever e Executar Testes Unitários (Rust Workspace + Vitest):**
   1. Criar `tests/stores/ai.spec.ts` cobrindo `init()`, `updateSettings()`, getters de catálogo, ciclo `Started -> Delta -> Completed / Failed / Cancelled`, cancelamento antes do aceite IPC, substituição de sugestão no mesmo painel, `editCommand` reclassificando risco com debounce e limpeza ao desligar diagnóstico (`CA-24`, `CA-33`).
-  2. Criar `tests/composables/ai/useAiGenerate.spec.ts` simulando um consumidor da Fase 14 (`artisan.command.v1`), testando `loading`, `result`, `error`, `cancel()`, falha do decoder de runtime e descarte de resposta quando a revisão do formulário muda (`CA-28`, `CA-36`).
+  2. Criar `tests/composables/ai/useAiGenerate.spec.ts` simulando consumidores das Fases 14/15 (`artisan.command.v1`, `command-group.suggestion.v1`), testando retorno `T | null`, `cancel()`, signal já abortado/aborto durante invoke, resposta tardia, listener antigo sem cancelar nova chamada, falha do decoder e revisão obsoleta (`CA-28`, `CA-36`).
 
 ---
 
@@ -44,6 +44,8 @@ Execute os comandos abaixo a partir da raiz da worktree:
 # 1. Compilar e testar todo o workspace Rust incluindo o binário maxterminal e verificar bindings.ts (CA-02, CA-04)
 cargo clippy --manifest-path src-tauri/Cargo.toml --workspace --all-targets -- -D warnings
 cargo test --manifest-path src-tauri/Cargo.toml --workspace
+cargo run --manifest-path src-tauri/Cargo.toml --bin export_bindings
+git diff --exit-code src/types/bindings.ts
 
 # 2. Verificar typecheck TypeScript (tsgo / vue-tsc)
 npm run typecheck

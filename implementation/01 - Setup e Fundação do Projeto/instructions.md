@@ -14,7 +14,7 @@
 Entregar um esqueleto **compilável, testável, lintado e executável** do MaxTerminal que fixe, de uma vez por todas,
 a stack, as convenções de código e os contratos de base sobre os quais as Fases 02–17 serão construídas:
 
-- Workspace Cargo (`src-tauri/`) com o pacote `maxterminal` (binário + biblioteca) e `mt-core` funcional.
+- Workspace Cargo (`src-tauri/`) com o pacote `maxterminal` (binário + biblioteca) e `mt-core` funcional. Todos os crates (desta e das demais fases) usam `edition.workspace = true`, e cada domínio registra seu próprio estado via `app.manage(...)`: o `AppState` desta fase não agrega serviços de outras fases (D-09).
   Os demais crates do README são criados pelas fases donas; o mapa final não exige stubs nesta fase.
 - Frontend Vue `3.6.0-rc.13` + TypeScript estrito (`tsgo`) + Vite 8 + UnoCSS (`presetMaxUno`) + SCSS, com as libs
   `@maxvue/*` vinculadas localmente via `sync:local-libs`.
@@ -38,7 +38,7 @@ para abrir o shell vazio. A instalação npm isolada não fornece os repositóri
 |---|------|---------|
 | I-01 | Workspace Cargo | `src-tauri/Cargo.toml` com `[workspace]`, `[workspace.package]`, `[workspace.dependencies]` e `[workspace.lints]` compartilhados. |
 | I-02 | Crate binário `maxterminal` | `main.rs`, `lib.rs` (`run()`), `commands/`, `events/`, `logging.rs`, `specta.rs`, `state.rs`. |
-| I-03 | Crate `mt-core` | Módulos `ids` (8 newtypes Uuid v7), `error` (`MtError`, `ErrorCode`, `MtResult`), `paths` (`AppPaths` XDG), `app` (`AppInfo`). |
+| I-03 | Crate `mt-core` | Módulos `ids` (9 newtypes Uuid v7, incluindo `TabSessionId`), `error` (`MtError`, `ErrorCode`, `MtResult`), `paths` (`AppPaths` XDG), `app` (`AppInfo`). |
 | I-04 | Limite do workspace | Apenas `maxterminal` e `mt-core` como membros explícitos; nenhum crate de fase posterior é necessário para compilar ou testar a fundação. |
 | I-05 | Comandos IPC de fundação | `app_info` e `app_log_frontend` (ver spec §4). |
 | I-06 | `tauri-specta` | Registro central de comandos/tipos e geração explícita de `src/types/bindings.ts`, sem iniciar WebView; teste de drift sem sobrescrever a referência. |
@@ -51,7 +51,8 @@ para abrir o shell vazio. A instalação npm isolada não fornece os repositóri
 | I-13 | Testes | Vitest (`happy-dom` + `@vue/test-utils` + `@tauri-apps/api/mocks`) e `cargo test --workspace`. |
 | I-14 | Tauri config | Janela `main`, CSP de produção e desenvolvimento distintas; capability local com apenas os dois comandos da fundação, ACL de comandos do app habilitada no build; nenhuma permissão de plugin. |
 | I-15 | `.gitignore` | Inclui `.worktrees/`, `.max-code-worktrees/`, `node_modules/`, `dist/`, `src-tauri/target/`, `src-tauri/gen/` (exceto schemas), `*.log`, `coverage/`. |
-| I-16 | Scripts npm | `dev`, `build`, `preview`, `tauri`, `typecheck`, `typecheck:vue`, `lint`, `lint:fix`, `lint:style`, `test`, `test:watch`, `test:coverage`, `sync:local-libs`, `bindings`, `check` (agregador). |
+| I-16 | Scripts npm | `dev`, `build`, `preview`, `tauri`, `typecheck`, `typecheck:vue`, `lint`, `lint:fix`, `lint:style`, `test`, `test:watch`, `test:coverage`, `sync:local-libs`, `bindings`, `check` (agregador). Nomes canônicos únicos (sem aliases); gerenciador `npm`/`npx --no-install`. |
+| I-17 | Dependências canônicas (D-06/D-10/E-10) | Frontend: `@vitejs/plugin-vue` `6.0.10`, `vitest` e `@vitest/coverage-v8` `5.0.5`, `splitpanes` `4.1.2` (sem `@types/splitpanes`). Cargo: `[workspace.dependencies]` com `notify = "8"` e `notify-debouncer-full = "0.5"` (consumidos por `workspace = true`); `src-tauri/Cargo.toml` com `default-run = "maxterminal"`; binário auxiliar `export_bindings`. Vitest inclui `tests/**/*.spec.ts` e `src/**/__tests__/**/*.spec.ts`. |
 
 ### 2.2. Fora de escopo (e fase responsável)
 
@@ -61,7 +62,7 @@ para abrir o shell vazio. A instalação npm isolada não fornece os repositóri
 | SQLite (WAL, FTS5), migrations, repositórios, `mt_db::sanitizer::sanitize()` e ampliação de logs para texto livre sanitizado | 03 |
 | `@xterm/xterm` e addons, camada de blocos, input rico e registro de gatilhos | 04 |
 | OSC 133, hooks de shell, `TabStatus` e máquina de estados | 05 |
-| Lista de projetos, `fs::watch`, auto-detecção de stack, badges, **`splitpanes` das 2 colunas** | 06 |
+| Lista de projetos, `fs::watch`, auto-detecção de stack, badges, layout **`splitpanes` das 2 colunas** (a dependência npm `splitpanes` `4.1.2` já é instalada pela Fase 01) | 06 |
 | Abas, templates, split panes internos, sessões | 07 |
 | Git/worktree e detector de portas | 08 |
 | System tray, atalho global (Quake), links clicáveis para editor, notificações nativas | 09 |
@@ -89,8 +90,8 @@ para abrir o shell vazio. A instalação npm isolada não fornece os repositóri
 | Node.js | 22.12+ da linha 22, ou LTS posterior suportada; fixar patch validado | `node --version`; mínimo documentado pelo Vite 8 |
 | npm | ≥ 10 | `npm --version` |
 | Dependências de sistema Tauri v2 | WebKitGTK 4.1, GTK3, OpenSSL, librsvg, toolchain C e pkg-config; nomes de pacotes CachyOS/Arch a confirmar na instalação | Registrar versões de WebKitGTK/GTK e diagnóstico do Tauri; AppIndicator somente se realmente exigido pelo build sem tray |
-| `@tauri-apps/cli` | 2.x (devDependency) | `npx tauri --version` |
-| `tsgo` | `@typescript/native-preview` (devDependency) | `npx tsgo --version` |
+| `@tauri-apps/cli` | 2.x (devDependency) | `npx --no-install tauri --version` |
+| `tsgo` | `@typescript/native-preview` (devDependency) | `npx --no-install tsgo --version` |
 | Repositórios locais | `~/GitHub/MaxComponentsUi`, `~/GitHub/MaxUse`, `~/GitHub/MaxPinia`, ou `MAX_LIBS_ROOT`, com exports construídos e peers instalados | `npm run sync:local-libs -- --check`; registrar commit, versão e estado dirty de cada origem |
 
 Rust 1.85 é o piso da edição 2024, não garantia de MSRV das dependências resolvidas. Fixar um toolchain
@@ -155,13 +156,13 @@ Comandos npm rodam na raiz da worktree e comandos Cargo em `src-tauri/`. Todos d
 ### 5.3. Qualidade backend
 - [ ] CA-11 `cargo fmt --all --check` (em `src-tauri/`) passa.
 - [ ] CA-12 `cargo clippy --locked --workspace --all-targets -- -D warnings` passa.
-- [ ] CA-13 `cargo test --workspace --locked` passa, incluindo: roundtrip e rejeição de UUIDs não-v7 em parsing/serde dos oito ids, ordenação entre timestamps distintos, erro IPC, resolução XDG via ambiente injetado, logs permitidos e teste de drift.
+- [ ] CA-13 `cargo test --workspace --locked` passa, incluindo: roundtrip e rejeição de UUIDs não-v7 em parsing/serde dos nove ids, ordenação entre timestamps distintos, erro IPC, resolução XDG via ambiente injetado, logs permitidos e teste de drift.
 - [ ] CA-14 `cargo metadata --format-version 1 --no-deps` lista dois membros: `maxterminal` e `mt-core`; nenhum depende de crate de fase futura.
 - [ ] CA-15 Nenhum crate contém `unsafe` (`[workspace.lints.rust] unsafe_code = "forbid"`).
 
 ### 5.4. Bindings
 - [ ] CA-16 Geração explícita funciona sem servidor Vite, DISPLAY ou banco; duas execuções geram bytes idênticos. Teste de drift compara em destino temporário da worktree sem reescrever o arquivo versionado; mutação proposital da referência é detectada. `git diff --exit-code -- src/types/bindings.ts` complementa a verificação após a versão inicial estar registrada.
-- [ ] CA-17 `bindings.ts` exporta wrappers dos dois comandos e tipos `AppInfo`, `AppPathsDto`, `BuildProfile`, `MtError`, `ErrorCode`, `FrontendLogEvent`, `ProjectId`, `TabId`, `PaneId`, `PtyId`, `SessionId`, `TemplateId`, `CommandBlockId`, `CommandGroupId` (ids como `string`); nomes exatos dos wrappers são verificados contra a versão fixada do gerador.
+- [ ] CA-17 `bindings.ts` exporta wrappers dos dois comandos e tipos `AppInfo`, `AppPathsDto`, `BuildProfile`, `MtError`, `ErrorCode`, `FrontendLogEvent`, `ProjectId`, `TabId`, `PaneId`, `PtyId`, `SessionId`, `TabSessionId`, `TemplateId`, `CommandBlockId`, `CommandGroupId` (ids como `string`); nomes exatos dos wrappers são verificados contra a versão fixada do gerador.
 - [ ] CA-18 Nenhum tipo espelhado de struct Rust é escrito à mão em `src/types/` (apenas re-exports e utilitários derivados).
 
 ### 5.5. Comportamento observável

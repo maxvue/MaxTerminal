@@ -10,7 +10,7 @@
 
 Esta terceira implementação integra o crate `mt-themes` à camada de persistência SQLite (`mt-db`) e à ponte IPC/eventos do Tauri v2 (`src-tauri`), entregando:
 
-1. **Migration SQLite (`mt-db/migrations/NNNN_10_themes.sql`)**: tabelas `STRICT` (`themes`, `appearance_settings`, `project_themes`), índices de listagem/deduplicação/FK, chaves estrangeiras com `ON DELETE SET DEFAULT` e `ON DELETE CASCADE`, e triggers para proteção de builtins (`trg_themes_builtin_no_delete`) e atualização automática de `updated_at` (`trg_themes_updated_at`).
+1. **Migration SQLite (`mt-db/migrations/0006_10_themes.sql`)**: tabelas `STRICT` (`themes`, `appearance_settings`, `project_themes`), índices de listagem/deduplicação/FK, chaves estrangeiras com `ON DELETE SET DEFAULT` e `ON DELETE CASCADE`, e triggers para proteção de builtins (`trg_themes_builtin_no_delete`) e atualização automática de `updated_at` (`trg_themes_updated_at`).
 2. **Repositório SQLite (`mt-db/src/repos/themes.rs`)**: tipos primitivos (`ThemeRow`, `AppearanceRow`, `UpsertKind`) sem dependência circular `mt-db → mt-themes`, com todas as queries parametrizadas via `prepare_cached`.
 3. **Cache LRU (`mt-themes/src/cache.rs`)**: `ResolvedCache` de 64 entradas indexadas por `(ThemeId, ContentHash, overridesHash, mappingVersion, canonicalTokensVersion)`, evitando recomputar rampas OKLCH e relatórios WCAG e nunca misturando metadados entre temas de mesmo `ContentHash`.
 4. **Serviço de Domínio (`mt-themes/src/service.rs`)**: `ThemeStore`, `SqliteThemeStore`, `ThemeEventSink`, `ThemeService` com barreira de readiness assíncrona no `start()`, seed/upsert idempotente dos 6 builtins, deduplicação atômica intra-lote e contra o banco por `ContentHash`, mutações serializadas com incremento monotônico de `revision`, validação estrita de `TerminalFontSettings` e emissão de eventos somente após commit da transação.
@@ -32,7 +32,7 @@ Esta terceira implementação integra o crate `mt-themes` à camada de persistê
 - `src/types/bindings.ts` — regenerado automaticamente via `npm run bindings`.
 
 ### 2.2. Arquivos Criados
-- `src-tauri/crates/mt-db/migrations/NNNN_10_themes.sql` (`NNNN` = próximo número sequencial livre em `mt-db/migrations/`)
+- `src-tauri/crates/mt-db/migrations/0006_10_themes.sql` (número fixado pela decisão D-01: `0006`, após `0005_09_os_settings`)
 - `src-tauri/crates/mt-db/src/repos/themes.rs`
 - `src-tauri/crates/mt-themes/src/cache.rs`
 - `src-tauri/crates/mt-themes/src/service.rs`
@@ -44,7 +44,7 @@ Esta terceira implementação integra o crate `mt-themes` à camada de persistê
 
 ## 3. Especificação Técnica e Assinaturas Rust
 
-### 3.1. Migration SQLite (`src-tauri/crates/mt-db/migrations/NNNN_10_themes.sql`)
+### 3.1. Migration SQLite (`src-tauri/crates/mt-db/migrations/0006_10_themes.sql`)
 
 ```sql
 -- Fase 10: biblioteca de temas, configurações de aparência e sobreposição de tema por projeto.

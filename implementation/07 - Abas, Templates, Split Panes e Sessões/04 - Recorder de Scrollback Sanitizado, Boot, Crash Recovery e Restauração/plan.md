@@ -18,13 +18,14 @@
 
 ### Passo 3: Crash Recovery e Restauração Single-Flight (`workspace/restore.rs`)
 1. Criar `src-tauri/src/workspace/restore.rs` implementando a rotina de inicialização e `WorkspaceManager::restore()`:
+   - Pré-condição: `with_spawn_hooks` aplicado antes de compartilhar o manager/iniciar o boot. Cada painel restaurado passa por reserva e registro confirmado de `07/03` §3.4; testar com hook fake bloqueando o spawn até a reserva e com falha de registro exigindo compensação.
    - Etapa 1: Limpeza de processos órfãos via Fase 02 e registro do `OutputTap` e `WorkspaceSessionProvider`.
    - Etapa 2: `mark_stale_boots_interrupted` em `workspace_operations`, fechamento de blocos pendentes da Fase 05 como `unknown`, arquivamento de sessões base órfãs e fechamento de `tab_sessions` anteriores com `SessionEndReason::CrashRecovered` e `ended_at >= max(started_at, last_ts)`.
    - Etapa 3: Marcação de abas abertas de boots anteriores como fechadas (`closed_at = now_ms`) e verificação/reparo de `ensure_default_tx` para todos os projetos.
    - Etapa 4: Single-flight via `tokio::sync::OnceCell<WorkspaceRestoreReport>` restaurando templates com `add_to_workspace = 1` (até 4 abas em paralelo), reutilizando a aba `origin = 'workspace'`, seus `PaneId`s e `layout_json` quando válidos, tratando `cwd` ausente como painel `Failed` recuperável e habilitando o comando inicial apenas no `primary_pane_id`.
 
 ### Passo 4: Integração no `WorkspaceManager` e Testes Exaustivos de Recorder e Restore
-1. Conectar `recorder.finish_execution(pty_id)` ao fluxo de `tab_close`, `pane_close`, `pane_restart` e `session_new` em `src-tauri/src/workspace/manager.rs`.
+1. Declarar `pub mod recorder;` em `src-tauri/src/workspace/mod.rs`, adicionar o campo `recorder: Arc<ScrollbackRecorder>` ao `WorkspaceManager` (injeção no construtor/builder; a Implementação 03 compila e é testada sem ele) e conectar `recorder.finish_execution(pty_id)` ao fluxo de `tab_close`, `pane_close`, `pane_restart` e `session_new` em `src-tauri/src/workspace/manager.rs`.
 2. Escrever testes unitários e de integração cobrindo:
    - Cortes em todos os limites de bytes para: UTF-8 de 2/3/4 bytes, sequências CSI/OSC, segredo `Bearer` / `APP_KEY`, bloco PEM multi-linha (completo e truncado no EOF), linha `> 16 KiB`, alternate screen (`?1049h` ... `?1049l`).
    - Orçamento global de 8 MiB por `TabSessionId` dividido entre 4 painéis simultâneos (garantindo que a soma total dos 4 painéis nunca ultrapasse 8 MiB).
@@ -37,6 +38,8 @@
 ## 2. Comandos de Verificação
 
 ```bash
+cd "$(git rev-parse --show-toplevel)"
+
 # Formatação e análise estática
 cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
 cargo clippy --manifest-path src-tauri/Cargo.toml --workspace --all-targets -- -D warnings

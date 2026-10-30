@@ -91,10 +91,10 @@ Não criar tabela de templates, FK para tabela futura, stub IPC ou chamada a ser
 ### 3.1. Fases
 - **Fase 01**: workspace Cargo, crate `mt-core` (`ProjectId`, `MtError`, Uuid v7), `tauri-specta` gerando
   `src/types/bindings.ts`, frontend Vue 3.6 + UnoCSS + `@maxvue/max-components-ui` (`MaxIcon`, `MaxModal`,
-  `MaxButton`), Pinia (`@maxvue/max-pinia`), Vitest, `tsgo`, ESLint, dependência `splitpanes`.
+  `MaxButton`), Pinia (`@maxvue/max-pinia`), Vitest, `tsgo`, ESLint, dependência `splitpanes` `4.1.2` (já instalada na Fase 01; não instalar de novo nem adicionar `@types/splitpanes`, pois o pacote já é tipado).
 - **Fase 03**: repositórios tipados sobre `Db`; `Db::read`/`Db::write` são internos a `mt-db`. `DbSetup`,
   `SettingDescriptor`, `SettingsSchema`, `useSetting` e wrappers `getSetting/setSetting` em `src/ipc/db.ts`.
-  Esta fase adiciona `mt-db/src/repos/projects.rs`, sua migration `NNNN_06_projects.sql` e registra suas
+  Esta fase adiciona `mt-db/src/repos/projects.rs`, sua migration `0003_06_projects.sql` e registra suas
   settings antes de `Db::open`; não torna público o executor SQL genérico.
 - **Fase 05**: `useTabStatusStore.byTab`, `countsFor`, `setFocus`, snapshots com `revision` e `badgeBucket`,
   `SeenRequest` com ExecutionRef/revisão e `useTabSeenTracker` como proprietário único do ACK de visualização.
@@ -108,7 +108,7 @@ Não criar tabela de templates, FK para tabela futura, stub IPC ou chamada a ser
 - Rust estável ≥ 1.85, `cargo clippy`, `cargo nextest` (opcional).
 - Node ≥ 22, gerenciador definido na Fase 01, `tsgo`.
 - Linux com inotify; disponibilidade de watches deve ser tratada em runtime, sem presumir limite do host.
-- Novas dependências Rust em `mt-projects`: `notify = "8"`, `notify-debouncer-full = "0.5"`, `serde_json`,
+- Novas dependências Rust em `mt-projects`: `notify = { workspace = true }` e `notify-debouncer-full = { workspace = true }` (versões 8 / 0.5 centralizadas em `[workspace.dependencies]` pela Fase 01), `edition.workspace = true`, `serde_json`,
   `dirs`, `async-trait`, `tempfile` (dev), `tokio` (já no workspace). SQL usa `rusqlite` já presente em `mt-db`.
 - Novas dependências frontend: `@tauri-apps/plugin-dialog` (seletor de pasta) caso a Fase 01 não o tenha incluído;
   coleções offline `@iconify-json/logos` e `@iconify-json/mdi` para os ícones do mapa de stacks.
@@ -134,7 +134,7 @@ Não criar tabela de templates, FK para tabela futura, stub IPC ou chamada a ser
 | `src-tauri/crates/mt-projects/src/events.rs` | Payloads e trait `ProjectEventSink` |
 | `src-tauri/crates/mt-projects/src/settings.rs` | `register_db`, defaults/validadores das duas settings da fase |
 | `src-tauri/crates/mt-projects/tests/*.rs` | Testes de integração (detecção, store, watcher) |
-| `src-tauri/crates/mt-db/migrations/NNNN_06_projects.sql` | DDL (próximo número livre da sequência) |
+| `src-tauri/crates/mt-db/migrations/0003_06_projects.sql` | DDL (número canônico `0003` da sequência contígua D-01) |
 | `src-tauri/src/commands/projects.rs` | Comandos Tauri `project_*` e `project_root_*` |
 | `src-tauri/src/events/projects.rs` | `TauriProjectEventSink` (implementa `ProjectEventSink` via `AppHandle::emit`) |
 
@@ -175,7 +175,7 @@ Não criar tabela de templates, FK para tabela futura, stub IPC ou chamada a ser
    20 candidatos únicos, independentemente do número de callbacks do SO. Ocultas/arquivos/subníveis não geram
    candidatos extras. Teto de agendamento de 5 s sob rajadas; overflow e evento perdido convergem na reconciliação
    de 30 s + tempo de scan. Ausência real marca `missing`, erro de permissão não marca.
-4. Teste do store: `path` duplicado retorna `MtError { code: 'project.duplicate_path' }`; `project_reorder`
+4. Teste do store: `path` duplicado retorna `MtError::new(ErrorCode("project.duplicate_path"), "…")` (código `dominio.motivo` minúsculo, D-07); `project_reorder`
    é transacional (falha no meio não altera nenhuma ordem); remover raiz mantém projetos com `root_id = NULL`.
 5. `cargo clippy -p mt-projects -p maxterminal -- -D warnings` sem avisos.
 6. Bindings regenerados contêm DTOs, snapshot e envelopes de eventos; não há duplicação manual de tipos de

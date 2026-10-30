@@ -18,7 +18,7 @@
      - Rejeição de `cwd` que escapa do projeto via `..` ou symlink (`BridgeError::CwdOutsideProject`).
 
 - [ ] **Passo 2: Implementar `prompt.rs` com Sanitização Dupla e Testes Unitários**
-  1. Criar `src-tauri/crates/mt-bridge/src/prompt.rs` implementando `clean_terminal_text`, `truncate_utf8_keep_end`, `truncate_utf8_keep_start` e `build_inspect_prompt`.
+  1. Criar `src-tauri/crates/mt-bridge/src/prompt.rs` implementando `clean_terminal_text`, `truncate_utf8_suffix`, `truncate_utf8_prefix` e `build_inspect_prompt`.
   2. Adicionar testes unitários em `src/prompt.rs` cobrindo:
      - Caso exato do **CA-29**: `ls /naoexiste` (exit 2) produzindo `Ao executar o comando "ls /naoexiste" tive o seguinte erro: "ls: não foi possível acessar '/naoexiste': Arquivo ou diretório inexistente"`.
      - Remoção de sequências ANSI CSI/OSC e retorno de carro `\r` de barras de progresso (**CA-31**).

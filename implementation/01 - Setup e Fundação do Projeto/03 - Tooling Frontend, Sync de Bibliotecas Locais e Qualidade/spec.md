@@ -45,7 +45,7 @@ Configurar todo o pipeline de build, vinculação de bibliotecas locais (`@maxvu
     "typecheck:vue": "vue-tsc --noEmit -p tsconfig.vue.json",
     "lint": "eslint --max-warnings 0 .",
     "lint:fix": "eslint --fix .",
-    "lint:style": "stylelint \"src/**/*.{scss,vue}\"",
+    "lint:style": "stylelint --allow-empty-input \"src/**/*.{scss,vue}\"",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -56,6 +56,7 @@ Configurar todo o pipeline de build, vinculação de bibliotecas locais (`@maxvu
   "dependencies": {
     "@tauri-apps/api": "2.5.0",
     "pinia": "3.0.1",
+    "splitpanes": "4.1.2",
     "vue": "3.6.0-rc.13"
   },
   "devDependencies": {
@@ -63,8 +64,8 @@ Configurar todo o pipeline de build, vinculação de bibliotecas locais (`@maxvu
     "@tauri-apps/cli": "2.5.0",
     "@types/node": "22.14.0",
     "@typescript/native-preview": "7.0.0-dev.20250520.1",
-    "@vitejs/plugin-vue": "5.2.3",
-    "@vitest/coverage-v8": "3.1.2",
+    "@vitejs/plugin-vue": "6.0.10",
+    "@vitest/coverage-v8": "5.0.5",
     "@vue/test-utils": "2.4.6",
     "eslint": "9.24.0",
     "eslint-plugin-vue": "10.0.0",
@@ -80,7 +81,7 @@ Configurar todo o pipeline de build, vinculação de bibliotecas locais (`@maxvu
     "typescript-eslint": "8.29.1",
     "unocss": "66.0.0",
     "vite": "8.0.0",
-    "vitest": "3.1.2",
+    "vitest": "5.0.5",
     "vue-eslint-parser": "10.1.3",
     "vue-tsc": "2.2.8"
   },
@@ -93,6 +94,10 @@ Configurar todo o pipeline de build, vinculação de bibliotecas locais (`@maxvu
 > **Regras sobre `package.json`:**
 > - Antes de fechar `package-lock.json`, inspecionar os `peerDependencies` declarados nos manifests reais de `$MAX_LIBS_ROOT/{MaxComponentsUi,MaxUse,MaxPinia}/package.json` e adicionar ao `dependencies` do `maxterminal` quaisquer peers obrigatórios de runtime exigidos pelas 3 bibliotecas.
 > - Fixar versões exatas (sem `^` ou `~`) compatíveis com o registro npm disponível na máquina de execução, mantendo `vue` estritamente em `3.6.0-rc.13`.
+> - **Compatibilidade de peers (T-01/D-10):** `@vitejs/plugin-vue` `6.0.10` e `vitest` `5.0.5` aceitam `vite@8` e `vue@3.6.0-rc` nos `peerDependencies`; por isso `npm ci` não usa `--legacy-peer-deps` nem `overrides` além do pin de `vue`. Todos os pacotes `@vitest/*` (hoje apenas `@vitest/coverage-v8`) acompanham a **mesma versão** de `vitest` (`5.0.5`); ao atualizar um, atualizar o outro no mesmo commit.
+> - **`splitpanes` (T-02/D-10):** `splitpanes` `4.1.2` fica em `dependencies` porque é consumido em runtime pelo layout das Fases 06 e 07 (`Splitpanes`, `Pane`, `splitpanes/dist/splitpanes.css`). **Não** adicionar `@types/splitpanes`: o pacote já distribui tipos próprios.
+> - **Scripts canônicos (E-08/D-10):** `typecheck`, `typecheck:vue`, `lint`, `lint:style`, `test` (além de `test:coverage`, `bindings` e `check`) são os únicos nomes válidos para essas verificações em todas as fases; nenhum alias adicional (variações de `typecheck`) existe e nenhum deve ser usado em `plan.md`. Gerenciador único: `npm` (`npx --no-install` para binários locais); outros gerenciadores de pacotes Node são proibidos neste repositório.
+> - **Tolerância a árvore vazia (E-03):** `lint:style` usa `stylelint --allow-empty-input` e `typecheck:vue` permanece válido sem `.vue` porque `tsconfig.vue.json` inclui `src/env.d.ts`. Assim `npm run lint:style` e `npm run typecheck:vue` retornam `0` antes de a sub-implementação 01/04 criar os primeiros `.vue`/`.scss`; a validação com arquivos reais ocorre em `01/04` (`npm run check`, CA-28).
 
 ---
 
@@ -294,6 +299,8 @@ export default defineConfig({
 
 ### 4.2. `vitest.config.ts`
 
+> **Globs de teste (E-09/D-10):** `include` cobre `tests/**/*.spec.ts` (testes transversais: lint, scripts, componentes de shell) **e** `src/**/__tests__/**/*.spec.ts` (testes colocalizados por domínio). Diretórios como `src/tests/` **não** são cobertos e não devem ser criados; testes pertencem a `tests/` ou a `__tests__/` ao lado do código.
+
 ```ts
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -315,7 +322,7 @@ export default defineConfig({
         globals: true,
         environment: 'happy-dom',
         setupFiles: ['./tests/setup.ts'],
-        include: ['tests/**/*.spec.ts'],
+        include: ['tests/**/*.spec.ts', 'src/**/__tests__/**/*.spec.ts'],
         coverage: {
             provider: 'v8',
             reporter: ['text', 'json', 'html'],

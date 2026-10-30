@@ -45,7 +45,9 @@ Princípios:
 
 ### 1.2. Dependências e adaptadores reconciliados
 
-Dependências diretas: **04, 05, 07**; 01/03/06 são transitivas. Nenhum import de `mt-bridge` (11), `mt-agents` (13)
+Dependências diretas: **04, 05, 07, 10**; 01/03/06 são transitivas. A aresta **10→12** é exclusivamente
+de migrations: `0007_12_ai.sql` exige a sequência `0001`–`0006`, terminando em `0006_10_themes.sql` (D-01),
+sem acoplar `mt-ai` aos serviços/crate de temas. Nenhum import de `mt-bridge` (11), `mt-agents` (13)
 ou `mt-commands` (14/15). Os contratos abaixo foram lidos nas respectivas specs; helpers internos da 12 não são
 apresentados como APIs preexistentes. Divergências ficam em `ai_context.rs` e `composables/ai/adapters.ts`.
 
@@ -56,7 +58,8 @@ apresentados como APIs preexistentes. Divergências ficam em `ai_context.rs` e `
 | 04 | `triggerRegistry.register(TriggerDefinition): Disposable`; `provide/onSelect/onSubmitWithoutSelection`, `push-stage/handled/replace-input`; `useRichInput().text`; `TerminalInstanceHandle.write`; `HybridTerminal #block-actions` → `CommandBlock #actions` | gatilhos, inserção sem submit, execução explícita e diagnóstico |
 | 05 | `shell://command-finished: CommandFinished`, `command_block_error_context: ErrorContext`, `ShellService::error_context`, `CommandBlocksRepo::list_by_session/get` | evento após persistência; cauda sanitizada, código nullable e comandos recentes |
 | 06 | Projeto/stack pelo serviço/repositório da fase; converter para string opcional no adaptador | contexto e sugestão de slug (não prova que base existe) |
-| 07 | `TabView`/`PaneView`, `WorkspaceObserver`, `tab://closed`, `tab://layout-changed`, `pane://pty-replaced`, `session://archived` | capturar projeto/aba/painel/sessão/PTY; invalidar contexto obsoleto |
+| 07 | `TabView`/`PaneView`, `WorkspaceLifecycleObserver::on_signal(WorkspaceLifecycleSignal)`, `ExecutionOwner`, `WorkspaceManager` | capturar projeto/aba/painel/sessão/PTY; invalidar contexto obsoleto |
+| 10 | `0006_10_themes.sql` após todas as migrations `0001`–`0005` | contiguidade D-01 para criar/aplicar `0007_12_ai.sql`, sem consumo de serviços de temas |
 
 `AiPaneContext` (snapshot interno novo da 12) agrega os IDs de `TabView`/`PaneView`, shell da 05 e cwd observado
 do shell (fallback ao cwd da 07). `CommandFinished` não possui `isInteractive`: o adaptador guarda por bloco
@@ -116,29 +119,32 @@ tempfile = "3"
 pub struct AiRequestId(pub uuid::Uuid);
 impl AiRequestId { pub fn new() -> Self { Self(uuid::Uuid::now_v7()) } }
 
-// error.rs — constantes de ErrorCode com prefixo de domínio
+// error.rs — constantes `ErrorCode` no padrão canônico `dominio.motivo` (D-07; regex `^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$`).
+// Os nomes Rust mantêm o prefixo `AI_`; o valor transportado no IPC é `ai.<motivo>` em minúsculas.
 pub mod codes {
-    pub const AI_GATEWAY_UNAVAILABLE: &str = "AI_GATEWAY_UNAVAILABLE"; // conexão recusada / DNS
-    pub const AI_TIMEOUT: &str = "AI_TIMEOUT";
-    pub const AI_CANCELLED: &str = "AI_CANCELLED";
-    pub const AI_HTTP_STATUS: &str = "AI_HTTP_STATUS";               // details: { status, body_excerpt }
-    pub const AI_BAD_RESPONSE: &str = "AI_BAD_RESPONSE";             // JSON/SSE malformado
-    pub const AI_SCHEMA_VALIDATION: &str = "AI_SCHEMA_VALIDATION";   // details: { errors: string[] }
-    pub const AI_URL_INVALID: &str = "AI_URL_INVALID";
-    pub const AI_URL_NOT_LOOPBACK: &str = "AI_URL_NOT_LOOPBACK";
-    pub const AI_INVALID_SLUG: &str = "AI_INVALID_SLUG";
-    pub const AI_RAG_NOT_FOUND: &str = "AI_RAG_NOT_FOUND";
-    pub const AI_NO_DEFAULT_SELECTION: &str = "AI_NO_DEFAULT_SELECTION";
-    pub const AI_UNKNOWN_SELECTION: &str = "AI_UNKNOWN_SELECTION";   // harness/modelo/nível fora do catálogo
-    pub const AI_RATE_LIMITED: &str = "AI_RATE_LIMITED";
-    pub const AI_EMPTY_COMMAND: &str = "AI_EMPTY_COMMAND";
-    pub const AI_DISABLED: &str = "AI_DISABLED";
-    pub const AI_NOT_CONFIGURED: &str = "AI_NOT_CONFIGURED";
-    pub const AI_CAPABILITY_UNAVAILABLE: &str = "AI_CAPABILITY_UNAVAILABLE";
-    pub const AI_AUTH_REQUIRED: &str = "AI_AUTH_REQUIRED";
-    pub const AI_REQUEST_CONFLICT: &str = "AI_REQUEST_CONFLICT";
-    pub const AI_CONTEXT_STALE: &str = "AI_CONTEXT_STALE";
-    pub const AI_SETTINGS_CONFLICT: &str = "AI_SETTINGS_CONFLICT";
+    use mt_core::ErrorCode;
+
+    pub const AI_GATEWAY_UNAVAILABLE: ErrorCode = ErrorCode("ai.gateway_unavailable"); // conexão recusada / DNS
+    pub const AI_TIMEOUT: ErrorCode = ErrorCode("ai.timeout");
+    pub const AI_CANCELLED: ErrorCode = ErrorCode("ai.cancelled");
+    pub const AI_HTTP_STATUS: ErrorCode = ErrorCode("ai.http_status");               // details: { status, body_excerpt }
+    pub const AI_BAD_RESPONSE: ErrorCode = ErrorCode("ai.bad_response");             // JSON/SSE malformado
+    pub const AI_SCHEMA_VALIDATION: ErrorCode = ErrorCode("ai.schema_validation");   // details: { errors: string[] }
+    pub const AI_URL_INVALID: ErrorCode = ErrorCode("ai.url_invalid");
+    pub const AI_URL_NOT_LOOPBACK: ErrorCode = ErrorCode("ai.url_not_loopback");
+    pub const AI_INVALID_SLUG: ErrorCode = ErrorCode("ai.invalid_slug");
+    pub const AI_RAG_NOT_FOUND: ErrorCode = ErrorCode("ai.rag_not_found");
+    pub const AI_NO_DEFAULT_SELECTION: ErrorCode = ErrorCode("ai.no_default_selection");
+    pub const AI_UNKNOWN_SELECTION: ErrorCode = ErrorCode("ai.unknown_selection");   // harness/modelo/nível fora do catálogo
+    pub const AI_RATE_LIMITED: ErrorCode = ErrorCode("ai.rate_limited");
+    pub const AI_EMPTY_COMMAND: ErrorCode = ErrorCode("ai.empty_command");
+    pub const AI_DISABLED: ErrorCode = ErrorCode("ai.disabled");
+    pub const AI_NOT_CONFIGURED: ErrorCode = ErrorCode("ai.not_configured");
+    pub const AI_CAPABILITY_UNAVAILABLE: ErrorCode = ErrorCode("ai.capability_unavailable");
+    pub const AI_AUTH_REQUIRED: ErrorCode = ErrorCode("ai.auth_required");
+    pub const AI_REQUEST_CONFLICT: ErrorCode = ErrorCode("ai.request_conflict");
+    pub const AI_CONTEXT_STALE: ErrorCode = ErrorCode("ai.context_stale");
+    pub const AI_SETTINGS_CONFLICT: ErrorCode = ErrorCode("ai.settings_conflict");
 }
 
 // config.rs
@@ -241,7 +247,7 @@ pub trait GatewayDialect: Send + Sync {
     fn parse_sse_delta(&self, data: &str) -> MtResult<Option<String>>; // None para eventos de controle
     fn is_sse_done(&self, data: &str) -> bool;                  // "[DONE]"
 }
-pub struct OpenAiCompatDialect; // candidato, habilitado somente após validar S-03
+pub struct OpenAiCompatDialect; // candidato; `Default` inicia com capacidades pendentes de probe (não validadas); `for_tests()` (somente `#[cfg(test)]`) usa `all_validated()`
 
 #[derive(Clone, Debug)]
 pub struct ChatRequest {
@@ -256,8 +262,8 @@ pub enum Role { System, User, Assistant }
 pub struct ChatResponse { pub content: String, pub model: Option<String>, pub usage: Option<Usage> }
 ```
 
-Mapeamento de erros: conexão → `AI_GATEWAY_UNAVAILABLE`; timeout → `AI_TIMEOUT`; 401/403 → `AI_AUTH_REQUIRED`;
-429 → `AI_RATE_LIMITED` (`retryAfterMs` quando válido); demais ≥ 400 → `AI_HTTP_STATUS` com `body_excerpt` (≤ 512
+Mapeamento de erros: conexão → `ai.gateway_unavailable`; timeout → `ai.timeout`; 401/403 → `ai.auth_required`;
+429 → `ai.rate_limited` (`retryAfterMs` quando válido); demais ≥ 400 → `ai.http_status` com `body_excerpt` (≤ 512
 bytes, sanitizado). Retry somente em health/catálogo homologados como leituras idempotentes: 1 tentativa inicial +
 até 2 repetições em falha transitória de conexão/502/503/504, backoff 200/600 ms com jitter e dentro do deadline.
 Sem retry de geração, diagnóstico, RAG ou erro de autenticação/validação. Timeouts configuráveis entre 300 e
@@ -269,7 +275,7 @@ headers, leitura JSON/SSE, espera de semáforo, backoff e reparo; nunca apenas a
 Timeout total inclui todos os estágios; inatividade máxima de stream: 15 s, limitada pelo prazo total.
 Ao cancelar, descartar a resposta e a task local; isso não garante interromper processamento/cobrança remotos.
 Coalescer deltas a cada 32 ms (cinco deltas de origem não implicam cinco eventos IPC); flush antes de `Completed`.
-EOF sem terminador válido do dialeto é `AI_BAD_RESPONSE`; não aceitar comando parcial. Limites: 1 MiB por resposta
+EOF sem terminador válido do dialeto é `ai.bad_response`; não aceitar comando parcial. Limites: 1 MiB por resposta
 acumulada, 64 KiB por frame SSE e fila IPC limitada a 256 KiB; consumidor fechado/lento cancela a operação.
 JSON único é escolhido antes da chamada quando SSE não é suportado; não repetir geração após timeout ou stream
 interrompido. Sanitização incremental precede qualquer delta visível; caudas sensíveis permanecem retidas até
@@ -394,7 +400,7 @@ Nunca use `sudo` a menos que o pedido exija. Prefira comandos não destrutivos."
 
 Parser (`suggest::parse_suggestion`): JSON direto ou um único bloco cercado `json`, validado contra o schema da
 operação. Não extrair primeira linha de prosa, retirar `$ ` ou converter multilinha para `&&` (alteraria semântica).
-Comando vazio → `AI_EMPTY_COMMAND`; multiline, NUL, CR, ESC e demais controles → `AI_BAD_RESPONSE`. O resultado é
+Comando vazio → `ai.empty_command`; multiline, NUL, CR, ESC e demais controles → `ai.bad_response`. O resultado é
 apenas prévia editável; durante streaming todas as ações de inserção/execução permanecem desabilitadas.
 
 ### 2.6. Classificação de risco
@@ -537,7 +543,7 @@ Sem API de listagem confirmada, `list()` retorna união dos slugs configurados, 
 #[serde(rename_all = "camelCase")]
 pub struct StructuredRequest {
     pub request_id: AiRequestId,
-    pub schema_id: String,                   // ex.: "artisan.command" (Fase 14), "command-group.suggestion" (Fase 15)
+    pub schema_id: String,                   // versionado: "artisan.command.v1" (Fase 14), "command-group.suggestion.v1" (Fase 15)
     pub schema: serde_json::Value,           // JSON Schema draft 2020-12 (≤ 32 KiB)
     pub prompt: String,                      // pt-BR, ≤ 8000 caracteres
     pub system: Option<String>,              // instrução adicional do consumidor
@@ -556,22 +562,37 @@ impl StructuredGenerator {
     pub async fn generate(&self, svc: &AiService, req: StructuredRequest, cancel: &CancellationToken)
         -> MtResult<StructuredResponse>;
 }
+
+/// Ids de schema reconhecidos como builtin (contratos versionados dos consumidores). Não há alias sem sufixo `.vN`.
+pub const BUILTIN_SCHEMA_IDS: [&str; 2] = ["artisan.command.v1", "command-group.suggestion.v1"];
+
+// Ponto de entrada PÚBLICO e ÚNICO para consumidores (Fases 14 e 15), definido em `AiService` (02/spec.md §3.7):
+//   pub async fn AiService::generate_structured(&self, req: StructuredRequest) -> MtResult<StructuredResponse>
+// `StructuredGenerator::generate` é detalhe interno; nenhum consumidor o chama nem cria rota HTTP/cliente próprio.
 ```
 
-Fluxo: compila schema (erro → `AI_SCHEMA_VALIDATION` com `details.schemaError`); chama chat com `json_mode = true` e
+Fluxo: compila schema (erro → `ai.schema_validation` com `details.schemaError`); chama chat com `json_mode = true` e
 prompt de sistema "Responda SOMENTE JSON válido conforme o schema: …"; valida; se inválido, uma 2ª chamada com as
-mensagens de erro do validador ("Corrija o JSON…"); falha → `AI_SCHEMA_VALIDATION { errors }`. Nenhum campo do resultado
+mensagens de erro do validador ("Corrija o JSON…"); falha → `ai.schema_validation { errors }`. Nenhum campo do resultado
 é executado; o consumidor decide. Campos `command`/`commands[]` retornados podem ser passados por `ai_classify_risk`.
 
-`schema_id` é namespace/versionamento do consumidor (`artisan.command.v1`, `command-group.suggestion.v1`); o
-registro e o cache são genéricos, sem importar tipos das Fases 14/15. Cache keyed por ID + SHA-256 canônico do schema,
+`schema_id` é namespace/versionamento do consumidor e DEVE casar `^[a-z][a-z0-9]*([.-][a-z0-9]+)*\.v[0-9]+$`
+(violação → `core.invalid_argument`, campo `schemaId`; sem alias sem versão). Os ids builtin são exatamente
+`artisan.command.v1` (Fase 14; JSON Schema exportado do formulário "Criar comando") e `command-group.suggestion.v1`
+(Fase 15; rascunho de grupo), ambos em `BUILTIN_SCHEMA_IDS`; o JSON Schema em si vem do consumidor e é validado/cacheado
+pela 12 por `(schema_id, sha256(schema))`, que registra o id no histórico. O registro e o cache são genéricos, sem
+importar tipos das Fases 14/15; ids fora de `BUILTIN_SCHEMA_IDS` com formato válido continuam aceitos (extensível). Cache keyed por ID + SHA-256 canônico do schema,
 limitado a 64 validadores. Aceitar apenas referências locais `$ref` (`#...`), sem resolução HTTP/arquivo; limites de
 profundidade e tamanho também para a resposta. Reparo é no máximo uma chamada adicional, com o mesmo cancelamento
 e deadline total de 90 s. `response_format` é emitido somente quando confirmado pelo dialeto; JSON também é validado
 localmente. Erros do validador enviados ao gateway/UI são sanitizados e limitados.
 
-`useAiGenerate<T>(schemaId, schema, decode: (value: unknown) => T)` só publica `result` após validação Rust e decoder
-TS; generic `T` sozinho não valida JSON. `run` captura revisão do formulário; a Fase 14/15 aplica o retorno apenas se
+`useAiGenerate<T>(schemaId: string, schema: Record<string, unknown>, decode: (value: unknown) => T)` só publica `result`
+após validação Rust e decoder TS; generic `T` sozinho não valida JSON. `decode` é obrigatório.
+`run(prompt, opts?: AiGenerateRunOptions): Promise<T | null>`, com `AiGenerateRunOptions { system?, selection?, paneId?,
+projectId?, getFormRevision?: () => number, signal?: AbortSignal }`, retorna `null` (sem lançar) quando cancelado
+(`cancel()`/`signal`), a revisão do formulário mudou, o `decode` lançou, o backend falhou (erro em `error`) ou uma
+nova chamada substituiu a anterior. `run` captura revisão do formulário; a Fase 14/15 aplica o retorno apenas se
 essa revisão ainda coincidir e por ação de preenchimento do usuário. A 12 não cria arquivo PHP, salva grupo ou
 executa comandos; esses efeitos pertencem aos consumidores e seus critérios de validação.
 
@@ -635,20 +656,20 @@ homologada; ausência de rota health não implica offline se outras operações 
 ### 2.11. Invariantes de concorrência e ciclo de vida
 
 1. Backend registra `requestId` antes de retornar aceite e antes do spawn. IDs são Uuid v7 novos; duplicata ativa ou
-   recentemente concluída retorna `AI_REQUEST_CONFLICT`, sem substituir token. `RequestGuard` libera mapas/semáforo
+   recentemente concluída retorna `ai.request_conflict`, sem substituir token. `RequestGuard` libera mapas/semáforo
    em sucesso, erro, cancelamento e falha de Channel; nunca manter guard de lock síncrono atravessando `await`.
 2. Uma transição atômica `pending/running → completed|failed|cancelled` decide o vencedor. Após cancelamento aceito
    não publicar deltas, cache ou resultado. Se conclusão já venceu, `ai_cancel` retorna false. Um único produtor
-   serializa Channel; nenhuma mensagem segue o evento terminal. Respostas IPC não-stream retornam `AI_CANCELLED`.
+   serializa Channel; nenhuma mensagem segue o evento terminal. Respostas IPC não-stream retornam `ai.cancelled`.
 3. Frontend cria estado local antes do invoke. Se Esc ocorrer antes do aceite, marca intenção de cancelar, ignora
    todos os callbacks e reenvia `ai_cancel` após o aceite (inclusive erro de início devidamente tratado). Para RAG/
    structured/diagnóstico, cancelamento que chegue antes de `begin` grava tombstone por janela/requestId, TTL igual
-   ao maior timeout (máximo 120 s, limite 256); `begin` consome tombstone e retorna `AI_CANCELLED`. Evita corrida IPC.
+   ao maior timeout (máximo 120 s, limite 256); `begin` consome tombstone e retorna `ai.cancelled`. Evita corrida IPC.
 4. Cada operação captura `(projectId, tabId, paneId, sessionId, ptyId, configRevision, requestId)`. Sugestão substitui
    só outra sugestão do mesmo painel; RAG e geração estruturada têm lanes independentes. Toda resposta da UI exige
    ID/revisão/contexto atuais, mesmo que cancelar HTTP falhe. Classificação após edição também usa contador de revisão.
 5. Nova sessão, PTY substituído, fechamento de painel/aba ou projeto cancela operações daquele contexto. Usar
-   `WorkspaceObserver` para saída/arquivamento/fechamento e comparar layouts para painel removido; rejeitar resultado
+   `WorkspaceLifecycleObserver` para saída/arquivamento/fechamento e comparar layouts para painel removido; rejeitar resultado
    se o snapshot autoritativo mudou antes da notificação. Trocar apenas foco não move resultado para outro painel.
 6. Alterar URL/dialeto/credencial cancela pendências, incrementa `configRevision`, troca snapshot inteiro e invalida
    catálogo/capacidades em memória antes da próxima chamada. Settings salvas e eventos incluem a revisão; resposta
@@ -665,22 +686,22 @@ Todos retornam `Result<T, MtError>` e são registrados no builder `tauri-specta`
 | Comando | Args | Retorno | Erros principais |
 |---------|------|---------|------------------|
 | `ai_health` | — | `GatewayHealth` | — (status offline não é erro) |
-| `ai_settings_get` | — | `AiSettings` | `DB_*` |
-| `ai_settings_update` | `settings: AiSettings` (revision esperada) | `AiSettings` (revision incrementada) | `AI_URL_INVALID`, `AI_URL_NOT_LOOPBACK`, `AI_UNKNOWN_SELECTION`, `AI_SETTINGS_CONFLICT` |
+| `ai_settings_get` | — | `AiSettings` | `db.*` |
+| `ai_settings_update` | `settings: AiSettings` (revision esperada) | `AiSettings` (revision incrementada) | `ai.url_invalid`, `ai.url_not_loopback`, `ai.unknown_selection`, `ai.settings_conflict` |
 | `ai_catalog_get` | — | `HarnessCatalog` | — (fallback garante sucesso) |
-| `ai_catalog_refresh` | — | `HarnessCatalog` | `AI_GATEWAY_UNAVAILABLE`, `AI_TIMEOUT`, `AI_HTTP_STATUS` |
-| `ai_context_preview` | `paneId: PaneId` | `AiContext` | `AI_*`, erros de contexto |
-| `ai_suggest_command` | `request: SuggestRequest, onEvent: Channel<AiStreamEvent>` | `AiRequestId` (retorna imediatamente; trabalho em `tauri::async_runtime::spawn`) | `AI_DISABLED`, `AI_NO_DEFAULT_SELECTION`, `AI_UNKNOWN_SELECTION`; erros de rede chegam via `Failed` |
+| `ai_catalog_refresh` | — | `HarnessCatalog` | `ai.gateway_unavailable`, `ai.timeout`, `ai.http_status` |
+| `ai_context_preview` | `paneId: PaneId` | `AiContext` | `ai.context_stale`, `ai.disabled`, demais `ai.*` |
+| `ai_suggest_command` | `request: SuggestRequest, onEvent: Channel<AiStreamEvent>` | `AiRequestId` (retorna imediatamente; trabalho em `tauri::async_runtime::spawn`) | `ai.disabled`, `ai.no_default_selection`, `ai.unknown_selection`; erros de rede chegam via `Failed` |
 | `ai_cancel` | `requestId: AiRequestId` | `bool` | — |
 | `ai_classify_risk` | `command: string` | `RiskAssessment` | — (síncrono, sem rede) |
-| `ai_diagnose_block` | `request: DiagnoseRequest` | `DiagnosisOutcome` | `AI_GATEWAY_UNAVAILABLE`, `AI_TIMEOUT`, `AI_BAD_RESPONSE`, `AI_CANCELLED` |
+| `ai_diagnose_block` | `request: DiagnoseRequest` | `DiagnosisOutcome` | `ai.gateway_unavailable`, `ai.timeout`, `ai.bad_response`, `ai.cancelled` |
 | `ai_diagnosis_dismiss` | `blockId: CommandBlockId` | `()` | — (marca dispensado na sessão de UI) |
-| `ai_rag_list_slugs` | — | `RagSlug[]` | `AI_GATEWAY_UNAVAILABLE` |
-| `ai_rag_search` | `request: RagSearchRequest` | `RagSearchResponse` | `AI_INVALID_SLUG`, `AI_RAG_NOT_FOUND`, `AI_TIMEOUT` |
-| `ai_generate_structured` | `request: StructuredRequest` | `StructuredResponse` | `AI_SCHEMA_VALIDATION`, `AI_CANCELLED`, rede |
-| `ai_history_list` | `filter: AiHistoryFilter` | `AiHistoryPage` | `DB_*` |
-| `ai_history_clear` | `projectId: ProjectId \| null` | `u32` (linhas removidas) | `DB_*` |
-| `ai_cache_clear` | `scope: 'diagnosis' \| 'catalog' \| 'all'` | `u32` | `DB_*` |
+| `ai_rag_list_slugs` | — | `RagSlug[]` | `ai.gateway_unavailable` |
+| `ai_rag_search` | `request: RagSearchRequest` | `RagSearchResponse` | `ai.invalid_slug`, `ai.rag_not_found`, `ai.timeout` |
+| `ai_generate_structured` | `request: StructuredRequest` | `StructuredResponse` | `ai.schema_validation`, `ai.cancelled`, rede |
+| `ai_history_list` | `filter: AiHistoryFilter` | `AiHistoryPage` | `db.*` |
+| `ai_history_clear` | `projectId: ProjectId \| null` | `u32` (linhas removidas) | `db.*` |
+| `ai_cache_clear` | `scope: 'diagnosis' \| 'catalog' \| 'all'` | `u32` | `db.*` |
 
 `AiHistoryFilter { kind?: AiHistoryKind, projectId?: ProjectId, limit: u16 (≤ 200), beforeId?: string }`;
 `AiHistoryPage { items: AiHistoryItem[], nextBeforeId?: string }`. `AiHistoryKind` espelha o CHECK da tabela;
@@ -774,7 +795,7 @@ Aceitar somente variantes de resposta validadas no dialeto; não tentar array/ch
 
 ---
 
-## 5. Banco de Dados (`mt-db/migrations/NNNN_12_ai.sql`)
+## 5. Banco de Dados (`mt-db/migrations/0007_12_ai.sql`)
 
 ```sql
 -- Fase 12: configurações, caches e histórico de IA (todo texto já sanitizado)
@@ -948,18 +969,22 @@ não sobrescrevem a pesquisa/formulário atual. Erro da IA não muda `TabStatus`
 | `useAiSuggestion(paneId)` | `start/cancel/regenerate/insert/execute`; `insert` altera texto sem Enter. `execute` revalida revisão do texto, contexto/sessão/PTY originais e prompt ocioso; se mudaram, pede regenerar. Escrita explícita pelo `TerminalInstanceHandle.write`, nunca para o painel que apenas ganhou foco. |
 | `useInlineDiagnosis()` | Escuta `shell://command-finished`; exige código conhecido não zero, filtra ignorados/interativo/opt-out; debounce por `paneId`; `requestDiagnosis` aloca ID cancelável. Sem metadados confiáveis, diagnóstico somente manual. |
 | `useRagSearch(paneId)` | Slug padrão (`last_slug` → stack), busca, `pushRichBlock(paneId, { kind: 'ai-rag', props })`. |
-| `useAiGenerate<T>(schemaId, schema, decode)` | API pública p/ Fases 14/15: `{ loading, error, result: Ref<T \| null>, run(prompt, opts?), cancel() }`; decoder e revisão do consumidor impedem cast cego/resposta obsoleta. |
+| `useAiGenerate<T>(schemaId, schema, decode)` | API pública p/ Fases 14/15: `{ loading, error, result: Ref<T \| null>, repaired, run(prompt, opts?: AiGenerateRunOptions): Promise<T \| null>, cancel() }` (`AiGenerateRunOptions` inclui `signal?: AbortSignal`); decoder e revisão do consumidor impedem cast cego/resposta obsoleta. |
 
-Contrato `TriggerDefinition` publicado na Fase 04 (§6/§8); helpers abaixo pertencem à 12:
+Contrato `TriggerDefinition` publicado na Fase 04 (§6/§8); definições e handlers abaixo pertencem à 12
+em `src/terminal/triggers/providers/ai.ts` (`aiAtTrigger`, `aiQuestionTrigger`, D-09). `useAiTriggers`
+importa o módulo diretamente para registrar e descartar ambos; o barrel `providers/index.ts` nasce na 14.
 
 ```ts
-triggerRegistry.register({
+import type { TriggerDefinition } from '@/types/triggers';
+
+export const aiAtTrigger: TriggerDefinition = {
     id: 'ai.at', prefix: '@', label: 'Assistente de comandos',
     isAvailable: (ctx) => isRichShellPane(ctx.paneId),
     provide: (query, ctx, signal) => provideAiStage(query, ctx, signal),
     onSelect: (item, query, ctx) => selectAiStage(item, query, ctx),
     onSubmitWithoutSelection: (query, ctx) => submitAiPrompt(query, ctx)
-});
+};
 // '?' usa provider próprio: geração com defaults ou ação "Consultar documentação".
 // Todo envio para IA retorna { kind: 'handled' }; jamais { kind: 'submit', text: prompt }.
 ```
@@ -982,7 +1007,7 @@ tecla de navegação/seleção da 04. Falha/offline mostra erro no popup/card, s
 | `AiSuggestionBlock.vue` | `requestId: AiRequestId` | `inserted: []`, `executed: []`, `discarded: []` | Bloco rico: cabeçalho (seleção, latência), stream, comando em `MaxInput` monoespaçado editável, explicação, `RiskBadge`, `AiContextPreview` (colapsado), ações. Botão "Executar" com `MaxPopoverConfirm` p/ `caution` e `DestructiveConfirm` p/ `destructive`. |
 | `RiskBadge.vue` | `risk: RiskAssessment` | — | `safe` → `--max-success-500` "Sem alerta detectado"; `caution` → `--max-warning-500` "Atenção"; `destructive` → `--max-danger-500` "Destrutivo"; classificação é heurística, não garantia de segurança. |
 | `DestructiveConfirm.vue` | `command: string`, `risk: RiskAssessment` | `confirm: []`, `cancel: []` | Modal: lista motivos; campo "Digite `{confirmToken}` para confirmar"; botão desabilitado até coincidir. |
-| `InlineDiagnosis.vue` | `blockId: CommandBlockId`, `tabId: TabId` | — | Slot `block-actions`; estados: carregando (spinner discreto "Analisando erro…"), pronto (resumo + comando + `RiskBadge` + "Inserir no input" + "Ignorar"), falha (ícone com tooltip, sem ruído). Nunca possui "Executar" direto. |
+| `InlineDiagnosis.vue` | `blockId: CommandBlockId`, `tabId: TabId`, `paneId: PaneId` | — | Slot `block-actions`; estados: carregando (spinner discreto "Analisando erro…"), pronto (resumo + comando + `RiskBadge` + "Inserir no input" + "Ignorar"), falha (ícone com tooltip, sem ruído). Nunca possui "Executar" direto. |
 | `RagResults.vue` | `requestId: AiRequestId` | `copy: [text: string]` | Bloco rico: cabeçalho `slug · query`, itens com título, trecho (expandir), score, fonte; links abertos via `@tauri-apps/plugin-opener`. |
 | `AiContextPreview.vue` | `context: AiContext` | — | Lista shell/SO/cwd/stack/comandos com exit codes; texto "Dados enviados ao MaxAiManager". |
 | `AiStatusIndicator.vue` | — | `open-preferences: []` | Ponto de status na barra; tooltip com URL/versão/latência. |
@@ -1048,19 +1073,19 @@ decoder/revisão atual → `result.value` → consumidor permite aplicar ao form
 
 | Código | Mensagem pt-BR (exemplo) | Ação na UI |
 |--------|--------------------------|------------|
-| `AI_GATEWAY_UNAVAILABLE` | "MaxAiManager não está acessível em {url}. Verifique se ele está em execução." | Bloco com "Tentar novamente" e "Abrir Preferências > IA"; status `offline`. |
-| `AI_TIMEOUT` | "O MaxAiManager não respondeu em {s} s." | "Tentar novamente"; sugere nível de raciocínio menor. |
-| `AI_NO_DEFAULT_SELECTION` | "Nenhum padrão configurado para `?`. Configure em Preferências > IA." | Link direto. |
-| `AI_UNKNOWN_SELECTION` | "A seleção {label} não existe mais no catálogo." | Reabre `HarnessPicker`. |
-| `AI_BAD_RESPONSE` / `AI_EMPTY_COMMAND` | "A IA não retornou um comando válido." | "Regenerar"; mostra resposta bruta (sanitizada) colapsada. |
-| `AI_SCHEMA_VALIDATION` | "A resposta da IA não segue o formato esperado." | Consumidor recebe `details.errors`. |
-| `AI_RATE_LIMITED` | "Limite de diagnósticos atingido; tente em instantes." | Diagnóstico silencioso (ícone). |
-| `AI_CANCELLED` | — | Bloco removido ou marcado "Cancelado". |
-| `AI_NOT_CONFIGURED` / `AI_CAPABILITY_UNAVAILABLE` | "Configure o gateway e valide esta operação em Preferências > IA." | Manter terminal disponível; sem chamar rota proposta. |
-| `AI_AUTH_REQUIRED` | "O MaxAiManager exige uma credencial válida." | Abrir configuração backend de credenciais; nunca exibir token. |
-| `AI_CONTEXT_STALE` | "O painel ou a sessão mudou. Gere uma nova sugestão." | Desabilitar execução da prévia antiga. |
-| `AI_SETTINGS_CONFLICT` | "As preferências foram alteradas em outra janela." | Recarregar revisão atual antes de salvar. |
-| `AI_REQUEST_CONFLICT` | "Esta solicitação já foi registrada." | Não substituir operação existente. |
+| `ai.gateway_unavailable` | "MaxAiManager não está acessível em {url}. Verifique se ele está em execução." | Bloco com "Tentar novamente" e "Abrir Preferências > IA"; status `offline`. |
+| `ai.timeout` | "O MaxAiManager não respondeu em {s} s." | "Tentar novamente"; sugere nível de raciocínio menor. |
+| `ai.no_default_selection` | "Nenhum padrão configurado para `?`. Configure em Preferências > IA." | Link direto. |
+| `ai.unknown_selection` | "A seleção {label} não existe mais no catálogo." | Reabre `HarnessPicker`. |
+| `ai.bad_response` / `ai.empty_command` | "A IA não retornou um comando válido." | "Regenerar"; mostra resposta bruta (sanitizada) colapsada. |
+| `ai.schema_validation` | "A resposta da IA não segue o formato esperado." | Consumidor recebe `details.errors`. |
+| `ai.rate_limited` | "Limite de diagnósticos atingido; tente em instantes." | Diagnóstico silencioso (ícone). |
+| `ai.cancelled` | — | Bloco removido ou marcado "Cancelado". |
+| `ai.not_configured` / `ai.capability_unavailable` | "Configure o gateway e valide esta operação em Preferências > IA." | Manter terminal disponível; sem chamar rota proposta. |
+| `ai.auth_required` | "O MaxAiManager exige uma credencial válida." | Abrir configuração backend de credenciais; nunca exibir token. |
+| `ai.context_stale` | "O painel ou a sessão mudou. Gere uma nova sugestão." | Desabilitar execução da prévia antiga. |
+| `ai.settings_conflict` | "As preferências foram alteradas em outra janela." | Recarregar revisão atual antes de salvar. |
+| `ai.request_conflict` | "Esta solicitação já foi registrada." | Não substituir operação existente. |
 
 Diagnóstico nunca exibe toasts (não interrompe o fluxo); sugestões e RAG exibem erro no próprio bloco.
 
@@ -1099,7 +1124,7 @@ Diagnóstico nunca exibe toasts (não interrompe o fluxo); sugestões e RAG exib
 | Arquivo | Cobertura |
 |---------|-----------|
 | `tests/gateway_mock.rs` | Header em todas as operações; JSON e SSE condicional/coalescido; EOF prematuro; cancelamento em conexão/backoff/stream/reparo; deadline total; 401/403/429/5xx; sem retry de geração; troca atômica de gateway; limites de bytes/frames; segredo cruzando chunks. |
-| `tests/catalog.rs` | gateway OK → `Gateway`; 404 → `Fallback` com 4 harnesses; TTL sem HTTP; `ETag`/304; mescla de harnesses ausentes; `resolve()` inválido → `AI_UNKNOWN_SELECTION`. |
+| `tests/catalog.rs` | gateway OK → `Gateway`; 404 → `Fallback` com 4 harnesses; TTL sem HTTP; `ETag`/304; mescla de harnesses ausentes; `resolve()` inválido → `ai.unknown_selection`. |
 | `tests/risk_rules.rs` | ≥ 40 casos tabelados (CA-19), `combine` não rebaixa, `confirm_token` correto, comando não tokenizável → `caution`. |
 | `tests/diagnose_cache.rs` | normalização estável (fixtures com timestamps/PIDs), hit incrementa `hits`, `Superseded`, rate limit, exit 130 ignorado. |
 | `tests/structured.rs` | JSON válido; reparo em 1 tentativa; falha → `details.errors`; schema inválido. |
@@ -1143,7 +1168,7 @@ Antes dos cenários, preencher evidências do gate §4.0 e usar somente modelos/
 
 | Ponto | Consumidor | Contrato |
 |-------|-----------|----------|
-| `ai_generate_structured` / `useAiGenerate<T>()` | Fase 14 (`artisan.command`), Fase 15 (`command-group.suggestion`) | §2.9, §6.3 |
+| `ai_generate_structured` / `useAiGenerate<T>()` | Fase 14 (`artisan.command.v1`), Fase 15 (`command-group.suggestion.v1`); entrada única `AiService::generate_structured` | §2.9, §6.3 |
 | `ai_classify_risk` | Fases 14/15 (validar comandos gerados ou de grupos) | §2.6 |
 | `ai_catalog_get` / `ai://catalog-updated` | Fase 13 (templates de Agentes CLI podem listar modelos) | §2.3 |
 | `ai_prompt_history` | Fase 17 (FTS5 / busca global) | §5 |

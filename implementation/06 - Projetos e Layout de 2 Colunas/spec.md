@@ -64,7 +64,7 @@ invariante de template padrão conforme §12.1. Não consultar `sessions` para i
 ```toml
 [package]
 name = "mt-projects"
-edition = "2024"
+edition.workspace = true
 
 [dependencies]
 mt-core = { path = "../mt-core" }
@@ -74,8 +74,8 @@ serde_json = { workspace = true }
 specta = { workspace = true }
 tokio = { workspace = true, features = ["rt", "sync", "time", "macros"] }
 tracing = { workspace = true }
-notify = "8"
-notify-debouncer-full = "0.5"
+notify = { workspace = true }
+notify-debouncer-full = { workspace = true }
 dirs = "6"
 async-trait = "0.1"
 uuid = { workspace = true, features = ["v7", "serde"] }
@@ -711,9 +711,9 @@ disponível para consultas específicas, mas não compõe a hidratação princip
 
 ---
 
-## 5. SQLite — Migration `mt-db/migrations/NNNN_06_projects.sql`
+## 5. SQLite — Migration `mt-db/migrations/0003_06_projects.sql`
 
-`NNNN` = próximo número livre da sequência no momento da implementação.
+`0003` é o número canônico da Fase 06 na sequência contígua de migrations (D-01: `0001_03_base`, `0002_05_shell_sessions_command_blocks`, `0003_06_projects`, `0004_07_workspace_templates_tabs_sessions`, …). Placeholders `NNNN_` são proibidos.
 
 ```sql
 -- Fase 06: projetos, pastas de projetos e sugestões dispensadas
@@ -1081,7 +1081,7 @@ Falha em hook → MtError project.removal_blocked → toast pt-BR, nada é remov
 
 ## 8. Tratamento de Erros
 
-- Backend: `MtError::new(code, mensagem_pt_br).with_details(json!({ "path": … }))`. Erros de I/O em itens
+- Backend: `MtError::new(ErrorCode("dominio.motivo"), "mensagem pt-BR").with_details(json!({ "path": … }))` (códigos `^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$`, D-07). Erros de I/O em itens
   individuais da varredura são registrados (`tracing::warn!`) e contados em `skipped`, sem abortar o lote.
 - Watcher: falha de `watch()` → `WatchStatus::Error` + `project://root-changed`; não impede o cadastro.
   ENOSPC (limite inotify) produz mensagem específica orientando `fs.inotify.max_user_watches`.

@@ -220,6 +220,7 @@ pub struct SocketIdentity {
 
 ```rust
 use mt_core::MtError;
+use mt_core::error::ErrorCode;
 
 #[derive(Debug, thiserror::Error)]
 pub enum PortsError {
@@ -264,7 +265,7 @@ impl PortsError {
 
 impl From<PortsError> for MtError {
     fn from(err: PortsError) -> Self {
-        MtError::new(err.code(), err.to_string(), None)
+        MtError::new(ErrorCode(err.code()), err.to_string())
     }
 }
 ```

@@ -30,11 +30,13 @@ Esta terceira implementação completa o backend Rust da Fase 16, integrando o c
 | `src-tauri/crates/mt-github/src/lib.rs` | Modificar | Implementar a fachada `GithubService` integrando `remote`, `auth`, `client`, `labels`, `cache`, `sync`, `worktree`, `actions` e `bulk` |
 | `src-tauri/crates/mt-github/tests/bulk.rs` | Criar | Testes de máquina de estados de `BugCycleTracker`, perda de ACK, reinício sem novo ciclo, ordenação por `peer_revision` e testagem de worktree/actions |
 | `src-tauri/src/events/github.rs` | Criar | `TauriGithubEventSink` implementando `GithubEventSink` via `AppHandle::emit` |
+| `src-tauri/src/github/mod.rs` | Criar | Exportar os adaptadores nativos do domínio |
+| `src-tauri/src/github/adapters.rs` | Criar | Adaptadores de `MaxCodePort` (11/06) e `AgentPort` (D-08), sem dependência Tauri em `mt-github` |
 | `src-tauri/src/commands/github.rs` | Criar | Implementação dos 20 comandos `#[tauri::command] #[specta::specta]` |
 | `src-tauri/src/commands/mod.rs` | Modificar | Registrar o submódulo `pub mod github;` |
 | `src-tauri/src/events/mod.rs` | Modificar | Registrar o submódulo `pub mod github;` |
 | `src-tauri/src/lib.rs` | Modificar | Instanciar `GithubService`, injetar portas concretas (`mt-git`, `mt-bridge`, `mt-agents`, `mt-os`) e registrar os 20 comandos no `tauri_specta::Builder` |
-| `src/types/bindings.ts` | Modificar (gerado) | Atualizado via `npm run bindings` com todos os tipos de `mt-github` |
+| `src/types/bindings.ts` | Modificar (gerado) | Atualizado via `cargo run --manifest-path src-tauri/Cargo.toml --bin export_bindings` na raiz da worktree com todos os tipos de `mt-github` |
 
 ---
 
@@ -130,7 +132,7 @@ Regras de negócio de `IssueWorktreeResolver`:
 3. **Expiração e Confirmação:** Propostas (`proposal_id`) ficam em cache em memória por 5 minutos (`300_000 ms`). `create_worktree(proposal_id, confirmed)` exige `confirmed == true`, revalida o estado do Git no momento da criação, aplica a política `ensure_gitignore` da Fase 08 para `.max-code-worktrees/` e trata condição de corrida (`worktree_exists`) relendo as worktrees e retornando `ResolvedIssueWorkspace` se pertencer ao mesmo repositório/branch.
 4. **Abertura de Aba:**
    - Se `target == IssueTabTargetKind::Shell`: invoca `WorkspacePort::open_tab` (Fase 07 `tab_open`) passando `overrides.cwd = Some(workspace.path)`, `overrides.cwd_fallback_to_project = false` e `overrides.title = Some(format!("Issue #{}", number))`. Nunca injeta texto da issue como comando shell inicial.
-   - Se `target == IssueTabTargetKind::Agent`: invoca `AgentPort::open_agent_tab` (Fase 13 `agent_tab_open`) com `AgentKind` (`claude-code`, `codex`, `agy` ou `opencode`) e `WorktreeIsolation::Existing { path: workspace.path }`. Se o spawn do PTY falhar após a criação da worktree, preserva a worktree criada no disco e inclui o caminho nos detalhes do erro.
+   - Se `target == IssueTabTargetKind::Agent`: `AgentPort::open_agent_tab` delega ao serviço `AppAgentState::open_agent_tab(&self, req: AgentTabOpenRequest) -> MtResult<AgentTabOpened>` (D-08), com `AgentKind` (`claude-code`, `codex`, `agy` ou `opencode`) e `WorktreeIsolation::Existing { path: workspace.path }`. O adaptador recebe o estado de agentes gerenciado no composition root, sem construir `tauri::State` nem chamar o handler IPC. Se o spawn do PTY falhar após a criação da worktree, preserva a worktree criada no disco e inclui o caminho nos detalhes do erro.
 
 ### 3.2. Integração 1-Clique com MaxCode (`src-tauri/crates/mt-github/src/actions.rs`)
 
@@ -168,6 +170,7 @@ pub struct IssueCommandPayload {
     pub schema_version: u16,
     pub request_id: RequestId,
     pub project_path: String,
+    pub worktree: Option<String>,
     pub repo: GithubRepoRef,
     pub issue_number: u32,
     pub command: MaxCodeIssueCommand,
@@ -194,8 +197,12 @@ pub struct DeliveryReceipt {
 ```
 
 Regras de entrega em `actions.rs`:
+- O adaptador nativo de `MaxCodePort` usa exclusivamente `MaxCodeClient::{send_issue_command, bugs_cycle_preview, bugs_cycle_start, bugs_cycle_status}` da **11/06** e assina `bugs.cycle.progress` pelo contrato dessa proprietária. Não cria variantes/handlers nem edita `mt-bridge` nesta fase.
+- O DTO acima é de domínio: converter `command → action`, `request_id → correlationId`, `repo → owner/name`, `issue_number → issueNumber`, `project_path → projectPath`, incluindo `worktree` somente se validada. URI é construída pelo builder da 11/06 com `action`, `repo`, `number` e a correlação prevista pelo contrato proprietário; nunca montar um segundo protocolo no consumidor.
+- Antes de persistir/enviar uma intenção à bridge, validar que `RequestId(String)` contém UUID válido e convertê-lo para o `Uuid` da 11/06. Novas intenções locais usam UUID v7; retries, wake-up e reconciliação preservam o mesmo UUID e payload. Entrada inválida é rejeitada antes de efeitos, nunca substituída silenciosamente por outro identificador. Aplicar a mesma regra aos pedidos de ciclo, preservando no status a correlação da intenção de start.
+- Capabilities negociadas `issues_protocol_v1` e `bugs_cycle_v1` são gates distintos; sem elas, ações correspondentes ficam desabilitadas com motivo. D-03 é proposta a confirmar com MaxCode; fixtures locais não comprovam integração externa.
 - Verifica `MaxCodePort::issue_capabilities()`. Se a capability específica (`can_open_issue`, `can_plan_issue` ou `can_fix_issue`) for `false` ou o `catalog_hash` divergir para `Plan`/`Fix`, retorna `GithubErrorKind::BridgeUnsupported` com motivo claro em `pt-BR`. **Nunca** degrada silenciosamente `Fix` (`BUG FIX`) para `maxcode_open_plan`.
-- Se o peer MaxCode estiver desconectado mas `supports_uri_wakeup` estiver habilitado, aciona a URI `vscode://johnattas.maxcode/issue?requestId=<id>&repo=<owner>/<name>&number=<n>&action=<open|plan|fix>` apenas para acordar a extensão, aguarda o handshake da bridge (até timeout de 10s) e transmite o `IssueCommandPayload` com o **mesmo** `requestId`. Abrir a janela do VS Code sem receber ACK da bridge resulta em `DeliveryState::Unknown` (nunca `Accepted`).
+- Se o peer estiver desconectado mas `supports_uri_wakeup` estiver habilitado, solicita ao cliente da 11/06 o fallback `vscode://johnattas.maxcode/issue?action=<open|plan|fix>&repo=…&number=…`, preservando a correlação do contrato. Aguarda handshake (até 10s) e transmite o comando convertido com a mesma identidade de entrega. Abrir a janela sem ACK resulta em `DeliveryState::Unknown`, nunca `Accepted`; uma URI possivelmente aceita não autoriza nova operação com outro ID.
 
 ### 3.3. Ciclo em Lote "Corrigir todos os Bugs" (`src-tauri/crates/mt-github/src/bulk.rs`)
 
@@ -257,10 +264,12 @@ Regras de negócio de `BugCycleTracker`:
    - Exige `confirmed == true` e `preview` dentro da janela de validade (`now_ms <= expires_at_ms`).
    - Insere registro `status = 'pending'` em `github_bug_cycles` antes de enviar `bugs.cycle.start` na bridge. Se já existir um ciclo ativo para aquele `repo_id` com outro `request_id`, retorna `GithubErrorKind::Conflict`. Se for o mesmo `request_id`, reaproveita e consulta o status atual sem enviar novo comando de início.
 3. **Ordenação Monotônica por `peer_revision`:** Atualizações de progresso vindas do MaxCode (`bugs.cycle.progress` ou resposta de `bugs.cycle.status`) só sobrescrevem o estado persistido se `incoming.peer_revision >= stored.peer_revision`.
-4. **Observação Auxiliar vs. Término Confirmado:** Mudanças nas labels das issues observadas durante sincronizações do GitHub podem atualizar os contadores auxiliares de visualização quando `observation_stale == false`, mas **jamais** alteram `status` para `Completed`. Apenas um snapshot assinado pelo MaxCode com `status: Completed | Failed | Cancelled` encerra o ciclo e dispara a notificação nativa via `NotificationPort::notify_bug_cycle_finished`.
+4. **Observação Auxiliar vs. Término Confirmado:** Mudanças nas labels das issues observadas durante sincronizações do GitHub podem atualizar os contadores auxiliares de visualização quando `observation_stale == false`, mas **jamais** alteram `status` para `Completed`. Apenas um snapshot recebido da sessão autenticada do MaxCode responsável pelo ciclo, com identidade/correlação e revisão validadas pela 11/06 e `status: Completed | Failed | Cancelled`, encerra o ciclo e dispara a notificação nativa via `NotificationPort::notify_bug_cycle_finished`. Não há assinatura criptográfica de payload definida neste protocolo. `observation_stale` é calculado localmente: desconexão ou `Lagged` marca `true`; snapshot autenticado reconciliado permite `false`.
 5. **Recuperação Pós-Reinício:** Na inicialização do `GithubService` e ao reconectar a bridge da Fase 11, carrega todos os ciclos de `github_bug_cycles` com `status IN ('pending', 'accepted', 'running', 'unknown')` e consulta `bugs.cycle.status` no MaxCode passando `request_id` e `cycle_id`.
 
 ### 3.4. Lista Completa dos 20 Comandos Tauri (`src-tauri/src/commands/github.rs`)
+
+Registrar `app.manage(Arc::clone(&github_service))` no `setup` (D-09), compatível com `State<'_, Arc<GithubService>>` abaixo. Não adicionar serviços ao `AppState` da Fase 01. O cache recebe `mt_db::Db` da Fase 03.
 
 ```rust
 #[tauri::command] #[specta::specta]

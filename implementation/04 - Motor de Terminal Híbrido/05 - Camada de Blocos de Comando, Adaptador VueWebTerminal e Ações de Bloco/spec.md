@@ -20,6 +20,7 @@ Esta **Implementação 05** constrói a **Camada de Blocos de Comando (estilo Wa
    - Store Pinia mantendo apenas dados serializáveis (`byPane[paneId] = { order, blocks }`, limite de `maxBlocksPerPane: 500`) e expondo o objeto `feed: CommandBlockFeed` (`begin`, `markOutputStart`, `end`, `patchMeta`, `clear`) que a Fase 05 alimentará via OSC 133 (e que o playground alimenta via simulador).
    - Registro auxiliar não-reativo de `IMarker` (`src/terminal/blocks/blockMarkerRegistry.ts` ou interno ao módulo): cada bloco cria `IMarker`s reais no `xterm.registerMarker(...)` para `promptMarker`, `outputStartMarker` e `outputEndMarker`. `marker.line` acompanha reflow/trim automaticamente e `marker.onDispose` aciona `pruneEvicted` para remover blocos cujas linhas foram descartadas do buffer normal (sem usar `baseY` como contador de linhas descartadas).
 4. **Composable e Componentes Visuais (`useCommandBlocks.ts`, `CommandBlock.vue`, `CommandBlockLayer.vue`):**
+   - `useCommandBlocks.ts` **instancia e é o único dono** de um `VueWebTerminalAdapter` por painel (via `createVueWebTerminalAdapter`) e o usa para projetar cada `CommandBlockModel` em `VueWebTerminalProjectedEntry` (`projectedEntries`), de modo que o adaptador integra o pipeline real de renderização de blocos (e não existe como classe órfã). O adaptador é descartado (`dispose()`) quando o composable sai de escopo.
    - `CommandBlock.vue`: cabeçalho visual compacto exibindo comando (truncado a 4096 caracteres, sem `v-html`), `cwd`, duração formatada em `pt-BR`, badge semântico de status (`running` → `--max-success-500`, `success` → `--max-success-500` contorno, `error` → `--max-danger-500`, `aborted` → `--max-warning-500`), botões das ações filtradas por `action.when(block)` e slot `<slot name="actions" :block="block" />`.
    - `CommandBlockLayer.vue`: gerencia `xterm.registerDecoration` para os blocos visíveis no **viewport ± 1 tela** (atualizado via `xterm.onRender`, sem polling), monta `CommandBlock.vue` via `<Teleport>` nos containers das decorações com `pointer-events: none` no overlay e `pointer-events: auto` apenas nos controles interativos, e oculta toda a camada quando `modes.altScreen === true` (preservando os markers no buffer normal).
 
@@ -31,15 +32,16 @@ Esta **Implementação 05** constrói a **Camada de Blocos de Comando (estilo Wa
 - `src/terminal/blocks/vueWebTerminalAdapter.ts` — adaptador de apresentação e integração com `vue-web-terminal` conforme ADR-04-01.
 - `src/terminal/blocks/blockActionRegistry.ts` — registro de ações de bloco + ações nativas `"Copiar comando"` (`copy-command`) e `"Copiar saída"` (`copy-output`) + helper de extração de texto renderizado do buffer xterm.
 - `src/stores/commandBlocks.ts` — store Pinia `useCommandBlocksStore` implementando `CommandBlockFeed` e gerenciando o vínculo com `IMarker` fora do estado reativo.
-- `src/composables/terminal/useCommandBlocks.ts` — composable expondo blocos do painel, ações aplicáveis por bloco e execução protegida com Toast de erro.
+- `src/composables/terminal/useCommandBlocks.ts` — composable expondo blocos do painel, **entradas projetadas pelo `VueWebTerminalAdapter` (`projectedEntries`)**, ações aplicáveis por bloco e execução protegida com Toast de erro; importa e instancia `createVueWebTerminalAdapter`.
 - `src/components/terminal/CommandBlock.vue` — componente visual do cabeçalho e ações de um bloco de comando.
-- `src/components/terminal/CommandBlockLayer.vue` — camada de ancoragem sobre o xterm (`registerMarker` + `registerDecoration` + `Teleport`, restrita ao viewport ± 1 tela, oculta em `altScreen`).
+- `src/components/terminal/CommandBlockLayer.vue` — camada de ancoragem sobre o xterm (`registerMarker` + `registerDecoration` + `Teleport`, restrita ao viewport ± 1 tela, oculta em `altScreen`); consome `projectedEntries` de `useCommandBlocks` e repassa cada entrada projetada a `CommandBlock.vue`. É composta por `HybridTerminal.vue` (`../06`).
 
 ### 2.2. Testes Unitários, de Integração e de Componentes (`tests/terminal/`)
 - `tests/terminal/vueWebTerminalAdapter.spec.ts` — teste de integração real com `vue-web-terminal` validando projeção de blocos do `CommandBlockFeed`, ausência de segundo leitor/PTY e unicidade do pipeline de entrada.
 - `tests/terminal/blockActionRegistry.spec.ts` — testes de registro/remoção de ações, filtro `when(block)`, cópia de comando e extração de saída do buffer normal com tratamento de `isWrapped` e detecção de trim parcial.
 - `tests/terminal/commandBlocksStore.spec.ts` — testes do `CommandBlockFeed` (`begin`, `markOutputStart`, `end` com `0`/`!=0`/`null`, `patchMeta`, `clear`), idempotência, limite de 500 blocos e descarte via `IMarker.onDispose`.
 - `tests/terminal/CommandBlock.spec.ts` — testes de componente (`@vue/test-utils`): renderização de status (`running`/`success`/`error`/`aborted`), duração, filtro de ações do `BlockActionRegistry` e slot `actions` recebendo `{ block }`.
+- `tests/terminal/useCommandBlocks.spec.ts` — teste do composable: instancia exatamente 1 `VueWebTerminalAdapter` por painel, `projectedEntries` reflete `begin`/`end` do `CommandBlockFeed` (1 entrada por bloco, na ordem de `order`), `dispose()` do adaptador ao desmontar e ausência de HTML em `content`.
 
 ---
 
@@ -99,6 +101,8 @@ export function createVueWebTerminalAdapter(
 1. Importa os símbolos públicos reais do pacote `vue-web-terminal` instalado (validando sua presença e compatibilidade com Vue 3.6) sem instanciar emulador paralelo de PTY e sem interceptar eventos globais de teclado do xterm.
 2. `projectBlock(block, outputPreview)` converte um `CommandBlockModel` para o formato de mensagem estruturada do `vue-web-terminal`, truncando `command` a 4096 caracteres e garantindo que `content` seja texto puro (jamais HTML injetado).
 3. `handleExecCmd` captura qualquer intenção de execução disparada pela interface `exec-cmd` da biblioteca, delega para `opts.onInputIntent(command)` (que envia pelo `InputPipeline` único da instância) e resolve o callback `success()` imediatamente sem gerar eco local duplicado.
+4. **Integração obrigatória ao pipeline de blocos (sem classe órfã):** o único ponto de instanciação em produção é `useCommandBlocks.ts` (§3.4), que importa `createVueWebTerminalAdapter`, injeta `getContext` (contexto do painel) e `onInputIntent` (delegando ao `InputPipeline` único da instância) e expõe `projectedEntries`; `CommandBlockLayer.vue` consome essas entradas e as entrega a `CommandBlock.vue`. Nenhum outro módulo cria adaptadores. O adaptador não monta o componente visual `<VueWebTerminal>` como emulador: apenas projeta/valida a estrutura de mensagens da biblioteca para a camada de blocos.
+5. **Dependência `vue-web-terminal`:** não adicionar `overrides` no `package.json` (a versão `3.4.2` não declara peer de `vue`). Somente se `npm ci` comprovar conflito de peer dependency, registrar a nota correspondente em `implementation/` e então adicionar o `overrides` mínimo necessário.
 
 ---
 
@@ -222,8 +226,22 @@ export const useCommandBlocksStore = defineStore('commandBlocks', {
    import type { CommandBlockId, PaneId } from '@/types/bindings';
    import type { BlockAction, CommandBlockModel } from '@/types/terminal';
 
+   import type {
+       VueWebTerminalAdapter,
+       VueWebTerminalProjectedEntry
+   } from '@/terminal/blocks/vueWebTerminalAdapter';
+   import type { TerminalContext } from '@/types/terminal';
+
+   export interface UseCommandBlocksOptions {
+       getContext: () => TerminalContext;
+       onInputIntent?: (commandText: string) => Promise<void>;
+   }
+
    export interface UseCommandBlocksReturn {
+       adapter: VueWebTerminalAdapter;
        blocks: ComputedRef<CommandBlockModel[]>;
+       /** Projeção de `blocks` (mesma ordem) feita por `adapter.projectBlocks(...)`. */
+       projectedEntries: ComputedRef<VueWebTerminalProjectedEntry[]>;
        runningBlock: ComputedRef<CommandBlockModel | null>;
        lastBlock: ComputedRef<CommandBlockModel | null>;
        actionsFor: (block: CommandBlockModel) => BlockAction[];
@@ -232,21 +250,27 @@ export const useCommandBlocksStore = defineStore('commandBlocks', {
        getMarkerLine: (blockId: CommandBlockId) => number;
    }
 
-   export function useCommandBlocks(paneId: Ref<PaneId> | PaneId): UseCommandBlocksReturn;
+   export function useCommandBlocks(
+       paneId: Ref<PaneId> | PaneId,
+       options: UseCommandBlocksOptions
+   ): UseCommandBlocksReturn;
    ```
+   - Internamente executa `import { createVueWebTerminalAdapter } from '@/terminal/blocks/vueWebTerminalAdapter'`, cria **um** adaptador por chamada (`{ paneId: unref(paneId), getContext, onInputIntent }`), calcula `projectedEntries = computed(() => adapter.projectBlocks(blocks.value))` e chama `adapter.dispose()` em `onScopeDispose`. Se receber `Ref<PaneId>` e o valor mudar, descarta o adaptador anterior antes de criar o novo e invalida a projeção; nunca mantém dois adaptadores ativos para a mesma chamada. Em produção, `CommandBlockLayer` é montado com `:key="paneId"` e é o único consumidor desse composable por painel; `HybridTerminal` apenas fornece as props.
 2. **`src/components/terminal/CommandBlock.vue`:**
-   - Props: `{ block: CommandBlockModel; actions: BlockAction[]; compact?: boolean }`.
+   - Props: `{ block: CommandBlockModel; entry: VueWebTerminalProjectedEntry; actions: BlockAction[]; compact?: boolean }` (`entry` é a projeção produzida pelo `VueWebTerminalAdapter`; o cabeçalho usa `entry.command` já truncado, `entry.class`/`entry.tag` para o badge semântico e `entry.durationMs`/`entry.exitCode`).
    - Emits: `{ action: [actionId: string] }`.
    - Slot: `<slot name="actions" :block="block" />` renderizado logo após as ações registradas.
    - Exibe:
      - Indicador semântico de status (`running`, `success`, `error`, `aborted`) com as cores exatas de `spec.md` §10.
-     - Comando truncado a 4096 caracteres (`{{ truncatedCommand }}`).
+     - Comando truncado a 4096 caracteres (`{{ entry.command }}`, truncado pelo adaptador).
      - Diretório `block.cwd` (quando presente).
      - Duração formatada em `pt-BR` (ex.: `"120 ms"`, `"2,4 s"`, `"1 min 15 s"` ou `"Em execução..."`).
      - Código de saída (`exit != 0` destacado em vermelho).
+   - SCSS scoped: fundo, borda e fundo do cabeçalho vêm das variáveis do painel `var(--mt-block-background, var(--background-900))`, `var(--mt-block-border, var(--background-700))` e `var(--mt-block-header-background, var(--background-800))`, expostas por `HybridTerminal.vue` em `.hybrid-terminal` a partir de `TerminalTheme.ui` (`../02` §3.5 e `../06`); os badges de status continuam nos tokens `--max-*`.
 3. **`src/components/terminal/CommandBlockLayer.vue`:**
-   - Props: `{ paneId: PaneId }`.
+   - Props: `{ paneId: PaneId; getContext: () => TerminalContext; onInputIntent: (commandText: string) => Promise<void> }`, fornecidas pelo `HybridTerminal` após a instância estar pronta.
+   - Obtém `blocks`/`projectedEntries` de `useCommandBlocks(paneId, { getContext, onInputIntent })` (que contém o `VueWebTerminalAdapter`) e passa a `CommandBlock.vue` o par `block` + `entry`. Faz o pareamento por `blockId` e renderiza somente quando ambos existem, sem repassar `undefined` à prop obrigatória `entry`.
    - Slot repassado: `block-actions` com `{ block }`.
    - Oculto imediatamente (`v-if="!isAltScreen"`) quando `modes.altScreen === true`.
    - Assina `xterm.onRender` (e mudanças na lista de blocos) para manter `IDecoration` ativas **somente para blocos cuja linha (`promptMarker.line`) esteja dentro do intervalo `[viewportY - rows, viewportY + 2 * rows]`** (viewport ± 1 tela).
-   - Monta cada `CommandBlock.vue` via `<Teleport :to="decorationElement">` sem alterar a altura das linhas da grade do xterm e sem interceptar eventos de mouse fora dos botões do cabeçalho (`pointer-events: none` no container da decoração, `pointer-events: auto` no cabeçalho/botões).
+   - Monta cada `CommandBlock.vue` via `<Teleport :to="decorationElement">` sem alterar a altura das linhas da grade do xterm e sem interceptar eventos de mouse fora dos botões do cabeçalho (`pointer-events: none` no container da decoração, `pointer-events: auto` no cabeçalho/botões). O destino fica dentro do host xterm do mesmo `.hybrid-terminal`, preservando a herança das variáveis CSS locais do painel; não teleportar para `body`.

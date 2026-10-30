@@ -11,8 +11,8 @@
 ## 1. Contexto, Objetivo e Escopo
 
 Esta terceira unidade conecta o crate `mt-ai` ao binário Tauri (`maxterminal`) e constrói toda a camada de estado reativo e IPC no frontend TypeScript/Vue:
-1. **Adaptador de Contexto (`src-tauri/src/ai_context.rs`):** Implementa a trait `mt_ai::context::AiContextSource` no crate binário `maxterminal` lendo o estado autoritativo das Fases 05 (`ShellService`, `CommandBlocksRepo`), 06 (`ProjectStack`, nome do projeto) e 07 (`WorkspaceService`, `TabView`/`PaneView`, `WorkspaceObserver`), além de cancelar automaticamente requisições pendentes quando abas/painéis são fechados, PTYs são substituídos ou sessões são arquivadas (`CA-33`).
-2. **Comandos Tauri IPC e Eventos (`src-tauri/src/commands/ai.rs`, `specta.rs`, `state.rs`):** Expõe os 17 comandos IPC da Fase 12, o stream de tokens via `tauri::ipc::Channel<AiStreamEvent>` com fila limitada (`256 KiB`) e os 3 eventos globais (`ai://status-changed`, `ai://catalog-updated`, `ai://settings-changed`), exportando todos os bindings TypeScript em `src/types/bindings.ts` (`CA-02`, `CA-04`).
+1. **Adaptador de Contexto (`src-tauri/src/ai_context.rs`):** Implementa a trait `mt_ai::context::AiContextSource` no crate binário `maxterminal` lendo o estado autoritativo das Fases 05 (`ShellService`, `CommandBlocksRepo`), 06 (`ProjectStack`, nome do projeto) e 07 (`WorkspaceManager`, `TabView`/`PaneView`, `WorkspaceLifecycleObserver`), além de cancelar automaticamente requisições pendentes quando abas/painéis são fechados, PTYs são substituídos ou sessões são arquivadas (`CA-33`).
+2. **Comandos Tauri IPC e Eventos (`src-tauri/src/commands/ai.rs`, `ai_state.rs`, `specta.rs`):** Expõe os 17 comandos IPC da Fase 12, o stream de tokens via `tauri::ipc::Channel<AiStreamEvent>` com fila limitada (`256 KiB`) e os 3 eventos globais (`ai://status-changed`, `ai://catalog-updated`, `ai://settings-changed`), exportando todos os bindings TypeScript em `src/types/bindings.ts` (`CA-02`, `CA-04`).
 3. **Camada IPC Tipada (`src/ipc/ai.ts`) e Adaptador Reconciliado (`src/composables/ai/adapters.ts`):** Encapsula os comandos gerados em `bindings.ts` e isola a ponte com as APIs publicadas das Fases 04, 05 e 07 (`triggerRegistry`, `useRichInput`, `TerminalInstanceHandle.write`, `shell://command-finished`).
 4. **Store Pinia (`src/stores/ai.ts` — `useAiStore`):** Gerencia o estado reativo de saúde do gateway, configurações, catálogo, sugestões em streaming por painel, diagnósticos por bloco e buscas RAG, aplicando revisões monotônicas, tombstones de cancelamento antes do aceite IPC, reclassificação de risco com debounce de `150 ms` ao editar comandos e limite de 100 cards por painel.
 5. **Composable de Geração Assistida (`src/composables/ai/useAiGenerate.ts`):** Fornece o contrato genérico `useAiGenerate<T>(schemaId, schema, decode)` consumido pelas Fases 14 e 15, exigindo decoder de runtime e guarda de revisão do formulário consumidor (`CA-28`, `CA-36`).
@@ -24,12 +24,13 @@ Esta terceira unidade conecta o crate `mt-ai` ao binário Tauri (`maxterminal`) 
 ### 2.1. Arquivos a Modificar
 - `src-tauri/Cargo.toml` — adição de `mt-ai = { path = "crates/mt-ai" }` nas dependências do binário `maxterminal`.
 - `src-tauri/src/lib.rs` (ou `src-tauri/src/commands/mod.rs`) — declaração de `pub mod ai_context;` e `pub mod ai;` em `commands`.
-- `src-tauri/src/state.rs` — inclusão de `pub ai: Arc<mt_ai::AiService>` em `AppState` e inicialização do observer de workspace e emissor de `ai://status-changed`.
+- `src-tauri/src/lib.rs` (`setup`) — construção de `TauriAiContextSource` e `AiService`, `app.manage(AppAiState::new(...))` (estado próprio do domínio; o `AppState` da Fase 01 **não** agrega `AiService`, decisão D-09), registro do observer de workspace e do emissor de `ai://status-changed`.
 - `src-tauri/src/specta.rs` — registro dos 17 comandos `ai_*` e dos 3 eventos `ai://*` no builder `tauri-specta`.
 - `src/types/bindings.ts` — atualizado automaticamente pela geração do `tauri-specta`.
 
 ### 2.2. Arquivos a Criar
 - `src-tauri/src/ai_context.rs`
+- `src-tauri/src/ai_state.rs` — `AppAiState { service: Arc<mt_ai::AiService> }`, registrado por `app.manage(...)`
 - `src-tauri/src/commands/ai.rs`
 - `src/ipc/ai.ts`
 - `src/composables/ai/adapters.ts`
@@ -57,8 +58,9 @@ use std::sync::Arc;
 pub struct TauriAiContextSource {
     os_info: OsInfo,
     home_dir: Option<String>,
-    // Referências aos serviços das Fases 05, 06 e 07 contidos no AppState:
-    // workspace: Arc<WorkspaceService>,
+    // Handles `Arc` dos serviços das Fases 05, 06 e 07, resolvidos no `setup` a partir do estado gerenciado de
+    // cada domínio (`app.state::<Arc<T>>()`; D-09). Nenhum deles é lido via `AppState` da Fase 01.
+    // workspace: Arc<WorkspaceManager>,
     // shell: Arc<ShellService>,
     // projects: Arc<ProjectService>,
 }
@@ -80,28 +82,28 @@ impl TauriAiContextSource {
 #[async_trait::async_trait]
 impl AiContextSource for TauriAiContextSource {
     async fn for_pane(&self, pane: PaneId, opts: &ContextSettings) -> MtResult<AiContext> {
-        // 1. Obtém PaneView/TabView ativo da Fase 07 para o `pane`; se não existir, retorna Err(AI_CONTEXT_STALE).
+        // 1. Obtém PaneView/TabView ativo da Fase 07 para o `pane`; se não existir, retorna Err(ai.context_stale).
         // 2. Obtém shell (ex.: "zsh") e cwd atual do ShellService (Fase 05), com fallback para o cwd do PaneView (Fase 07).
         // 3. Obtém nome e stack do projeto associado à aba na Fase 06.
         // 4. Lista os últimos `opts.recent_commands` blocos finalizados da sessão atual via CommandBlocksRepo (Fase 05),
         //    ordenados do mais antigo ao mais recente.
         // 5. Se `opts.include_output_tail` for true e houver último bloco, lê a cauda sanitizada via ShellService::error_context.
         // 6. Aplica `abbreviate_home`, `strip_ansi_and_sanitize` e retorna `ctx.sanitize_and_bound(opts.recent_commands, opts.output_tail_bytes)`.
-        todo!("Implementação conectada aos serviços das Fases 05, 06 e 07")
+        self.build_pane_context(pane, opts).await // helper privado; comportamento em "Comportamento esperado" abaixo
     }
 
     async fn for_block(&self, block: CommandBlockId, tail_bytes: u32) -> MtResult<(AiContext, BlockFailure)> {
         // 1. Consulta CommandBlocksRepo::get(block) e ShellService::error_context(block, tail_bytes) (Fase 05).
         // 2. Verifica se o painel e a sessão do bloco ainda correspondem à sessão ativa do painel na Fase 07;
-        //    se a sessão foi arquivada ou o PTY substituído, retorna Err(AI_CONTEXT_STALE).
+        //    se a sessão foi arquivada ou o PTY substituído, retorna Err(ai.context_stale).
         // 3. Determina `is_interactive` verificando se o bloco rodou em alternate screen (TUI) ou se o template
         //    da aba (Fase 07) é de um Agente CLI.
         // 4. Monta `(AiContext, BlockFailure)` totalmente sanitizados.
-        todo!("Implementação conectada aos serviços das Fases 05, 06 e 07")
+        self.build_block_failure(block, tail_bytes).await // helper privado; ver "Comportamento esperado"
     }
 
     fn pane_snapshot(&self, pane: PaneId) -> Option<PaneBindingSnapshot> {
-        todo!("Lê (project_id, tab_id, pane_id, session_id, pty_id) atuais do WorkspaceService (Fase 07)")
+        self.read_pane_binding(pane) // helper privado síncrono; ver "Comportamento esperado"
     }
 
     fn project_of_pane(&self, pane: PaneId) -> Option<ProjectId> {
@@ -109,15 +111,20 @@ impl AiContextSource for TauriAiContextSource {
     }
 }
 ```
-- **Integração com `WorkspaceObserver` (Fase 07):**
-  - Na inicialização do `AppState`, registra um listener nos eventos internos de ciclo de vida do workspace (`tab://closed`, `tab://layout-changed`, `pane://pty-replaced`, `session://archived`) que invoca `ai_service.requests.cancel_pane(pane_id)` imediatamente para qualquer painel removido ou reiniciado (`CA-33`).
+- **Comportamento esperado dos helpers privados (corpos descritos por comportamento, sem placeholders):**
+   - `read_pane_binding(pane) -> Option<PaneBindingSnapshot>`: leitura **síncrona e sem I/O** de uma projeção local de vínculos, mantida pelo adaptador a partir de `WorkspaceLifecycleSignal::PaneSpawned { owner, pty_id, .. }`. Copia `(project_id, tab_id, pane_id, session_id)` de `ExecutionOwner` e o PTY real; `SessionId` é do painel, não `TabSessionId` da aba. Guarda também a geração do owner para invalidar eventos obsoletos. Retorna `None` se removido, encerrado ou ainda sem spawn; não acessa campos privados nem bloqueia aguardando métodos async do `WorkspaceManager`.
+  - `build_pane_context(pane, opts)`: executa os 6 passos listados em `for_pane` na ordem. Qualquer ausência de identidade (painel, aba, sessão) falha com `ai.context_stale` e **nunca** devolve contexto parcial inventado. Fallbacks permitidos: cwd do `PaneView` quando o `ShellService` não conhece o cwd observado; stack do projeto ausente vira `None`. Leituras de `CommandBlocksRepo`/`ShellService` são somente leitura; erros de repositório propagam o `MtError` da Fase 03/05 (`db.*`) sem fallback silencioso.
+  - `build_block_failure(block, tail_bytes)`: lê `CommandBlocksRepo::get(block)`; bloco inexistente → `core.not_found`; compara `(pane_id, session_id, pty_id)` do bloco com `read_pane_binding(pane)` e, se divergirem (sessão arquivada, PTY substituído, painel fechado), falha com `ai.context_stale`. Cauda via `ShellService::error_context(block, tail_bytes)` (já sanitizada pela Fase 05, truncada mantendo o **final**); `exit_code` permanece `Option` e `null` nunca é tratado como erro confirmado (decisão de pular é da `DiagnosisService`).
+  - **Sanitização (invariante):** todo texto que sai do adaptador passa por `strip_ansi_and_sanitize` (Fase 03) + `abbreviate_home`; a `AiService` reaplica `sanitize()` antes de montar o prompt (defesa em profundidade, `CA-18`). O adaptador **nunca** escreve no PTY e não mantém cache próprio de saída.
+- **Integração com `WorkspaceLifecycleObserver` (Fase 07):**
+   - No `setup` (após `app.manage(AppAiState)` e antes da restauração/abertura de abas), registra o adaptador via `WorkspaceManager::register_observer`. `on_signal` recebe `PaneSpawned`, `PaneExited`, `TabLayoutChanged`, `SessionArchived` e `TabClosed`; atualiza/invalida a projeção e invoca `ai_service.requests.cancel_pane(pane_id)` ao remover/reiniciar/arquivar (`CA-33`). Comparar owner/geração para que saída antiga não invalide o novo vínculo; não inventar eventos de backend `pane://pty-replaced` nem métodos `on_tab_closed`.
 
 ---
 
 ### 3.2. Comandos Tauri IPC (`src-tauri/src/commands/ai.rs`)
 
 ```rust
-use crate::state::AppState;
+use crate::ai_state::AppAiState;
 use mt_ai::catalog::HarnessCatalog;
 use mt_ai::client::http::GatewayHealth;
 use mt_ai::config::AiSettings;
@@ -134,41 +141,41 @@ use tauri::{ ipc::Channel, AppHandle, Emitter, State };
 
 #[tauri::command]
 #[specta::specta]
-pub async fn ai_health(state: State<'_, AppState>) -> Result<GatewayHealth, MtError> {
-    Ok(state.ai.health().await)
+pub async fn ai_health(state: State<'_, AppAiState>) -> Result<GatewayHealth, MtError> {
+    Ok(state.service.health().await)
 }
 
 #[tauri::command]
 #[specta::specta]
-pub async fn ai_settings_get(state: State<'_, AppState>) -> Result<AiSettings, MtError> {
-    Ok(state.ai.get_settings())
+pub async fn ai_settings_get(state: State<'_, AppAiState>) -> Result<AiSettings, MtError> {
+    Ok(state.service.get_settings())
 }
 
 #[tauri::command]
 #[specta::specta]
 pub async fn ai_settings_update(
     app: AppHandle,
-    state: State<'_, AppState>,
+    state: State<'_, AppAiState>,
     settings: AiSettings,
 ) -> Result<AiSettings, MtError> {
-    let updated = state.ai.update_settings(settings).await?;
+    let updated = state.service.update_settings(settings).await?;
     let _ = app.emit("ai://settings-changed", &updated);
     Ok(updated)
 }
 
 #[tauri::command]
 #[specta::specta]
-pub async fn ai_catalog_get(state: State<'_, AppState>) -> Result<HarnessCatalog, MtError> {
-    Ok(state.ai.catalog_get().await)
+pub async fn ai_catalog_get(state: State<'_, AppAiState>) -> Result<HarnessCatalog, MtError> {
+    Ok(state.service.catalog_get().await)
 }
 
 #[tauri::command]
 #[specta::specta]
 pub async fn ai_catalog_refresh(
     app: AppHandle,
-    state: State<'_, AppState>,
+    state: State<'_, AppAiState>,
 ) -> Result<HarnessCatalog, MtError> {
-    let catalog = state.ai.catalog_refresh().await?;
+    let catalog = state.service.catalog_refresh().await?;
     let _ = app.emit("ai://catalog-updated", &catalog);
     Ok(catalog)
 }
@@ -176,28 +183,28 @@ pub async fn ai_catalog_refresh(
 #[tauri::command]
 #[specta::specta]
 pub async fn ai_context_preview(
-    state: State<'_, AppState>,
+    state: State<'_, AppAiState>,
     pane_id: PaneId,
 ) -> Result<AiContext, MtError> {
-    state.ai.context_preview(pane_id).await
+    state.service.context_preview(pane_id).await
 }
 
 #[tauri::command]
 #[specta::specta]
 pub async fn ai_suggest_command(
-    state: State<'_, AppState>,
+    state: State<'_, AppAiState>,
     request: SuggestRequest,
     on_event: Channel<AiStreamEvent>,
 ) -> Result<AiRequestId, MtError> {
     let req_id = request.request_id;
-    let ai = state.ai.clone();
-    // Valida pré-condições síncronas (enabled, seleção válida/default, registro do request_id antes do spawn)
-    ai.prepare_suggest(&request)?;
+    let ai = state.service.clone();
+    // Fase síncrona (contrato em 02/spec.md §3.7): valida `enabled`, seleção válida/default e registra o `request_id`
+    // no `AiRequestRegistry` ANTES do spawn; falhas voltam como `Err` imediato ao invoke.
+    let ticket = ai.prepare_suggest(&request)?;
     tauri::async_runtime::spawn(async move {
+        // Fase assíncrona: o `bool` do callback indica se o envio ao Channel funcionou (`false` cancela a requisição).
         let _ = ai
-            .run_suggest_stream(request, move |evt| {
-                on_event.send(evt).is_ok()
-            })
+            .run_suggest_stream(request, ticket, move |evt| on_event.send(evt).is_ok())
             .await;
     });
     Ok(req_id)
@@ -205,87 +212,87 @@ pub async fn ai_suggest_command(
 
 #[tauri::command]
 #[specta::specta]
-pub async fn ai_cancel(state: State<'_, AppState>, request_id: AiRequestId) -> Result<bool, MtError> {
-    Ok(state.ai.cancel(request_id))
+pub async fn ai_cancel(state: State<'_, AppAiState>, request_id: AiRequestId) -> Result<bool, MtError> {
+    Ok(state.service.cancel(request_id))
 }
 
 #[tauri::command]
 #[specta::specta]
 pub async fn ai_classify_risk(
-    state: State<'_, AppState>,
+    state: State<'_, AppAiState>,
     command: String,
 ) -> Result<RiskAssessment, MtError> {
-    Ok(state.ai.classify_risk(&command))
+    Ok(state.service.classify_risk(&command))
 }
 
 #[tauri::command]
 #[specta::specta]
 pub async fn ai_diagnose_block(
-    state: State<'_, AppState>,
+    state: State<'_, AppAiState>,
     request: DiagnoseRequest,
 ) -> Result<DiagnosisOutcome, MtError> {
-    state.ai.diagnose_block(request).await
+    state.service.diagnose_block(request).await
 }
 
 #[tauri::command]
 #[specta::specta]
 pub async fn ai_diagnosis_dismiss(
-    state: State<'_, AppState>,
+    state: State<'_, AppAiState>,
     block_id: CommandBlockId,
 ) -> Result<(), MtError> {
-    state.ai.dismiss_diagnosis(block_id);
+    state.service.dismiss_diagnosis(block_id);
     Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
-pub async fn ai_rag_list_slugs(state: State<'_, AppState>) -> Result<Vec<RagSlug>, MtError> {
-    state.ai.rag_list_slugs().await
+pub async fn ai_rag_list_slugs(state: State<'_, AppAiState>) -> Result<Vec<RagSlug>, MtError> {
+    state.service.rag_list_slugs().await
 }
 
 #[tauri::command]
 #[specta::specta]
 pub async fn ai_rag_search(
-    state: State<'_, AppState>,
+    state: State<'_, AppAiState>,
     request: RagSearchRequest,
 ) -> Result<RagSearchResponse, MtError> {
-    state.ai.rag_search(request).await
+    state.service.rag_search(request).await
 }
 
 #[tauri::command]
 #[specta::specta]
 pub async fn ai_generate_structured(
-    state: State<'_, AppState>,
+    state: State<'_, AppAiState>,
     request: StructuredRequest,
 ) -> Result<StructuredResponse, MtError> {
-    state.ai.generate_structured(request).await
+    state.service.generate_structured(request).await
 }
 
 #[tauri::command]
 #[specta::specta]
 pub async fn ai_history_list(
-    state: State<'_, AppState>,
+    state: State<'_, AppAiState>,
     filter: AiHistoryFilter,
 ) -> Result<AiHistoryPage, MtError> {
-    state.ai.history_list(filter).await
+    state.service.history_list(filter).await
 }
 
 #[tauri::command]
 #[specta::specta]
 pub async fn ai_history_clear(
-    state: State<'_, AppState>,
+    state: State<'_, AppAiState>,
     project_id: Option<ProjectId>,
 ) -> Result<u32, MtError> {
-    state.ai.history_clear(project_id).await
+    state.service.history_clear(project_id).await
 }
 
 #[tauri::command]
 #[specta::specta]
 pub async fn ai_cache_clear(
-    state: State<'_, AppState>,
+    state: State<'_, AppAiState>,
     scope: CacheClearScope,
 ) -> Result<u32, MtError> {
-    state.ai.cache_clear(scope).await
+    state.service.cache_clear(scope).await
 }
 ```
 - **Nomes exportados em `src/types/bindings.ts` (`CA-04`):**
@@ -519,12 +526,16 @@ import { ref, shallowRef, type Ref, type ShallowRef } from 'vue';
 import * as aiIpc from '@/ipc/ai';
 import type { AiRequestId, AiSelection, MtError, PaneId, ProjectId } from '@/types/bindings';
 
-export interface UseAiGenerateOptions {
+/** Opções por chamada de `run()` (D-05). Todos os campos são opcionais. */
+export interface AiGenerateRunOptions {
     system?: string;
     selection?: AiSelection;
     paneId?: PaneId;
     projectId?: ProjectId;
+    /** Revisão atual do formulário do consumidor; se mudar antes da resposta, o resultado é descartado. */
     getFormRevision?: () => number;
+    /** Cancelamento externo: ao abortar, equivale a `cancel()` (envia `ai_cancel` e descarta qualquer resposta tardia). */
+    signal?: AbortSignal;
 }
 
 export interface UseAiGenerateReturn<T> {
@@ -532,13 +543,22 @@ export interface UseAiGenerateReturn<T> {
     error: ShallowRef<MtError | null>;
     result: ShallowRef<T | null>;
     repaired: Ref<boolean>;
-    run: (prompt: string, opts?: UseAiGenerateOptions) => Promise<T | null>;
+    /**
+     * Retorna `T` somente quando a resposta foi validada pelo Rust (JSON Schema), aprovada pelo `decode` de runtime
+     * e a revisão do formulário não mudou. Retorna `null` (sem lançar) quando: (a) `cancel()` ou `signal` abortou;
+     * (b) a revisão do formulário mudou (resposta obsoleta); (c) o `decode` lançou exceção (`error` recebe
+     * `ai.schema_validation`); (d) o backend falhou (`error` recebe o `MtError`, ex. `ai.gateway_unavailable`);
+     * (e) uma nova chamada a `run()` substituiu esta. Em todos os casos `result` não é alterado por respostas descartadas.
+     */
+    run: (prompt: string, opts?: AiGenerateRunOptions) => Promise<T | null>;
     cancel: () => Promise<void>;
 }
 
 /**
- * Ponto de extensão público consumido pelas Fases 14 (Artisan) e 15 (Grupos de Comandos) (CA-28, CA-36).
- * Exige um `decode: (raw: unknown) => T` de runtime e verifica a revisão do formulário antes de publicar `result`.
+ * Ponto de extensão público consumido pelas Fases 14 (Artisan, `artisan.command.v1`) e 15 (Grupos de Comandos,
+ * `command-group.suggestion.v1`) (CA-28, CA-36). `decode` é OBRIGATÓRIO (sem cast cego de `unknown`) e
+ * a revisão do formulário é verificada antes de publicar `result`. A chamada vai exclusivamente por
+ * `ai_generate_structured` -> `AiService::generate_structured`.
  */
 export function useAiGenerate<T>(
     schemaId: string,
@@ -546,3 +566,9 @@ export function useAiGenerate<T>(
     decode: (value: unknown) => T
 ): UseAiGenerateReturn<T>;
 ```
+
+Regras de `signal`: se já abortado, `run` retorna `null` sem invoke; registrar listener antes da chamada,
+capturando seu `requestId` (abortar uma chamada antiga não cancela a nova). Ao abortar, marcar intenção local,
+enviar `ai_cancel` com o mesmo ID e rejeitar respostas tardias, inclusive antes do aceite conforme tombstones.
+Remover listener em `finally`/descarte do composable; somente a chamada atual altera `loading`, `error` e
+`repaired`. `decode` e a guarda de revisão são verificados antes de publicar `result` e de devolver `T`.

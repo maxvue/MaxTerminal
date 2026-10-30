@@ -20,8 +20,10 @@
 
 ### Passo 3 — Bridge com o Motor de Terminal (`src/theme/terminalBridge.ts`)
 - [ ] Implementar `toTerminalTheme`, `toTerminalPreferences` e `installTerminalBridge` em `src/theme/terminalBridge.ts`.
+- [ ] Preencher os cinco campos de `TerminalTheme.ui` conforme §3.4 da spec desta unidade, usando os tokens do tema resolvido do painel; conferir a propagação até as cinco variáveis CSS locais de `.hybrid-terminal` da Fase 04.
+- [ ] Gerenciar `LigaturesAddon` por `WeakMap<Terminal, IDisposable>`: ativação única, descarte/remoção ao desativar, encerrar instância ou descartar bridge, e invalidação de importações pendentes por geração.
 - [ ] Criar `tests/theme/terminalTheme.typecheck.ts` verificando em tempo de compilação que `XtermTheme` é atribuível a `ITheme` e `ReturnType<typeof toTerminalTheme>` é atribuível a `TerminalTheme` (CA-05).
-- [ ] Criar `tests/theme/terminalBridge.spec.ts` testando aplicação por painel com e sem override de projeto, panes ocultas, `clearTextureAtlas()` e fallback de ligaduras.
+- [ ] Criar `tests/theme/terminalBridge.spec.ts` testando aplicação por painel com e sem override de projeto, panes ocultas, os cinco campos de `ui` e seu isolamento entre dois `.hybrid-terminal`, `clearTextureAtlas()` e fallback de ligaduras. Cobrir `false → true → false → true`, reaplicação sem duplicar addon, descarte da instância/bridge, falha parcial em múltiplas instâncias e desativação durante importação pendente (não reativar ao resolver).
 
 ### Passo 4 — Store `useThemeStore` e Composables (`src/stores/theme.ts`, `src/composables/*.ts`)
 - [ ] Implementar `src/stores/theme.ts` com LRU de 24 temas inativos, fixação de temas em uso, cursores monotônicos de revisão, reação a `project://changed` (`dropProjects`) e rollback otimista em `updateAppearance`.
@@ -69,7 +71,7 @@ npm run test
 | **CA-26** | Tema claro remove a classe `dark` de `<html>` e define `color-scheme: light`; tema escuro restaura. | `tests/composables/useThemeApplier.spec.ts`. |
 | **CA-27** | Sobreposição de tema por projeto com e sem `applyProjectThemeToUi`. | `tests/stores/theme.spec.ts` + `ProjectThemeOverrides.spec.ts`. |
 | **CA-28** | Alterar fonte/tamanho/altura de linha reflete nos terminais em ≤ 200 ms com `clearTextureAtlas()` e re-fit. | `tests/theme/terminalBridge.spec.ts`. |
-| **CA-29** | Ligaduras carregadas sob demanda; falha reverte opção e exibe `"Não foi possível ativar as ligaduras nesta fonte"`. | `tests/theme/terminalBridge.spec.ts` + `tests/stores/theme.spec.ts`. |
+| **CA-29** | Ligaduras carregadas sob demanda, sem duplicação; desligar/encerrar descarta o addon e invalida cargas pendentes; falha vigente reverte opção e exibe `"Não foi possível ativar as ligaduras nesta fonte"`. | `tests/theme/terminalBridge.spec.ts` + `tests/stores/theme.spec.ts`. |
 | **CA-30** | Reiniciar com tema claro ativo aplica snapshot de `localStorage` antes do `mount()` sem FOUC. | `tests/theme/bootstrap.spec.ts`. |
 | **CA-31** | `ThemeImportReport` exibe contagens exatas (`totalFailures`/`totalWarnings`), aviso de `truncatedDetails` e badge "Contraste baixo". | `tests/components/preferences/appearance/ThemeImportReport.spec.ts`. |
 | **CA-32** | Textos de UI, `MtError` e comentários em `pt-BR`; nenhum `--max-*` literal fora de `cssTokens.ts`/builtins. | `npm run lint` + `npm run lint:style`. |

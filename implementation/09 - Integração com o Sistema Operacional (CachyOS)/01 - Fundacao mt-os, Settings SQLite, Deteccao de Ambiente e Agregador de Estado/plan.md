@@ -8,7 +8,7 @@
 ## 1. Pré-requisitos e Verificações Iniciais
 
 1. Confirmar na workspace Cargo (`src-tauri/Cargo.toml`) a presença dos crates `mt-core` (Fase 01) e `mt-db` (Fase 03).
-2. Verificar o último número de migration em `src-tauri/crates/mt-db/migrations/` para nomear `NNNN_09_os_settings.sql` sequencialmente sem colisão.
+2. Confirmar que `src-tauri/crates/mt-db/migrations/` termina em `0004_07_workspace_templates_tabs_sessions.sql` e criar `0005_09_os_settings.sql` (numeração contígua canônica; nunca renumerar nem usar placeholders).
 
 ---
 
@@ -16,7 +16,7 @@
 
 ### Etapa 2.1 — Migration SQLite e `OsSettingsRepo` no `mt-db`
 - **Arquivos**:
-  - `src-tauri/crates/mt-db/migrations/NNNN_09_os_settings.sql`
+  - `src-tauri/crates/mt-db/migrations/0005_09_os_settings.sql`
   - `src-tauri/crates/mt-db/src/repos/os_settings.rs`
   - `src-tauri/crates/mt-db/src/repos/mod.rs`
 - **Ações**:
@@ -80,7 +80,7 @@
 
 ## 3. Checklist de Validação
 
-- [ ] A migration `NNNN_09_os_settings.sql` cria a tabela `os_settings` com `STRICT` e insere a linha default `'{}'`.
+- [ ] A migration `0005_09_os_settings.sql` cria a tabela `os_settings` com `STRICT` e insere a linha default `'{}'`.
 - [ ] `mt-db` compila e passa nos testes sem depender de `mt-os`.
 - [ ] `OsSettings::validate()` rejeita valores fora de faixa, aceleradores inválidos, `custom_argv` sem `{file}` e argumentos contendo segredos/tokens.
 - [ ] `schema_version > 1` retorna erro `os.settings_invalid` sem sobrescrever o banco.

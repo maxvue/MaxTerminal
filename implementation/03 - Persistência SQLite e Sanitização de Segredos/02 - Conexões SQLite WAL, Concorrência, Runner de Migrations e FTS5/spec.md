@@ -244,7 +244,7 @@ pub fn open_reader(path: &Path, pragmas: &PragmaSet) -> Result<Connection, DbErr
 /// Executa `PRAGMA quick_check` e valida que todas as linhas retornam `"ok"`. Qualquer divergência retorna `Err(DbError::Corrupt)`.
 pub fn run_quick_check(conn: &Connection) -> Result<(), DbError>;
 
-/// Verifica em runtime se `sqlite_compileoption_used('ENABLE_FTS5') == 1` e `sqlite_version_number() >= 3045000`.
+/// Verifica em runtime se `sqlite_compileoption_used('ENABLE_FTS5') == 1` e `sqlite_version_number() >= 3051003` (SQLite 3.51.3; piso do WAL-reset, D-06).
 pub fn verify_sqlite_capabilities(conn: &Connection) -> Result<(), DbError>;
 ```
 
@@ -478,6 +478,27 @@ impl<'a> MigrationRunner<'a> {
         H: FnOnce(&Connection, u32) -> Result<(), DbError>;
 }
 ```
+
+**Tabela canônica de migrations (D-01):** o runner exige versões contíguas `1..=N`; a numeração `NNNN` é a versão
+global sequencial e **não** o número da fase. Placeholders literais `NNNN_` são proibidos em qualquer documento.
+Todos os arquivos ficam em `src-tauri/crates/mt-db/migrations/`:
+
+| Versão | Arquivo | Fase dona |
+|---|---|---|
+| 1 | `0001_03_base.sql` | 03 (única migration entregue por esta fase) |
+| 2 | `0002_05_shell_sessions_command_blocks.sql` | 05 |
+| 3 | `0003_06_projects.sql` | 06 |
+| 4 | `0004_07_workspace_templates_tabs_sessions.sql` | 07 |
+| 5 | `0005_09_os_settings.sql` | 09 |
+| 6 | `0006_10_themes.sql` | 10 |
+| 7 | `0007_12_ai.sql` | 12 |
+| 8 | `0008_13_agents_skills_memory.sql` | 13 |
+| 9 | `0009_15_command_groups.sql` | 15 |
+| 10 | `0010_16_github.sql` | 16 |
+| 11 | `0011_17_search.sql` | 17 |
+
+O teste `naming_contract` valida nome, duplicata e lacuna contra a lista de arquivos presente em `migrations/`
+no momento da execução (fases posteriores acrescentam seus arquivos na ordem acima).
 
 **Regras críticas do `MigrationRunner` (spec §4.3):**
 1. Tabela de bootstrap criada fora das migrations versionadas:

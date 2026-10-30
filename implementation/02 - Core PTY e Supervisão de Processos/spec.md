@@ -657,7 +657,7 @@ Operações potencialmente lentas (`spawn`, `process_info`) rodam em `tauri::asy
 | `pty_list` | — | `PtySummary[]` (vivos + tombstones) | — |
 | `pty_process_info` | `ptyId` | `PtyProcessReport` | `pty.not_found`, `pty.proc_unavailable` |
 | `pty_ack` | `ptyId`, `attachmentId`, `consumedBytes: string` decimal | `void` | `pty.not_found`, `pty.attachment_stale`, `pty.ack_invalid` |
-| `pty_attach` | `ptyId`, `cursor?: OutputCursor`, `onOutput: Channel<ArrayBuffer>` | `AttachInfo` | `pty.not_found`, `pty.cursor_invalid` |
+| `pty_attach` | `ptyId`, `cursor?: OutputCursor`, `onOutput: Channel<ArrayBuffer>` (`PtyChannelMessage`, tipo manual; exceção única de bindings) | `AttachInfo` | `pty.not_found`, `pty.cursor_invalid` |
 | `pty_detach` | `ptyId`, `attachmentId` | `void` | `pty.not_found` (geração antiga é no-op) |
 
 Observações:
@@ -716,10 +716,14 @@ async fn pty_attach(
 
 Channel é **argumento direto** do comando. Não embutir em `SpawnSpec`, `AttachInfo`, outro DTO ou evento.
 O objeto `{ info, channel }` dos wrappers TS é apenas resultado local da função JS, não payload serializado Rust.
-`BinaryPtyFrame` é adaptador do binário, fora de `mt-pty`: implementa `IpcResponse` com corpo Raw e contrato Specta
-opaco mapeado para `ArrayBuffer` no exportador. Não assumir que `InvokeResponseBody` implemente `specta::Type`,
+`BinaryPtyFrame` é adaptador do binário, fora de `mt-pty`: implementa `IpcResponse` com corpo Raw e marcador Specta
+opaco (não é payload JSON); o TS recebe `ArrayBuffer` por tipo declarado manualmente (`PtyChannelMessage`), exceção
+única à regra "tipos só via `tauri-specta`" (contrato T-06 detalhado em `05/spec.md` §3.1). Não assumir que `InvokeResponseBody` implemente `specta::Type`,
 nem trocar por `Vec<u8>` serializado em JSON para fazer o export compilar. O spike de integração deve provar
-`Channel<ArrayBuffer>` gerado, corpo binário real, ausência de base64/array JSON e compatibilidade dos pins.
+canal opaco aceito pelo exportador, corpo binário real, ausência de base64/array JSON e compatibilidade dos pins.
+O marcador é uma estratégia pendente de implementação, não uma garantia de compilação: o gate T-06 de
+`05/spec.md` §3.1 exige primeiro a prova Rust/exportador com fontes locais dos pins e depois a prova TS/WebView
+em `06`. Falha mantém CA-35 bloqueado; esta revisão documental não substitui essas evidências.
 
 Comandos gerados retornam `{ status: 'ok', data: T } | { status: 'error', error: MtError }`; `src/ipc/pty.ts` usa
 o `unwrap` central da Fase 01. Os `Promise<T>` abaixo são dos wrappers pós-unwrap. Rejeições de infraestrutura
@@ -909,7 +913,7 @@ ordem dos frames; mock não comprova transporte binário. Harness mínimo de tes
 - `pty.spec.ts`: `init` idempotente, `handleExit`, getters `alive`/`byTab` (com `vi.mock('@tauri-apps/api/core')`).
 
 ### 15.5. CI
-`cargo test -p mt-pty -- --test-threads=4`, `cargo bench --no-run`, `pnpm test`, `pnpm typecheck` e checks da Fase 01.
+`cargo test -p mt-pty -- --test-threads=4`, `cargo bench --no-run`, `npm run test`, `npm run typecheck` e checks da Fase 01.
 Isolar subreaper/sinais/panic em subprocessos para não contaminar runner. Suite Linux obrigatória dispõe de cgroup
 delegado; ausência falha claramente no job dedicado, não pula silenciosamente a prova de não-órfãos. Unitários com
 fakes continuam headless. Job WebView real usa sessão gráfica virtual adequada, separada do Rust headless.

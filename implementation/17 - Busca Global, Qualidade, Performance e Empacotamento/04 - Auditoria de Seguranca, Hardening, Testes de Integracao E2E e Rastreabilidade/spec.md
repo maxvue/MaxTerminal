@@ -10,7 +10,7 @@
 
 Esta implementação consolida a **barreira de segurança (hardening), a qualidade fim a fim (testes de processos não-órfãos, sanitização ponta a ponta, E2E frontend simulado e E2E nativo com `tauri-driver`), a auditoria de dependências e a matriz executável de rastreabilidade** do MaxTerminal:
 - **Hardening Tauri v2 (`CA-30`, `CA-31`, `CA-32`):** Configuração final de Content Security Policy (CSP) sem `unsafe-eval` nem CDNs remotas em `src-tauri/tauri.conf.json`; capabilities mínimas por janela (`src-tauri/capabilities/main.json`) com validação de janela chamadora e origem nos comandos próprios; políticas `src-tauri/deny.toml` (`cargo-deny`) e `src-tauri/.cargo/audit.toml` (`cargo-audit`).
-- **Segurança do Bridge Loopback e Deep Links (`CA-33`, `CA-34`):** Testes de integração verificando rejeição de requisições sem token (`401`), `Host` inválido (`421`), `Origin` não autorizado (`403`), bind restrito a `127.0.0.1` e allowlist estrita de URIs `maxterminal://` (`bridge.deeplink_rejected`).
+- **Segurança do Bridge Loopback e Deep Links (`CA-33`, `CA-34`):** Testes de integração verificando rejeição de requisições autenticadas sem token (`401`), `Host` inválido (`403 bridge.host_forbidden`), `Origin` não autorizado (`403`), bind restrito a `127.0.0.1` e rejeição de URIs `maxterminal://` pelos códigos reais das Fases 09/11 (§3.4).
 - **Garantia de Zero Processos Órfãos e Sanitização Ponta a Ponta (`CA-25`, `CA-26`):** Suítes de integração em Rust puro (`src-tauri/tests/no_orphans.rs` e `src-tauri/tests/sanitizer_e2e.rs`) testando árvores de processos reais (`fork`, `setsid`, double-fork, zumbis, `SIGTERM`, minimização para tray e reconciliação pós-`SIGKILL` via `(pid, start_time)`) e varredura binária do arquivo SQLite, `-wal`, páginas livres (`freelist`), vocabulário FTS5, backups, logs e payload do botão `"Inspecionar"`.
 - **Suítes E2E Separadas (`CA-24`):** Configuração `e2e/frontend/` (Vite + IPC simulado declarado) e `e2e/wdio.conf.ts` + 6 specs nativas (`search`, `tabs`, `no-orphans`, `sanitizer`, `deeplink`, `tray`) sobre o binário real com `tauri-driver` + `WebKitWebDriver` + `xvfb-run`.
 - **Rastreabilidade e Pipelines de CI (`CA-22`, `CA-23`, `CA-28`, `CA-41`):** Manifesto `traceability-manifest.json`, validador `scripts/check-traceability.mjs` e workflows `.github/workflows/{ci.yml, audit.yml, bench.yml}`.
@@ -95,9 +95,7 @@ Em `src-tauri/capabilities/main.json`:
     "core:window:allow-minimize",
     "core:window:allow-toggle-maximize",
     "core:window:allow-close",
-    "autostart:allow-enable",
-    "autostart:allow-disable",
-    "autostart:allow-is-enabled",
+    "allow-os-integration",
     "maxterminal:allow-workspace-commands"
   ]
 }
@@ -107,18 +105,18 @@ Além do ACL declarativo do Tauri v2, todo comando sensível (`search_*`, `db_ba
 pub fn ensure_authorized_window(webview_window: &tauri::WebviewWindow) -> Result<SearchOwner, MtError> {
     if webview_window.label() != "main" {
         return Err(MtError::new(
-            "security.unauthorized_window",
+            ErrorCode::try_from("security.unauthorized_window").expect("código estático válido"),
             "Esta janela não possui permissão para executar esta operação.",
         ));
     }
     let url = webview_window.url().map_err(|_| {
-        MtError::new("security.invalid_origin", "Origem da janela inválida.")
+        MtError::new(ErrorCode::try_from("security.invalid_origin").expect("código estático válido"), "Origem da janela inválida.")
     })?;
     let valid_origin = matches!(url.scheme(), "tauri" | "http" | "https")
         && matches!(url.host_str(), Some("localhost") | Some("tauri.localhost") | None);
     if !valid_origin {
         return Err(MtError::new(
-            "security.unauthorized_origin",
+            ErrorCode::try_from("security.unauthorized_origin").expect("código estático válido"),
             "Origem não autorizada para invocar comandos nativos.",
         ));
     }
@@ -163,13 +161,15 @@ Cenários de fragmentação e persistência (`CA-26`):
 
 - **`bridge_hardening.rs` (`CA-33`):**
   1. Confirma que `local_addr().ip()` do listener é estritamente `127.0.0.1` (nunca `0.0.0.0` ou `::`).
-  2. Requisição HTTP/WS sem header `Authorization: Bearer <token>` ou com token inválido → `401 Unauthorized`.
-  3. Requisição com header `Host: evil.example.com` ou `Host: 127.0.0.1:9999` (porta divergente) → `421 Misdirected Request`.
+   2. Requisição `POST /v1/messages`/upgrade WS sem header `Authorization: Bearer <token>` ou com token inválido → `401 Unauthorized` (com Host/Origin válidos); `/v1/health` dispensa Bearer, mantendo Host/Origin.
+   3. Requisição com header `Host: evil.example.com`, porta divergente, Host ausente ou duplicado → `403 Forbidden` + `bridge.host_forbidden`. Testar positivamente `127.0.0.1:<porta>` e `localhost:<porta>` (D-04).
   4. Requisição com header `Origin: https://evil.example.com` → `403 Forbidden`.
   5. Payload acima do limite (ex.: > 256 KiB) → `413 Payload Too Large`.
 - **`deep_link_allowlist.rs` (`CA-34`):**
   1. Testa URIs fora das rotas permitidas (`maxterminal://exec?cmd=rm+-rf`, `maxterminal://open-project?path=/etc/../root`, caminhos fora de projetos cadastrados, bytes de controle/NUL).
-  2. Verifica que todas retornam `Err(MtError { code: "bridge.deeplink_rejected", .. })` e nenhuma ação colateral é disparada.
+   2. Conferir por camada: NUL/controle, escape percentual inválido e excesso de tamanho → `os.activation_invalid`; rota/parâmetro proibido ou desconhecido → `bridge.invalid_uri`; caminho inexistente/não absoluto → `bridge.invalid_path`; caminho existente sem projeto cadastrado → `bridge.project_not_found`; cwd fora do projeto/worktree verificada → `bridge.cwd_outside_project`. Não rejeitar `..` isoladamente: canonicalizar e testar o destino conforme `11/03`.
+   3. Exercitar o único `ActivationRouter` (09) → `ActivationHandler` (11), cold/warm start, repasse de `worktree`/`correlationId`, sem segundo listener e sem efeitos nas rejeições. Erros `BridgeError` viram `MtError` preservando seu código.
+   4. Em `capabilities_minimal.rs`, verificar a união efetiva de todas as capabilities: chamadas JS diretas de autostart/opener/deep-link/atalho continuam negadas; `os_get_autostart`/`os_set_autostart` funcionam somente na janela local autorizada. A consolidação de `main.json` preserva permissões próprias previamente registradas, inclusive `allow-os-integration`; o JSON acima é recorte, não substituto integral do ACL das fases anteriores.
 
 ---
 

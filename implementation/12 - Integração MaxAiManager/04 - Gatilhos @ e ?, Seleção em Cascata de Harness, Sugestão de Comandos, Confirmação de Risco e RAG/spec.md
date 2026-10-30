@@ -22,6 +22,7 @@ Esta quarta unidade entrega a experiência completa de **Comando por Linguagem N
 
 ### 2.1. Arquivos a Criar
 - `src/composables/ai/useAiTriggers.ts`
+- `src/terminal/triggers/providers/ai.ts` — definições dos providers `ai.at` e `ai.question` (D-09).
 - `src/composables/ai/useAiSuggestion.ts`
 - `src/composables/ai/useRagSearch.ts`
 - `src/components/ai/HarnessPicker.vue`
@@ -46,6 +47,12 @@ Esta quarta unidade entrega a experiência completa de **Comando por Linguagem N
 ## 3. Especificação Técnica Exaustiva
 
 ### 3.1. Composables de Gatilhos, Sugestão e RAG (`src/composables/ai/`)
+
+Os objetos `TriggerDefinition` de `@`/`?` e seus handlers ficam em
+`src/terminal/triggers/providers/ai.ts`, exportados como `aiAtTrigger` e `aiQuestionTrigger`.
+`useAiTriggers` importa diretamente esse módulo para registrar/desregistrar os providers, mantendo estado
+reativo da cascata nos composables. O barrel `providers/index.ts` nasce na Fase 14 e é estendido na 15;
+esta fase não depende desse arquivo futuro nem cria outro diretório de providers.
 
 #### `src/composables/ai/useAiTriggers.ts`
 ```ts
@@ -101,7 +108,7 @@ export function useAiSuggestion(paneId: PaneId, requestId?: AiRequestId): UseAiS
 - **Regras de negócio de `useAiSuggestion` (`CA-15`, `CA-16`, `CA-33`):**
   1. Enquanto `state.value?.status === 'pending' || state.value?.status === 'streaming'` ou enquanto uma edição estiver aguardando reclassificação (`editedRisk === null` após `editCommand`), `canExecuteOrInsert` é `false`.
   2. `insert()` chama `insertIntoInput(paneId, effectiveCommand.value)` que atualiza o texto da barra de entrada rica **sem** adicionar `\r` ou `\n` e **sem** chamar `writeToPty` (`CA-15`).
-  3. `requestExecute()` verifica `isStaleContext`: se a sessão ou o PTY do painel mudou desde que a sugestão foi gerada, bloqueia a execução e exibe o aviso `"O painel ou a sessão mudou. Gere uma nova sugestão."` (`AI_CONTEXT_STALE`). Caso o contexto seja válido:
+  3. `requestExecute()` verifica `isStaleContext`: se a sessão ou o PTY do painel mudou desde que a sugestão foi gerada, bloqueia a execução e exibe o aviso `"O painel ou a sessão mudou. Gere uma nova sugestão."` (`ai.context_stale`). Caso o contexto seja válido:
      - Se `effectiveRisk.value.level === 'safe'`: executa imediatamente chamando `confirmExecute()` (1 clique — `CA-16`).
      - Se `effectiveRisk.value.level === 'caution'`: o botão "Executar" no template usa `MaxPopoverConfirm` para confirmação rápida; ao confirmar, chama `confirmExecute()`.
      - Se `effectiveRisk.value.level === 'destructive'`: abre `DestructiveConfirm.vue` (`showDestructiveModal.value = true`), exigindo a digitação exata de `confirmToken` (ex.: `rm`) antes de chamar `confirmExecute()` (`CA-16`).

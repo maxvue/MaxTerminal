@@ -1,7 +1,9 @@
 # Relatório de Auditoria Técnica Independente — Especificações e Planos (`AUDIT_REPORT.md`)
 
 - **Projeto:** MaxTerminal (`~/GitHub/MaxTerminal`)
-- **Worktree Ativa:** `/home/johnattas/GitHub/MaxTerminal/.max-code-worktrees/wt-4afa22c6` (branch `wt-4afa22c6`)
+- **Worktree da auditoria original:** `wt-4afa22c6` (registro histórico; não utilizada na retomada).
+- **Worktree das correções:** `/home/johnattas/GitHub/MaxTerminal/.max-code-worktrees/wt-282bc802` (branch `wt-282bc802`).
+- **Baseline disponível na retomada:** `d6e53f6cad5b451ef666089ce9900ac6e1fea89c`. As referências de linha nos achados são históricas; consultar os arquivos dessa revisão com `git show <revisão>:<caminho>`, pois as correções deslocam as linhas. O hash exato usado pela auditoria original não foi registrado.
 - **Fonte Canônica da Verdade:** [`../AGENTS.md`](../AGENTS.md) e [`./README.md`](./README.md)
 - **Escopo Auditado:** 100% dos **205 arquivos** em `./implementation/*` (`README.md`, 17 `instructions.md`, 17 `spec.md` de fase, 85 `spec.md` de sub-implementação e 85 `plan.md` de sub-implementação).
 - **Metodologia:** Auditoria independente conduzida por **6 subagentes especializados em paralelo** (Fases 01–03, Fases 04/05/10, Fases 06–08, Fases 09/11/17, Fases 12–13, Fases 14–16) combinada com verificação estática transversal (migrations SQLite, contratos IPC/Specta, `tauri::State`, `mt-core`, `mt-db`, `mt-bridge`, `mt-ai`, `mt-commands`, `package.json` e `Cargo.toml`).
@@ -9,6 +11,8 @@
 ---
 
 ## Sumário Executivo
+
+> As seções de achados, matriz de conformidade e inventário abaixo registram o estado **anterior às correções**. O parecer ao final distingue decisões e alterações documentais aplicadas; não comprova implementação nem execução dos testes futuros.
 
 A arquitetura documentada nas 17 fases demonstra maturidade técnica elevada e cobre em profundidade os requisitos funcionais do [`AGENTS.md`](../AGENTS.md). Entretanto, como as 17 fases e suas 85 unidades de implementação foram detalhadas de forma distribuída, a auditoria cruzada identificou **divergências concretas de contratos entre fases, omissões normativas e incompatibilidades de pacotes/schemas** que causariam falhas imediatas de compilação (`cargo check`, `tsgo`, `npm ci`) ou falhas de integração em runtime se não forem saneadas antes ou durante a execução.
 
@@ -44,7 +48,7 @@ A arquitetura documentada nas 17 fases demonstra maturidade técnica elevada e c
 | **6. IA & Agentes CLI** | 4 Agentes CLI (`Claude Code`, `Codex`, `Antigravity (agy)`, `OpenCode`), Templates/Atalhos, isolamento em Worktree, `StatusLine` (modelo, contexto, cotas 5h/semanal), alerta de permissão com notificação nativa CachyOS, `MaxSkills` + memória contextual | 13 | ❌ Conflitos de Contrato | Arquitetura de `mt-agents` + sidecar `mt-agent-relay` completa, mas com conflito de constraint SQLite `'max_code'` vs `"maxCode"` (**T-15**), divergência de assinatura `TabStateRegistry::apply` com a Fase 05 (**T-16**), divergência de `SpawnContext`/`ResolvedSpawn` com a Fase 07 (**T-17**) e acoplamento de `agent_tab_open` impedindo reuso pela Fase 16 (**E-05**). |
 | **7. Integração `MaxCode` & Issues** | Loopback HTTP/WS (`127.0.0.1`) + URI Schemes (`vscode://johnattas.maxcode/...` e `maxterminal://...`), sync de projeto ativo, Shell Integration OSC 133 + `/proc` gerando botão "Inspecionar" com prompt exato em Plan Mode | 05, 11 | ⚠️ Parcial | Prompt `"Ao executar o comando \"${comando}\" tive o seguinte erro: \"${erro}\""` idêntico letra por letra e sanitizado (`11/03/spec.md`). Contudo, há conflito de HTTP `403` vs `421` e código `bridge.deeplink_rejected` com a Fase 17 (**C-04**) e duplicação do roteador de Deep Link com a Fase 09 (**E-04**). |
 | **7. Integração `MaxCode` & Issues** | Aba Fixa de Issues com as **24 labels canônicas** do MaxCode, ações 1-clique (`Abrir`, `BUG PLAN`, `BUG FIX`), abrir aba na worktree da issue, gestão local completa (`## PLANO DE IMPLEMENTAÇÃO`) e botão global "Corrigir todos os Bugs" | 11, 16 | ❌ Omissão e Quebra Crítica | 1) `16/spec.md` e `16/02/spec.md` omitem a lista literal das 24 labels canônicas, exigindo leitura externa de `~/GitHub/MaxCode/src/core/labelsDeBugs.ts` (**C-02**). 2) A Fase 11 (`mt-bridge`) suporta apenas `ConversationMode::Plan` e não implementa o protocolo para `BUG FIX` nem para `"Corrigir todos os Bugs"` que a Fase 16 invoca (**C-03**). |
-| **8. Comandos Rápidos (`>`, `>>`, `/`)** | Artisan `>` (`php artisan list --format=json` + cache `.max-code/commands/artisan.json`), filtro e flags `-`, opção final "Criar comando" com modal completo e 2 ações ("Criar" e "Criar com MaxCode": `"Criar comando artisan:\n${dados_formatados_do_formulario}"`) | 14 | ⚠️ Parcial | Cache compatível, modal e prompt MaxCode exatos em `14/01..05`. Ressalvas: `Schedule` não grava automaticamente quando `routes/console.php` já existe no Laravel 11/12 (**T-18**) e `artisanArgsTrigger` só ativa para 4 prefixos fixos de 3 caracteres (**T-19**). |
+| **8. Comandos Rápidos (`>`, `>>`, `/`)** | Artisan `>` (`php artisan list --format=json` + cache `.max-code/commands/artisan.json`), filtro e flags `-`, opção final "Criar comando" com modal completo e 2 ações ("Criar" e "Criar com MaxCode": `"Criar comando artisan:\n${dados_formatados_do_formulario}"`) | 14 | ⚠️ Parcial | Cache compatível, modal e prompt MaxCode exatos em `14/01..05`. Ressalvas: `Schedule` não grava automaticamente quando `routes/console.php` já existe no Laravel 11/12 (**T-18.1**) e `artisanArgsTrigger` só ativa para 4 prefixos fixos de 3 caracteres (**T-18.2**). |
 | **8. Comandos Rápidos (`>`, `>>`, `/`)** | Grupos `>>` (Locais antes de Globais, 3 modos: Sequencial, Paralelo em Background, Multi-Abas, e 2 opções finais: "Criar grupo de comandos local" e "Criar grupo de comandos global") e atalhos `/` (`composer`, `npm`, `pnpm`, `yarn`, `bun`, `cargo`) | 14, 15 | ⚠️ Conflito no Crate | Regras funcionais de `>>` e `/` completas, mas as Fases 14 e 15 colidem na definição do crate compartilhado `mt-commands` (`edition = "2021"` vs `"2024"`, `mt-db` sem features vs com SQLite, `QuickCommandsState` vs `AppCommandGroupState`) (**E-06**). |
 
 ---
@@ -445,9 +449,10 @@ A arquitetura documentada nas 17 fases demonstra maturidade técnica elevada e c
 
 ---
 
-## Inventário dos 205 Arquivos Auditados
+## Inventário dos 205 Documentos de Planejamento Auditados
 
-- `./AGENTS.md` (Fonte Canônica)
+Fonte normativa adicional, fora da contagem: `./AGENTS.md` (raiz do repositório).
+
 - `./implementation/README.md` (Roadmap e Contratos Compartilhados)
 - **Fase 01 (`01 - Setup e Fundação do Projeto`):** `instructions.md`, `spec.md` + 4 sub-implementações (`01` a `04`, cada uma com `spec.md` e `plan.md`) — 10 arquivos.
 - **Fase 02 (`02 - Core PTY e Supervisão de Processos`):** `instructions.md`, `spec.md` + 6 sub-implementações (`01` a `06`, cada uma com `spec.md` e `plan.md`) — 14 arquivos.
@@ -466,3 +471,111 @@ A arquitetura documentada nas 17 fases demonstra maturidade técnica elevada e c
 - **Fase 15 (`15 - Grupos de Comandos`):** `instructions.md`, `spec.md` + 5 sub-implementações (`01` a `05`, cada uma com `spec.md` e `plan.md`) — 12 arquivos.
 - **Fase 16 (`16 - Aba Fixa de GitHub Issues`):** `instructions.md`, `spec.md` + 6 sub-implementações (`01` a `06`, cada uma com `spec.md` e `plan.md`) — 14 arquivos.
 - **Fase 17 (`17 - Busca Global, Qualidade, Performance e Empacotamento`):** `instructions.md`, `spec.md` + 5 sub-implementações (`01` a `05`, cada uma com `spec.md` e `plan.md`) — 12 arquivos.
+
+---
+
+## Parecer da Arquitetura e Correções Aplicadas
+
+- **Data:** 2026-10-30 · **Responsável:** Arquitetura Principal do MaxTerminal (Passo 8)
+- **Método:** cada apontamento foi conferido contra os arquivos citados (amostragem por `grep` das migrations, versões Cargo, caminhos hardcoded, `notify`, contratos de `mt-core`) e contra fontes externas reais: `~/GitHub/MaxCode/src/core/labelsDeBugs.ts` (labels), API do crates.io (`rusqlite`/`r2d2_sqlite`/`libsqlite3-sys` e `sqlite3.h` empacotado) e registro npm (`@vitejs/plugin-vue`, `vitest`, `splitpanes`, `vue-web-terminal`).
+- **Regra de desempate:** quando duas fases divergem, prevalece o contrato da **fase proprietária** (README §3) e o **consumidor se adapta**, exceto nas decisões explícitas abaixo.
+
+### A. Classificação dos apontamentos
+
+Legenda: ✅ Pertinente (aplicar como proposto) · 🔧 Pertinente com ajuste (problema real, correção diferente da sugerida) · ❌ Descartado.
+
+| ID | Veredito | Decisão resumida |
+| :-- | :--: | :-- |
+| C-01 | ✅ | Confirmado (numeração mista `0006_12`/`0007_07`/`0015_15`/`0017_17`/`NNNN_*`). Adotar a tabela contígua **D-01**. `03/instructions.md` deixa de citar `0002_03_history`/`0003_03_history_fts`. |
+| C-02 | ✅ | Confirmado byte a byte com `labelsDeBugs.ts`. Catálogo literal **D-02** incorporado à Fase 16, mantendo a fixture versionada `labels.v1.json` e um teste de paridade com a fonte do MaxCode quando disponível. |
+| C-03 | 🔧 | Lacuna real. Em vez de a Fase 16 editar a 11 (proibido pelo DAG), cria-se a sub-implementação **`11/06`** (protocolo de issues e ciclo de bugs, **D-03**) como proposta de contrato a confirmar com o MaxCode (README §3.1). A Fase 16 só consome via `MaxCodePort`. |
+| C-04 | 🔧 | Conflitos reais. Fase 11 é proprietária: `Host` inválido → **403** `bridge.host_forbidden` (**D-04**). Fase 17 alinha testes aos códigos reais (`os.activation_invalid`, `bridge.invalid_uri`, `bridge.invalid_path`); `bridge.deeplink_rejected` é eliminado. `autostart:allow-*` removido da WebView. |
+| C-05 | ✅ | Padronizar `artisan.command.v1` e a assinatura de `useAiGenerate` da Fase 12 (**D-05**); Fase 14 fornece `decode` e trata retorno `null`. Alias sem `.v1` ❌ descartado (dívida silenciosa). |
+| C-06 | ✅ | `command-group.suggestion.v1` nas Fases 12 e 15; uso exclusivo de `AiService::generate_structured`; detalhar `TauriGroupAiAdapter`/`TauriRecurringCommandsAdapter` em `15/03`. |
+| C-07 | 🔧 | Conflito confirmado (`rusqlite 0.34` + `r2d2_sqlite 0.27`). **Rejeitada** a sugestão de rebaixar o piso para SQLite 3.45 (remove a proteção do WAL-reset). Adotar **D-06**: `rusqlite 0.40` + `r2d2_sqlite 0.35` (SQLite empacotado 3.53.x) e verificação `>= 3051003`. |
+| C-08 | ✅ | `02/01` passa a seguir `02/spec.md` §7.6: app/watchdog nunca são movidos; cargas em escopo delegado próprio; degradação para `CgroupDriver::Disabled`. |
+| C-09 | 🔧 | Integração do `VueWebTerminalAdapter` ao pipeline de blocos é pertinente. **Descartado** o `overrides` de `vue-web-terminal`: a versão 3.4.2 não declara peer de `vue`; só adicionar `overrides` se `npm ci` provar conflito. |
+| C-10 | ✅ | `10/04` usa os 5 campos de `TerminalTheme.ui`; `theme.ui` exposto como variáveis CSS por painel em `.hybrid-terminal` (`04/02` / `04/06`). |
+| C-11 | ✅ | Consumidor (07) adota a assinatura da Fase 06: `after_insert(&self, tx, project: &StoredProject) -> Result<(), DbError>`. |
+| C-12 | ✅ | `WorkspaceManager` guarda `Arc<ProjectService>` e adquire `acquire_activity(project_id)` apenas durante a operação. |
+| C-13 | ✅ | `WorkspaceManager` expõe `pane_pty(tab_id, pane_id) -> Option<PtyId>`; Fase 08 usa `WorkspaceLifecycleObserver` (nome da 07) e injeta `Arc<WorkspaceManager>` em `PtyProcessTreeAdapter`/`git_track_pane`. A 07 também define `WorkspaceSpawnHook`/`WorkspaceSpawnGuard`; a 08 adapta a reserva de cwd, mantida até registro ou compensação, sem depender do observador pós-spawn. |
+| C-14 | ✅ | `OpenAiCompatDialect::default()` inicia com capacidades pendentes de probe; `all_validated()` só em `for_tests()`. |
+| T-01 | 🔧 | Real. Fixar `@vitejs/plugin-vue` `6.0.10` e `vitest` `5.0.5` (peers aceitam `vite@8` e `vue@3.6.0-rc`), sem `--legacy-peer-deps` nem `overrides`. |
+| T-02 | ✅ | `splitpanes` `4.1.2` adicionado na Fase 01 (dependência do layout). `@types/splitpanes` ❌ descartado (pacote já tipado). |
+| T-03 | ✅ | `01/spec.md` alinhado ao template de `01/04` (conteúdo em linha própria). |
+| T-04 | ✅ | Uso canônico **D-07**; códigos da Fase 12 em `ai.<motivo>` minúsculo. |
+| T-05 | ✅ | Assinatura canônica de 1 parâmetro `redact<'a>(&self, input: &'a str) -> Cow<'a, str>` (maioria e fase consumidora 03); `01/02` corrigido. |
+| T-06 | 🔧 | Real. Especificar contrato explícito: `BinaryPtyFrame` não é tipo Specta de payload JSON; o canal envia `InvokeResponseBody::Raw` e o TS recebe `ArrayBuffer` via tipo declarado manualmente e documentado como exceção única à regra de bindings. O marcador Specta é proposta, não solução compilada: gate Rust/exportador antes de 02/06 e TS/WebView antes do aceite conjunto. T-06/CA-35 permanece aberto tecnicamente até essas provas. |
+| T-07 | ✅ | Em modo `/proc`, saída do PTY com `exit_code != 0` finaliza o bloco ativo como `Failed`, habilitando "Inspecionar". |
+| T-08 | ✅ | `{ items: [], passthrough: true }`; `LigaturesAddon` descartado via `WeakMap<Terminal, IDisposable>`. |
+| T-09 | ✅ | Fase 07 chama `detachTab(tabId)` (contrato da 06). |
+| T-10 | ✅ | `mdi:source-commit`; `08/spec.md` inclui `pty_id: Option<PtyId>` em `track_pane`. |
+| T-11 | ✅ | Nomes únicos `truncate_utf8_prefix`/`truncate_utf8_suffix`; assinaturas de `open_plan`/`BridgeHost` da sub-spec prevalecem; DTOs com `#[serde(rename_all = "camelCase")]`. |
+| T-12 | ✅ | Autostart pertence à Fase 09 (`os_get_autostart`/`os_set_autostart`, `--start-hidden`). Fase 17 apenas empacota e valida. |
+| T-13 | ✅ | Fase 11 (`11/04`) implementa e registra `EditorOpener` via `EditorLauncher::set_bridge_opener`. |
+| T-14 | 🔧 | Itens 1 e 3 pertinentes (`prepare_suggest`/`run_suggest_stream` definidos em `12/02`; props de `InlineDiagnosis` com `paneId`). Item 2: `todo!()` em spec não é defeito em si, mas é substituído por descrição do comportamento esperado. |
+| T-15 | ✅ | `WorktreeLocationDto` com `as_db_str()`/`from_db_str()` (`"max_code"`), sem depender do Serde para o banco. |
+| T-16 | 🔧 | `TabStatePort` (13) repassa `RuntimeBinding` completo exigido pela Fase 05. Ajuste da evidência histórica: o binding tem quatro campos (`tab_id`, `pane_id`, `pty_id`, `session_id`); `generation` pertence a `ExecutionRef`, não ao binding. |
+| T-17 | ✅ | `AgentResolver` (13) usa os campos reais de `ResolvedSpawn`/`SpawnContext` da Fase 07. |
+| T-18 | 🔧 | (1) Pertinente: inserção idempotente em `routes/console.php` existente, com bloco delimitado e pré-visualização/confirmação. (2) Pertinente: detecção por tokens (`php artisan`, `./artisan`, `sail artisan`, `./vendor/bin/sail artisan`) em vez de 4 prefixos de 3 caracteres. (3) Pertinente: fachada `mt_db::Db`. (4) Documentar como limitação: com `;` sem OSC 133, o resultado dos comandos intermediários é `unknown`, nunca "sucesso". |
+| E-01 | ✅ | `07/03` não referencia `ScrollbackRecorder`; o campo e o `pub mod recorder` entram em `07/04`. |
+| E-02 | ✅ | Tipos de PTY importados de `mt_pty`; `TabSessionId` adicionado ao `define_id!` de `01/01`. |
+| E-03 | ✅ | `lint:style`/`typecheck:vue` em `01/03` ficam tolerantes a ausência de arquivos ou movidos para a verificação de `01/04`. |
+| E-04 | ✅ | Um único listener de deep link (Fase 09). A Fase 11 implementa `ActivationHandler`; o parser da 09 repassa query params validados (`worktree`, `correlationId`). |
+| E-05 | ✅ | Extração **D-08** do serviço de abertura de aba de agente. |
+| E-06 | 🔧 | Real. Regras **D-09**: `edition.workspace = true`, registro de estado por `app.manage(...)` por domínio (o `AppState` da 01 não agrega serviços), providers em `src/terminal/triggers/providers/`. |
+| E-07 | ✅ | Caminhos canônicos: `src/components/shell/AppTitleBar.vue` e `src/components/terminal/__dev__/TerminalPlayground.vue`. |
+| E-08 | 🔧 | Real. **Descartados** os aliases `check-types`/`typecheck:tsgo` (multiplicam nomes); padronizar os `plan.md` em `npm run typecheck`, `cargo run --bin export_bindings`, `npm`/`npx --no-install`; adicionar `default-run = "maxterminal"`. |
+| E-09 | 🔧 | Real. Vitest passa a incluir `tests/**/*.spec.ts` e `src/**/__tests__/**/*.spec.ts`; `src/tests/` (Fase 13) migra para `tests/`. |
+| E-10 | ✅ | `notify = "8"` e `notify-debouncer-full = "0.5"` em `[workspace.dependencies]`; crates usam `workspace = true`. |
+| E-11 | ✅ | Confirmado em 25 planos na baseline `d6e53f6` (`git grep -l wt-6f18b3d0 d6e53f6 -- 'implementation/**/plan.md'`); a contagem herdada de 26 não se confirmou. Substituir caminhos absolutos por comandos relativos à raiz da worktree ativa (`cd "$(git rev-parse --show-toplevel)"`). |
+
+**Descartes consolidados:** rebaixamento do piso SQLite para 3.45 (C-07); `overrides` de `vue-web-terminal` (C-09); alias de `schemaId` sem versão (C-05); aliases de scripts npm (E-08); `@types/splitpanes` (T-02); tratar `todo!()` em spec como defeito bloqueante (T-14.2). Nenhum apontamento foi considerado falso positivo integral.
+
+### B. Decisões canônicas transversais
+
+- **D-01 — Migrations contíguas:** `0001_03_base` · `0002_05_shell_sessions_command_blocks` · `0003_06_projects` · `0004_07_workspace_templates_tabs_sessions` · `0005_09_os_settings` · `0006_10_themes` · `0007_12_ai` · `0008_13_agents_skills_memory` · `0009_15_command_groups` · `0010_16_github` · `0011_17_search` (todas `.sql` em `src-tauri/crates/mt-db/migrations/`). Placeholders `NNNN_` são proibidos.
+- **D-02 — 24 labels MaxCode (grafia exata):** estado (15): `Waiting Plan`, `Waiting More Info`, `Planned`, `Waiting Execute`, `Executed`, `Waiting Check`, `Checked Approved`, `Checked Rejected`, `Waiting Re-plan`, `Fix Merged`, `Waiting Deploy`, `Deployed`, `Waiting user test`, `User Rejected`, `User Approved`; encerramento (3): `Duplicated`, `Evidence not Found`, `Dismissed`; categoria (6): `Regra de Negocio`, `Testes`, `Desempenho`, `Seguranca`, `Audit`, `Documentacao`.
+- **D-03 — Protocolo de issues (`11/06`, proposta a confirmar):** mensagens WS `issue.command` (`action: "open" | "plan" | "fix"`, `repo`, `issueNumber`, `projectPath`, `worktree?`, `correlationId`), `bugs.cycle.preview`, `bugs.cycle.start`, `bugs.cycle.status` e evento `bugs.cycle.progress`; capabilities `issues_protocol_v1` e `bugs_cycle_v1` anunciadas no handshake; fallback URI `vscode://johnattas.maxcode/issue?action=<open|plan|fix>&repo=…&number=…`; métodos `MaxCodeClient::{send_issue_command, bugs_cycle_preview, bugs_cycle_start, bugs_cycle_status}`. Sem capability → ação desabilitada com motivo exibido, nunca simulada.
+- **D-04 — Loopback:** `Host` aceito: `127.0.0.1:<port>` e `localhost:<port>`; qualquer outro → `403` + `bridge.host_forbidden`.
+- **D-05 — Geração assistida (frontend):** `useAiGenerate<T>(schemaId, schema, decode)`; `run(prompt, opts?: AiGenerateRunOptions)` → `Promise<T | null>`; `AiGenerateRunOptions` inclui `signal?: AbortSignal`. Schemas: `artisan.command.v1`, `command-group.suggestion.v1`.
+- **D-06 — SQLite/Cargo:** `rusqlite = { version = "0.40", features = ["bundled", …] }`, `r2d2_sqlite = "0.35"` (ambos via `[workspace.dependencies]`); invariante `cargo tree -d` sem `libsqlite3-sys` duplicado; `verify_sqlite_capabilities` exige `sqlite_version_number() >= 3051003`.
+- **D-07 — Erros:** `MtError::new(ErrorCode("dominio.motivo"), "mensagem pt-BR").with_details(json!(…))`; códigos sempre `^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$`.
+- **D-08 — Abertura de aba de agente:** `AppAgentState::open_agent_tab(&self, req: AgentTabOpenRequest) -> MtResult<AgentTabOpened>`; o comando `agent_tab_open` apenas delega; a Fase 16 consome esse método no adaptador de `AgentPort`.
+- **D-09 — Estrutura:** `edition.workspace = true` (2024) em todos os crates; `mt-commands` nasce na 14 com `mt-db = { workspace = true }` e a 15 apenas acrescenta dependências; cada domínio registra seu estado com `app.manage(...)`; providers de gatilhos em `src/terminal/triggers/providers/` com `index.ts` criado na Fase 14 e estendido na 15; acesso ao banco pela fachada `mt_db::Db`.
+- **D-10 — Frontend/tooling:** `@vitejs/plugin-vue` `6.0.10`, `vitest` `5.0.5`, `splitpanes` `4.1.2`; scripts canônicos `typecheck`, `typecheck:vue`, `lint`, `lint:style`, `test`; Vitest com os dois globs de E-09.
+
+### C. Correções aplicadas
+
+#### Consolidação transversal
+
+- `README.md` incorpora os contratos D-01 a D-10, a tabela de migrations, `TabSessionId`, a exceção binária e o gate T-06, os caminhos e scripts canônicos, e a responsabilidade de 11/06 perante a Fase 16.
+- A matriz e os achados originais foram preservados como histórico. Corrigidos o localizador da worktree ativa, a referência inexistente T-19 (agora T-18.2), a contagem herdada de E-11 e a separação de `AGENTS.md` do inventário de planejamento.
+
+#### Verificações documentais
+
+| Grupo | Correções documentais conferidas |
+|---|---|
+| 01–03 | IDs, erros/redação de logs, tooling, globs Vitest, dependências SQLite, migrations e contenção cgroup. T-06 recebeu gate explícito, mantendo a comprovação técnica pendente. |
+| 04/05/10 | Pipeline de blocos com adaptador, tema isolado por painel, descarte de ligaduras, conclusão de falhas em modo `/proc`, completion e caminhos/scripts. |
+| 06–08 | Contribuição de template padrão, lease de projeto, imports de PTY, lifecycle/ownership, reserva pré-spawn com compensação, assinaturas de Git e detach de abas. |
+| 09/11/17 | Listener único de deep link, abertura de editor via bridge, autostart exclusivo da 09, HTTP/erros/ACL, migrations e nova 11/06 com protocolo tipado de issues/ciclo de bugs. |
+| 12–13 | Geração assistida e cancelamento, schemas versionados, capacidades pendentes, estados por domínio, binding/execução, spawn de agentes, serviço de abertura reutilizável e memória com `now_ms`. |
+| 14–16 | Catálogo literal de 24 labels, geração/decodificação assistida, adaptadores, agendamento, gatilhos, limites da memória, fachada de banco, migrations e consumo da bridge proprietária. |
+
+- README: **17 fases e 59 arestas**, incluindo 09 → 10, 10 → 12, 13 → 15 e 15 → 16 para garantir as migrations anteriores; equivalência entre tabela e diagrama, sem ciclos.
+- Migrations: **11 nomes contíguos**, idênticos e na mesma ordem entre README e D-01.
+- Parecer: **43 decisões únicas**, cobrindo C-01–C-14, T-01–T-18 e E-01–E-11, sem IDs ausentes.
+- Links locais explícitos de README e relatório: destinos existentes.
+- As duas specs proprietárias do catálogo da Fase 16 contêm as **24 labels literais**, preservando caixa e grafia de D-02.
+- Conferência final de **207 documentos de planejamento e 86 subetapas** (205/85 originais mais `spec.md` e `plan.md` da 11/06). O relatório não entra nessa contagem.
+- Busca transversal sem resíduos dos padrões obsoletos verificados: migrations concretas antigas, APIs `DatabasePool`/`DatabaseHandle`/`mt_core::pty`, scripts divergentes, caminhos da worktree antiga, `bridge.deeplink_rejected` e autostart duplicado. As evidências históricas deste relatório foram excluídas da busca.
+- Cercas de código balanceadas nos 207 documentos; `git diff --check` aprovado. Alterações restritas a Markdown em `implementation/`: 172 arquivos rastreados e dois novos.
+- Revisão cruzada final: 11/06 e 16/03 concordam sobre UUID estável, correlação, capabilities, ausência de ACK e progresso recebido da sessão autenticada; não pressupõem assinatura criptográfica de payload. A consulta de memória em 15/03 respeita o teto 50 e `now_ms` da Fase 13.
+
+### D. Limites da validação documental
+
+- O repositório nesta revisão contém o planejamento, sem `package.json` nem `src-tauri/Cargo.toml` executáveis. Comandos de build, testes Rust/Vitest, transporte binário e benchmarks descritos nas fases são critérios para a implementação futura, não resultados desta rodada.
+- O protocolo de issues/ciclo de bugs da 11/06 permanece proposta a confirmar com o MaxCode. Capabilities ausentes devem produzir indisponibilidade explícita; o planejamento não comprova suporte no sistema externo.
+- As decisões de versões de dependências são contratos do parecer; a implementação ainda deve validar resolução de lockfiles, exports das bibliotecas locais e compatibilidade no ambiente real.
+- A revisão documental verifica coerência de nomes, assinaturas e responsabilidades. Ela não substitui os gates de integração nativa descritos em cada fase, especialmente o spike de Channel binário/Specta da 02.

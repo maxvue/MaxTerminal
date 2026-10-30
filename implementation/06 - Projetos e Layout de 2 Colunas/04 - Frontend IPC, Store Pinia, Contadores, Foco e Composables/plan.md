@@ -56,8 +56,10 @@
 ## 2. Comandos de Verificação
 
 ```bash
+cd "$(git rev-parse --show-toplevel)"
+
 # Verificar tipagem estrita TypeScript com tsgo
-npm run check-types
+npm run typecheck
 
 # Executar os testes unitários Vitest dos stores e composables de projetos
 npx --no-install vitest run tests/frontend/projects/projects.store.spec.ts tests/frontend/projects/useProjectTabFocus.spec.ts tests/frontend/projects/useProjectEvents.spec.ts tests/frontend/projects/useLayoutPersistence.spec.ts

@@ -24,7 +24,7 @@
    - Conectar o elemento `hostRef` ao `terminalInstanceRegistry.getOrCreate(...)`.
    - Usar `markRaw` para armazenar o `TerminalInstanceHandle` em `ShallowRef`.
    - Chamar `attach(host)` em `onMounted` e `detach()` em `onBeforeUnmount` (sem chamar `dispose`).
-   - Sincronizar callbacks do `TerminalInstance` (`onDimensionsChange`, `onRendererChange`, `onModesChange`, `onTitleChange`, `onFlowStateChange`, `onExit`) com `terminalStore.patch(paneId, ...)`.
+   - Sincronizar callbacks do `TerminalInstance` (`onDimensionsChange`, `onRendererChange`, `onModesChange`, `onTitleChange`, `onFlowStateChange`, `onThemeChange` → `themeUi`, `onExit`) com `terminalStore.patch(paneId, ...)`.
 2. Criar `src/composables/terminal/useTerminalSearch.ts`:
    - Conectar `searchAddon` da instância no registry ao estado `search` do `useTerminalStore`.
    - Resolver tokens CSS `--max-warning-*` e `--max-primary-*` em cores `#RRGGBB` para as decorações do `SearchAddon`.

@@ -3,8 +3,10 @@
 ## 1. Arquitetura e limites
 
 Referências: [instruções](./instructions.md), [contratos comuns](../README.md), AGENTS.md §8.2 e §5.1.
-Dependências diretas: **07, 12 e 14**; PTYs (02), persistência (03), input (04), shell integration (05) e
-projetos (06) são infraestrutura anterior. Memória (13) é opcional. Nenhuma API das Fases 16/17 é necessária.
+Dependências diretas: **07, 12, 13 e 14**; PTYs (02), persistência (03), input (04), shell integration (05) e
+projetos (06) são infraestrutura anterior. A Fase 13 é pré-requisito de persistência: `0008_13_agents_skills_memory.sql`
+precede obrigatoriamente `0009_15_command_groups.sql` (D-01). O serviço de memória permanece opcional, sem acoplamento
+obrigatório para CRUD/execução/IA. Nenhuma API das Fases 16/17 é necessária.
 
 Fluxo: `>> → store → IPC → CommandGroupService → snapshot SQLite → runner → PTY/WorkspaceManager`.
 Eventos pequenos atualizam a store; saída usa Channel limitado. O backend mantém a execução mesmo se o painel Vue
@@ -24,7 +26,8 @@ crate de domínio no crate binário. Não criar uma segunda infraestrutura de su
 | 05 | PromptStart, início/fim de bloco, exit code, shell do painel, `TabStatus` | `GroupShellPort` correlaciona `(PtyId, SessionId, CommandBlockId, geração)`; status visual não prova prompt disponível. |
 | 06 | Projeto e raiz resolvida, remoção de projeto | Validação de escopo/cwd e hook que encerra recursos antes do cascade. |
 | 07 | `TabOpenRequest`, `TabOpenOverrides`, `WorkspaceManager::{open_tab,close_tab,restart_pane}`, templates, sessões, observadores | `GroupTabPort`; abertura interna pelo mesmo serviço usado por `tab_open`, sem frontend como coordenador. |
-| 12 | `StructuredRequest/Response`, `AiService.structured.generate`, registro de requisições/cancelamento | `GroupAiPort`; schema `command-group.suggestion`, sem presumir `AiClient::generate_structured`. |
+| 12 | `StructuredRequest/Response`, `AiService::generate_structured`, registro de requisições/cancelamento | `GroupAiPort`; schema `command-group.suggestion.v1`; adaptador usa exclusivamente o método público do serviço. |
+| 13 | Migration `0008_13_agents_skills_memory.sql` obrigatória; `CommandMemory::suggestions(&query, now_ms)` opcional | Contiguidade D-01; `RecurringCommandsSource` só é registrado se a fonte estiver habilitada. |
 | 14 | Crate `mt-commands`, provider Artisan e utilitário fuzzy quando exportado | Registrar `>>` com precedência; não alterar parsing Artisan nem duplicar catálogo. |
 
 Portas `GroupPtyPort`, `GroupShellPort`, `GroupTabPort`, `GroupAiPort` e `RecurringCommandsSource` são interfaces
@@ -172,6 +175,8 @@ Não usar `commands.join(' && ')`: além dos dialetos, comentários, pipelines e
 `unsupported_shell`. `env -C` ausente bloqueia somente o caminho que precisa dele; não simular isolamento fish
 com `begin; cd ...; ...; cd -; end`, que altera o estado do pai e falha sob saída precoce.
 
+**Limitação de observabilidade (T-18):** sem OSC 133 confiável, uma linha `cmd1 ; cmd2` só revela o exit do último comando; os resultados intermediários são `unknown`, nunca sucesso presumido. Esta fase recusa a fila sequencial rastreada com `commands.group.tracking_unavailable` e oferece Multi-Abas; não implementa fallback concatenado que marque todos os itens como `succeeded`. Se a cadeia for digitada manualmente em um único item, apenas o resultado da linha completa é conhecido, sem fabricar resultados internos.
+
 ### 4.2. Paralelo em background
 
 `ParallelRunner` mantém fila FIFO e semáforo **global** de 16 PTYs de grupos (não 16 por execução). Ao obter vaga,
@@ -247,7 +252,7 @@ instantaneamente qualquer processo: a limpeza de órfãos é responsabilidade do
 
 ## 5. Persistência SQL e índices
 
-Migration `NNNN_15_command_groups.sql` (próximo número livre). Abaixo, DDL base; timestamps são epoch ms,
+Migration `0009_15_command_groups.sql` (versão 9 da sequência contígua D-01). Abaixo, DDL base; timestamps são epoch ms,
 ids TEXT UUID. `snapshot_json` e `env_json` são armazenamento de DTOs validados, **não protocolo de execução**.
 JSON é desserializado estritamente com limites antes de uso. Todas as consultas usam parâmetros vinculados.
 
@@ -519,8 +524,8 @@ de toasts. Nenhum comando é disparado por watcher de campo, montagem de compone
 
 ### 10.1. IA via Fase 12
 
-`command_group_suggest` registra `AiRequestId` na Fase 12 e chama `StructuredGenerator::generate` com
-`schema_id = command-group.suggestion`, schema fechado de `CommandGroupInput` sem ids/campos de execução,
+`command_group_suggest` delega ao `TauriGroupAiAdapter`, que chama `AiService::generate_structured` (o serviço da Fase 12 registra `AiRequestId`) com
+`schema_id = command-group.suggestion.v1`, schema fechado de `CommandGroupInput` sem ids/campos de execução,
 objetivo em pt-BR e contexto sanitizado do projeto/shell. Escopo/projeto vêm do editor, não do modelo. Saída
 deve respeitar 1–50 itens, modos, labels, limites de cwd/env e o mesmo validador do CRUD. Nenhum campo arbitrário
 de JSON pode selecionar um executável/API interna ou injetar um run.

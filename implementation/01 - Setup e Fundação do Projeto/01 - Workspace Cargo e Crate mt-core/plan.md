@@ -22,19 +22,19 @@
 - [ ] **1.3.** Criar `src-tauri/rust-toolchain.toml` e `src-tauri/rustfmt.toml` conforme especificado em `./spec.md` §2.3 e §2.4.
 
 ### Passo 2 — Manifesto do Workspace Cargo
-- [ ] **2.1.** Criar `src-tauri/Cargo.toml` definindo `[workspace]` com `resolver = "3"` e `members = [".", "crates/mt-core"]`, `[workspace.package]`, `[workspace.dependencies]` e `[workspace.lints]` (`unsafe_code = "forbid"`, `unwrap_used = "deny"`).
-- [ ] **2.2.** Criar `src-tauri/crates/mt-core/Cargo.toml` herdando metadados e lints do workspace (`publish = false`) e dependendo exclusivamente de `serde`, `serde_json`, `thiserror`, `uuid` e `specta` (sem `tauri`).
+- [ ] **2.1.** Criar `src-tauri/Cargo.toml` definindo `[workspace]` com `resolver = "3"` e `members = [".", "crates/mt-core"]`, `[workspace.package]`, `[workspace.dependencies]` (incluindo `notify = "8"` e `notify-debouncer-full = "0.5"`, consumidos por `workspace = true`) e `[workspace.lints]` (`unsafe_code = "forbid"`, `unwrap_used = "deny"`); declarar `default-run = "maxterminal"` no `[package]` raiz.
+- [ ] **2.2.** Criar `src-tauri/crates/mt-core/Cargo.toml` herdando metadados, `edition.workspace = true` e lints do workspace (`publish = false`; todo crate futuro também usa `edition.workspace = true`) e dependendo exclusivamente de `serde`, `serde_json`, `thiserror`, `uuid` e `specta` (sem `tauri`).
 - [ ] **2.3.** Caso `src-tauri/src/lib.rs` e `src-tauri/src/main.rs` ainda não existam (implementados definitivamente na Implementação 02), criar um entrypoint mínimo provisório em `src-tauri/src/lib.rs` (`//! Biblioteca principal do MaxTerminal.`) e `src-tauri/src/main.rs` (`fn main() {}`) mais `src-tauri/build.rs` mínimo apenas se necessário para validar a compilação isolada de `mt-core` antes da Implementação 02.
 
 ### Passo 3 — Implementação dos Módulos de `mt-core`
 - [ ] **3.1.** Implementar `src-tauri/crates/mt-core/src/error.rs` com `ErrorCode`, `pub mod codes` (9 constantes `core.*`), `MtError`, `MtResult<T>`, construtores semânticos (`new`, `with_details`, `with_source`, `internal`, `not_found`, `invalid_argument`, `unsupported`) e conversões `From<std::io::Error>` e `From<serde_json::Error>`.
-- [ ] **3.2.** Implementar `src-tauri/crates/mt-core/src/ids.rs` com a macro `define_id!` gerando `ProjectId`, `TabId`, `PaneId`, `PtyId`, `SessionId`, `TemplateId`, `CommandBlockId` e `CommandGroupId` com validação de UUID v7 em `try_from_uuid`, `TryFrom<Uuid>`, `FromStr` e `Deserialize`.
+- [ ] **3.2.** Implementar `src-tauri/crates/mt-core/src/ids.rs` com a macro `define_id!` gerando `ProjectId`, `TabId`, `PaneId`, `PtyId`, `SessionId`, `TabSessionId`, `TemplateId`, `CommandBlockId` e `CommandGroupId` com validação de UUID v7 em `try_from_uuid`, `TryFrom<Uuid>`, `FromStr` e `Deserialize`.
 - [ ] **3.3.** Implementar `src-tauri/crates/mt-core/src/paths.rs` com `EnvSource`, `SystemEnv`, `AppPaths::resolve`, `AppPaths::ensure_dirs` (criando diretórios com modo `0o700` sem criar `db_path`) e `AppPathsDto`.
 - [ ] **3.4.** Implementar `src-tauri/crates/mt-core/src/app.rs` com `BuildProfile`, `AppInfo` e `FrontendLogEvent` (`as_str` e `static_message`).
 - [ ] **3.5.** Implementar `src-tauri/crates/mt-core/src/lib.rs` exportando `app`, `error`, `ids`, `paths` e re-exportando `ErrorCode`, `MtError`, `MtResult`.
 
 ### Passo 4 — Testes Unitários de `mt-core`
-- [ ] **4.1.** Adicionar módulo `#[cfg(test)] mod tests` em `ids.rs` cobrindo roundtrip dos 8 IDs, rejeição de UUID nil/v4/texto inválido/JSON não-string e ordenação temporal entre timestamps distintos.
+- [ ] **4.1.** Adicionar módulo `#[cfg(test)] mod tests` em `ids.rs` cobrindo roundtrip dos 9 IDs, rejeição de UUID nil/v4/texto inválido/JSON não-string e ordenação temporal entre timestamps distintos.
 - [ ] **4.2.** Adicionar módulo `#[cfg(test)] mod tests` em `error.rs` cobrindo contrato JSON de `MtError`, omissão de `details` quando `None`, omissão estrita de `source` no JSON e mapeamentos de `io::Error` e `serde_json::Error`.
 - [ ] **4.3.** Adicionar módulo `#[cfg(test)] mod tests` em `paths.rs` usando `FakeEnv` (em memória, sem `std::env::set_var`) cobrindo `HOME`, `XDG_*_HOME` absolutos/relativos/vazios, ausência de `HOME`, override `MAXTERMINAL_HOME`, permissões `0o700` em diretório temporário da worktree e verificação de que `maxterminal.db` não é criado.
 - [ ] **4.4.** Adicionar módulo `#[cfg(test)] mod tests` em `app.rs` validando serialização/desserialização de `FrontendLogEvent`, `BuildProfile` e `AppInfo`.

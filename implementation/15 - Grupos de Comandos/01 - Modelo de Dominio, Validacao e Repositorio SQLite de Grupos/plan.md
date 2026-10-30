@@ -2,8 +2,8 @@
 
 ## 1. Checklist Sequencial de Implementação
 
-- [ ] **Passo 1: Criar a Migration SQLite (`0015_15_command_groups.sql`)**
-  1. Inspecionar `src-tauri/crates/mt-db/migrations/` para confirmar o próximo número sequencial livre (`NNNN_15_command_groups.sql`).
+- [ ] **Passo 1: Criar a Migration SQLite (`0009_15_command_groups.sql`)**
+  1. Conferir a sequência contígua D-01 em `src-tauri/crates/mt-db/migrations/`: esta fase usa a versão 9 após `0008_13_agents_skills_memory.sql`; não escolher um prefixo dinamicamente.
   2. Criar o arquivo SQL contendo as 5 tabelas (`command_groups`, `command_group_labels`, `command_group_items`, `command_group_runs`, `command_group_run_items`), todas as constraints `CHECK`, chaves estrangeiras (`ON DELETE CASCADE` e `ON DELETE SET NULL`) e todos os índices definidos na seção 3 da `spec.md`.
   3. Registrar a migration no catálogo de migrations do `mt-db` (caso o crate utilize lista explícita de migrations embutidas).
 
@@ -46,9 +46,10 @@
 
 ## 2. Comandos Exatos de Verificação
 
-Execute os comandos abaixo a partir de `/home/johnattas/GitHub/MaxTerminal/.max-code-worktrees/wt-6f18b3d0/src-tauri`:
+Execute os comandos abaixo a partir de a raiz da worktree ativa:
 
 ```bash
+cd "$(git rev-parse --show-toplevel)/src-tauri"
 cargo fmt --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test -p mt-db

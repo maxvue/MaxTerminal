@@ -8,13 +8,13 @@
 
 ## 1. Contexto, Objetivo e Escopo
 
-Esta segunda implementação constrói o submódulo `mt-commands::artisan::generator`, responsável por validar o formulário do modal "Criar comando", exportar o JSON Schema Draft 2020-12 para a Geração Assistida por IA (Fase 12), montar a signature do Symfony Console, resolver o namespace PSR-4 a partir do `composer.json`, renderizar de forma determinística o arquivo PHP `app/Console/Commands/<Classe>.php`, planejar/aplicar o agendamento (`Schedule`) em `routes/console.php` (ou gerar instruções manuais em layouts legados/existentes) e formatar o prompt exato para o Plan Mode do MaxCode (`"Criar comando artisan:\n${dados_formatados_do_formulario}"`).
+Esta segunda implementação constrói o submódulo `mt-commands::artisan::generator`, responsável por validar o formulário do modal "Criar comando", exportar o JSON Schema Draft 2020-12 para a Geração Assistida por IA (Fase 12), montar a signature do Symfony Console, resolver o namespace PSR-4 a partir do `composer.json`, renderizar de forma determinística o arquivo PHP `app/Console/Commands/<Classe>.php`, planejar/aplicar o agendamento (`Schedule`) em `routes/console.php` novo ou existente (instruções manuais apenas em layouts legados/ambíguos) e formatar o prompt exato para o Plan Mode do MaxCode (`"Criar comando artisan:\n${dados_formatados_do_formulario}"`).
 
 ### 1.1. Objetivos Específicos
 1. Definir o modelo de formulário `ArtisanCommandForm` e tipos associados (`ArtisanParam`, `ParamKind`, `ScheduleSpec`, `ScheduleOption`, `ScheduleFrequency`, `ValidationReport`, `FieldIssue`, `ArtisanPreview`, `ConsoleRoutesPatch`, `ArtisanCreateResult`) com `specta::Type`, `schemars::JsonSchema` e `#[serde(deny_unknown_fields)]`.
 2. Implementar a validação única (`validate.rs`) utilizada tanto pela UI quanto pela Geração Assistida por IA e pela gravação final em disco, cobrindo 100% das regras de negócio da tabela §7.2 da spec.
 3. Implementar o construtor de `$signature` (`signature.rs`), o resolvedor PSR-4 (`psr4.rs`) e o gerador de código PHP (`template.rs`) com suporte a `Isolatable`, `PromptsForMissingInput`, `promptForMissingArgumentsUsing()`, escapes seguros de strings e PHPDoc (`*/` → `*\/`) e prevenção de colisão de variáveis (`$this`, prefixo numérico, colisão camelCase e imports).
-4. Implementar o renderizador de agendamento (`schedule.rs`) e o planejador de `routes/console.php` (`console_routes.rs`), criando exclusivamente `routes/console.php` quando ausente em layout moderno referenciado por `bootstrap/app.php`, ou gerando patch/passos manuais quando `routes/console.php` já existir ou o projeto for Laravel ≤ 10 (`app/Console/Kernel.php`).
+4. Implementar o renderizador (`schedule.rs`) e o planejador (`console_routes.rs`): criar exclusivamente `routes/console.php` ausente em layout moderno validado, ou inserir bloco delimitado idempotente em arquivo existente após preview/confirmação. Layout Legacy (`app/Console/Kernel.php`) ou ambíguo recebe passos manuais (T-18).
 5. Implementar o formatador `format_maxcode_prompt` (`maxcode_prompt.rs`) gerando a mensagem exata do snapshot `maxcode_prompt__full_form.snap`, sanitizada via `mt_db::sanitizer::sanitize`.
 6. Implementar o orquestrador `CommandGenerator` (`generator/mod.rs`) garantindo igualdade byte a byte entre `preview` e `create` (CA-19), verificação de `expected_revision` (`artisan.preview_stale`), escrita exclusiva sem sobrescrita (`artisan.file_exists`), proteção contra path traversal e symlinks (`artisan.unsafe_path`), rollback seguro que preserva edições externas (`artisan.partial_write`), invalidação do `ArtisanService` e emissão de `artisan://command-created`.
 
@@ -56,7 +56,7 @@ Esta segunda implementação constrói o submódulo `mt-commands::artisan::gener
 ```rust
 use serde::{Deserialize, Serialize};
 
-/// Formulário do modal "Criar comando" — também exportado como JSON Schema Draft 2020-12 (`artisan.command`).
+/// Formulário do modal "Criar comando" — também exportado como JSON Schema Draft 2020-12 (`artisan.command.v1`).
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, specta::Type, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ArtisanCommandForm {
@@ -302,6 +302,8 @@ pub fn render_legacy_kernel_statement(fqcn: &str, spec: &ScheduleSpec) -> String
 pub struct ConsoleRoutesPlan {
     pub patch: Option<ConsoleRoutesPatch>,
     pub file_bytes_to_create: Option<Vec<u8>>,
+    pub file_bytes_to_update: Option<Vec<u8>>,
+    pub expected_source_sha256: Option<String>,
     pub manual_steps: Vec<String>,
 }
 
@@ -320,7 +322,8 @@ pub fn plan_console_routes(
   - Nada é escrito em disco; retorna `manual_steps` com a instrução em `pt-BR` contendo `$schedule->command(\Namespace\Class::class, ...)->...;` para `app/Console/Kernel.php` (se `Legacy`) ou `bootstrap/app.php` / `routes/console.php` (CA-22).
 - Se `layout == LaravelLayout::Modern` e `console_routes_loaded == true`:
   - Se `routes/console.php` **não existir**: prepara `file_bytes_to_create` com `<?php\n\nuse Illuminate\\Support\\Facades\\Schedule;\nuse {fqcn};\n\n{statement}\n`, marca `patch.will_create = true, patch.manual_only = false` e gera o `unified_diff`. Na gravação (`create`), publica `routes/console.php` usando criação estritamente exclusiva (`create_new_file_under_root`).
-  - Se `routes/console.php` **já existir**: lê com `read_capped(256 KiB)`, faz lexing de tokens PHP de topo (`namespace`, `declare`, `use ... as ...;`, strings, comentários `//`, `#`, `/* ... */`, heredoc e tag de fechamento `?>`), calcula o patch aditivo e idempotente (`unified_diff` e `added_lines`), define `patch.manual_only = true` e popula `manual_steps` com o trecho exato a adicionar, mantendo o arquivo existente intacto em disco para nunca sobrescrever código customizado do usuário (CA-20, CA-39).
+   - Se `routes/console.php` **já existir**: lê com `read_capped(256 KiB)` e reconhece tokens PHP de topo (`namespace`, `declare`, imports/aliases, strings, comentários, heredoc e `?>`). Em estrutura suportada, prepara `file_bytes_to_update` e `expected_source_sha256`; insere antes de `?>` ou no fim do segmento PHP o bloco `// <maxterminal:schedule:Classe>` … `// </maxterminal:schedule:Classe>` com FQCNs, preservando todos os bytes externos. `patch.manual_only = false`; exibe `unified_diff` e `added_lines` para confirmação explícita via Criar com `expected_revision`.
+   - Registro equivalente já presente gera patch vazio; nunca duplicar. Delimitadores conflitantes/duplicados, registro customizado divergente ou estrutura não reconhecida geram `manual_only = true` e `manual_steps`. Arquivo novo também usa bloco delimitado. Preview nunca escreve; o hash da base integra sua revisão.
 
 ### 3.5. Formatador do Prompt MaxCode (`src/artisan/generator/maxcode_prompt.rs`)
 
@@ -380,7 +383,8 @@ impl CommandGenerator {
 6. Se `console_plan.file_bytes_to_create` for `Some(routes_bytes)`:
    - Tenta criar `routes/console.php` via `create_new_file_under_root`.
    - Se falhar: verifica se `app/Console/Commands/<class_name>.php` ainda possui o mesmo `(inode, size, sha256)`. Se estiver intacto, remove-o (`std::fs::remove_file`) e retorna `artisan.console_routes_failed` (ou `artisan.preview_stale` se `routes/console.php` surgiu concorrentemente). Se o comando PHP já tiver sido modificado externamente ou a remoção falhar, preserva-o e retorna `artisan.partial_write` com `createdPaths`, `preservedPaths` e `manualSteps` (CA-21, CA-39).
-7. Emite `artisan://command-created` via `sink.command_created(...)`, chama `self.artisan.invalidate(root)` e dispara revalidação assíncrona em background. Se a revalidação não terminar imediatamente, retorna `ArtisanCreateResult` com `catalog_refresh_pending: true` (uma falha posterior de discovery nunca desfaz nem reexecuta a criação do arquivo — CA-23, CA-39).
+7. Se `file_bytes_to_update` for `Some`, revalida identidade/hash da base sob o mesmo lock imediatamente antes da publicação; mudança detectada retorna `artisan.preview_stale` e aplica recuperação do passo 6 à classe recém-criada. Preserva backup original/permissões e publica temporário próprio sincronizado no mesmo diretório. Em falha, só restaura backup/remove classe quando identidade/bytes ainda correspondem à operação; caso contrário retorna `artisan.partial_write`, preservando alterações externas. Hash+rename não é CAS contra editor não cooperativo: há janela residual, conforme §7.7 da spec da fase; não prometer transação multi-arquivo.
+8. Emite `artisan://command-created` via `sink.command_created(...)`, chama `self.artisan.invalidate(root)` e dispara revalidação assíncrona em background. Se a revalidação não terminar imediatamente, retorna `ArtisanCreateResult` com `catalog_refresh_pending: true` (uma falha posterior de discovery nunca desfaz nem reexecuta a criação do arquivo — CA-23, CA-39).
 
 ---
 

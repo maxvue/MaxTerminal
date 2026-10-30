@@ -59,7 +59,7 @@ src-tauri/crates/mt-shell/
   src/state/{machine,registry,daemon}.rs
   tests/{scanner_split,tracker,state_table,shells_bash,shells_zsh,shells_fish,injection_no_dotfile_changes}.rs
   benches/osc_scan.rs
-src-tauri/crates/mt-db/migrations/NNNN_05_shell_sessions_command_blocks.sql
+src-tauri/crates/mt-db/migrations/0002_05_shell_sessions_command_blocks.sql
 src-tauri/crates/mt-db/src/repos/{sessions,command_blocks}.rs
 src-tauri/crates/mt-pty/src/spawn/             # lifecycle genérico aditivo
 src-tauri/src/{commands,events}/shell.rs
@@ -92,6 +92,7 @@ Atualizar composição do binário, registro Specta/capabilities e playground da
 - [ ] `sleep 2` → verde; sucesso não visto → âmbar; falha não vista → vermelho; ao observar a conclusão correspondente, bucket → neutro preservando resultado.
 - [ ] Manter foco durante execução não confirma automaticamente D; frontend confirma somente a geração concluída efetivamente apresentada.
 - [ ] `exitCode=null` → bloco `unknown`, estado `idle` com conclusão desconhecida; nunca sucesso fabricado. Saída do shell não substitui resultado conhecido de comando já concluído.
+- [ ] Em `IntegrationMode::Proc`, PTY encerrado com `exit_code != 0` durante bloco ativo → bloco `failed` com esse código (estado `error`, "Inspecionar" habilitado); sem informação de código permanece `unknown`.
 - [ ] `npm run dev` → contínuo por política/heurística; `vite build`, `docker compose up -d` e tarefa apenas demorada não promovem; override `off` vence heurística.
 - [ ] Agregação determinística, uma aba em um bucket, sem contar ids duplicados; erro não visto em um pane não esconde processo ativo em outro para o tray.
 

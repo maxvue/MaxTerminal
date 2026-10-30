@@ -199,13 +199,19 @@ export function installTerminalBridge(
 ```
 
 Detalhes de `toTerminalTheme` e `installTerminalBridge`:
-- Constrói um **novo objeto** `TerminalTheme` a cada chamada, com tupla `ansi` de 16 strings hexadecimais validada, `source: resolved.summary.builtin ? 'builtin' : (resolved.summary.origin.startsWith('tabby_') ? 'tabby' : 'custom')`, e `ui` contendo `--mt-terminal-background`, `--mt-terminal-foreground` e `--mt-terminal-selection` para os blocos e `RichInput`.
+- Constrói um **novo objeto** `TerminalTheme` a cada chamada, com tupla `ansi` de 16 strings hexadecimais validada e `source: resolved.summary.builtin ? 'builtin' : (resolved.summary.origin.startsWith('tabby_') ? 'tabby' : 'custom')`. Preenche obrigatoriamente os cinco campos de `ui` com valores de `resolved.tokens.vars`: `blockBackground` ← `--background-0`, `blockBorder` ← `--background-100`, `blockHeaderBackground` ← `--background-25`, `richInputBackground` ← `--background-25` e `richInputBorder` ← `--background-100`. Esses tokens já pertencem à allowlist completa validada; não ler cores do `<html>` para resolver o tema de outro painel.
+- O contrato `TerminalTheme.ui` contém propriedades TypeScript, não nomes de tokens CSS. `--mt-terminal-{background,foreground,selection}` continuam no conjunto global de 102 tokens; as cinco variáveis locais de bloco/input são produzidas pelo helper `themeUiToCssVars` da Fase 04 e aplicadas exclusivamente na raiz `.hybrid-terminal` de cada painel. O fluxo é `inst.applyTheme` → `onThemeChange` → `TerminalInstanceState.themeUi` → estilo local, preservando o tema dos painéis de outros projetos.
 - Nunca muta `xterm.options.theme` in-place; atribui um novo objeto `ITheme` (omitindo chaves opcionais ausentes como `selectionForeground` para não herdar valor residual do tema anterior).
+- Se `resolve(projectId)` retornar `null` enquanto o cache carrega, mantém o tema atual/fallback e reconcilia após a resolução; nunca passa `null` a `toTerminalTheme`. O provider global sempre entrega um `TerminalTheme` válido, usando o fallback da Fase 04 até o tema persistido estar disponível.
 - Em `applyFont`:
   - Atualiza `fontFamily` (serializada por `quoteFontFamily`), `fontSize`, `lineHeight`, `letterSpacing` via `inst.applyPreferences(...)`.
   - Atualiza `inst.xterm.options.fontWeight = font.fontWeight` e `inst.xterm.options.fontWeightBold = font.fontWeightBold`.
   - Chama `inst.xterm.clearTextureAtlas?.()` seguido do re-fit da instância (que dispara `pty_resize(cols, rows)`).
-  - Se `font.ligatures === true`: importa dinamicamente `@xterm/addon-ligatures` e ativa nas instâncias; se o `import()` ou `loadAddon` lançar exceção, descarta o addon parcial e retorna `{ ligaturesFailed: true }`.
+  - Mantém `WeakMap<Terminal, IDisposable>` (`Terminal` e `IDisposable` importados de `@xterm/xterm`) com no máximo um `LigaturesAddon` por instância e guarda a última opção desejada mais uma geração monotônica de aplicação.
+  - Se `font.ligatures === true`: importa dinamicamente `@xterm/addon-ligatures`; após o `await`, confirma geração vigente, bridge vivo e instância ainda registrada antes de carregar o addon. Reaplicações não duplicam addon já presente no mapa. Instâncias novas recebem a configuração vigente pela extensão, com a mesma proteção contra respostas atrasadas.
+  - Se `font.ligatures === false`: invalida carregamentos pendentes, chama `dispose()` no addon de cada terminal vivo e remove sua entrada do mapa. O descarte é idempotente; desativar durante um `import()` não pode reativar ligaduras quando ele resolver.
+  - O `Disposable` retornado por `activate` da extensão remove/descarta o addon daquele terminal no encerramento da instância. `TerminalBridge.dispose()` invalida tarefas pendentes e descarta a extensão, que executa os disposers de todas as instâncias; o `WeakMap` não é iterável nem substitui esse ciclo de vida.
+  - Se o `import()` ou `loadAddon` da geração vigente lançar exceção, descarta o addon parcial e os addons já ativados nessa aplicação, remove suas entradas e retorna `{ ligaturesFailed: true }`; o store reverte a opção conforme CA-29. Falha de uma geração obsoleta não reverte uma configuração mais nova.
 
 ### 3.5. Store `useThemeStore` (`src/stores/theme.ts`)
 

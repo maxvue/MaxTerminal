@@ -9,7 +9,7 @@
 
 ### Passo 1 — Criar o crate `mt-projects` e registrá-lo no Workspace Cargo
 1. Editar `src-tauri/Cargo.toml` para incluir `"crates/mt-projects"` na lista `members` de `[workspace]`.
-2. Criar `src-tauri/crates/mt-projects/Cargo.toml` com as dependências definidas em `spec.md` §3.1 (`mt-core`, `mt-db`, `serde`, `serde_json`, `specta`, `tokio`, `tracing`, `notify = "8"`, `notify-debouncer-full = "0.5"`, `dirs = "6"`, `async-trait = "0.1"`, `uuid`, e `tempfile = "3"` em `[dev-dependencies]`).
+2. Criar `src-tauri/crates/mt-projects/Cargo.toml` com as dependências definidas em `spec.md` §3.1 (`mt-core`, `mt-db`, `serde`, `serde_json`, `specta`, `tokio`, `tracing`, `notify = { workspace = true }`, `notify-debouncer-full = { workspace = true }` (versões 8 / 0.5 centralizadas na Fase 01), `dirs = "6"`, `async-trait = "0.1"`, `uuid`, e `tempfile = "3"` em `[dev-dependencies]`).
 3. Se necessário para flags POSIX seguras em `detect.rs` (`O_NOFOLLOW`, `O_NONBLOCK`), utilizar `std::os::unix::fs::OpenOptionsExt` com constantes de `libc` já presentes na árvore de dependências do workspace.
 
 ### Passo 2 — Implementar Modelos e DTOs (`src-tauri/crates/mt-projects/src/model.rs`)
@@ -69,14 +69,16 @@
 ## 2. Comandos de Verificação
 
 ```bash
+cd "$(git rev-parse --show-toplevel)"
+
 # Compilar o crate mt-projects
-cargo check -p mt-projects
+cargo check --manifest-path src-tauri/Cargo.toml -p mt-projects
 
 # Executar todos os testes unitários e de integração do crate mt-projects
-cargo test -p mt-projects
+cargo test --manifest-path src-tauri/Cargo.toml -p mt-projects
 
 # Validar ausência de warnings no Clippy
-cargo clippy -p mt-projects --all-targets -- -D warnings
+cargo clippy --manifest-path src-tauri/Cargo.toml -p mt-projects --all-targets -- -D warnings
 
 # Verificar garantia de segurança: nenhuma invocação de processo externo
 ! rg -n "process::Command" src-tauri/crates/mt-projects/src

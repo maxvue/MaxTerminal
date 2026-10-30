@@ -3,7 +3,7 @@
 ## 1. Checklist Sequencial de Implementação
 
 ### Passo 1: Identificadores e Códigos de Erro em `mt-core`
-1. Editar `src-tauri/crates/mt-core/src/ids.rs` para adicionar o newtype `TabSessionId(pub uuid::Uuid)` com derivações `Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, specta::Type` e métodos `new_v7()`, `Display` e `FromStr`.
+1. Importar `TabSessionId` de `mt_core::ids`: o identificador já é gerado pelo `define_id!` da Fase 01 (junto de `ProjectId`, `TabId`, `PaneId`, `SessionId` etc.). Não editar `ids.rs` nem redefinir o newtype nesta fase.
 2. Editar `src-tauri/crates/mt-core/src/error.rs` para adicionar todos os construtores de erro da Fase 07 (`template_invalid`, `template_default_required`, `template_secret_literal`, `template_cwd_not_found`, `template_conflict`, `template_not_found`, `workspace_environment_unavailable`, `workspace_request_conflict`, `workspace_operation_interrupted`, `workspace_stop_failed`, `workspace_persistence_pending`, `tab_not_found`, `tab_closing`, `tab_reorder_mismatch`, `pane_not_found`, `pane_limit_reached`, `pane_not_exited`, `layout_invalid`, `layout_conflict`, `session_not_found`, `session_query_invalid`).
 
 ### Passo 2: Modelos e Validações Puras em `mt-core::workspace`
@@ -20,7 +20,7 @@
 5. Criar `src-tauri/crates/mt-core/src/workspace/mod.rs` reexportando `template`, `layout`, `tab` e `session`, e registrar `pub mod workspace;` em `src-tauri/crates/mt-core/src/lib.rs`.
 
 ### Passo 3: Migration SQLite Aditiva e Registro FTS5
-1. Criar `src-tauri/crates/mt-db/migrations/0007_07_workspace_templates_tabs_sessions.sql` com:
+1. Criar `src-tauri/crates/mt-db/migrations/0004_07_workspace_templates_tabs_sessions.sql` com:
    - DDL de `tab_templates` e índices `ux_tab_templates_default`, `ix_tab_templates_project`, `ix_tab_templates_workspace`.
    - DDL de `tabs` e `panes` com índices parciais de abas/painéis abertos e unicidade de template workspace (`ux_tabs_workspace_template`).
    - `ALTER TABLE sessions` adicionando `archived_at`, `next_scrollback_seq`, `scrollback_bytes`, `scrollback_truncated` e índice `ix_sessions_archived`.
@@ -31,7 +31,7 @@
 
 ### Passo 4: Repositório de Templates e Contribuidor Atômico da Fase 06
 1. Criar `src-tauri/crates/mt-db/src/repos/templates.rs` implementando `TemplateRepo` (`ensure_default_tx`, `list`, `get`, `create`, `update`, `delete`, `set_default`) e `DefaultTemplateContributor`.
-2. Registrar `DefaultTemplateContributor` no construtor/inicializador de `ProjectsRepo` / `SqliteProjectStore` dentro de `src-tauri/crates/mt-db/src/repos/mod.rs`, garantindo que `after_insert(tx, project)` seja chamado na mesma transação de criação, importação e auto-descoberta de projetos.
+2. Registrar `DefaultTemplateContributor` no construtor/inicializador de `ProjectsRepo` / `SqliteProjectStore` dentro de `src-tauri/crates/mt-db/src/repos/mod.rs`, garantindo que `after_insert(tx, project: &StoredProject) -> Result<(), DbError>` (assinatura da Fase 06) seja chamado na mesma transação de criação, importação e auto-descoberta de projetos. Converter `project.id` para `ProjectId` e usar `project.created_at` em `ensure_default_tx(tx, project_id, now_ms)`; converter `DbError` para `MtError` apenas na fachada pública.
 
 ### Passo 5: Code Migration de Backfill (`m07_backfill.rs`)
 1. Criar `src-tauri/crates/mt-db/src/migrations/code/m07_backfill.rs` implementando:
@@ -51,6 +51,8 @@
 ## 2. Comandos de Verificação
 
 ```bash
+cd "$(git rev-parse --show-toplevel)"
+
 # Formatação e análise estática do workspace Rust
 cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
 cargo clippy --manifest-path src-tauri/Cargo.toml --workspace --all-targets -- -D warnings

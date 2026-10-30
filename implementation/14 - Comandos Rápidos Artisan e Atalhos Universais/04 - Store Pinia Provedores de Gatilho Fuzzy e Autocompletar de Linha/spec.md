@@ -13,7 +13,7 @@ Esta quarta implementação constrói toda a camada lógica e reativa do fronten
 2. Algoritmo de ranqueamento e destaque fuzzy O(n·m) (`fuzzy.ts`) com bônus de prefixo e fronteiras de namespace (`:`, `-`, `_`, `.`, ` `).
 3. Parser de linha de comando Artisan (`artisanLineParser.ts`) que tokeniza até o cursor respeitando aspas simples/duplas, escapes `\`, operadores shell e `root.invokerTokens`, identificando o comando ativo, as opções já utilizadas e se o usuário está completando uma `--opção` ou aguardando dica de argumento posicional.
 4. Store Pinia `useQuickCommandsStore` (`src/stores/quickCommands.ts`) gerenciando o cache de raízes Laravel por `(projectId, cwd)`, catálogos com `markRaw` e deduplicação de promessas em voo, atalhos por `cwd`, estado completo do modal com controle estrito de revisões (`contextRevision`, `formRevision`, `previewRevision`), integração com IA (`fillWithAi` / `undoAiSuggestion`), envio ao MaxCode (`createWithMaxCode`) e fila de confirmação (`requestConfirm`).
-5. Provedores de gatilho registrados no `TriggerRegistry`: `artisanTrigger` (`>`), `artisanArgsTrigger` (`php`, `./v`, `ven`, `sai`) e `shortcutTrigger` (`/`), além da inicialização em `registerQuickCommandTriggers.ts` e `src/app/main.ts`.
+5. Provedores de gatilho registrados no `TriggerRegistry`: `artisanTrigger` (`>`), `artisanArgsTrigger` (ativado por tokens de invocador — `php artisan`, `./artisan`, `sail artisan`, `./vendor/bin/sail artisan` — e não por 4 prefixos fixos) e `shortcutTrigger` (`/`). O registro e a inicialização da store ficam em `src/terminal/triggers/providers/index.ts` (criado nesta fase; estendido pela Fase 15 com `>>` — D-09).
 
 ---
 
@@ -26,10 +26,10 @@ Esta quarta implementação constrói toda a camada lógica e reativa do fronten
 - `src/stores/quickCommands.ts`
 - `src/composables/quick-commands/useArtisanTrigger.ts`
 - `src/composables/quick-commands/useShortcutTrigger.ts`
-- `src/composables/quick-commands/registerQuickCommandTriggers.ts`
+- `src/terminal/triggers/providers/index.ts` (`registerTriggerProviders()`: registra `>`, `artisan.args:*` e `/`; chama `useQuickCommandsStore().init()`)
 
 ### 2.2. Arquivos Modificados em `src/`
-- `src/app/main.ts` (ou arquivo de bootstrap equivalente do app Vue) — inicialização de `useQuickCommandsStore().init()` e chamada de `registerQuickCommandTriggers()`.
+- Nenhum arquivo de bootstrap (`src/app/main.ts`) é alterado: a inicialização de `useQuickCommandsStore().init()` e o registro dos gatilhos ocorrem em `src/terminal/triggers/providers/index.ts`. Os composables em `src/composables/quick-commands/` permanecem apenas como lógica dos provedores.
 
 ### 2.3. Testes Unitários Vitest a Criar
 - `src/composables/quick-commands/__tests__/fuzzy.spec.ts`
@@ -52,7 +52,8 @@ import type {
     TerminalContext,
     TriggerDefinition
 } from '@/types/triggers'; // ou caminho canônico da Fase 04
-import type { PaneId, ProjectId } from '@/types/bindings';
+import type { MtError, PaneId, ProjectId } from '@/types/bindings';
+import type { AiGenerateRunOptions } from '@/composables/ai/useAiGenerate';
 
 export const TRIGGER_PASSTHROUGH: CompletionResult = Object.freeze({
     items: [],
@@ -61,21 +62,36 @@ export const TRIGGER_PASSTHROUGH: CompletionResult = Object.freeze({
 
 export interface AiStructuredGenerator<T> {
     loading: Readonly<{ value: boolean }>;
-    error: Readonly<{ value: string | null }>;
-    run: (prompt: string, options?: { signal?: AbortSignal }) => Promise<T>;
-    cancel: () => void;
+    error: Readonly<{ value: MtError | null }>;
+    /** `null` = sem resultado utilizável ou cancelado (contrato da Fase 12). */
+    run: (prompt: string, options?: AiGenerateRunOptions) => Promise<T | null>;
+    cancel: () => Promise<void>;
 }
 
 export interface QuickCommandsAdapters {
     registerTrigger: (def: TriggerDefinition) => Disposable;
     projectStackHint: (projectId: ProjectId | null) => string | null;
     openMaxCodePlan: (prompt: string, projectPath: string) => Promise<void>;
-    createAiGenerator: <T>(schemaId: string, schema: Record<string, unknown>) => AiStructuredGenerator<T>;
+    createAiGenerator: <T>(
+        schemaId: string,
+        schema: Record<string, unknown>,
+        decode: (value: unknown) => T
+    ) => AiStructuredGenerator<T>;
     notifyToast: (opts: { title: string; description?: string; severity: 'success' | 'info' | 'warn' | 'error' }) => void;
     focusPaneInput: (paneId: PaneId | null) => void;
 }
 
 export function getQuickCommandsAdapters(): QuickCommandsAdapters;
+
+/** Schema registrado na Fase 12 para a Geração Assistida do modal (D-05). */
+export const ARTISAN_COMMAND_SCHEMA_ID = 'artisan.command.v1';
+
+/**
+ * Implementação padrão de `createAiGenerator`: delega a `useAiGenerate<T>(schemaId, schema, decode)` (Fase 12),
+ * sempre com os 3 argumentos. `decode` valida o objeto devolvido pela IA (ex.: `decodeArtisanCommandForm`, que rejeita campos
+ * desconhecidos e tipos inválidos lançando erro), `run(prompt, { signal })` repassa o `AbortSignal` e o retorno `null`
+ * é propagado sem conversão — a store trata `null` como "nenhuma sugestão" (toast pt-BR, formulário intacto).
+ */
 export function setQuickCommandsAdaptersForTest(overrides: Partial<QuickCommandsAdapters> | null): void;
 ```
 
@@ -171,8 +187,8 @@ export const useQuickCommandsStore = defineStore('quickCommands', () => {
    - Fechar o modal com `Escape` ou botão Cancelar (`closeModal({ preserveDraft: true })`) guarda o rascunho atual num mapa `draftsByRoot`, cancela qualquer requisição de IA pendente e restaura o foco ao input do painel de origem (`modal.paneId`) (CA-36).
 5. **Geração Assistida por IA (`fillWithAi` / `undoAiSuggestion` — CA-25):**
    - Captura `reqFormRevision = modal.formRevision` e o `form` antes de iniciar.
-   - Obtém o JSON Schema via `quickCommandsIpc.formSchema()` (memorizado) e chama `aiGenerator.run(prompt)`.
-   - Valida a resposta com `quickCommandsIpc.validateForm(root, candidateForm)`. Se houver qualquer issue com `severity === 'error'` ou falha na IA, exibe toast em `pt-BR` ("Não foi possível gerar uma sugestão válida com a IA.") e mantém `modal.form` intacto.
+   - Obtém o JSON Schema via `quickCommandsIpc.formSchema()` (memorizado) e chama `aiGenerator.run(prompt, { signal })` (gerador criado com `createAiGenerator<ArtisanCommandForm>(ARTISAN_COMMAND_SCHEMA_ID, schema, decodeArtisanCommandForm)`).
+   - Valida a resposta com `quickCommandsIpc.validateForm(root, candidateForm)`. Se `run` retornar `null` (sem resultado utilizável ou cancelado), se `decode` lançar, se houver qualquer issue com `severity === 'error'` ou falha na IA, exibe toast em `pt-BR` ("Não foi possível gerar uma sugestão válida com a IA.") e mantém `modal.form` intacto.
    - Se o usuário editou o formulário enquanto a IA processava (`modal.formRevision !== reqFormRevision`), não sobrescreve silenciosamente; preserva a edição do usuário e notifica.
    - Quando válida e sem colisão, salva cópia profunda do formulário anterior em `modal.aiSnapshot`, aplica a sugestão e dispara atualização imediata do preview. `undoAiSuggestion()` restaura `modal.aiSnapshot` e limpa `aiSnapshot`.
 6. **Criar Comando (`create` — CA-20, CA-21, CA-23):**
@@ -193,7 +209,8 @@ export const useQuickCommandsStore = defineStore('quickCommands', () => {
   - `onSelect(item, q, ctx)`:
     - Para `'artisan:create'`: abre `store.openCreateModal(root, { signatureName: validSeed, paneId: ctx.paneId })` e retorna `{ kind: 'handled' }`.
     - Para um comando Artisan: retorna `{ kind: 'replace-input', text: `${invoker} ${name} `, cursor: text.length, keepOpen: true }` (nunca envia ao PTY — CA-13).
-- **`artisanArgsTrigger` (`php`, `./v`, `ven`, `sai` — CA-14, CA-15):**
+- **`artisanArgsTrigger` (ativação por tokens: `php artisan`, `./artisan`, `sail artisan`, `./vendor/bin/sail artisan` — CA-14, CA-15):**
+   - Registrado por primeiro token de invocador (`php`, `./artisan`, `sail`, `./vendor/bin/sail`, `vendor/bin/sail`; `id: 'artisan.args:<token>'`); a decisão de ativar vem de `parseArtisanLine` (tokens completos comparados com `root.invokerTokens` e equivalentes canônicos), nunca de um prefixo textual de 3 caracteres. `./artisan` é invocador completo, sem segundo token `artisan`; demais formas exigem esse token. Correspondência inválida ⇒ `TRIGGER_PASSTHROUGH`.
   - Usa `parseArtisanLine(q.input, q.cursor, root, (name) => store.commandByName(root.root, name))`.
   - Em `mode === 'option'`: lista opções ainda não usadas (ou com `isMultiple === true`), separadas em seções `"Opções"` e `"Opções globais"`. Selecionar uma opção com `acceptValue === true` substitui apenas o intervalo `[current.start, current.end]` do token por `${opt.name}=` mantendo o cursor logo após `=` (`keepOpen: false`); selecionar flag booleana insere `${opt.name} ` (`keepOpen: true`). Se `acceptValue` for `null`/`undefined` (cache legado ainda em revalidação), insere `${opt.name} ` sem inventar `=` (CA-14).
   - Em `mode === 'argument-hint'`: retorna 1 item `disabled: true` descrevendo o argumento posicional atual (`<name>` se obrigatório ou `[name]` se opcional, com descrição e valor padrão — CA-15).

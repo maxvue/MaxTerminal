@@ -25,7 +25,7 @@
   1. Criar `src/components/shell/TabStatusIndicator.vue` obedecendo à ordem `<template>` → `<script setup lang="ts">` → `<style lang="scss" scoped>`, recuo de 4 espaços, tags de abertura em linha única e tokens semânticos `--max-success-500`, `--max-info-500`, `--max-warning-500`, `--max-danger-500`.
   2. Criar `src/components/shell/CommandBlockStatus.vue` exibindo código de saída, duração segura, badges `"Execução contínua"`, `"Resultado desconhecido"`, `"Histórico não salvo"` e `"Saída parcial"`, sem usar `v-html`.
   3. Atualizar `src/components/terminal/CommandBlock.vue` para renderizar `CommandBlockStatus.vue` com os metadados preenchidos em `block.meta` pela Fase 05.
-  4. Atualizar o playground da Fase 04 (`src/views/dev/TerminalPlaygroundView.vue`) para demonstrar duas abas lógicas de um painel usando `ShellIntegrationRequest`, exibindo `TabStatusIndicator`, contadores agregados (`countsFor`), seletor de `ContinuousPolicy` (`Auto`/`On`/`Off`) e visualização de `ErrorContext` para blocos com falha.
+  4. Atualizar o playground da Fase 04 (`src/components/terminal/__dev__/TerminalPlayground.vue`) para demonstrar duas abas lógicas de um painel usando `ShellIntegrationRequest`, exibindo `TabStatusIndicator`, contadores agregados (`countsFor`), seletor de `ContinuousPolicy` (`Auto`/`On`/`Off`) e visualização de `ErrorContext` para blocos com falha.
 
 - [ ] **Passo 5: Criar Suíte de Testes Unitários e de Componentes no Vitest**
   1. Criar `tests/stores/tabStatusStore.spec.ts` e `tests/stores/shellHistoryStore.spec.ts` testando *listeners-before-snapshot*, descarte de revisões antigas, tombstones, `countsFor` sem duplicar IDs, `hasActiveProcesses` multi-pane e ausência de update otimista sobre outra geração.
@@ -41,7 +41,7 @@
 npx --no-install vitest run tests/stores/tabStatusStore.spec.ts tests/stores/shellHistoryStore.spec.ts tests/composables/useShellCommandBlocks.spec.ts tests/composables/useTabSeenTracker.spec.ts tests/components/shell/TabStatusIndicator.spec.ts tests/components/shell/CommandBlockStatus.spec.ts
 
 # 2. Validar tipagem TypeScript/Vue estrita (tsgo / vue-tsc)
-npm run check-types
+npm run typecheck
 
 # 3. Validar ESLint e Stylelint (ordem de blocos SFC, 4 espaços, tags de abertura em linha única)
 npm run lint
@@ -59,4 +59,4 @@ cargo clippy --workspace --all-targets -- -D warnings
 - [x] **CA-FE-01 (instructions.md §5):** Hidratação assina eventos antes de consultar snapshots, descarta revisões antigas (`BigInt`), reconcilia perdas/reload e limpa listeners no `dispose`; replay visual não reexecuta transições nem `INSERT`s.
 - [x] **CA-FE-02 (instructions.md §5):** Adaptador `useShellCommandBlocks` usa exclusivamente `begin/markOutputStart/end/patchMeta` do `useCommandBlocksStore().feed` da Fase 04, mapeando `succeeded → success`, `failed → error`, `unknown → aborted`; sem segunda store `commandBlocks` e sem `v-html`.
 - [x] **CA-EST-02 e CA-EST-03 (instructions.md §5):** `useTabSeenTracker` confirma somente a geração concluída efetivamente apresentada após renderização com janela focada e documento visível, cancelando no blur; manter foco durante execução não confirma `D` antecipadamente.
-- [x] **CA-QLD-01 (instructions.md §5 e AGENTS.md §3):** SFCs Vue seguem `<template>` → `<script setup lang="ts">` → `<style lang="scss" scoped>`, 4 espaços, tags de abertura em linha única, textos em `pt-BR` e passam em `check-types`, `lint`, `vitest` e `cargo test`.
+- [x] **CA-QLD-01 (instructions.md §5 e AGENTS.md §3):** SFCs Vue seguem `<template>` → `<script setup lang="ts">` → `<style lang="scss" scoped>`, 4 espaços, tags de abertura em linha única, textos em `pt-BR` e passam em `typecheck`, `lint`, `vitest` e `cargo test`.

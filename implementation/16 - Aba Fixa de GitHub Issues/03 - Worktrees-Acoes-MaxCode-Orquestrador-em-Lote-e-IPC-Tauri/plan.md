@@ -16,9 +16,10 @@
    - Validar `common_dir` e rejeitar diretórios homônimos estranhos ou symlinks externos (`IssueWorktreeResolution::Incompatible` / `GithubErrorKind::WorktreeForeign`).
    - Gerar `IssueWorktreeProposal` com TTL de 5 minutos (`BranchOnly` quando a branch local já existe; `Missing` quando nem worktree nem branch existem) e verificar se `.max-code-worktrees/` já está ignorado no `.gitignore`.
    - Implementar `create_worktree(proposal_id, confirmed)` exigindo `confirmed == true`, delegando para `GitPort::worktree_create` (Fase 08) com `ensure_gitignore: true` e lidando com corrida `worktree_exists` por releitura.
-   - Implementar `open_issue_tab` delegando para `WorkspacePort` (`tab_open` com `cwd_fallback_to_project: false` e título `Issue #<n>`) ou `AgentPort` (`agent_tab_open` com `WorktreeIsolation::Existing { path }`), preservando a worktree criada caso o spawn do PTY falhe.
+   - Implementar `open_issue_tab` delegando para `WorkspacePort` (`tab_open` com `cwd_fallback_to_project: false` e título `Issue #<n>`) ou `AgentPort` cujo adaptador chama `AppAgentState::open_agent_tab` (D-08) com `WorktreeIsolation::Existing { path }`, preservando a worktree criada caso o spawn falhe; nunca chamar o handler Tauri internamente.
 
 ### Passo 2: Implementar Ações 1-Clique para o MaxCode (`actions.rs`)
+0. Criar `src-tauri/src/github/{mod,adapters}.rs`: implementar `MaxCodePort` usando os quatro métodos de `MaxCodeClient` fornecidos pela 11/06, converter DTO de domínio para wire (`command → action`, `request_id → correlationId`, repo `owner/name`) e registrar o adaptador no composition root. Verificar as duas capabilities D-03; não editar a bridge nesta fase.
 1. Implementar `src-tauri/crates/mt-github/src/actions.rs`:
    - Traduzir capabilities da bridge da Fase 11 para `IssueCapabilities`, validando compatibilidade de `protocol_version` e `catalog_hash`.
    - Construir `IssueCommandPayload` para `MaxCodeIssueCommand::{Open, Plan, Fix}` contendo apenas metadados autenticados (`project_path`, `repo`, `issue_number`, `command`, `catalog_hash`, `request_id`), sem concatenar texto não-confiável da issue em prompts.
@@ -36,7 +37,7 @@
 1. Completar `src-tauri/crates/mt-github/src/lib.rs` com a struct `GithubService` integrando todos os submódulos, validando `(project_id, auth_scope, generation)` antes e depois de cada `await` e tratando o evento `project://removed` para desregistrar vínculos sem cancelar ciclos remotos no MaxCode.
 2. Criar `src-tauri/src/events/github.rs` com `TauriGithubEventSink` emitindo os 8 eventos `github://*` após o commit no SQLite.
 3. Criar `src-tauri/src/commands/github.rs` com os 20 comandos `github_*` anotados com `#[tauri::command]` e `#[specta::specta]`.
-4. Registrar os comandos e adaptadores de porta no `src-tauri/src/lib.rs` e executar `npm run bindings` para atualizar `src/types/bindings.ts`.
+4. Registrar `pub mod github`, comandos, adaptadores de porta e `app.manage(Arc::clone(&github_service))` no `src-tauri/src/lib.rs`; injetar `mt_db::Db` no cache e executar `cargo run --manifest-path src-tauri/Cargo.toml --bin export_bindings` para atualizar `src/types/bindings.ts`.
 
 ### Passo 5: Escrever Testes Automatizados (`tests/bulk.rs`)
 1. Criar `src-tauri/crates/mt-github/tests/bulk.rs`:
@@ -51,14 +52,15 @@
 ## 2. Comandos de Verificação e Validação
 
 ```bash
+cd "$(git rev-parse --show-toplevel)"
 # 1. Executar todos os testes do crate mt-github (incluindo bulk, worktree e actions)
-cargo test -p mt-github
+cargo test --manifest-path src-tauri/Cargo.toml -p mt-github
 
 # 2. Verificar compilação e clippy em mt-github e no binário maxterminal
-cargo clippy -p mt-github -p maxterminal --all-targets -- -D warnings
+cargo clippy --manifest-path src-tauri/Cargo.toml -p mt-github -p maxterminal --all-targets -- -D warnings
 
 # 3. Gerar bindings TypeScript e validar ausência de diffs pendentes
-npm run bindings && git diff --exit-code src/types/bindings.ts
+cargo run --manifest-path src-tauri/Cargo.toml --bin export_bindings && git diff --exit-code src/types/bindings.ts
 ```
 
 ---
@@ -69,7 +71,7 @@ npm run bindings && git diff --exit-code src/types/bindings.ts
 |--------------------|------------------------------|
 | **CA-1 (`bulk`)** | `tests/bulk.rs` valida sequência de etapas, autoridade exclusiva do MaxCode para início/fim, recuperação pós-reinício com mesmo `requestId` e ordenação por `peer_revision` |
 | **CA-3 (Clippy Workspace)** | `cargo clippy -p mt-github -p maxterminal -- -D warnings` passa sem avisos |
-| **CA-4 (Bindings Specta)** | `npm run bindings` exporta `GithubRepoRef`, `IssueSummary`, `IssueDetail`, `LabelDefinition`, `LabelKind`, `BugCycleProgress` e `MaxCodeIssueCommand` em `src/types/bindings.ts` |
+| **CA-4 (Bindings Specta)** | `cargo run --manifest-path src-tauri/Cargo.toml --bin export_bindings` exporta `GithubRepoRef`, `IssueSummary`, `IssueDetail`, `LabelDefinition`, `LabelKind`, `BugCycleProgress` e `MaxCodeIssueCommand` em `src/types/bindings.ts` |
 | **CA-14 (Backend MaxCode 1-Clique)** | `actions.rs` exige ACK correlacionado, valida capabilities e garante idempotência por `requestId` |
 | **CA-15 (Backend Worktrees)** | `worktree.rs` resolve e cria `.max-code-worktrees/wt-implement-issue-<n>` mediante confirmação e abre aba shell/agente com `cwd` nela |
 | **CA-16 (Backend Ciclo em Lote)** | `bulk.rs` exige confirmação com `previewId`, persiste em `github_bug_cycles` e retoma acompanhamento ao reabrir o app |

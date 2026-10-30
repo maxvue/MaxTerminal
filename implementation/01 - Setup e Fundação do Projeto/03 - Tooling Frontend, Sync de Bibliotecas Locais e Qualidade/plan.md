@@ -17,14 +17,14 @@
 
 ### Passo 1 — Inspecionar Bibliotecas Locais e Criar `package.json` + `scripts/sync-local-libs.mjs`
 - [ ] **1.1.** Inspecionar os arquivos `package.json` de `$MAX_LIBS_ROOT/MaxComponentsUi`, `$MAX_LIBS_ROOT/MaxUse` e `$MAX_LIBS_ROOT/MaxPinia` (somente leitura) para confirmar `peerDependencies` e o subpath exato do `presetMaxUno`.
-- [ ] **1.2.** Criar `package.json` na raiz da worktree com `vue: "3.6.0-rc.13"`, `maxLocalLibs` e todos os scripts (`dev`, `build`, `preview`, `tauri`, `typecheck`, `typecheck:vue`, `lint`, `lint:fix`, `lint:style`, `test`, `test:watch`, `test:coverage`, `sync:local-libs`, `bindings`, `check`).
+- [ ] **1.2.** Criar `package.json` na raiz da worktree com `vue: "3.6.0-rc.13"`, `splitpanes: "4.1.2"` (sem `@types/splitpanes`), `@vitejs/plugin-vue: "6.0.10"`, `vitest`/`@vitest/coverage-v8: "5.0.5"`, `maxLocalLibs` e todos os scripts (`dev`, `build`, `preview`, `tauri`, `typecheck`, `typecheck:vue`, `lint`, `lint:fix`, `lint:style`, `test`, `test:watch`, `test:coverage`, `sync:local-libs`, `bindings`, `check`); `lint:style` com `stylelint --allow-empty-input`. Nomes canônicos únicos (sem aliases de `typecheck`) e gerenciador `npm`/`npx --no-install`.
 - [ ] **1.3.** Implementar `scripts/sync-local-libs.mjs` com validação prévia integral (manifests, exports, artefatos `dist/`, peers), criação de symlinks absolutos, recusa segura diante de diretórios reais e modo `--check` somente leitura.
 - [ ] **1.4.** Executar instalação npm para gerar `package-lock.json` e em seguida `npm run sync:local-libs` e `npm run sync:local-libs -- --check`.
 
 ### Passo 2 — Configuração TypeScript, Vite, Vitest e UnoCSS
 - [ ] **2.1.** Criar `tsconfig.json`, `tsconfig.vue.json`, `tsconfig.node.json`, `tsconfig.test.json` e `src/env.d.ts` com todas as flags estritas (`strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitOverride`, `noFallthroughCasesInSwitch`, `verbatimModuleSyntax`).
 - [ ] **2.2.** Criar `vite.config.ts` (porta `5177`, `host: '127.0.0.1'`, `strictPort: true`, `preserveSymlinks: false`, `dedupe: ['vue', 'pinia']`, allowlist restrita de `server.fs.allow` e `additionalData` SCSS).
-- [ ] **2.3.** Criar `vitest.config.ts` (`happy-dom`, `setupFiles: ['./tests/setup.ts']`, `coverage` v8 com limiar `lines: 80`) e `tests/setup.ts` (`clearMocks()` em `afterEach`).
+- [ ] **2.3.** Criar `vitest.config.ts` (`happy-dom`, `include: ['tests/**/*.spec.ts', 'src/**/__tests__/**/*.spec.ts']`, `setupFiles: ['./tests/setup.ts']`, `coverage` v8 com limiar `lines: 80`) e `tests/setup.ts` (`clearMocks()` em `afterEach`).
 - [ ] **2.4.** Criar `uno.config.ts` isolando o import de `presetMaxUno` a partir do subpath real de `@maxvue/max-components-ui`.
 
 ### Passo 3 — ESLint Flat Config, Regra Local, Stylelint e `scripts/check.mjs`
@@ -49,6 +49,6 @@
 | **CA-04** (Idempotência do sync) | `npm run sync:local-libs && npm run sync:local-libs` | Ambas as execuções retornam `0` preservando os symlinks. |
 | **CA-05** (ESLint zero warnings) | `npm run lint` | Exit code `0` (`--max-warnings 0`). |
 | **CA-06** (Regras ESLint e fixtures) | `npx --no-install vitest run tests/lint/eslint-rules.spec.ts` | Detecta `vue/block-order`, `max/single-line-start-tag`, `@stylistic/comma-dangle` e `@stylistic/quotes`. |
-| **CA-07** (Stylelint) | `npm run lint:style` | Exit code `0`. |
-| **CA-08** (`tsgo` + `vue-tsc`) | `npm run typecheck && npm run typecheck:vue` | Exit code `0` nos 4 projetos TypeScript. |
+| **CA-07** (Stylelint) | `npm run lint:style` | Exit code `0`, inclusive sem nenhum `.scss`/`.vue` em `src/` (`--allow-empty-input`); a verificação com arquivos reais ocorre em `01/04`. |
+| **CA-08** (`tsgo` + `vue-tsc`) | `npm run typecheck && npm run typecheck:vue` | Exit code `0` nos 4 projetos TypeScript (`typecheck:vue` é válido sem `.vue` porque `tsconfig.vue.json` inclui `src/env.d.ts`; SFCs reais são verificados em `01/04`). |
 | **CA-09** (Opções estritas no `tsconfig.json`) | `node -e "const c=JSON.parse(require('fs').readFileSync('tsconfig.json','utf8')).compilerOptions; for(const k of ['strict','noUncheckedIndexedAccess','exactOptionalPropertyTypes','noImplicitOverride','verbatimModuleSyntax']) if(!c[k]) process.exit(1);"` | Exit code `0`. |

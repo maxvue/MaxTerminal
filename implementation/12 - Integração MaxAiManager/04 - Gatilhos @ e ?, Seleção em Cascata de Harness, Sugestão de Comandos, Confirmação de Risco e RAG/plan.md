@@ -8,6 +8,9 @@
 
 ## 1. Checklist Sequencial de Implementação
 
+- [ ] Criar `src/terminal/triggers/providers/ai.ts` com `aiAtTrigger`/`aiQuestionTrigger`; `useAiTriggers`
+  registra/desregistra as definições via import direto. `providers/index.ts` pertence à Fase 14 (D-09).
+
 - [ ] **Passo 1 — Implementar os Composables `useAiSuggestion`, `useRagSearch` e `useAiTriggers`:**
   1. Criar `src/composables/ai/useAiSuggestion.ts` implementando `start`, `updateCommand`, `cancel`, `regenerate`, `insert` (via `insertIntoInput` sem `\r`), `requestExecute` / `confirmExecute` (validando risco e `isStaleContext` antes de `writeToPty`), `copyCommand` e `discard`.
   2. Criar `src/composables/ai/useRagSearch.ts` resolvendo o slug padrão (`last_slug` → stack do projeto da Fase 06), executando `aiStore.ragSearch` e inserindo o card `'ai-rag'` via `pushRichBlock`.
@@ -24,7 +27,7 @@
 
 - [ ] **Passo 4 — Implementar `AiSuggestionBlock.vue`, `RagResults.vue` e `AiPaneResults.vue`:**
   1. Criar `src/components/ai/AiSuggestionBlock.vue` com streaming em tempo real, comando editável em `MaxInput` monoespaçado, reclassificação de risco ao editar, `RiskBadge`, `AiContextPreview` e ações `"Inserir no input"`, `"Executar"`, `"Copiar"`, `"Regenerar"` e `"Descartar"` (`CA-15`, `CA-16`).
-  2. Criar `src/components/ai/RagResults.vue` exibindo resultados da busca em `/v1/rags/{slug}/search`, estado vazio preservando a consulta e erro `AI_RAG_NOT_FOUND` / `AI_INVALID_SLUG` em pt-BR (`CA-25`, `CA-26`).
+  2. Criar `src/components/ai/RagResults.vue` exibindo resultados da busca em `/v1/rags/{slug}/search`, estado vazio preservando a consulta e erro `ai.rag_not_found` / `ai.invalid_slug` em pt-BR (`CA-25`, `CA-26`).
   3. Criar `src/components/ai/AiPaneResults.vue` renderizando os blocos de sugestão e RAG ativos do painel/sessão.
 
 - [ ] **Passo 5 — Escrever e Executar os Testes Unitários e de Componentes (Vitest):**
@@ -69,4 +72,4 @@ npx --no-install vitest run \
 | `CA-16` | `rm -rf ./build` (`destructive`) exige digitar `rm` em `DestructiveConfirm`; `ls -la` (`safe`) executa com 1 clique. | `tests/components/ai/DestructiveConfirm.spec.ts` + `tests/components/ai/AiSuggestionBlock.spec.ts` |
 | `CA-18` | `AiContextPreview` exibe shell, SO, cwd, stack e comandos recentes com `Bearer abc123` mascarado. | `tests/components/ai/AiSuggestionBlock.spec.ts` |
 | `CA-25` | Modo RAG no popup `?` funciona mesmo sem `defaultSelection`; exibe resultados ou `"Nenhum resultado"` preservando a consulta. | `tests/composables/ai/useRagSearch.spec.ts` + `tests/components/ai/RagResults.spec.ts` |
-| `CA-26` (UI) | Mensagens pt-BR para base inexistente (`AI_RAG_NOT_FOUND`) e slug inválido (`AI_INVALID_SLUG`) renderizadas em `RagResults.vue` / `AiPromptInput.vue`. | `tests/components/ai/RagResults.spec.ts` |
+| `CA-26` (UI) | Mensagens pt-BR para base inexistente (`ai.rag_not_found`) e slug inválido (`ai.invalid_slug`) renderizadas em `RagResults.vue` / `AiPromptInput.vue`. | `tests/components/ai/RagResults.spec.ts` |

@@ -43,7 +43,7 @@ flowchart LR
     ISO -->|create/remove| F08[WorktreeManager F08]
     RES -->|registrado em| F07[EnvironmentRegistry F07]
     MRY -->|subscribe CommandEvent| F05
-    SVC --> DB[(mt-db: NNNN_13_agents_skills_memory.sql)]
+    SVC --> DB[(mt-db: 0008_13_agents_skills_memory.sql)]
 ```
 
 Princípios:
@@ -66,11 +66,11 @@ Princípios:
 |------|-------------------------|----------------|
 | 01 | `mt_core::{MtError, MtResult, ErrorCode}`, ids `ProjectId, TabId, PaneId, PtyId, SessionId, TemplateId, CommandBlockId`; `AppPaths { config_dir, state_dir, runtime_dir, … }` | erros, ids, caminhos (`agents.toml`, socket, backups) |
 | 02 | `PtyManager::{foreground_process, add_output_tap, subscribe}`; `OutputTap::{on_output, on_exit}`; `PtyEvent::ForegroundChanged`; `ProcessInfo { comm, exe, cmdline }` | detecção do agente em foreground, tail do output |
-| 03 | `Db::{write, read}`, `sanitizer::{sanitize, SanitizedText}` (máscara `[REDACTED:<kind>]`), `SettingsRegistry::register(SettingDescriptor)`, `SettingsRepo::{get_typed, set}`, migrations `NNNN_FF_*.sql` | persistência, settings `agents.*` / `skills.*` |
+| 03 | `Db::{write, read}`, `sanitizer::{sanitize, SanitizedText}` (máscara `[REDACTED:<kind>]`), `SettingsRegistry::register(SettingDescriptor)`, `SettingsRepo::{get_typed, set}`, migrations `00NN_FF_*.sql` (numeração contígua D-01) | persistência, settings `agents.*` / `skills.*` |
 | 04 | TS: `registerTerminalExtension(ext)` (`TerminalInstanceHandle.xterm`), `registerInputModeHint(p)`, `useRichInput(paneId)`, `attachCustomKeyEventHandler` via extensão | reconhecimento de visualização, modo `passthrough`, atalhos com foco no xterm, inserção explícita de sugestão |
-| 05 | `TabStateRegistry::apply(tab, pane, TabStateInput::AttentionRequired, now_ms) -> Option<TabStateSnapshot>`; `ShellService::subscribe() -> broadcast::Receiver<CommandEvent>` (`CommandEvent::Finished(CommandFinished)`); tabela `command_blocks`; `useTabStatusStore` | estado `error` "aguarda intervenção", memória contextual |
+| 05 | `TabStateRegistry::apply(pane_id, StateInput) -> Option<TabStateSnapshot>`; `AttentionRequired`/`AttentionCleared` com `RuntimeBinding { tab_id, pane_id, pty_id, session_id }` (quatro campos; geração de bloco em `ExecutionRef`); `ShellService::subscribe() -> broadcast::Receiver<CommandEvent>` (`CommandEvent::Finished(CommandFinished)`); tabela `command_blocks`; `useTabStatusStore` | estado `error` "aguarda intervenção", memória contextual |
 | 06 | `projects(id, path, …)`, `Project.stack` (`StackKind`), `ProjectRemovalHook`, `useProjectsStore.{select, countersFor}` | raiz do repo, relevância de skills, badge vermelho (automático via F05) |
-| 07 | `EnvironmentKind::Agent` + `AgentRef(String)` (`claude-code`, `codex`, `agy`, `opencode`); `EnvironmentResolver`/`EnvironmentRegistry::register`; `SpawnContext`, `ResolvedSpawn { spec, initial_input }`; `ShellResolver`; `TemplateRepo::{list, create}`; `WorkspaceManager::open_tab(TabOpenRequest { overrides: TabOpenOverrides })`; `WorkspaceObserver::{on_tab_closed, on_pane_spawned, on_pane_exited}`; evento `tab://closed` | spawn de agente, templates dedicados, abertura em worktree, fechamento |
+| 07 | `EnvironmentKind::Agent` e `snapshot.environment.agent_id` (`claude-code`, `codex`, `agy`, `opencode`); `EnvironmentResolver::resolve(&SpawnContext)` síncrono / `EnvironmentRegistry::register_agent_resolver`; `ResolvedSpawn { spawn_spec, shell_integration_enabled, initial_command }`; `ShellResolver`; `TemplateRepo::{list, create}`; `WorkspaceManager::open_tab(TabOpenRequest { overrides: Option<TabOpenOverrides>, .. })`; `WorkspaceLifecycleObserver::on_signal(WorkspaceLifecycleSignal)` | spawn de agente, templates dedicados, abertura em worktree, fechamento |
 | 08 | `WorktreeManager::{list, create, remove}`, `WorktreeCreateRequest { repo_path, name, location, new_branch, base, ensure_gitignore }`, `WorktreeLocation::{MaxCode, Project}`, `GitService::status_once`, `GitRunner::run`, `mt_git::discover` | isolamento em worktree, inspeção antes de remover |
 | 09 | `AttentionRegistry::{set, clear}` + `AttentionReason::{AwaitingInput, AwaitingApproval}`; `Notifier::notify_user(NotificationKind::AgentAwaitingInput, title, body, Some(tab))`; `OsIntegration::on_tab_state_changed()`; evento `os://focus-tab`; `OsSettings` (atalho Quake) | destaque no tray, notificação nativa com ação "Abrir aba" |
 | 11 | `OpenTabPayload` / `BridgeHost::open_tab` | (opcional) MaxCode abre aba de agente — §12 |
@@ -80,22 +80,22 @@ Princípios:
 
 | Nome no `instructions.md` | Contrato real adotado |
 |---------------------------|-----------------------|
-| `ExternalTabSignal::AgentAwaiting` / `TabStateMachine::apply_external` | `TabStateRegistry::apply(.., TabStateInput::AttentionRequired, ..)` (Fase 05 §6.1) |
+| `ExternalTabSignal::AgentAwaiting` / `TabStateMachine::apply_external` | `TabStateRegistry::apply(pane_id, StateInput::AttentionRequired { binding, attention_id, execution, at_ms })` (Fase 05) |
 | `tab_templates.agent_kind` | `tab_templates.agent_id` (`AgentRef`, Fase 07 §5.1) |
-| `TabCloseInterceptor` | inexistente na Fase 07 → decisão **pós-fechamento** via `WorkspaceObserver::on_tab_closed` (§8.4) — garante CA-16 por construção |
+| `TabCloseInterceptor` | inexistente na Fase 07 → decisão **pós-fechamento** via `WorkspaceLifecycleSignal::TabClosed` (§8.4) — garante CA-16 por construção |
 | `InputObserver` (Fase 02) | inexistente → `xterm.onData` via `registerTerminalExtension` (Fase 04) + `agent_attention_ack` |
 | `OutputObserver` | `OutputTap` (Fase 02 §3) |
 | `ProcessInspector::foreground` | `PtyManager::foreground_process(pty_id)` (Fase 02 §4) |
 | `WorktreeService::{create, remove, inspect}` | `WorktreeManager::{create, remove}` + `GitService::status_once` + `GitRunner::run` |
 | "provedor de sugestões do input rico" | Fase 04 não possui registro sem prefixo → `CommandMemoryList.vue` + inserção explícita no draft; não alterar `.history` (§6.3) |
 
-**Aditivos em fases anteriores (novos nesta fase, sem migration):**
+**Contratos consumidos e adaptadores desta fase:**
 
-1. Contrato **requerido, não presumido como existente**: resolução de atenção por `(pane, session, run, episode)`
-   na Fase 05. `TabStatePort` mantém a sobreposição de atenção separada do estado de execução; remover uma sobreposição
+1. Resolução de atenção por `RuntimeBinding` completo e `attention_id = "agent:<run_id>:<episode>"`
+   usando `StateInput::{AttentionRequired, AttentionCleared}` da Fase 05. `TabStatePort` mantém a sobreposição separada do estado de execução; remover uma sobreposição
    só afeta seu episódio e recompõe o estado corrente. Nunca restaurar um `Running` capturado antes de `CommandFinished`
    ou `PtyExit`; não limpar erros de outros painéis. `seen` segue a política de foco da Fase 05.
-   Até haver a extensão compatível, restauração é bloqueador de integração, não evento fictício.
+   A Fase 13 adapta seus eventos ao contrato proprietário, sem criar outro `TabStateInput` ou método de aplicação.
 2. Tipos de `EnvironmentResolver`, `SpawnContext` e `ShellResolver` pertencem ao binário na Fase 07. Portanto a impl
    concreta `AgentResolver` fica em `src-tauri/src/agents/resolver.rs`, consumindo `mt_agents::LaunchPlanner`;
    os trechos §2.6 são desse adaptador, sem criar dependência circular de crate para o binário.
@@ -103,6 +103,9 @@ Princípios:
    de processo apenas de `tab://closed` recebido no frontend. As especificações dessas fases não são editadas aqui.
 
 ### 1.3. Dependências Cargo de `mt-agents`
+
+Manifesto com `edition.workspace = true` (2024, D-09). Em `[workspace.dependencies]`, centralizar
+`notify = "8"` e `notify-debouncer-full = "0.5"`; o crate herda essas versões (E-10).
 
 ```toml
 [dependencies]
@@ -123,8 +126,8 @@ subtle = "2"                       # comparação de token em tempo constante
 rand = "0.8"
 base64 = "0.22"
 walkdir = "2"
-notify = "6"
-notify-debouncer-full = "0.3"
+notify = { workspace = true }
+notify-debouncer-full = { workspace = true }
 which = "6"
 shell-words = "1"
 dashmap = "6"
@@ -357,6 +360,10 @@ Persistido como uma `SettingDescriptor` `agents.settings` (Fase 03) com `validat
 (`^(Ctrl\+)?(Alt\+)?(Shift\+)?(Super\+)?[A-Z0-9]$`, ao menos um modificador) e conflitos (§6.4). Skills usam `skills.settings`
 (`source_dir`, padrão `~/GitHub/MaxSkills`; `default_mode`, padrão `symlink`).
 
+`WorktreeLocationDto` mantém `"maxCode"` em IPC/settings JSON; colunas SQL `location` usam
+`as_db_str()`/`from_db_str()` para `"project"` e `"max_code"` (01/spec.md §3.7). Testar round-trip
+de ambas as variantes e rejeitar valores desconhecidos, sem usar Serde para a coluna com `CHECK`.
+
 ### 2.6. Lançamento (`launch.rs`) — implementação do `EnvironmentResolver` da Fase 07
 
 ```rust
@@ -365,43 +372,49 @@ pub struct AgentResolver {
     registry: Arc<AgentRegistry>,
     detector: Arc<Detector>,
     relay: Arc<RelayServer>,
-    pending: DashMap<Uuid, PendingLaunch>,  // chave = MAXTERMINAL_AGENT_LAUNCH em overrides.extra_env
+    pending: Arc<DashMap<Uuid, PendingLaunch>>, // compartilhado com AppAgentState; chave em overrides.extra_env
     options: Arc<AgentTemplateOptionsRepo>,
     paths: AppPaths,
 }
-pub struct PendingLaunch { pub model: Option<String>, pub extra_args: Vec<String>, pub link: Option<AgentTabLinkDraft> }
+pub struct PendingLaunch {
+    pub launch_id: Uuid, pub agent: AgentKind, pub model: Option<String>,
+    pub extra_args: Vec<String>, pub link: Option<AgentTabLinkDraft>,
+}
 
-#[async_trait::async_trait]
 impl EnvironmentResolver for AgentResolver {
-    fn supports(&self, env: &TemplateEnvironment) -> bool { env.kind == EnvironmentKind::Agent }
-    async fn resolve(&self, ctx: &SpawnContext<'_>) -> MtResult<ResolvedSpawn>;
+    fn resolve(&self, ctx: &SpawnContext) -> MtResult<ResolvedSpawn>;
 }
 
 #[derive(Debug, Clone)]
 pub struct LaunchPlan {
     pub kind: AgentKind,
+    pub pending_binding: PendingRunBinding,
     pub program: PathBuf,                   // caminho absoluto resolvido pelo Detector
     pub args: Vec<String>,
     pub env: BTreeMap<String, String>,      // aplicado ao SpawnSpec do shell (herdado pelo agente)
     pub token: RelayToken,                  // 256 bits por execução; nunca em args nem em logs
     pub runtime_dir: PathBuf,               // $XDG_RUNTIME_DIR/maxterminal/agents/<tab_id>/ (0700)
+    pub configured_model: Option<String>,
 }
-pub fn build_plan(d: &AgentDescriptor, inst: &AgentInstallation, opts: &AgentTemplateOptions,
-                  pending: Option<&PendingLaunch>, ctx: &SpawnContext<'_>, inject: bool) -> MtResult<LaunchPlan>;
+// `LaunchPlanner::build_plan` recebe PendingRunBinding + token reservado; assinatura completa em 02/spec.md §3.3.
 pub fn command_line(plan: &LaunchPlan, initial_command: Option<&str>, shell: ShellKind) -> MtResult<String>;
 // Serialização de argv validada em bash/zsh/fish; não aplicar quoting POSIX genericamente a todos.
 ```
 
 Algoritmo de `resolve`:
-1. `base = self.shell.resolve(ctx).await?` — shell de login com OSC 133 e `MAXTERMINAL_{PROJECT,TAB,PANE,SESSION}_ID`.
-2. `!ctx.is_root` → retorna `base` (painéis de split de uma aba de agente são shells comuns).
-3. `kind = AgentKind::from_ref(template.environment.agent_id)`; instalação via `detector.cached` (ou `detect_all` se vazio);
+1. `base = self.shell.resolve(ctx)?` — shell de login com OSC 133 e `MAXTERMINAL_{PROJECT,TAB,PANE,SESSION}_ID`.
+2. Retirar a chave transitória do ambiente final; `!ctx.is_primary || !ctx.emit_initial_command` → retorna `base`
+   (painéis de split são shells comuns e restauração sem comando inicial não relança o agente).
+3. Ler agente de `ctx.snapshot.environment.agent_id`; instalação via `detector.cached` (detecção e opções carregadas
+   previamente pelo serviço assíncrono, sem `await`/`block_on` no resolvedor);
    ausente → `agents.not_installed` (a Fase 07 converte em falha de abertura; o frontend já bloqueia antes — CA-10).
-4. Ler `overrides.extra_env.get("MAXTERMINAL_AGENT_LAUNCH")` (ctx é imutável) → consumir `self.pending.remove(uuid)`;
-   remover a chave somente da cópia final de `base.spec.env` antes de spawn. UUID não é um token de autenticação.
-5. `plan = build_plan(...)`; gerar `run_id`, vincular pane/session e emitir token exclusivo dessa execução.
-6. `base.spec.env` ⊕ `plan.env` ⊕ `{ MAXTERMINAL_AGENT, MAXTERMINAL_AGENT_TOKEN, MAXTERMINAL_RELAY_SOCK, MAXTERMINAL_RELAY_BIN }`.
-7. `initial_input` usa `overrides.initial_command` se presente, senão o comando do template, seguido do argv do agente
+4. Usar o UUID retirado de `base.spawn_spec.env` → consumir `self.pending.remove(uuid)`; variáveis do template vêm
+   de `ctx.snapshot.env_vars`, já resolvidas pelo shell. UUID não é um token de autenticação.
+5. `planner.build_plan(...)`: gerar `run_id`, reservar `PendingRunBinding` a partir de `ctx.owner` e `ctx.cwd`;
+   `PaneSpawned` fornece o PTY real e ativa o token com `RunBinding` completo (02/spec.md §3.3).
+6. `base.spawn_spec.env` ⊕ `plan.env` ⊕ `{ MAXTERMINAL_AGENT, MAXTERMINAL_AGENT_TOKEN, MAXTERMINAL_RELAY_SOCK, MAXTERMINAL_RELAY_BIN }`;
+   preservar `base.shell_integration_enabled`.
+7. `base.initial_command` já contém o `CommandOverride` resolvido pelo shell; compor com o argv do agente
    apenas se o preparo terminou com sucesso. Preservar sintaxe do shell escolhido (bash/zsh/fish), agrupar comando
    inicial multilinha para respeitar seu status final e testar quoting com espaços, aspas e metacaracteres.
    A Fase 07 escreve uma única vez após `PromptStart`; falha da integração não autoriza execução duplicada.
@@ -545,12 +558,14 @@ pub struct RelayAck { pub ok: bool, pub error: Option<String> }
 pub struct RelayServer {
     socket_path: PathBuf,                                     // runtime_dir/agent-relay.sock (fallback state_dir/run/)
     tokens: DashMap<[u8; 32], RunBinding>,                   // SHA-256(token) → tab/pane/session/run/agente
+    pending_tokens: DashMap<[u8; 32], PendingRunBinding>,    // reservas antes de PaneSpawned
     tx: tokio::sync::mpsc::Sender<(TabId, AgentKind, RelayMessage)>,
 }
 impl RelayServer {
     pub async fn bind(paths: &AppPaths, tx: mpsc::Sender<(TabId, AgentKind, RelayMessage)>) -> MtResult<Arc<Self>>;
-    pub fn issue(&self, binding: RunBinding) -> RelayToken;    // 32 bytes OsRng, base64url
-    pub fn revoke_tab(&self, tab: TabId) -> usize;                  // on_tab_closed
+    pub fn issue(&self, binding: PendingRunBinding) -> RelayToken; // reserva antes do spawn: 32 bytes OsRng, base64url
+    pub fn activate(&self, binding: RunBinding) -> MtResult<()>; // PTY real + owner/geração confirmados em PaneSpawned
+    pub fn revoke_tab(&self, tab: TabId) -> usize;                  // sinal TabClosed
     pub fn socket_path(&self) -> &Path;
 }
 ```
@@ -850,15 +865,19 @@ pub struct MemoryQuery {                    // reutilizável pela Fase 15
     pub project_id: ProjectId, pub prefix: Option<String>, pub limit: u16 /* ≤ 50 */,
     pub include_hidden: bool, pub cwd: Option<String>,   // bônus para mesmo cwd
 }
-pub struct CommandMemory { repo: Arc<MemoryRepo>, project_of_tab: Arc<dyn WorkspacePort> }
+pub struct CommandMemory { db: mt_db::Db, workspace: Arc<dyn WorkspacePort> }
 impl CommandMemory {
     pub fn normalize(cmd: &str) -> Option<String>;      // §7.6; None = não memorizável
-    pub async fn on_finished(&self, ev: &CommandFinished) -> MtResult<()>;
-    pub async fn suggestions(&self, q: &MemoryQuery) -> MtResult<Vec<MemoryEntry>>;
-    pub async fn rebuild(&self, project: Option<ProjectId>) -> MtResult<u32>;  // mesmo `apply` do incremental (CA-32)
-    pub fn score(e: &MemoryEntry, now_ms: i64) -> f32;
+    pub async fn on_command_finished(&self, block_id: CommandBlockId, now_ms: i64) -> MtResult<bool>;
+    pub async fn suggestions(&self, query: &MemoryQuery, now_ms: i64) -> MtResult<Vec<MemoryEntry>>;
+    pub async fn rebuild(&self, project_id: Option<ProjectId>, now_ms: i64) -> MtResult<u32>; // mesma agregação incremental (CA-32)
+    pub fn score(entry: &MemoryEntry, query_cwd: Option<&str>, now_ms: i64) -> f32;
 }
 ```
+
+As assinaturas completas pertencem a `04/spec.md` §3.2. `now_ms` é epoch ms fornecido pelo relógio
+injetável do adaptador, inclusive no `TauriRecurringCommandsAdapter` da Fase 15. `MemoryQuery.limit`
+tem teto de 50; consumidores com limites maiores devem restringir a consulta a esse teto.
 
 ### 2.13. Fachada e portas
 
@@ -873,7 +892,7 @@ pub struct AgentService {
 // ports.rs — implementados em src-tauri/src/agents/adapters.rs
 pub trait TabStatePort: Send + Sync {
     fn attention_required(&self, run: &RunBinding, episode: u64) -> bool;
-    fn attention_resolved(&self, tab: TabId, pane: PaneId, session: SessionId, run_id: &str, episode: u64);
+    fn attention_resolved(&self, run: &RunBinding, episode: u64);
 }
 #[async_trait::async_trait]
 pub trait NotifyPort: Send + Sync {
@@ -898,9 +917,11 @@ pub trait GitPort: Send + Sync {
 }
 ```
 
-Registro em `src-tauri/src/lib.rs`: `env_registry.register(agent_resolver.clone())` (adaptador do binário);
-`workspace.register_observer(Arc::new(AgentWorkspaceObserver))` (`on_pane_spawned` → índice + tap/telemetria quando o
-template for de agente; `on_tab_closed` → `relay.revoke_tab`, `telemetry.remove`, inspeção de worktree);
+Registro em `src-tauri/src/lib.rs`: `env_registry.register_agent_resolver(kind.as_ref_id(), agent_resolver.clone())`
+para cada agente e `app.manage(AppAgentState { ... })` (estado próprio, sem agregar ao `AppState` da Fase 01);
+`workspace.register_observer(Arc::new(AgentWorkspaceObserver))`, implementando `WorkspaceLifecycleObserver::on_signal`:
+`PaneSpawned` → índice + ativação do relay + tap/telemetria; `PaneExited`/`SessionArchived` → revogação correlacionada;
+`TabClosed` → `relay.revoke_tab`, `telemetry.remove`, inspeção de worktree;
 `pty_manager.add_output_tap(attention_tap)`; tarefa que assina `PtyManager::subscribe()` (`ForegroundChanged`) e
 `ShellService::subscribe()` (`CommandEvent::Finished` → memória).
 
@@ -921,7 +942,7 @@ Todos `#[tauri::command] #[specta::specta] async fn … -> Result<T, MtError>`, 
 | `agent_template_options_get` | `templateId: TemplateId` | `AgentTemplateOptions` | `template.not_found`, `agents.tab_not_agent` |
 | `agent_template_options_set` | `templateId, options: AgentTemplateOptions` | `AgentTemplateOptions` | `template.not_found`, `agents.settings_invalid` |
 | `agent_worktree_propose` | `projectId, agent: AgentKind, hint: string \| null` | `WorktreeProposal` | `agents.not_a_repo`, `git.*` |
-| `agent_tab_open` | `request: AgentTabOpenRequest` | `AgentTabOpenResult { tab: TabView, link: AgentTabLink \| null }` | `agents.not_installed`, `agents.not_a_repo`, `agents.worktree_foreign`, `git.worktree_exists`, `git.invalid_name`, erros de `tab_open` (Fase 07) |
+| `agent_tab_open` | `request: AgentTabOpenRequest` | `AgentTabOpened { tab: TabView, link: AgentTabLink \| null }` | `agents.not_installed`, `agents.not_a_repo`, `agents.worktree_foreign`, `git.worktree_exists`, `git.invalid_name`, erros de `tab_open` (Fase 07) |
 | `agent_tab_link_get` | `tabId: TabId` | `AgentTabLink \| null` | — |
 | `agent_tab_close_check` | `tabId: TabId` | `AgentCloseInspection \| null` (null se aba sem worktree) | `agents.link_not_found`, `git.*` |
 | `agent_worktree_resolve` | `linkId: number, action: WorktreeResolution, inspectionToken: string` | `AgentTabLink` | `agents.link_not_found`, `agents.link_already_resolved`, `agents.worktree_dirty`, `agents.inspection_stale`, `git.worktree_in_use`, `git.command_failed` |
@@ -944,9 +965,12 @@ Todos `#[tauri::command] #[specta::specta] async fn … -> Result<T, MtError>`, 
 | `memory_rebuild` | `projectId: ProjectId \| null` | `u32` (entradas) | `db.*` |
 
 `AgentTemplateOptions { model: Option<String>, extraArgs: string[], isolationDefault: boolean, location: WorktreeLocationDto }`.
-`agent_tab_open` registra `PendingLaunch` (uuid) → chama `WorkspaceManager::open_tab` com
-`overrides { cwd: worktree, title, extra_env: { MAXTERMINAL_AGENT_LAUNCH: uuid }, cwd_fallback_to_project: false }`;
-em erro executa `IsolationService::rollback` (somente worktree recém-criada e limpa).
+`agent_tab_open` apenas delega a `AppAgentState::open_agent_tab(&self, req: AgentTabOpenRequest) -> MtResult<AgentTabOpened>`
+(método assíncrono, D-08; contrato e fluxo completo em `02/spec.md` §3.3). O serviço registra `PendingLaunch` (uuid)
+e chama `WorkspaceManager::open_tab` com `overrides: Some(TabOpenOverrides { cwd: worktree, title,
+initial_command: CommandOverride::Inherit, extra_env, continuous: None, cwd_fallback_to_project: false })`;
+`extra_env` usa `EnvValue::Literal` para o UUID. Em erro encerra eventual PTY antes do rollback conservador.
+O adaptador de `AgentPort` da Fase 16 usa o mesmo serviço com `WorktreeIsolation::Existing`, preservando cwd e ownership.
 
 ### 3.1. Eventos emitidos (baixo volume, `AppHandle::emit`)
 
@@ -980,9 +1004,9 @@ notificação — CA-25), `ai://catalog-updated` (modelos), `PtyEvent::Foregroun
 
 ---
 
-## 5. Banco de Dados (`mt-db/migrations/NNNN_13_agents_skills_memory.sql`)
+## 5. Banco de Dados (`mt-db/migrations/0008_13_agents_skills_memory.sql`)
 
-`NNNN` = próximo número livre (sem lacunas, regra da Fase 03). Tabelas `STRICT`, timestamps em epoch ms.
+Número fixo `0008` (decisão D-01: sequência contígua `0001_03_base` … `0007_12_ai` · `0008_13_agents_skills_memory` · `0009_15_command_groups`; sem lacunas, regra da Fase 03). Tabelas `STRICT`, timestamps em epoch ms.
 
 ```sql
 -- Fase 13: agentes CLI, isolamento, telemetria, MaxSkills e memória contextual
@@ -1200,7 +1224,7 @@ da telemetria. `agent_attention_get` retorna o mesmo envelope de atenção, perm
 `init` registra listeners **antes** de buscar snapshots, bufferiza eventos durante a leitura e aplica somente a maior
 revisão da execução atual. O snapshot backend informa as execuções ativas; eventos de `runId` desconhecido disparam
 reconsulta, não substituem automaticamente a execução conhecida. `tab://closed` instala tombstone local e limpa timers.
-`on_pane_exited`/nova sessão atualizam o índice backend antes de publicar; callbacks antigos não ressuscitam dados.
+`PaneExited`/nova sessão atualizam o índice backend antes de publicar; callbacks antigos não ressuscitam dados.
 Após reconectar, refazer snapshots; observação não é assumida contínua. Listeners singleton são removidos em `dispose`.
 Toda leitura de domínio passa pelas stores; componentes não invocam IPC nem mantêm cópia divergente de `TabStatus`.
 
@@ -1288,7 +1312,11 @@ comando sensível ou texto arbitrário do agente entra na notificação: usar me
 
 ### 7.3. Correlação de sessão e arquivos internos
 
-`RunBinding { tab_id, pane_id, session_id, run_id, agent, started_at_ms }` nasce antes do spawn e acompanha os sinks.
+`PendingRunBinding` reserva a identidade antes do spawn. `PaneSpawned { owner, pty_id, .. }` completa
+`RunBinding { tab_id, pane_id, pty_id, session_id, generation, project_id, run_id, agent, cwd, started_at_ms }`
+antes de publicar observações. O adaptador de `TabStatePort` valida a geração do owner contra o índice da 13
+e repassa o `RuntimeBinding` de quatro campos da Fase 05 (`tab_id`, `pane_id`, `pty_id`, `session_id`),
+usando `attention_id = "agent:<run_id>:<episode>"` tanto em `AttentionRequired` quanto em `AttentionCleared`.
 Claude: `session_id` e `transcript_path` provenientes do relay autenticado são pistas; validar caminho permitido,
 arquivo regular, proprietário, limite de tamanho de linha (64 KiB) e sessão no conteúdo antes de seguir o arquivo.
 Codex: um `thread-id` associado ao token pelo notify pode estabelecer identidade; procurar o arquivo da sessão exata
@@ -1437,7 +1465,7 @@ Não copiar `.env`, arquivos não versionados ou mudanças da origem automaticam
 
 ### 8.3. Nova sessão e execução encerrada
 
-`on_pane_exited` e `on_session_archived` cancelam fontes, revogam token e invalidam run. O shell pode continuar após
+`PaneExited` e `SessionArchived` cancelam fontes, revogam token e invalidam run. O shell pode continuar após
 o CLI sair: isso não é encerramento da aba, nem licença para apagar worktree. Próximo agente no mesmo shell só é
 associado se iniciado pelo launcher com novo run; detectar um nome de processo não basta para atribuir sessão.
 OpenCode V2 pode usar serviço compartilhado: não matar daemon usado por outras abas. Para execução supervisionada
@@ -1518,11 +1546,11 @@ Esta entrega é especificação: não declara que essas suítes já existem ou p
 
 | Consumidor | Contrato entregue pela Fase 13 | Garantia |
 |------------|-------------------------------|----------|
-| Fase 16 | `agent_tab_open` com `WorktreeIsolation::Existing` | mesmo repositório, cwd exato, nenhuma exclusão da worktree/branch da issue |
+| Fase 16 | `AppAgentState::open_agent_tab` com `WorktreeIsolation::Existing` → `AgentTabOpened` | mesmo repositório, cwd exato, nenhuma exclusão da worktree/branch da issue; handler IPC apenas delega |
 | Fase 15 | `memory_suggestions(MemoryQuery)` | somente sugestões sanitizadas e retidas; nenhuma execução implícita |
 | Fases 06/09 | estado Fase 05 + `AttentionRegistry` | erro não visto por episódio confirmado; notificação/foco via infraestrutura única |
 | Fase 17 | snapshots/events + relatórios de capabilities | E2E distinguem fonte documentada, experimental e indisponível; sidecar empacotado com checksum/target correto |
-| Fase 11 (opcional) | bridge chama `agent_tab_open` por adaptador | não adicionar dependência obrigatória nova ao DAG 07/08/09/12 |
+| Fase 11 (opcional) | bridge chama `AppAgentState::open_agent_tab` por adaptador | não adicionar dependência obrigatória nova ao DAG 07/08/09/12 |
 
 Bloqueadores explícitos: resolução de overlay de atenção na Fase 05; validação de fechamento/consumidores antes de
 remoção na Fase 08; uso do `EnvironmentResolver` no binário da Fase 07. Sem registro genérico de sugestões na Fase 04,

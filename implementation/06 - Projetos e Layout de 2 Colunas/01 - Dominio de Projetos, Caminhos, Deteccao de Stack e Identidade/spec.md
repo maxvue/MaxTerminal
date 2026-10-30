@@ -29,7 +29,7 @@ Esta implementação inaugura o crate `mt-projects` no workspace Cargo do MaxTer
 
 | Ação | Caminho Exato | Descrição |
 |------|---------------|-----------|
-| Modificar | `src-tauri/Cargo.toml` | Adicionar `"crates/mt-projects"` em `[workspace.members]` e dependências compartilhadas (`notify`, `notify-debouncer-full`, `dirs`, `async-trait`) se aplicável |
+| Modificar | `src-tauri/Cargo.toml` | Adicionar `"crates/mt-projects"` em `[workspace.members]` ; `notify = "8"` e `notify-debouncer-full = "0.5"` já estão centralizados em `[workspace.dependencies]` pela Fase 01 (E-10) e `mt-projects` os consome com `workspace = true`; `dirs` e `async-trait` podem ser adicionados ao workspace se aplicável |
 | Criar | `src-tauri/crates/mt-projects/Cargo.toml` | Manifesto do crate `mt-projects` |
 | Criar | `src-tauri/crates/mt-projects/src/lib.rs` | Exportação pública dos módulos do crate |
 | Criar | `src-tauri/crates/mt-projects/src/model.rs` | Entidades, enums, `ProjectRootId` e DTOs de entrada/saída |
@@ -49,7 +49,7 @@ Esta implementação inaugura o crate `mt-projects` no workspace Cargo do MaxTer
 [package]
 name = "mt-projects"
 version = "0.1.0"
-edition = "2024"
+edition.workspace = true
 
 [dependencies]
 mt-core = { path = "../mt-core" }
@@ -59,8 +59,8 @@ serde_json = { workspace = true }
 specta = { workspace = true, features = ["derive", "uuid"] }
 tokio = { workspace = true, features = ["rt", "sync", "time", "macros"] }
 tracing = { workspace = true }
-notify = "8"
-notify-debouncer-full = "0.5"
+notify = { workspace = true }
+notify-debouncer-full = { workspace = true }
 dirs = "6"
 async-trait = "0.1"
 uuid = { workspace = true, features = ["v7", "serde"] }

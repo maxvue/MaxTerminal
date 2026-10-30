@@ -18,7 +18,7 @@
 - **Arquivos**:
   - `src-tauri/crates/mt-os/src/cli.rs`
 - **Ações**:
-  1. Implementar `CliAction` (`Show`, `Toggle`, `Hide`, `StartMinimized`, `None`) e `parse_cli_args` com whitelist estrita e prioridade `--show > --toggle > --hide > --minimized`.
+  1. Implementar `CliAction` (`Show`, `Toggle`, `Hide`, `StartHidden`, `None`) e `parse_cli_args` com whitelist estrita e prioridade `--show > --toggle > --hide > --start-hidden`.
   2. Implementar `EarlyCliInbox` limitada (`MAX_PENDING = 16`) para armazenar ações recebidas pelo callback de `single-instance` antes da conclusão do `setup` do Tauri.
   3. Implementar o controlador de prontidão da UI (`UiReadinessState`):
      - Armazena a intenção inicial (`initial_visible: bool`), decidida a partir de `parse_cli_args(std::env::args())`, `settings.autostart`/`settings.start_minimized` e `env.tray_available`.
@@ -34,8 +34,9 @@
   2. Implementar `ActivationRouter::parse_and_validate`:
      - Verificar tamanho `<= 8192` bytes, ausência de caracteres de controle/NUL e validade de escapes `%XX`.
      - Validar `Url::parse` com `scheme() == "maxterminal"`, sem `username`, `password`, `port` ou `fragment`.
+     - Extrair `query_pairs()` para `ActivationEnvelope.params` (≤ 16 pares, chave `[A-Za-z0-9_-]{1,64}`, valor ≤ 4096 bytes, sem chave repetida) e repassá-los ao handler sem rejeitar chaves de negócio (`worktree`, `correlationId`, `requestId`).
   3. Implementar fila limitada (`MAX_QUEUE_LEN = 32`), expiração (`ENVELOPE_TTL = 30 s`) e janela de deduplicação de transporte (`1 s` para a mesma URI).
-  4. Implementar `register_handler`, `enqueue` e `set_ready`, retornando `os.activation_busy`, `os.activation_invalid` ou `os.activation_unavailable` conforme o caso, sem nunca logar query strings.
+  4. Implementar `register_handler`, `enqueue` e `set_ready`, retornando `os.activation_busy`, `os.activation_invalid` ou `os.activation_unavailable` conforme o caso, sem nunca logar query strings. Esta fase é a dona do **único** listener `on_open_url`/`get_current`; a Fase 11 apenas registra um `ActivationHandler`.
 
 ### Etapa 2.3 — Quake Mode e Geometria Drop-Down (`quake.rs`)
 - **Arquivos**:
@@ -69,8 +70,8 @@
   - `src-tauri/crates/mt-os/tests/activation.rs`
   - `src-tauri/crates/mt-os/tests/toggle.rs`
 - **Ações**:
-  1. Em `tests/cli.rs`: validar whitelist de argumentos, descarte de flags desconhecidas e prioridade (`--minimized --toggle` ⇒ `Toggle`; `--toggle --show` ⇒ `Show`).
-  2. Em `tests/activation.rs`: validar cold/warm start com deduplicação de 1 s, fila de até 32 itens antes de `set_ready()`, erro `os.activation_busy` no 33º item, expiração por TTL de 30 s, rejeição de scheme != `maxterminal`, credenciais na URL, escapes `%ZZ` inválidos e despacho para um `FakeActivationHandler`.
+  1. Em `tests/cli.rs`: validar whitelist de argumentos, descarte de flags desconhecidas e prioridade (`--start-hidden --toggle` ⇒ `Toggle`; `--toggle --show` ⇒ `Show`).
+  2. Em `tests/activation.rs`: validar cold/warm start com deduplicação de 1 s, fila de até 32 itens antes de `set_ready()`, erro `os.activation_busy` no 33º item, expiração por TTL de 30 s, rejeição de scheme != `maxterminal`, credenciais na URL, escapes `%ZZ` inválidos, repasse de `params` (`worktree`, `correlationId`) intactos ao `FakeActivationHandler`, chave repetida/excesso de pares (`os.activation_invalid`) e despacho para um `FakeActivationHandler`.
   3. Em `tests/toggle.rs`: validar as 8 combinações de `decide_toggle` e o cálculo de `drop_down_geometry` / `compute_quake_bounds` com offsets negativos, múltiplos monitores e alturas de 20% a 100%.
   4. Em `shortcut/accelerator.rs`: testar parse e formatação plugin/portal para aceleradores válidos e rejeição de entradas sem modificador (`"F12"`), vazias (`""`), incompletas (`"Ctrl+"`) ou inválidas (`"Foo+A"`).
 

@@ -45,13 +45,13 @@ Alertas confirmados e indícios heurísticos têm apresentação distinta, com f
 | I-08 | Telemetria | Trait `TelemetrySource` + fontes `ClaudeStatusLineSource`, `ClaudeTranscriptSource`, `CodexSessionSource`, `OutputHeuristicSource`; fontes internas/heurísticas só habilitadas após validação da versão e correlação inequívoca da sessão. Agregador com prioridade por campo, throttle de 1 Hz, proveniência, validade, qualidade e snapshot persistido. |
 | I-09 | `AgentStatusLine.vue` | Componente compacto na barra da aba: modelo, barra de contexto %, cotas 5h/semanal, estado de atenção, tooltip com fonte/idade dos dados; "—" quando indisponível. |
 | I-10 | Detector de atenção | Máquina de estados por execução: `Notification` tipada do Claude pode confirmar espera; `Stop`/Codex `notify` indicam término de turno, não permissão. Regex/OSC/BEL/inatividade geram somente indício, nunca aprovação automática ou certeza. |
-| I-11 | Integração com estados de aba | `TabStateInput::AttentionRequired` da Fase 05 → `TabStatus = 'error'`, `seen = false` em episódio confirmado; resolução correlacionada restaura o estado subjacente atual sem apagar falha real. Extensão requerida descrita em spec §1.2. |
+| I-11 | Integração com estados de aba | `StateInput::AttentionRequired`/`AttentionCleared` da Fase 05 via `apply(pane_id, input)`, com `RuntimeBinding { tab_id, pane_id, pty_id, session_id }` e `attention_id` por run/episódio; geração do owner validada separadamente na 13 (geração de bloco pertence a `ExecutionRef`). Episódio confirmado marca `error`, resolução recompõe estado real sem apagar outra falha. |
 | I-12 | Notificação nativa | Uso do `Notifier` da Fase 09 com ação "Abrir aba"; sem notificação se a janela está focada **e** a aba é a ativa; 1 notificação por episódio. |
 | I-13 | Sincronização MaxSkills | Catálogo a partir de `index.json` (fallback: varredura de `**/SKILL.md`); alvos por agente/escopo (projeto ou global); modos `symlink`/`copy` com manifesto; detecção de conflito (`ForeignSymlink`, `Unmanaged`, `LocallyModified`); resolução `Keep`/`Overwrite` (com backup)/`Adopt`; *dry-run*; watch com debounce. |
 | I-14 | Memória contextual | Tabela `command_memory` derivada **incrementalmente e com deduplicação** de `command_blocks` (Fase 05): frequência, sucesso/falha, último uso/cwd, fixar/ocultar/esquecer. Painel de sugestões por *frecency* + prefixo, inserção explícita no input da Fase 04; sem fabricar histórico de execução. |
 | I-15 | Stores e IPC frontend | `src/stores/agents.ts` (`useAgentsStore`), `src/stores/skills.ts` (`useSkillsStore`, incluindo memória contextual), `src/ipc/{agents,skills,memory}.ts`, composables e componentes (spec §6). |
-| I-16 | Migration | `mt-db/migrations/NNNN_13_agents_skills_memory.sql` (próximo número sequencial livre) com as tabelas da spec §5. |
-| I-17 | Pontos de extensão | `agent_tab_open` aceita worktree existente (consumido pela Fase 16); `memory_suggestions` e `MemoryQuery` reutilizáveis (Fase 15); `AgentRegistry::descriptors()` público. |
+| I-16 | Migration | `mt-db/migrations/0008_13_agents_skills_memory.sql`  com as tabelas da spec §5. |
+| I-17 | Pontos de extensão | `AppAgentState::open_agent_tab(&self, req: AgentTabOpenRequest) -> MtResult<AgentTabOpened>` assíncrono aceita worktree existente (consumido pelo `AgentPort` da Fase 16); handler `agent_tab_open` apenas delega; `memory_suggestions` e `MemoryQuery` reutilizáveis (Fase 15); `AgentRegistry::descriptors()` público. |
 
 ### 2.2. Fora de escopo (e fase responsável)
 
@@ -84,9 +84,9 @@ Alertas confirmados e indícios heurísticos têm apresentação distinta, com f
 | 02 | `PtyManager::{foreground_process, add_output_tap, subscribe}`, `OutputTap`; supervisão de PTYs consumida via Fase 07 |
 | 03 | `mt_db::Db`, `sanitizer::sanitize()`, marcador de redação, runner de migrations |
 | 04 | `registerTerminalExtension`, `useRichInput`; atalhos no xterm e sugestões explicitamente selecionadas |
-| 05 | `TabStateRegistry::apply`, `TabStateInput::AttentionRequired`, tabela `command_blocks`, `ShellService::subscribe()` / `CommandEvent::Finished` |
+| 05 | `TabStateRegistry::apply(pane_id, StateInput)`, `RuntimeBinding`, `AttentionRequired`/`AttentionCleared`, tabela `command_blocks`, `ShellService::subscribe()` / `CommandEvent::Finished` |
 | 06 | `project_get` (pasta raiz, título), store `useProjectsStore` (destaque) |
-| 07 | `tab_templates.environment_kind`/`agent_id`, `EnvironmentResolver`, `WorkspaceManager::open_tab`, `WorkspaceObserver`, evento `tab://closed` |
+| 07 | `tab_templates.environment_kind`/`agent_id`, `EnvironmentResolver::resolve(&SpawnContext)` síncrono, `ResolvedSpawn { spawn_spec, shell_integration_enabled, initial_command }`, `WorkspaceManager::open_tab`, `WorkspaceLifecycleObserver::on_signal`, evento `tab://closed` |
 | 08 | `WorktreeManager::{list, create, remove}`, `GitService::status_once`, `GitRunner::run` |
 | 09 | `AttentionRegistry`, `Notifier::notify_user`, evento `os://focus-tab`, foco da janela |
 | 12 | `ai_catalog_get` / `HarnessCatalog` como sugestões de seleção; mapeamento explícito para IDs/flags do CLI. Catálogo do gateway não comprova suporte local. |
@@ -116,7 +116,7 @@ Alertas confirmados e indícios heurísticos têm apresentação distinta, com f
 - `crates/mt-agents/src/skills/{mod.rs,catalog.rs,targets.rs,sync.rs,conflict.rs,watch.rs}`
 - `crates/mt-agents/src/memory.rs`
 - `crates/mt-agents/tests/{registry.rs,detect.rs,launch.rs,isolation.rs,relay.rs,telemetry.rs,attention.rs,skills_sync.rs,memory.rs}` + `tests/fixtures/**`
-- `crates/mt-db/migrations/NNNN_13_agents_skills_memory.sql`
+- `crates/mt-db/migrations/0008_13_agents_skills_memory.sql`
 - `src/commands/{agents.rs,skills.rs,memory.rs}`, registro em `src/specta.rs` e `src/lib.rs`
 - `tauri.conf.json`: `bundle.externalBin` com `binaries/mt-agent-relay` (empacotamento final na Fase 17)
 
@@ -138,7 +138,7 @@ Comandos executados na raiz da worktree devem terminar com **exit code 0**, salv
 ### 5.1. Qualidade
 - [ ] CA-01 `cargo clippy --workspace --all-targets -- -D warnings` e `cargo fmt --all --check` passam.
 - [ ] CA-02 `cargo test -p mt-agents` passa com todos os testes listados em spec §11; cobertura de linhas ≥ 80% em `telemetry/`, `attention/`, `skills/` e `memory.rs` (`cargo llvm-cov -p mt-agents`).
-- [ ] CA-03 `npm run lint`, `npm run typecheck`, `npm run typecheck:vue` e `npm run test` passam; `git diff --exit-code src/types/bindings.ts` após `npm run bindings` retorna 0.
+- [ ] CA-03 `npm run lint`, `npm run lint:style`, `npm run typecheck`, `npm run typecheck:vue` e `npm run test` passam; `git diff --exit-code src/types/bindings.ts` após `cargo run --manifest-path src-tauri/Cargo.toml --bin export_bindings` retorna 0. Suítes novas em `tests/`, incluídas pelo glob `tests/**/*.spec.ts` da Fase 01 (E-09).
 - [ ] CA-04 Nenhum `unsafe`; nenhum `std::thread::sleep`/IO bloqueante em tarefa `tokio` (revisão + `clippy::await_holding_lock` ativo).
 
 ### 5.2. Registro e detecção

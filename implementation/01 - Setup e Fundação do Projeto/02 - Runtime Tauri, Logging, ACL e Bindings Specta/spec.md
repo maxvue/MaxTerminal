@@ -20,7 +20,7 @@ Implementar a composição do backend nativo Tauri v2 no pacote `maxterminal` (`
    - `AppState` imutável (`paths`, `info`) e `FrontendLogState` com rate-limiter monotônico (máximo de 200 eventos por janela de 1 segundo, contabilizando e reportando descartes de forma estática).
    - Comandos `app_info` e `app_log_frontend` anotados com `#[tauri::command]` e `#[specta::specta]`.
 4. **Geração Determinística de Bindings (`src/specta.rs`, `src/bin/export_bindings.rs`, `tests/bindings.rs`):**
-   - Coleção única de comandos e registro explícito dos 8 IDs (`ProjectId`, `TabId`, `PaneId`, `PtyId`, `SessionId`, `TemplateId`, `CommandBlockId`, `CommandGroupId`) e tipos (`AppInfo`, `AppPathsDto`, `BuildProfile`, `MtError`, `ErrorCode`, `FrontendLogEvent`) com `ErrorHandlingMode::Result`.
+   - Coleção única de comandos e registro explícito dos 9 IDs (`ProjectId`, `TabId`, `PaneId`, `PtyId`, `SessionId`, `TabSessionId`, `TemplateId`, `CommandBlockId`, `CommandGroupId`) e tipos (`AppInfo`, `AppPathsDto`, `BuildProfile`, `MtError`, `ErrorCode`, `FrontendLogEvent`) com `ErrorHandlingMode::Result`.
    - Exportação sem abrir WebView/GTK e teste automatizado de drift sem sobrescrever `src/types/bindings.ts`.
 
 ---
@@ -246,6 +246,11 @@ impl FrontendLogState {
 
 ### 3.2. `src-tauri/src/logging.rs`
 
+**Regressão T-05:** nos testes do pipeline de logs, uma sentinela alfanumérica curta fora do catálogo nos
+campos `message` e `event` deve virar `REDACTED_MARKER` nos dois sinks, enquanto mensagens/eventos conhecidos
+permanecem intactos. Isso preserva a política anterior ao retirar `field_name` da assinatura de `redact`.
+A Fase 03 substitui explicitamente essa restrição de catálogo pelo sanitizador antes de admitir texto livre.
+
 ```rust
 //! Subsistema de logging estruturado (`tracing`) com arquivo diário `0o600`, writer não bloqueante
 //! de fila limitada e política `LogRedactor` que bloqueia texto livre na Fase 01.
@@ -281,10 +286,16 @@ pub const REDACTED_MARKER: &str = "[conteúdo omitido pela política de seguran�
 /// Na Fase 03, `mt-db` fornecerá uma implementação conectada ao sanitizador de segredos.
 pub trait LogRedactor: Send + Sync + 'static {
     /// Transforma um valor textual antes de serializá-lo no registro de log.
-    fn redact<'a>(&self, field_name: &str, input: &'a str) -> Cow<'a, str>;
+    /// Assinatura canônica de **1 parâmetro** (T-05), idêntica à de `01/spec.md` §4.7 e `03/04/spec.md` §3:
+    /// o redator não conhece o nome do campo; quem filtra por nome de campo é o `SafeFieldVisitor`.
+    fn redact<'a>(&self, input: &'a str) -> Cow<'a, str>;
 }
 
-/// Política estrita da Fase 01: permite apenas mensagens e identificadores estáticos conhecidos.
+/// Política estrita da Fase 01: permite apenas mensagens e eventos estáticos do catálogo fechado ou
+/// identificadores curtos (`version`, `code`, `command`); qualquer outro texto vira `REDACTED_MARKER`.
+/// A política é **agnóstica ao nome do campo** (o `SafeFieldVisitor` só encaminha os campos conhecidos
+/// `message`, `event`, `version`, `code` e `command`, exigindo catálogo exato para os dois primeiros).
+/// Texto com espaços fora do catálogo, ou com mais de 64 caracteres, é substituído pelo marcador.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct FoundationRedactor;
 
@@ -313,20 +324,18 @@ impl FoundationRedactor {
 }
 
 impl LogRedactor for FoundationRedactor {
-    fn redact<'a>(&self, field_name: &str, input: &'a str) -> Cow<'a, str> {
-        match field_name {
-            "message" if Self::ALLOWED_MESSAGES.contains(&input) => Cow::Borrowed(input),
-            "event" if Self::ALLOWED_EVENTS.contains(&input) => Cow::Borrowed(input),
-            "version" | "code" | "command" | "dropped"
-                if !input.is_empty()
-                    && input.len() <= 64
-                    && input
-                        .bytes()
-                        .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'_' | b'-')) =>
-            {
-                Cow::Borrowed(input)
-            }
-            _ => Cow::Borrowed(REDACTED_MARKER),
+    fn redact<'a>(&self, input: &'a str) -> Cow<'a, str> {
+        let is_catalog_entry =
+            Self::ALLOWED_MESSAGES.contains(&input) || Self::ALLOWED_EVENTS.contains(&input);
+        let is_short_identifier = !input.is_empty()
+            && input.len() <= 64
+            && input
+                .bytes()
+                .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'_' | b'-'));
+        if is_catalog_entry || is_short_identifier {
+            Cow::Borrowed(input)
+        } else {
+            Cow::Borrowed(REDACTED_MARKER)
         }
     }
 }
@@ -385,7 +394,14 @@ impl tracing::field::Visit for SafeFieldVisitor<'_> {
     }
 
     fn record_str(&mut self, field: &tracing::field::Field, value: &str) {
-        let redacted = self.redactor.redact(field.name(), value);
+        // A assinatura de um parâmetro não relaxa a allowlist por campo da fundação.
+        let allowed = match field.name() {
+            "message" => FoundationRedactor::ALLOWED_MESSAGES.contains(&value),
+            "event" => FoundationRedactor::ALLOWED_EVENTS.contains(&value),
+            "version" | "code" | "command" => true,
+            _ => return,
+        };
+        let redacted = self.redactor.redact(if allowed { value } else { REDACTED_MARKER });
         match field.name() {
             "message" => self.message = Cow::Owned(redacted.into_owned()),
             "event" => self.event = Some(redacted.into_owned()),
@@ -694,7 +710,8 @@ use mt_core::{
     ErrorCode, MtError,
     app::{AppInfo, BuildProfile, FrontendLogEvent},
     ids::{
-        CommandBlockId, CommandGroupId, PaneId, ProjectId, PtyId, SessionId, TabId, TemplateId,
+        CommandBlockId, CommandGroupId, PaneId, ProjectId, PtyId, SessionId, TabId, TabSessionId,
+        TemplateId,
     },
     paths::AppPathsDto,
 };
@@ -714,6 +731,7 @@ pub fn builder() -> Builder<tauri::Wry> {
         .typ::<PaneId>()
         .typ::<PtyId>()
         .typ::<SessionId>()
+        .typ::<TabSessionId>()
         .typ::<TemplateId>()
         .typ::<CommandBlockId>()
         .typ::<CommandGroupId>()
@@ -853,7 +871,7 @@ fn main() {
    - Exporta duas vezes seguidas para arquivos temporários dentro de `target/test-tmp/bindings/` e verifica igualdade byte a byte (determinismo).
    - Compara o conteúdo gerado com `../src/types/bindings.ts` sem modificar o arquivo versionado.
    - Verifica que uma cópia mutada em memória é detectada como divergente.
-   - Verifica a presença das exportações obrigatórias: `commands`, `appInfo`, `appLogFrontend`, `AppInfo`, `AppPathsDto`, `BuildProfile`, `MtError`, `ErrorCode`, `FrontendLogEvent`, `ProjectId`, `TabId`, `PaneId`, `PtyId`, `SessionId`, `TemplateId`, `CommandBlockId`, `CommandGroupId` e a ausência do campo `source`.
+   - Verifica a presença das exportações obrigatórias: `commands`, `appInfo`, `appLogFrontend`, `AppInfo`, `AppPathsDto`, `BuildProfile`, `MtError`, `ErrorCode`, `FrontendLogEvent`, `ProjectId`, `TabId`, `PaneId`, `PtyId`, `SessionId`, `TabSessionId`, `TemplateId`, `CommandBlockId`, `CommandGroupId` e a ausência do campo `source`.
 
 ### 4.2. `src-tauri/tests/capabilities.rs`
 

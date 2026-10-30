@@ -8,7 +8,7 @@
 ## 1. Pré-requisitos e Regras Operacionais
 
 - As Implementações 01, 02 e 03 devem estar concluídas (`npm run sync:local-libs` executado e `src/types/bindings.ts` gerado por `npm run bindings`).
-- Nenhum tipo Rust (`AppInfo`, `AppPathsDto`, `BuildProfile`, `MtError`, `ErrorCode`, `FrontendLogEvent` ou os 8 IDs) pode ser redeclarado manualmente em `src/types/` — todos devem vir de `src/types/bindings.ts`.
+- Nenhum tipo Rust (`AppInfo`, `AppPathsDto`, `BuildProfile`, `MtError`, `ErrorCode`, `FrontendLogEvent` ou os 9 IDs, incluindo `TabSessionId`) pode ser redeclarado manualmente em `src/types/` — todos devem vir de `src/types/bindings.ts`.
 - Componentes e stores nunca importam `commands` de `src/types/bindings.ts` diretamente; todo acesso passa por `src/ipc/app.ts` e `src/ipc/core.ts`.
 - Todos os SFCs `.vue` devem obedecer à ordem `<template>` → `<script setup lang="ts">` → `<style lang="scss" scoped>`, com tags de abertura em linha única e zero cores hexadecimais hardcoded.
 
@@ -37,6 +37,7 @@
 - [ ] **4.4.** Criar `tests/components/shell/AppShell.spec.ts` testando slots de `AppShell.vue`, renderização de `App.vue` quando `ready` (`"MaxTerminal"`, `"v0.1.0"`, `"Nenhum projeto selecionado"`) e estado de erro em `pt-BR` com `code` e botão `"Tentar novamente"`.
 
 ### Passo 5 — Validação End-to-End da Fase 01
+- [ ] **5.0.** Com os primeiros `.vue`/`.scss` de `src/` já criados (passos 2 a 4), executar `npm run lint:style` e `npm run typecheck:vue` isoladamente: é aqui que essas verificações passam a validar arquivos reais (em `01/03` elas passam sobre árvore sem SFCs, via `--allow-empty-input`).
 - [ ] **5.1.** Executar `npm run check` e confirmar que todos os 10 estágios (links locais, ESLint, Stylelint, `tsgo`, `vue-tsc`, Vitest com cobertura ≥ 80%, Vite build, `cargo fmt --check`, `cargo clippy`, `cargo test`) passam com exit code `0`.
 - [ ] **5.2.** Executar `npm run tauri build -- --no-bundle` (e smoke de `npm run tauri dev` / binário nativo quando houver sessão gráfica disponível) confirmando a criação dos diretórios XDG sem `.db` e o log `MaxTerminal iniciado`.
 

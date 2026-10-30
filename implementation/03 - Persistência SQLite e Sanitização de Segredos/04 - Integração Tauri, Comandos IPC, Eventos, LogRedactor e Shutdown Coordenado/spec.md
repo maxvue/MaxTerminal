@@ -55,7 +55,7 @@ impl LogRedactor for SanitizerLogRedactor {
 ```
 
 **Regras de integração no logger (`logging.rs`):**
-1. O visitante de campos (`tracing::field::Visit`) coleta `message` e demais campos estruturados do evento, passa cada valor textual por `redactor.redact(val)` **antes** de serializar o objeto JSON de linha de log e **antes** de escrever no buffer por evento.
+1. O visitante de campos (`tracing::field::Visit`) coleta `message` e demais campos estruturados do evento, passa cada valor textual por `redactor.redact(val)` **antes** de serializar o objeto JSON de linha de log e **antes** de escrever no buffer por evento. Ao instalar `SanitizerLogRedactor`, substituir a pré-filtragem por catálogo de `message`/`event` da Fase 01 pela sanitização integral: o texto original chega ao sanitizador, nunca aos sinks antes dele. Preservar a política de targets e os controles de taxa; a assinatura continua de um parâmetro. Sem essa troca o exemplo CA-32 abaixo seria reduzido ao marcador genérico antes de sanitizar.
 2. Em `src-tauri/src/lib.rs`, `init_logging(&paths.log_dir, Box::new(SanitizerLogRedactor))` é chamado imediatamente após `paths.ensure_dirs()`, antes de qualquer `tracing::info!` ou abertura do banco.
 3. Uma chamada `tracing::info!("Authorization: Bearer abc.def.ghi123456")` grava no arquivo `maxterminal.log.<data>` exatamente `Authorization: Bearer [REDACTED:bearer]` (CA-32).
 

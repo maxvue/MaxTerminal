@@ -20,7 +20,7 @@ flowchart LR
         MC[Extensão MaxCode]
     end
     subgraph MT[MaxTerminal - processo Tauri]
-        DL[deep_link.rs<br/>tauri-plugin-deep-link]
+        DL[ActivationRouter 09<br/>ActivationHandler 11]
         SI[Single-instance<br/>Fase 09]
         HOST[bridge/host.rs<br/>impl BridgeHost]
         subgraph BR[crate mt-bridge]
@@ -108,13 +108,13 @@ mt-bridge/src/
 ├── uri.rs          # MaxTerminalUri (parse), MaxCodeUri (build), limites
 ├── paths.rs        # canonicalização e worktrees
 ├── sync.rs         # ActiveProjectSync, LoopGuard
-├── prompt.rs       # build_inspect_prompt, truncate_utf8, strip_ansi
+├── prompt.rs       # build_inspect_prompt, truncate_utf8_prefix, truncate_utf8_suffix, strip_ansi
 └── handler.rs      # trait BridgeHost
 src-tauri/src/bridge/
 ├── mod.rs          # init(app) no setup; shutdown via hook Fase 09 antes do exit final
 ├── host.rs         # TauriBridgeHost: impl BridgeHost
 ├── adapters.rs     # pontes para contratos das Fases 05/06/07/09
-└── deep_link.rs    # registro do plugin + roteamento maxterminal://
+└── deep_link.rs    # ActivationHandler registrado no ActivationRouter da 09; sem listener próprio
 ```
 
 ### 2.3. Contratos consumidos de fases anteriores (via `adapters.rs`)
@@ -127,12 +127,11 @@ src-tauri/src/bridge/
 | 05 | `ShellService::error_context(id, 80) -> ErrorContext`, `command_block_get(id, include_output)` / `CommandBlockDto` | contexto exato do bloco, tail sanitizada; não inventar `shell_block_output` |
 | 06 | Serviço/repositório de projetos por caminho e `useProjectsStore.selectedProjectId` | adaptador de seleção com metadados; evento `project://selected` só se realmente existir |
 | 07 | `WorkspaceManager::open_tab(TabOpenRequest { project_id, template_id, overrides: Option<TabOpenOverrides>, focus }) -> TabView`, `TemplateRepo::list(project_id)` | criar no Rust; resolver nome para id dentro do projeto e sobrescrever somente `cwd` permitido |
-| 09 | `cli::handle_second_instance`, único plugin single-instance, `QuakeController::show_and_focus`, `ShutdownHooks` | composição no binário; não existe contrato confirmado `mt_os::single_instance::on_args` |
+| 09 | `ActivationHandler`, `ActivationEnvelope`, `ActivationRouter::register_handler`, `EditorOpener`, `EditorLauncher::set_bridge_opener`, `QuakeController::show_and_focus`, `ShutdownHooks` | composição no binário; único listener de deep link e single-instance pertencem à 09 |
 
 `ErrorContext` é o contrato oficial da Fase 05 para inspeção; seus campos TS são `blockId`, `exitCode`,
 `cwd`, `command`, `tail`, `truncated`. `CommandBlockDto` também serializa camelCase. O envelope externo
-mantém os nomes explicitados abaixo; DTOs dessa ponte usam snake_case, salvo `correlationId` explicitamente
-renomeado. Gerar todos por specta; não renomear contratos das fases donas para acomodar esta fase.
+mantém os nomes explicitados abaixo; DTOs de estado, entrega e eventos Tauri usam `#[serde(rename_all = "camelCase")]` (`BridgeStatus`, `PeerInfo`, `ProjectFocusRequested`, `DeliveryReport` e eventos). `BridgeConfig` mantém seu contrato explícito `snake_case` de configuração/TOML também no IPC; não confundir esse tipo com os DTOs de estado. Gerar por Specta e adaptar acessos/fixtures TS. O protocolo base WS/HTTP conserva seus nomes de fio; a extensão de issues em 11/06 declara payloads camelCase explicitamente.
 
 ---
 
@@ -226,9 +225,9 @@ pub fn discovery_path(paths: &AppPaths) -> PathBuf;
 /// Valida dono/tipo sem seguir symlink; temporário exclusivo aleatório 0600, fsync, rename e fsync do diretório.
 pub fn write_discovery(path: &Path, file: &DiscoveryFile) -> Result<(), BridgeError>;
 /// Remove somente se instance_id e identidade do processo ainda forem desta instância.
-pub fn remove_discovery(path: &Path) -> Result<(), BridgeError>;
+pub fn remove_discovery(path: &Path, expected_instance_id: Uuid) -> Result<(), BridgeError>;
 /// Valida UID, boot_id e process_start_ticks; nome/PID isolados não provam identidade.
-pub fn foreign_live_instance(path: &Path) -> Option<u32>;
+pub fn foreign_live_instance(path: &Path, current_instance_id: Uuid) -> Option<u32>;
 
 /// Proposta externa opcional, DESABILITADA até validada: `$XDG_RUNTIME_DIR/maxcode/bridge.json`
 /// `{ version, app: "maxcode", port, token, pid, protocol, workspace_folders: string[] }`.
@@ -264,18 +263,19 @@ pub struct OriginPolicy { allowed: Vec<String> }
 impl OriginPolicy {
     /// Padrão: Origin ausente (clientes Node/extensões) OU `vscode-file://vscode-app` OU `extra_allowed_origins`.
     /// Qualquer `http(s)://` é rejeitado, inclusive `http://localhost`.
-    pub fn check(&self, origin: Option<&HeaderValue>) -> Result<(), BridgeError>;
+    pub fn check(&self, headers: &HeaderMap) -> Result<(), BridgeError>;
 }
 pub struct HostPolicy { port: u16 }
 impl HostPolicy {
     /// Aceita apenas `127.0.0.1:<port>` e `localhost:<port>` (anti DNS-rebinding).
-    pub fn check(&self, host: Option<&HeaderValue>) -> Result<(), BridgeError>;
+    pub fn check(&self, headers: &HeaderMap) -> Result<(), BridgeError>;
 }
 /// Extrai `Authorization: Bearer <t>`; ausente/mal formado → Unauthorized.
 pub fn verify_bearer(headers: &HeaderMap, token: &Token) -> Result<(), BridgeError>;
 ```
 
 Limites de conexão/headers são aplicados antes de alocar corpo; depois `Host` → `Origin` → `Bearer` → payload.
+`HostPolicy` rejeita Host ausente, duplicado, domínio ou porta divergentes com `403 Forbidden` + `bridge.host_forbidden`; aceita `127.0.0.1:<port>` e `localhost:<port>` (D-04).
 `/v1/health` é a única exceção de Bearer. Origin ausente não dispensa token; rejeitar múltiplos valores e `null`.
 O token **nunca** vai em query string
 (evita vazamento em logs).
@@ -286,6 +286,8 @@ O token **nunca** vai em query string
 /// Ponto de inversão: o app Tauri implementa; testes usam `MockHost`.
 #[async_trait::async_trait]
 pub trait BridgeHost: Send + Sync + 'static {
+    /// Lista projetos cadastrados para match de caminho/worktree (assinatura de 11/01).
+    async fn list_projects(&self) -> Result<Vec<ProjectRef>, BridgeError>;
     /// Resolve caminho canônico → projeto conhecido (Fase 06).
     async fn find_project_by_path(&self, canonical: &Path) -> Option<ProjectRef>;
     /// Seleciona/foca o projeto na UI; `cause` repassado ao LoopGuard.
@@ -301,12 +303,14 @@ pub trait BridgeHost: Send + Sync + 'static {
 }
 
 #[derive(Debug, Clone, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
 pub struct ProjectRef { pub id: ProjectId, pub path: PathBuf, pub title: String }
 
 #[derive(Debug, Clone)]
 pub struct FocusRequest { pub project: ProjectRef, pub worktree_path: Option<PathBuf>, pub context: SyncContext }
 
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
 pub struct SyncContext {
     pub origin: PeerApp,
     #[serde(rename = "correlationId")]
@@ -314,7 +318,7 @@ pub struct SyncContext {
 }
 
 #[derive(Debug, Clone)]
-pub struct OpenTabRequest { pub project: ProjectRef, pub template: Option<String>, pub cwd: Option<PathBuf> }
+pub struct OpenTabRequest { pub project: ProjectRef, pub template: Option<String>, pub cwd: Option<PathBuf>, pub context: SyncContext }
 ```
 
 ### 3.6. Handle público (`lib.rs`)
@@ -339,6 +343,7 @@ impl BridgeHandle {
 pub enum BridgeState { Disabled, Starting, Listening, Connected, Failed }
 
 #[derive(Debug, Clone, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
 pub struct BridgeStatus {
     pub instance_id: String,
     pub revision: u64,             // contador monotônico; snapshot/listeners usam a mesma revisão
@@ -352,6 +357,7 @@ pub struct BridgeStatus {
 }
 
 #[derive(Debug, Clone, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
 pub struct PeerInfo {
     pub id: String,                 // Uuid v7 da sessão
     pub app: String,                // "maxcode"
@@ -435,20 +441,15 @@ Códigos de fechamento: `4001` hello ausente/ inválido, `4002` versão incompat
 `4008` excesso de mensagens, `1001` shutdown do app, `1009` frame grande demais.
 
 ```rust
-pub struct PeerSession {
-    pub info: PeerInfo,
-    tx: mpsc::Sender<Envelope>,                     // capacidade 64; cheia → descarta ping, fecha 4008 se persistir
-    pending: Mutex<HashMap<Uuid, oneshot::Sender<Envelope>>>, // aguardando ack/resposta
-    last_pong: AtomicI64,
-}
-pub struct PeerRegistry { peers: RwLock<HashMap<Uuid, Arc<PeerSession>>> }
+pub struct PeerSession { /* Campos e métodos completos em 11/02 §3.2; canal 64, pending ACKs e relógio monotônico. */ }
+pub struct PeerRegistry { /* Contrato completo em 11/02 §3.2. */ }
 impl PeerRegistry {
-    pub fn register(&self, s: Arc<PeerSession>);
-    pub fn unregister(&self, id: Uuid);
+    pub fn register(&self, session: Arc<PeerSession>) -> Result<(), BridgeError>;
+    pub fn unregister(&self, session_id: Uuid) -> Option<Arc<PeerSession>>;
     /// Filtra capability e projeto/worktree exatos; ambiguidade => escolha explícita, nunca peer arbitrário.
-    pub fn pick_for(&self, project_path: Option<&Path>) -> Option<Arc<PeerSession>>;
-    pub async fn request(&self, peer: &PeerSession, msg: Envelope, timeout: Duration) -> Result<Envelope, BridgeError>;
-    pub fn close_all(&self, code: u16);
+    pub fn pick_for(&self, project_path: Option<&Path>, required_caps: &[Capability]) -> Option<Arc<PeerSession>>;
+    pub async fn request(&self, peer: &Arc<PeerSession>, msg: Envelope, timeout: Duration) -> Result<Envelope, BridgeError>;
+    pub fn close_all(&self, code: u16, reason: &'static str);
 }
 ```
 
@@ -589,9 +590,7 @@ pub enum ConversationMode { Plan }
 pub enum ConversationSource { Inspect, Generic }
 ```
 
-`source` é metadado de rastreabilidade, não escolhe comportamento. As Fases 14/16 usam `Generic` e podem
-evoluir o adaptador/capabilities depois; não incluir enums de domínio futuro nem prometer execução por
-`IssueFix`. `open_conversation` exige `open_conversation` **e** `plan_mode`; ACK terminal só é sucesso com
+`source` é metadado de rastreabilidade, não escolhe comportamento. A Fase 14 usa `Generic`; ações de issues da Fase 16 consomem o protocolo próprio entregue em **11/06** via `MaxCodePort`, nunca `open_plan` para simular BUG FIX. `ConversationMode::Plan` continua exclusivo da conversa genérica. `open_conversation` exige `open_conversation` **e** `plan_mode`; ACK terminal só é sucesso com
 `handled:true`, `conversation_id` e `mode:plan`. Aceitação em fila não é conclusão. `project.focus`/`project.opened`
 transportam apenas seleção; não executar comandos nem fechar abas. Envelopes de controle também carregam
 `senderId`/`correlationId`, mas somente operações com efeito entram no cache de idempotência.
@@ -635,6 +634,10 @@ com `idempotent_requests` negociado, mesmo receptor/instância e dentro do TTL. 
 cache: pedido que pode ter sido aplicado retorna `bridge.delivery_unknown`, não é reexecutado. Não há
 garantia de exactly-once após crash; não usar SQL só para simular essa garantia.
 
+### 5.7. Extensões de issues e editor
+
+A sub-implementação [`11/06`](./06%20-%20Protocolo%20de%20Issues%20e%20Ciclo%20de%20Bugs%20MaxCode/spec.md) estende aditivamente `MessageType`/`Message` com `issue.command`, `bugs.cycle.preview`, `bugs.cycle.start`, `bugs.cycle.status` e `bugs.cycle.progress`, `Capability` com `issues_protocol_v1`/`bugs_cycle_v1`, metadados de handshake e respostas tipadas opcionais no ACK. Define os quatro métodos de `MaxCodeClient`, assinatura Rust de progresso e URI `/issue`, todos condicionados à validação real. O consumidor 16 converte seu domínio via `MaxCodePort`; nenhuma importação reversa é permitida. A unidade 11/04 acrescenta `editor_open_v1`/`maxcode.open_file` e `MaxCodeClient::open_file` para o `EditorOpener` da 09, igualmente proposta gated.
+
 ---
 
 ## 6. URI Schemes (`uri.rs`, `deep_link.rs`)
@@ -644,15 +647,17 @@ garantia de exactly-once após crash; não usar SQL só para simular essa garant
 ```rust
 #[derive(Debug, Clone, PartialEq)]
 pub enum MaxTerminalUri {
-    ProjectOpen { path: PathBuf },
-    TabOpen { project: PathBuf, cwd: Option<PathBuf>, request_id: Uuid },
+    ProjectOpen { path: PathBuf, worktree: Option<PathBuf>, correlation_id: Option<Uuid> },
+    TabOpen { project: PathBuf, cwd: Option<PathBuf>, request_id: Uuid, worktree: Option<PathBuf>, correlation_id: Option<Uuid> },
 }
 impl MaxTerminalUri {
     /// Aceita somente scheme `maxterminal`, host `project`|`tab`, path `/open`.
-    /// Parâmetros: percent-decoding UTF-8; cada valor ≤ 4096 bytes; URI total ≤ 16 KiB;
+    /// Parâmetros: percent-decoding UTF-8; cada valor ≤ 4096 bytes; URI total ≤ 8 KiB (contrato 09);
     /// `path`/`project` absolutos; cwd relativo é resolvido contra o projeto antes de canonicalizar;
     /// parâmetros repetidos ou desconhecidos → InvalidUri.
     pub fn parse(raw: &str) -> Result<Self, BridgeError>;
+    /// Consome pares já decodificados pelo ActivationRouter, sem segundo percent-decoding.
+    pub fn parse_parts(uri: &url::Url, params: &[(String, String)]) -> Result<Self, BridgeError>;
 }
 ```
 
@@ -672,19 +677,9 @@ Não ampliar o payload externo para contornar essa restrição. Para `project/op
 com espaços/acentos, mas não credenciais; para integrações automatizadas preferir wake + canal autenticado.
 Rejeitar userinfo, porta, fragmento, NUL/controles e percent-encoding inválido; decodificar exatamente uma vez.
 
-Registro (`deep_link.rs`):
+Registro (`deep_link.rs`): implementar `BridgeActivationHandler: mt_os::activation::ActivationHandler` e registrá-lo com `activation.register_handler(handler).await?` antes de `set_ready`. A assinatura e composição completas estão em `11/04` §3.3. O único `on_open_url`/`get_current` e a fila de transporte pertencem à Fase 09; esta fase só interpreta `ActivationEnvelope.params`, sem decodificá-los novamente. Não registrar plugin/listener adicional nem reenfileirar argv da segunda instância.
 
-```rust
-pub fn init(app: &AppHandle, bridge: BridgeHandle) -> MtResult<()> {
-    // 1) Em debug: app.deep_link().register_all() (gera handler XDG para o binário de dev).
-    // 2) app.deep_link().on_open_url(|event| route(event.urls())) — URLs da instância atual.
-    // 3) URLs na linha de comando do primeiro start: app.deep_link().get_current().
-    // 4) A composição no binário mantém o único callback single-instance da Fase 09.
-    //    Habilitar a feature deep-link do plugin single-instance; não registrar outro plugin/callback.
-    //    Se houver encaminhamento manual, ele entra na mesma fila com dedup, nunca numa rota paralela.
-}
-async fn route(host: &TauriBridgeHost, raw: &str) -> Result<(), BridgeError>;
-```
+Ambas as rotas aceitam opcionais `worktree` (caminho absoluto cuja associação Git deve ser comprovada em 11/03) e `correlationId` (UUID, apenas correlação). Rejeitar outras chaves de negócio. A correlação fornecida não autentica o remetente nem muda sua origem local; se ausente, gerar UUID v7.
 
 `tauri.conf.json`:
 
@@ -707,11 +702,7 @@ MimeType=x-scheme-handler/maxterminal;
 StartupWMClass=maxterminal
 ```
 
-Wake-up: com o app fechado, o XDG inicia `maxterminal <url>`; a URL é lida em `get_current()` após o setup das
-Fases 06/07 (o roteamento aguarda o sinal `projects_ready` via `tokio::sync::watch`, timeout 10 s). Com o app
-aberto, a single-instance (Fase 09) encerra o novo processo e encaminha `argv`. Plugin single-instance
-registrado primeiro, com feature `deep-link`; depois plugin deep-link. Registrar listener antes de consumir
-`get_current()`; ambos alimentam uma fila limitada a 32 itens. Para `TabOpen`, dedup por `requestId` durante
+Wake-up: o XDG inicia `maxterminal <url>`; o `ActivationRouter` da Fase 09 recebe startup/plugin/segunda instância, com listener instalado antes de consumir `get_current()`. A única fila de 32 envelopes tem TTL de 30 s. Registrar o handler da 11 antes da prontidão conjunta de projetos/workspace/UI (timeout de 10 s para o consumidor UI). Para `TabOpen`, dedup por `requestId` durante
 5 min; para foco idempotente, coalescer URI normalizada por 2 s. Não logar argv/URI crua.
 Readiness inclui serviços Rust **e** consumidor de seleção da UI; timeout devolve falha visível. `show_and_focus`
 usa a Fase 09 (best effort no Wayland), sem criar outra janela. Integração de saída passa por `ShutdownHooks`
@@ -740,14 +731,14 @@ impl MaxCodeUri {
 
 | Item | Limite | Comportamento |
 |------|--------|---------------|
-| URI `maxterminal://` total | 16 KiB | rejeita (`InvalidUri`) |
+| URI `maxterminal://` total | 8 KiB | transporte → `os.activation_invalid`; parser isolado → `bridge.invalid_uri` |
 | Valor de parâmetro de entrada | 4096 bytes | rejeita |
-| URI `vscode://` total | 2 KiB | só scheme, rota e UUID público; rejeita qualquer conteúdo adicional |
+| URI `vscode://johnattas.maxcode` total | 2 KiB | wake genérico só UUID; exceção `/issue` com `action`, `repo`, `number`, `requestId` conforme 11/06, condicionada à validação; nunca prompt/token/caminho |
 | Prompt genérico via WS/HTTP | 64 KiB UTF-8 | rejeita acima do limite; não cortar template já interpolado |
 | `${comando}` (Inspecionar) | 2000 caracteres | truncado |
 | `${erro}` (Inspecionar) | últimas 80 linhas e 6000 caracteres | mantém o **final** da saída, prefixo `[…] ` |
 
-`truncate_utf8` corta somente em fronteira de `char`; os limites de `${comando}`/`${erro}` incluem marcadores
+`truncate_utf8_prefix` (mantém o início) e `truncate_utf8_suffix` (mantém o final) cortam somente em fronteira de `char`; os limites de `${comando}`/`${erro}` incluem marcadores
 de truncamento. Caracteres significam escalares Unicode; o limite de transporte é em bytes UTF-8. A URI
 nunca recebe esses valores. Sanitizar antes de truncar evita perder delimitadores necessários à redação.
 
@@ -800,6 +791,7 @@ consistente. Fila de entrega, token, dedup e prompts são efêmeros; nunca salva
 pub enum DeliveryChannel { Websocket, Http }
 
 #[derive(Debug, Clone, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
 pub struct DeliveryReport { pub channel: DeliveryChannel, pub message_id: String, pub truncated: bool,
                             pub wake_used: bool, pub confirmed: bool, // true apenas após ACK terminal
                             pub conversation_id: Option<String>, pub mode: Option<ConversationMode>,
@@ -809,15 +801,15 @@ pub struct DeliveryReport { pub channel: DeliveryChannel, pub message_id: String
 pub trait MaxCodeAdapter: Send + Sync {
     fn capabilities(&self) -> Vec<Capability>;
     fn build_wake_uri(&self, request_id: Uuid) -> Result<String, BridgeError>;
-    async fn discover_http(&self) -> Result<Option<MaxCodeDiscovery>, BridgeError>;
+    async fn discover_http(&self, paths: &AppPaths) -> Result<Option<MaxCodeDiscovery>, BridgeError>;
     // Traduz wire format real ↔ Envelope local; sem implementar regras de issues/Artisan.
 }
 
 pub struct MaxCodeClient { registry: Arc<PeerRegistry>, opener: Arc<dyn UriOpener>, paths: AppPaths,
                            adapter: Arc<dyn MaxCodeAdapter>, ack_timeout: Duration /* fila efêmera interna */ }
 impl MaxCodeClient {
-    /// API genérica (Fases 11, 14, 16).
-    pub async fn open_plan(&self, prompt: &str, project_path: Option<&Path>, source: ConversationSource)
+    /// API genérica (Fases 11 e 14); inspeção propaga truncamento anterior; chamada genérica passa false.
+    pub async fn open_plan(&self, prompt: &str, project_path: Option<&Path>, source: ConversationSource, pre_truncated: bool)
         -> Result<DeliveryReport, BridgeError>;
     pub async fn open_project(&self, project_path: &Path) -> Result<DeliveryReport, BridgeError>;
     pub async fn notify_focus(&self, project_path: &Path, context: SyncContext) -> Result<(), BridgeError>; // sem wake
@@ -971,7 +963,7 @@ Todos `async`, `#[tauri::command] #[specta::specta]`, retorno `Result<T, MtError
 | `bridge_notify_active_project` | `project_id: ProjectId, context: SyncContext` | `()` | `project.not_found` (Fase 06) — no-op se sync desativado |
 
 Observações:
-- `maxcode_open_plan` aplica `sanitize()` ao prompt genérico (defesa em profundidade para Fases 14/16).
+- `maxcode_open_plan` aplica `sanitize()` ao prompt genérico (defesa em profundidade para a Fase 14).
   Inspecionar usa o construtor de valores sanitizados e mantém a frase fixa literal. Ambos limitam bytes.
   Os comandos `maxcode_*` também podem retornar `bridge.unsupported_capability`, `bridge.wake_timeout`,
   `bridge.delivery_unknown`, `bridge.busy` e `bridge.idempotency_conflict` conforme §8.
@@ -986,10 +978,10 @@ Observações:
 |--------|---------|--------|
 | `bridge://status-changed` | `BridgeStatus` | start/stop/restart, mudança de peers, erro de bind |
 | `bridge://peer-connected` | `PeerInfo` | após `hello.ack` |
-| `bridge://peer-disconnected` | `{ peer_id: string, reason: string }` | close/timeout/revogação |
-| `bridge://project-focus-requested` | `{ project_id: ProjectId, worktree_path: string \| null, context: SyncContext, revision: number, instance_id: string }` | seleção autoritativa idempotente; adaptador aguarda aplicação/ack do consumidor, não só emit |
-| `bridge://tab-opened` | `{ tab_id: TabId, project_id: ProjectId, context: SyncContext }` | notificação após `WorkspaceManager::open_tab`; UI nunca cria outra aba ao receber |
-| `bridge://delivery-failed` | `{ message_id: string, code: string, message: string }` | falha total de entrega assíncrona |
+| `bridge://peer-disconnected` | `{ peerId: string, reason: string }` | close/timeout/revogação |
+| `bridge://project-focus-requested` | `{ projectId: ProjectId, worktreePath: string \| null, context: SyncContext, revision: number, instanceId: string }` | seleção autoritativa idempotente; adaptador aguarda aplicação/ack do consumidor, não só emit |
+| `bridge://tab-opened` | `{ tabId: TabId, projectId: ProjectId, context: SyncContext }` | notificação após `WorkspaceManager::open_tab`; UI nunca cria outra aba ao receber |
+| `bridge://delivery-failed` | `{ messageId: string, code: string, message: string }` | falha total de entrega assíncrona |
 
 Volume baixo → `emit` é adequado (sem `Channel`), restrito à janela principal autorizada; registrar payloads
 como structs Rust com specta. DTOs TS abaixo são imports gerados, não interfaces duplicadas. Sem prompt,
@@ -1052,13 +1044,13 @@ getters:
         // failed → danger "Ponte indisponível"; disabled → neutral "Ponte desativada"
     isInspecting: (id: CommandBlockId) => boolean
 actions:
-    init(): Promise<void>                   // single-flight: listeners antes de snapshot; compara instance_id/revision
+    init(): Promise<void>                   // single-flight: listeners antes de snapshot; compara instanceId/revision
     dispose(): void
     updateConfig(patch: Partial<BridgeConfig>): Promise<void>
     restart(): Promise<void>
     regenerateToken(): Promise<void>
     openPlan(prompt: string, projectPath: string | null, source?: ConversationSource): Promise<DeliveryReport>
-        // API pública para Fases 14 e 16
+        // API pública para a Fase 14; issues usam MaxCodePort (11/06 → 16).
     openProject(projectPath: string): Promise<DeliveryReport>
     inspect(blockId: CommandBlockId): Promise<DeliveryReport> // coalesce por id; finally limpa pendingBlockIds
 ```
@@ -1066,7 +1058,7 @@ actions:
 Store sem persistência via `max-pinia` (a fonte da verdade é o backend). Toasts via `Toast.show` do
 `@maxvue/max-components-ui`: sucesso `"Conversa aberta no MaxCode"` somente para relatório confirmado;
 erro `"Não foi possível abrir o MaxCode"` com `code`; entrega ambígua usa `"Não foi possível confirmar a abertura no MaxCode"`.
-Listeners são instalados antes de buscar snapshot; descartar revisão obsoleta, detectar nova `instance_id`.
+Listeners são instalados antes de buscar snapshot; descartar revisão obsoleta, detectar nova `instanceId`.
 `dispose()` incrementa geração e remove inclusive listeners cuja Promise resolveu após desmontagem; nenhum
 toast tardio após disposal. Configuração vem do Rust e rollback em falha mantém estado real. Duplo clique
 no mesmo bloco compartilha Promise de envio, sem criar nova operação.
@@ -1076,7 +1068,7 @@ no mesmo bloco compartilha Promise de envio, sem criar nova operação.
 ```ts
 // src/composables/useActiveProjectSync.ts — montado uma vez no AppShell
 export function useActiveProjectSync(): void;
-// - escuta onProjectFocusRequested → adaptador local aplica select(project_id) + contexto imutável
+// - escuta onProjectFocusRequested → adaptador local aplica select(projectId) + contexto imutável
 // - confirma aplicação via notifyActiveProject(id, context); contexto remoto nunca é encaminhado pelo Rust
 // - seleção manual gera contexto { origin: 'maxterminal', correlationId: UUID } e notifica uma vez
 // - observa selectedProjectId da Fase 06; não presumir activeProjectId/cause na API dessa store
@@ -1140,7 +1132,7 @@ sequenceDiagram
     A-->>C: command, tail, exit_code, truncated, project_path
     C->>P: build_inspect_prompt(..., sanitize)
     P-->>C: InspectPrompt
-    C->>Cl: open_plan(prompt, project_path, Inspect)
+    C->>Cl: open_plan(prompt, project_path, Inspect, pre_truncated)
     alt peer WS com ack
         Cl-->>C: DeliveryReport{websocket}
     else sem peer e sem efeito iniciado
@@ -1158,7 +1150,7 @@ sequenceDiagram
 1. Registrar single-instance da Fase 09 primeiro, depois deep-link; `setup()` → `BridgeConfig::load` →
    `start_bridge` (task tokio; falha de bind não impede o app: `state=failed`).
 2. `write_discovery` após bind; `bridge://status-changed`.
-3. `deep_link::init` → processa `get_current()` após `projects_ready`.
+3. `deep_link::init(...).await` registra `BridgeActivationHandler` na 09; a composição libera `ActivationRouter::set_ready` após projetos/workspace/UI prontos. `get_current` e listener permanecem exclusivamente na 09. Registrar também `BridgeEditorOpener` via `EditorLauncher::set_bridge_opener`.
 4. Hook do shutdown coordenado da Fase 09 com "Sair" real → bloquear novos pedidos, cancelar wake/ACKs,
    fechar sessões, aguardar tasks até 2 s e remover somente descoberta desta instância; exit final depois.
 
@@ -1199,7 +1191,7 @@ Toda mensagem de erro voltada ao usuário em pt-BR; códigos estáveis `bridge.*
 - Arquivo de descoberta 0600 em diretório 0700; leitura da descoberta do MaxCode rejeita arquivo com permissão
   mais aberta que 0600 ou dono diferente do UID atual.
 - Caminhos recebidos (WS, URI) devem ser absolutos, canonicalizados e corresponder a projeto já cadastrado; `cwd`
-  confinado à raiz do projeto — a ponte **nunca** executa comandos arbitrários nem cria projetos.
+   confinado à raiz do projeto — a ponte **nunca** executa comandos arbitrários nem cria projetos. Abertura de arquivo via `EditorOpener` segue a exceção da 09 para arquivos regulares externos (ex.: includes do compilador), sem criar projeto/PTY.
 - `terminal.open_tab` aceita apenas nome de template existente; o comando inicial vem do template (Fase 07),
   nunca do payload. Essa operação exige autenticação; deep links abrem somente template neutro conforme §6.1.
 - `xdg-open` chamado sem shell, com URI construída por `url`/`percent-encoding`.
@@ -1213,7 +1205,7 @@ Toda mensagem de erro voltada ao usuário em pt-BR; códigos estáveis `bridge.*
 - `auth`: Bearer ausente/mal formado/errado/correto; `Origin` ausente ok, `vscode-file://vscode-app` ok,
   `http://localhost:5177` e `https://evil.example` rejeitados; `Host` válido/inválido; `Debug` do token mascarado.
 - `uri`: parse das 2 rotas, percent-decoding UTF-8 (acentos, espaços), parâmetros repetidos/desconhecidos,
-  caminho relativo, limites 4096/16 KiB; `vscode://` contém somente requestId. Rejeitar token/prompt/comando,
+   caminho relativo, limites 4096/8 KiB; wake genérico contém somente requestId; `/issue` segue a exceção validada de 11/06. Rejeitar token/prompt/comando,
   userinfo, NUL, fragmento e dupla decodificação; template com comando não inicia por URI.
 - `prompt`: caso exato do CA-29; ANSI e `\r` removidos; 200 linhas → 80 últimas; saída vazia → "código de saída N";
   aspas internas preservadas; sanitizador real com segredo dividido na fronteira do recorte; template fixo
@@ -1240,8 +1232,7 @@ Toda mensagem de erro voltada ao usuário em pt-BR; códigos estáveis `bridge.*
 ### 18.3. Frontend (Vitest + `@tauri-apps/api/mocks`)
 - `maxCodeBridge.spec.ts`: `init` idempotente, getters `indicator` para os 4 estados, `inspect` alternando
   `pendingBlockIds`, toasts de sucesso/erro, `openPlan` repassando `source`.
-- `useActiveProjectSync.spec.ts`: evento `project-focus-requested` seleciona projeto sem chamar
-  `notifyActiveProject`; seleção manual chama uma vez; sync desativado não chama.
+- `useActiveProjectSync.spec.ts`: evento `project-focus-requested` seleciona projeto e chama `notifyActiveProject` apenas para confirmar contexto remoto; Rust não ecoa `project.focus`. Seleção manual chama uma vez; sync desativado não chama.
 - `InspectButton.spec.ts`: visível só com `exitCode` ≠ 0 (casos `undefined`, `null`, `0`, `2`, `-1`), loading/disabled, emit
   `inspected`.
 - `BridgeStatusIndicator.spec.ts`: cor/rótulo por estado, tooltip com porta e conexões.
@@ -1263,7 +1254,7 @@ Toda mensagem de erro voltada ao usuário em pt-BR; códigos estáveis `bridge.*
 | 12 | Slot de ações do `CommandBlock` compartilhado (`order` 20+) | Diagnóstico Rápido Inline ao lado de "Inspecionar" |
 | 13 | `OpenTabPayload` / `BridgeHost::open_tab` | abrir aba de Agente CLI em worktree a partir do MaxCode (via template de agente) |
 | 14 | `maxcode_open_plan(prompt, project_path, 'generic')` / `useMaxCodeBridgeStore().openPlan` | "Criar com MaxCode"; formulário/prompt pertencem à 14 |
-| 16 | `maxcode_open_plan(..., 'generic')`, `maxcode_open_project`, `MaxCodeAdapter` | Abrir/Analisar; Corrigir e lote exigem extensão de capability validada na 16, nunca tradução implícita de BUG FIX para Plan |
+| 16 | `MaxCodeClient::{send_issue_command,bugs_cycle_preview,bugs_cycle_start,bugs_cycle_status}` e assinatura de progresso de **11/06**, via adaptador de `MaxCodePort` | Abrir/Analisar/Corrigir e lote condicionados às capabilities e validação externa; Fase 16 não altera arquivos da 11 nem traduz Fix para Plan |
 | 17 | `packaging/linux/maxterminal.desktop`, `BridgeConfig` | empacotamento, registro do MIME, hardening e E2E |
 
 Novos tipos de mensagem devem ser adicionados em `MessageType` + `Message` com `Capability` correspondente,

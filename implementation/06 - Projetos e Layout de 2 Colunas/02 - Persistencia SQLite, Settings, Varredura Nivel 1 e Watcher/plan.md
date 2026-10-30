@@ -7,8 +7,8 @@
 
 ## 1. Checklist Sequencial de Implementação
 
-### Passo 1 — Criar a Migration SQLite da Fase 06 (`src-tauri/crates/mt-db/migrations/NNNN_06_projects.sql`)
-1. Verificar no diretório `src-tauri/crates/mt-db/migrations/` o próximo número sequencial `NNNN` livre após as migrations das Fases 03 e 05 (ex.: `0003_06_projects.sql`).
+### Passo 1 — Criar a Migration SQLite da Fase 06 (`src-tauri/crates/mt-db/migrations/0003_06_projects.sql`)
+1. Criar o arquivo com o número canônico `0003_06_projects.sql` em `src-tauri/crates/mt-db/migrations/` (tabela de migrations contíguas D-01: `0001_03_base`, `0002_05_shell_sessions_command_blocks`, `0003_06_projects`); não usar placeholders `NNNN_`.
 2. Escrever o DDL completo de `project_roots`, `projects`, `project_root_entries` e `project_discovery_dismissed` exatamente como especificado em `spec.md` §3.1:
    - `STRICT` em todas as tabelas; `WITHOUT ROWID` em `project_root_entries` e `project_discovery_dismissed`.
    - `ON DELETE SET NULL` em `projects(root_id)` e `ON DELETE CASCADE` nas tabelas filhas de `project_roots`.
@@ -63,16 +63,18 @@
 ## 2. Comandos de Verificação
 
 ```bash
+cd "$(git rev-parse --show-toplevel)"
+
 # Compilar mt-db e mt-projects
-cargo check -p mt-db -p mt-projects
+cargo check --manifest-path src-tauri/Cargo.toml -p mt-db -p mt-projects
 
 # Rodar os testes de persistência, scanner e watcher
-cargo test -p mt-db
-cargo test -p mt-projects --test store_and_scanner
-cargo test -p mt-projects --test watcher
+cargo test --manifest-path src-tauri/Cargo.toml -p mt-db
+cargo test --manifest-path src-tauri/Cargo.toml -p mt-projects --test store_and_scanner
+cargo test --manifest-path src-tauri/Cargo.toml -p mt-projects --test watcher
 
 # Verificar lints Rust
-cargo clippy -p mt-db -p mt-projects --all-targets -- -D warnings
+cargo clippy --manifest-path src-tauri/Cargo.toml -p mt-db -p mt-projects --all-targets -- -D warnings
 ```
 
 ---
@@ -80,6 +82,6 @@ cargo clippy -p mt-db -p mt-projects --all-targets -- -D warnings
 ## 3. Critérios de Aceite desta Implementação (Mapeamento Fase 06)
 
 - **CA-3 (Parcial — camada de watcher e scanner):** Criação isolada detectada rapidamente; rajada de 20 pastas converge; ocultas/arquivos/subníveis ignorados; erro de permissão marca `complete = false` e não remove origens.
-- **CA-4 (Completo):** `path` duplicado retorna `MtError { code: "project.duplicate_path" }`; `project_reorder` é transacional; remover raiz mantém projetos com `root_id = None`.
+- **CA-4 (Completo):** `path` duplicado retorna `MtError::new(ErrorCode("project.duplicate_path"), "…")`; `project_reorder` é transacional; remover raiz mantém projetos com `root_id = None`.
 - **CA-9 (Parcial — scanner e store):** Dois aliases na mesma raiz ou em duas raízes mapeiam para o mesmo `canonical_path` com entradas separadas em `project_root_entries`; scan parcial não exclui origens.
 - **CA-12 (Completo):** Migration funciona em banco com 03+05 sem 07/16; `foreign_key_check` vazio, reopen idempotente em WAL, settings válidas aceitas e inválidas recusadas.

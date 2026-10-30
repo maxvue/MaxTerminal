@@ -26,7 +26,8 @@ extensão VS Code **MaxCode**, cobrindo integralmente o AGENTS.md §6:
 4. **Botão "Inspecionar"** em cada bloco de comando que terminou com `exit != 0`, abrindo uma nova conversa em
    **Plan Mode** no MaxCode com o prompt exato:
     `Ao executar o comando "${comando}" tive o seguinte erro: "${erro}"` (sanitização/truncamento apenas nos valores).
-5. **API genérica reutilizável** `maxcode_open_plan(prompt, project_path)` consumida pelas Fases 14 e 16.
+5. **API genérica reutilizável** `maxcode_open_plan(prompt, project_path, source)` consumida pela Fase 14.
+6. **Protocolo proposto de issues e ciclo delegado**, entregue em [`11/06`](./06%20-%20Protocolo%20de%20Issues%20e%20Ciclo%20de%20Bugs%20MaxCode/spec.md): `issue.command`, `bugs.cycle.{preview,start,status,progress}`, capabilities `issues_protocol_v1`/`bugs_cycle_v1` e URI de issues condicionados à validação da extensão. A Fase 16 somente consome por `MaxCodePort`.
 
 Ao final da fase, abrir uma pasta no VS Code com o MaxCode foca o projeto correspondente no MaxTerminal (e
 vice-versa), e um comando com erro pode ser enviado ao MaxCode com um clique — com ou sem a conexão WebSocket
@@ -51,11 +52,13 @@ token, prompt, comando, erro ou segredo. Timeout de wake-up não é confirmaçã
 | I-08 | URI `vscode://johnattas.maxcode/` | Proposta `/bridge/wake?requestId=<uuid>`; identificador público não autoriza ler payload. Rota deve ser confirmada pelo adaptador. Encoding RFC 3986, sem conteúdo sensível (spec §6). |
 | I-09 | Sync de projeto ativo | `ActiveProjectSync`, caminhos/worktrees verificados, `origin` + `correlationId` propagados até a seleção; dedup idempotente e debounce de 250 ms. Janela temporal nunca substitui causalidade. |
 | I-10 | Botão "Inspecionar" | `InspectButton.vue` no slot de ações da Fase 04; `CommandBlockDto.exitCode` conhecido e diferente de zero (05). Prompt Rust a partir de `ErrorContext`, com sanitização dos valores, remoção de ANSI e truncamento antes da interpolação. |
-| I-11 | API genérica | Comando IPC `maxcode_open_plan(prompt, project_path)` + função Rust `MaxCodeClient::open_plan()` como ponto de extensão para Fases 14 e 16. |
+| I-11 | API genérica | IPC `maxcode_open_plan(prompt, project_path, source)` e Rust `MaxCodeClient::open_plan(prompt, project_path, source, pre_truncated)`; genérico passa `false`, Inspecionar propaga truncamento. |
 | I-12 | Comandos IPC | `bridge_status`, `bridge_get_config`, `bridge_set_config`, `bridge_restart`, `bridge_regenerate_token`, `maxcode_open_plan`, `maxcode_open_project`, `maxcode_inspect_block`, `bridge_notify_active_project`. |
 | I-13 | Eventos | `bridge://status-changed`, `bridge://peer-connected`, `bridge://peer-disconnected`, `bridge://project-focus-requested`, `bridge://tab-opened`, `bridge://delivery-failed`; snapshots revisionados e origem/correlação (spec §12). |
 | I-14 | Frontend | `src/ipc/bridge.ts`, `src/stores/maxCodeBridge.ts` (`useMaxCodeBridgeStore`), `src/composables/useActiveProjectSync.ts`, `src/composables/useMaxCodeInspect.ts`, `src/components/bridge/{InspectButton.vue,BridgeStatusIndicator.vue,BridgeSettingsSection.vue}`. |
 | I-15 | Configuração | `$XDG_CONFIG_HOME/maxterminal/bridge.toml` (porta, habilitado, sync ativo, allowlist extra de Origin). |
+| I-16 | Protocolo de issues (11/06) | `MaxCodeClient::{send_issue_command,bugs_cycle_preview,bugs_cycle_start,bugs_cycle_status}`, assinatura Rust de progresso, capabilities e URI gated; sem dependência da 16, banco ou novos comandos Tauri. |
+| I-17 | Adaptadores SO (11/04) | `ActivationHandler` no roteador único da 09 e `EditorOpener` via `EditorLauncher::set_bridge_opener`; abertura de arquivo pela ponte somente com suporte validado, fallback explícito da 09. |
 
 ### 2.2. Fora de escopo (e fase responsável)
 
@@ -70,7 +73,7 @@ token, prompt, comando, erro ou segredo. Timeout de wake-up não é confirmaçã
 | Diagnóstico inline por IA ao lado do botão "Inspecionar" (o slot é compartilhado; o conteúdo é da 12) | 12 |
 | Abertura de abas de Agente CLI vinculadas a worktree | 13 |
 | Botão "Criar com MaxCode" do modal Artisan (consome `maxcode_open_plan`) | 14 |
-| Ações "Abrir / Analisar (`BUG PLAN`) / Corrigir (`BUG FIX`)" e "Corrigir todos os Bugs" | 16; consome ponto genérico, mas execução de BUG FIX exige capability futura própria; nunca mapear silenciosamente Fix para Plan |
+| UI, domínio GitHub, persistência e acompanhamento das ações "Abrir / Analisar (`BUG PLAN`) / Corrigir (`BUG FIX`)" e "Corrigir todos os Bugs" | 16; consome protocolo de 11/06 via `MaxCodePort`, sem editar a 11; execução é do MaxCode, nunca mapear Fix para Plan |
 | Registro do scheme no pacote final (PKGBUILD/AppImage, `update-desktop-database`) | 17 |
 | Testes E2E com VS Code real | 17 |
 
@@ -122,7 +125,7 @@ token, prompt, comando, erro ou segredo. Timeout de wake-up não é confirmaçã
 - `src/uri.rs` — `MaxTerminalUri` (parse), `MaxCodeUri` (build), limites
 - `src/paths.rs` — `canonicalize_project_path`, `resolve_worktree_root`
 - `src/sync.rs` — `ActiveProjectSync`, `LoopGuard`
-- `src/prompt.rs` — `build_inspect_prompt`, `truncate_utf8`
+- `src/prompt.rs` — `build_inspect_prompt`, `truncate_utf8_prefix`, `truncate_utf8_suffix`
 - `src/handler.rs` — trait `BridgeHost` (inversão de dependência para o app Tauri)
 - `tests/server_it.rs`, `tests/uri_it.rs`, `tests/discovery_it.rs`
 
@@ -130,7 +133,8 @@ token, prompt, comando, erro ou segredo. Timeout de wake-up não é confirmaçã
 - `src/bridge/mod.rs` — bootstrap no `setup()`, shutdown coordenado pelo hook da Fase 09 antes do exit final
 - `src/bridge/host.rs` — implementação de `BridgeHost` (emite eventos, consulta projetos/blocos)
 - `src/bridge/adapters.rs` — adaptadores para contratos das Fases 05/06/07/09
-- `src/bridge/deep_link.rs` — registro do plugin, roteamento de `maxterminal://`
+- `src/bridge/deep_link.rs` — `BridgeActivationHandler` registrado no `ActivationRouter` da 09, sem outro listener/plugin/fila de transporte
+- `src/bridge/editor.rs` — `BridgeEditorOpener`, registro idempotente via `EditorLauncher::set_bridge_opener`
 - `src/commands/bridge.rs` — 9 comandos IPC
 - `src/events/bridge.rs` — payloads dos eventos `bridge://*`
 - `tauri.conf.json` — bloco `plugins.deep-link.desktop.schemes = ["maxterminal"]`
@@ -148,6 +152,11 @@ token, prompt, comando, erro ou segredo. Timeout de wake-up não é confirmaçã
 
 ### 4.4. Banco de dados
 - **Nenhuma migration** nesta fase (ver spec §7).
+
+### 4.5. Sub-implementação 06 — protocolo de issues
+- `crates/mt-bridge/src/issues.rs`, extensão aditiva de `protocol.rs`, `client.rs`, `uri.rs`, `session.rs` e `lib.rs`.
+- `crates/mt-bridge/fixtures/maxcode/issues-protocol.v1.json`, `tests/issues_protocol_it.rs` e `tests/bugs_cycle_it.rs`.
+- Ordem: 11/01 → 02 → 03 → 04 → 05 → **06**; consumidor 16 após contrato da 06. Protocolo proposto não é marcado como validado por passar fixtures.
 
 ---
 
@@ -182,12 +191,12 @@ Comandos executados na raiz da worktree; todos com exit 0 salvo indicação.
 - [ ] CA-20 URIs malformadas (rota desconhecida, `path` relativo, `path` inexistente, parâmetro > 4096 bytes) geram toast de erro pt-BR e log `WARN`, sem crash.
 
 ### 5.4. URI `vscode://johnattas.maxcode/` e cliente
-- [ ] CA-21 Sem peer, o adaptador validado abre apenas `/bridge/wake?requestId=<uuid>`; mantém payload em memória por até 30 s e confirma entrega somente após ACK autenticado. Sem extensão compatível retorna erro explícito, nunca sucesso de Plan Mode baseado apenas em `xdg-open`.
+- [ ] CA-21 Sem peer, conversa genérica usa `/bridge/wake?requestId=<uuid>` validado; mantém payload em memória por até 30 s e confirma entrega somente após ACK autenticado. Issues usam a exceção `/issue` de 11/06 somente em perfil validado wake-only, esperando handshake por 10 s. Sem extensão compatível retorna erro explícito, nunca sucesso baseado apenas em `xdg-open`.
 - [ ] CA-22 Com peer WS, `maxcode.open_conversation` recebe ACK terminal em até 3 s. Timeout após envio tem resultado `bridge.delivery_unknown`; retry só com mesma chave e capability de dedup. ACK perdido e troca WS/HTTP não criam duas conversas/abas.
 - [ ] CA-23 Nenhuma URI/argv/log contém prompt, saída, comando, Bearer ou segredo. Prompt genérico > 64 KiB é rejeitado; no Inspecionar truncar os valores antes da interpolação, preservando exatamente o template.
 
 ### 5.5. Sincronização de projeto ativo
-- [ ] CA-24 Peer envia `project.opened { path: '<repo>/.max-code-worktrees/wt-x' }` → MaxTerminal seleciona o projeto `<repo>` (match canônico) e emite `bridge://project-focus-requested` com `worktree_path` preenchido.
+- [ ] CA-24 Peer envia `project.opened { path: '<repo>/.max-code-worktrees/wt-x' }` → MaxTerminal seleciona o projeto `<repo>` (match canônico) e emite `bridge://project-focus-requested` com `worktreePath` preenchido (DTO camelCase).
 - [ ] CA-25 Seleção manual envia uma `project.focus` (debounce 250 ms); seleção remota mantém `origin`/`correlationId` no backend e UI e não ecoa mesmo após 1500 ms ou reconexão. Repetição da mesma mensagem reapresenta ACK sem repetir efeitos; seleção manual posterior do mesmo projeto continua válida.
 - [ ] CA-26 Caminho sem projeto correspondente não altera a seleção e emite `ack { handled: false, reason: 'project_not_found' }`.
 - [ ] CA-27 Desligar "Sincronizar projeto ativo" em `BridgeSettingsSection` interrompe envio e recebimento de foco imediatamente.
@@ -206,6 +215,10 @@ Comandos executados na raiz da worktree; todos com exit 0 salvo indicação.
 - [ ] CA-35 Uma URI recebida por startup, plugin e single-instance é roteada uma vez; fila aguarda stores/projetos prontos. Reconectar webview recupera snapshot e não cria segunda aba.
 - [ ] CA-36 HTTP e WS têm limites de taxa, mensagens agregadas/fragmentadas, filas, conexões e operações em andamento; destino HTTP é literalmente `127.0.0.1`, sem proxy/redirect. Descoberta rejeita symlinks, dono/modo incorretos e instância obsoleta.
 - [ ] CA-37 Nenhuma dependência de implementação das Fases 12–17 é exigida. `maxcode_open_plan` permanece genérico; BUG FIX nunca é anunciado como executado por abrir Plan Mode.
+- [ ] CA-38 `11/06` cobre `issue.command`, `bugs.cycle.preview/start/status/progress`, capabilities `issues_protocol_v1`/`bugs_cycle_v1`, quatro métodos públicos e URI `/issue` gated; ausência de suporte desabilita ação com motivo, sem simular entrega.
+- [ ] CA-39 Prévia não inicia tarefa, start único, ACK perdido vira `Unknown`/consulta de status; progresso de peer errado/revisão antiga é recusado. Início de lote exige contrato durável validado, não só dedup efêmera.
+- [ ] CA-40 `11/04` implementa/registra `EditorOpener` via `set_bridge_opener`: linha/coluna preservadas, capability de arquivo validada, fallback explícito da 09 e registro idempotente. `ActivationHandler` usa listener/fila únicos da 09, com params sem segundo decoding.
+- [ ] CA-41 A Fase 16 consome DTOs/client de 11/06 via `MaxCodePort`; mapeamento de RequestId, repo, worktree, hash e progresso documentado, sem dependência reversa. Validação externa pendente mantém recursos indisponíveis.
 
 ---
 

@@ -363,8 +363,25 @@ pub enum AckReason {
    - `UserInput` (tecla no xterm) ou `agent_attention_ack` com `(run_id, episode)` correspondentes marcam `acknowledged = true` (reconhecendo visualização), mas **mantêm** o estado `Awaiting`/`Suspected` até que a espera seja realmente resolvida.
    - Resolução de `AwaitingInput`: `HookUserPromptSubmit` correlacionado, `CommandFinished` ou saída do PTY.
    - Resolução de `AwaitingApproval`: atividade de execução confirmada após a aprovação, `HookStop`, `CommandFinished` ou saída do PTY (`PreToolUse` sozinho **não** resolve aprovação pois precede o prompt de permissão — §7.2, CA-24).
-   - Ao resolver um episódio `Awaiting`, invoca `TabStatePort::attention_resolved(tab, pane, session, &run_id, episode)` e `NotifyPort::clear_attention(tab)`.
+    - Ao resolver um episódio `Awaiting`, invoca `TabStatePort::attention_resolved(&run, episode)` e `NotifyPort::clear_attention(run.tab_id)` somente se a execução ainda corresponder ao episódio; um evento atrasado não limpa a notificação de outra execução.
 5. **Padrões Versionados (`patterns/default.toml` e `patterns.rs`)**:
    - Cada regra possui `id`, `agent`, `kind`, `regex` (1ª âncora), `confirm` (2ª âncora obrigatória no mesmo tail de 8 KiB sem ANSI) e `verified: bool`.
    - Linhas citadas (iniciadas por `>`, `|`, `+`, `-` de diff ou dentro de bloco markdown ```) são filtradas antes de casar `regex`/`confirm` para evitar falsos positivos quando o próprio código ou log contém "Allow?" ou "Yes" (R-03, CA-22).
-   - Padrões sem fixture validado (`verified = false`) permanecem desabilitados por padrão.
+    - Padrões sem fixture validado (`verified = false`) permanecem desabilitados por padrão.
+
+#### Adaptador `TabStatePort` (contrato da Fase 05, T-16)
+
+- `attention_required` e `attention_resolved` montam `RuntimeBinding` copiando os **quatro campos**
+  exigidos pela Fase 05: `tab_id`, `pane_id`, `pty_id`, `session_id`. Antes disso, validam `run_id` e
+  a geração do owner da Fase 07 contra o índice de runs da 13, sem reatribuir eventos antigos.
+  `RuntimeBinding` não tem `generation`; `ExecutionRef.generation` pertence ao bloco da Fase 05,
+  não ao owner da 07 nem ao contador de episódios.
+- Criam `attention_id = format!("agent:{}:{}", run.run_id, episode)`; o mesmo ID é usado para abrir e
+  limpar o episódio. Chamam `registry.apply(run.pane_id, StateInput::AttentionRequired { binding,
+  attention_id, execution: None, at_ms })` e `registry.apply(run.pane_id,
+  StateInput::AttentionCleared { binding, attention_id, at_ms })`, respectivamente. `at_ms` é o instante
+  local observado. `None` em `execution` evita inventar bloco de comando para um hook do agente.
+- A aplicação usa a assinatura de **dois argumentos** da proprietária 05. `attention_required` retorna
+  `apply(...).is_some()`; limpar não substitui o estado base por `Idle`, recompõe a sobreposição.
+- Testes do adaptador devem provar que eventos com PTY, sessão ou geração anteriores não alteram o
+  painel reiniciado e que resolver o episódio N não limpa N+1; validar também dois painéis na mesma aba.

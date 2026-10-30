@@ -24,7 +24,7 @@ Esta implementação completa o núcleo de runtime do crate `mt-shell`: o sequen
    - Tratamento fail-closed em `Gap` (`sanitizer.on_gap()`, descarte de fragmento parcial até fronteira segura e inserção de marcador `[... saída omitida por sobrecarga ...]`).
    - Cache LRU global sanitizado de blocos finalizados (máx. 32 blocos / 4 MiB) para servir `error_context` antes do commit ou quando `persistence == Failed`.
 5. **Fallback `/proc` (`fallback.rs`) e Orquestração (`runtime.rs`, `service.rs`):**
-   - Timeout de 5 s sem handshake (`Pending → Proc`), polling de 250 ms via `PtyManager::process_report`/`foreground_process`, detecção inferida de grupo foreground (`ObservationSource::Proc`, `ObservationConfidence::Inferred`, `exit_code = None`) e reconciliação na chegada tardia de handshake (`BlockEndReason::ModeSwitched`).
+   - Timeout de 5 s sem handshake (`Pending → Proc`), polling de 250 ms via `PtyManager::process_report`/`foreground_process`, detecção inferida de grupo foreground (`ObservationSource::Proc`, `ObservationConfidence::Inferred`, `exit_code = None` enquanto o PTY vive), resultado `Failed` com o `exit_code` do PTY quando este encerra com código `!= 0` durante um bloco ativo em modo `Proc` (T-07; ver §4 item 2) e reconciliação na chegada tardia de handshake (`BlockEndReason::ModeSwitched`).
    - Implementação de `OutputTap`, `SpawnLifecycle` e `SessionProvider` (`PtyScopedSessionProvider`) em `ShellService`.
 
 ---
@@ -374,7 +374,13 @@ impl CommandTracker {
         now_mono: Instant,
     ) -> Vec<TrackerEvent>;
 
-    pub fn on_pty_exit(&mut self, now_ms: i64, now_mono: Instant) -> Vec<TrackerEvent>;
+    /// Encerramento do PTY. `exit_code` é o código do `ExitInfo` do PTY.
+    /// - Sem bloco ativo ou bloco já finalizado por `D`: não altera nenhum resultado.
+    /// - `IntegrationMode::Hooks` com bloco ativo sem `D`: fecha `BlockStatus::Unknown` (`exit_code: None`, `PtyExited`).
+    /// - `IntegrationMode::Proc` com bloco ativo e `exit_code == Some(n)` com `n != 0`: fecha `BlockStatus::Failed`
+    ///   com `exit_code = Some(n)` e `BlockEndReason::PtyExited` (a aba vai para `TabStatus::Error`; "Inspecionar" habilitado).
+    /// - `IntegrationMode::Proc` com bloco ativo e `exit_code == Some(0)` ou `None` (sem informação): `BlockStatus::Unknown`.
+    pub fn on_pty_exit(&mut self, exit_code: Option<i32>, now_ms: i64, now_mono: Instant) -> Vec<TrackerEvent>;
     pub fn on_capture_overflow(&mut self, now_ms: i64, now_mono: Instant) -> Vec<TrackerEvent>;
 }
 ```
@@ -434,11 +440,15 @@ impl BlockCapture {
 
 ---
 
+- **Propagação de saída do PTY (T-07):** o evento de lifecycle da Fase 02 entrega `ExitInfo`; o slot terminal preserva seu campo `code` e o binding completo. Após drenar as mensagens anteriores, o sequenciador chama `tracker.on_pty_exit(exit.code, now_ms, now_mono)`. Para cada `BlockFinished`, conclui a captura com `finish(status == BlockStatus::Failed)`, emite/aplica `StateInput::CommandFinished` e enfileira a persistência sanitizada. Só então aplica `StateInput::PtyExited`, que marca `alive=false` sem apagar a conclusão, seu código ou o badge de erro não visto. Saída por sinal sem `code` permanece `Unknown`, sem fabricar `128 + signal`. Bloco já concluído não é reaberto.
+- **Contrato de atenção para a Fase 13 (T-16):** consumidores chamam `TabStateRegistry::apply(pane_id, StateInput::AttentionRequired/AttentionCleared { binding, ... })` com `RuntimeBinding { tab_id, pane_id, pty_id, session_id }` integral, conforme `05/01`. A geração de comando pertence a `ExecutionRef { pty_id, block_id, generation }`, repassado em `AttentionRequired.execution` quando houver execução; `AttentionCleared` usa o mesmo binding e o `attention_id` corrente. Não reconstruir o binding apenas a partir de `tab_id`/`pane_id`, inventar campo `generation` nele ou aceitar atenção de execução substituída.
+
 ## 4. Tratamento de Erros e Casos de Borda
 
 1. **Chegada Tardia de Handshake após Fallback `/proc`:**
    - Quando um shell demora > 5 s no startup (ex.: `.zshrc` pesado) e entra em `IntegrationMode::Proc`, assim que o handshake `633;P;MT=1;n=<nonce>` chega com nonce válido, o `ProcFallbackMonitor` é cancelado, eventual bloco aberto por `/proc` é encerrado com `BlockStatus::Unknown` e `BlockEndReason::ModeSwitched`, e o modo passa para `IntegrationMode::Hooks` sem duplicar conclusão.
 2. **Saída do Shell (`exec` ou `exit`) com Comando Aberto:**
-   - Se o PTY encerrar enquanto um bloco está `Running` e sem marca `D` correspondente, o bloco fecha imediatamente como `BlockStatus::Unknown` (`exit_code: None`, `end_reason: BlockEndReason::PtyExited`) e a aba vai para `TabStatus::Idle`. O código de saída do processo do shell pertence ao `ExitInfo` do PTY, nunca é atribuído falsamente ao comando interrompido.
+   - Em `IntegrationMode::Hooks`, se o PTY encerrar enquanto um bloco está `Running` e sem marca `D` correspondente, o bloco fecha imediatamente como `BlockStatus::Unknown` (`exit_code: None`, `end_reason: BlockEndReason::PtyExited`) e a aba vai para `TabStatus::Idle`. O código de saída do processo do shell pertence ao `ExitInfo` do PTY, nunca é atribuído falsamente ao comando interrompido.
+   - **Exceção em `IntegrationMode::Proc` (sem hooks/OSC 133, T-07):** não há marca `D`, então o `exit_code` do PTY é a única evidência de resultado. Se o PTY encerrar com `exit_code != 0` durante um bloco ativo, o bloco é finalizado como `BlockStatus::Failed` com esse `exit_code` (`end_reason: BlockEndReason::PtyExited`), a aba transita para `TabStatus::Error` (não vista) e `command_block_error_context` passa a aceitar o bloco (sem `shell.block_not_failed`), habilitando "Inspecionar". Blocos encerrados sem informação de código (`exit_code` ausente ou `0` com bloco ainda ativo, `ModeSwitched`, PID reutilizado ou erro de `/proc`) continuam `BlockStatus::Unknown` com `exit_code: None`, sem sucesso nem erro fabricados.
 3. **Indisponibilidade ou Falha do SQLite:**
    - As transições do `TabStateRegistry` e o evento `tab://state-changed` ocorrem no sequenciador **antes** de enfileirar no `PersistenceWorker`. Se `Db::write` falhar após retry transitório limitado, o bloco permanece no cache LRU sanitizado (32 blocos / 4 MiB) com `PersistenceState::Failed` e o evento `shell://command-finished` informa `persistence: "failed"`.

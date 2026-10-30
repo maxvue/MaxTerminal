@@ -54,13 +54,15 @@
 ## 2. Comandos de Verificação Completa (Backend + Frontend)
 
 ```bash
+cd "$(git rev-parse --show-toplevel)"
+
 # 1. Verificação completa do Backend Rust
-cargo test -p mt-db -p mt-projects -p maxterminal
-cargo clippy -p mt-db -p mt-projects -p maxterminal --all-targets -- -D warnings
+cargo test --manifest-path src-tauri/Cargo.toml -p mt-db -p mt-projects -p maxterminal
+cargo clippy --manifest-path src-tauri/Cargo.toml -p mt-db -p mt-projects -p maxterminal --all-targets -- -D warnings
 ! rg -n "process::Command" src-tauri/crates/mt-projects/src
 
 # 2. Verificação de tipos TypeScript e Vue
-npm run check-types
+npm run typecheck
 
 # 3. Verificação de Lint (ESLint + Stylelint)
 npm run lint

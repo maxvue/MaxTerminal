@@ -12,7 +12,7 @@ Estabelecer a base do repositório e o crate `mt-core`, que concentra todos os t
 1. **Higiene de Repositório (`.gitignore`, `.editorconfig`):** Bloquear o versionamento acidental de worktrees (`.worktrees/`, `.max-code-worktrees/`), `node_modules/`, `dist/`, `src-tauri/target/`, `src-tauri/gen/` (preservando `src-tauri/gen/schemas/`), `coverage/` e `*.log`, além de padronizar recuo (4 espaços em Rust/TS/Vue/SCSS, 2 em JSON/YAML/TOML), UTF-8 e finais de linha `lf`.
 2. **Workspace Cargo (`src-tauri/`):** Configurar `resolver = "3"`, edição `2024`, `rust-version = "1.85"`, lints estritos (`unsafe_code = "forbid"`, `unwrap_used = "deny"`, `clippy::all = "deny"`, `clippy::pedantic = "warn"`) e declarar exclusivamente os membros `.` (`maxterminal`) e `crates/mt-core`.
 3. **Crate `mt-core` (`src-tauri/crates/mt-core/`):**
-   - `ids.rs`: 8 newtypes de identificadores de domínio baseados em `Uuid` v7 (`ProjectId`, `TabId`, `PaneId`, `PtyId`, `SessionId`, `TemplateId`, `CommandBlockId`, `CommandGroupId`), com validação estrita da versão 7 em `try_from_uuid`, `TryFrom<Uuid>`, `FromStr` e `serde::Deserialize`.
+   - `ids.rs`: 9 newtypes de identificadores de domínio baseados em `Uuid` v7 (`ProjectId`, `TabId`, `PaneId`, `PtyId`, `SessionId`, `TabSessionId`, `TemplateId`, `CommandBlockId`, `CommandGroupId`), com validação estrita da versão 7 em `try_from_uuid`, `TryFrom<Uuid>`, `FromStr` e `serde::Deserialize`.
    - `error.rs`: `ErrorCode(&'static str)`, módulo `codes` com as 9 constantes `core.*`, struct `MtError` serializável (`{ code, message, details? }`) com `source` omitido de Serde/Specta e conversões `From<std::io::Error>` e `From<serde_json::Error>`, além do alias `MtResult<T>`.
    - `paths.rs`: trait `EnvSource`, struct `SystemEnv`, struct `AppPaths` (resolução pura sem I/O segundo a XDG Base Directory Specification + override `MAXTERMINAL_HOME` e criação segura com modo `0o700` em `ensure_dirs()` sem criar `db_path`) e DTO `AppPathsDto`.
    - `app.rs`: `AppInfo`, `BuildProfile` (`Debug`, `Release`) e `FrontendLogEvent` (`VueError`, `WindowError`, `UnhandledRejection`, `BootstrapFailed`).
@@ -117,6 +117,10 @@ tauri-specta = { version = "=2.0.0-rc.27", features = ["typescript"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json"] }
 tracing-appender = "0.2"
+# Watchers de filesystem (E-10): versão única no workspace; crates consumidores (Fases 06 e 13)
+# declaram `notify.workspace = true` e `notify-debouncer-full.workspace = true`.
+notify = "8"
+notify-debouncer-full = "0.5"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
@@ -133,6 +137,7 @@ expect_used = "warn"
 
 [package]
 name = "maxterminal"
+default-run = "maxterminal"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -210,7 +215,7 @@ pub use error::{ErrorCode, MtError, MtResult};
 
 ### 4.3. `src-tauri/crates/mt-core/src/ids.rs`
 
-Assinaturas e regras de implementação para os 8 newtypes (`ProjectId`, `TabId`, `PaneId`, `PtyId`, `SessionId`, `TemplateId`, `CommandBlockId`, `CommandGroupId`):
+Assinaturas e regras de implementação para os 9 newtypes (`ProjectId`, `TabId`, `PaneId`, `PtyId`, `SessionId`, `TabSessionId`, `TemplateId`, `CommandBlockId`, `CommandGroupId`):
 
 ```rust
 //! Identificadores de domínio tipados baseados em UUID v7 (ordenáveis temporalmente).
@@ -324,6 +329,10 @@ define_id!(
     SessionId
 );
 define_id!(
+    /// Identificador único de uma sessão de aba do workspace (Fases 07 e 17); mesma validação UUID v7.
+    TabSessionId
+);
+define_id!(
     /// Identificador único de um template de aba (Fase 07).
     TemplateId
 );
@@ -344,6 +353,11 @@ define_id!(
 - Dois UUIDs v7 criados a partir de timestamps distintos (`ts1 < ts2` via `Uuid::from_u64_pair` ou `uuid::Timestamp::from_unix`) respeitam `id1 < id2`.
 
 ### 4.4. `src-tauri/crates/mt-core/src/error.rs`
+
+> **Uso canônico (D-07):** `MtError::new(ErrorCode("dominio.motivo"), "mensagem em pt-BR").with_details(json!({ ... }))`.
+> `MtError::new` recebe **`ErrorCode`** (nunca `&str`) e exatamente 2 argumentos; `with_details(self, details: serde_json::Value)` é método
+> fluente de 1 argumento. Não existe `MtError::with_details(code, message, d)`. Todo código segue `^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$`
+> (minúsculo, `domínio.motivo`), declarado como constante `ErrorCode("...")` no crate dono do domínio.
 
 ```rust
 //! Contrato único de erro (`MtError`) e códigos de erro (`ErrorCode`) para fronteira IPC e domínio.
@@ -829,8 +843,8 @@ impl FrontendLogEvent {
 
 | Módulo | Teste | Asserção |
 |--------|-------|----------|
-| `ids.rs` | `roundtrip_display_and_serde_all_eight_ids` | Para `ProjectId`, `TabId`, `PaneId`, `PtyId`, `SessionId`, `TemplateId`, `CommandBlockId`, `CommandGroupId`: `new()` gera versão 7; `Display` -> `FromStr` retorna ID idêntico; `serde_json::to_string` gera string JSON `"\"...\""` e `serde_json::from_str` reconstrói o mesmo valor. |
-| `ids.rs` | `rejects_nil_v4_invalid_text_and_non_string_json` | `Uuid::nil()`, `Uuid::new_v4()`, `"nao-e-uuid"` e JSON `123` ou `null` falham para todos os 8 tipos com `codes::INVALID_ARGUMENT`. |
+| `ids.rs` | `roundtrip_display_and_serde_all_nine_ids` | Para `ProjectId`, `TabId`, `PaneId`, `PtyId`, `SessionId`, `TabSessionId`, `TemplateId`, `CommandBlockId`, `CommandGroupId`: `new()` gera versão 7; `Display` -> `FromStr` retorna ID idêntico; `serde_json::to_string` gera string JSON `"\"...\""` e `serde_json::from_str` reconstrói o mesmo valor. |
+| `ids.rs` | `rejects_nil_v4_invalid_text_and_non_string_json` | `Uuid::nil()`, `Uuid::new_v4()`, `"nao-e-uuid"` e JSON `123` ou `null` falham para todos os 9 tipos com `codes::INVALID_ARGUMENT`. |
 | `ids.rs` | `temporal_ordering_between_distinct_timestamps` | Dois UUIDs v7 construídos com timestamps Unix distintos (`1_700_000_000` vs `1_700_000_001` s) satisfazem `id_earlier < id_later`. |
 | `error.rs` | `serializes_mt_error_contract_and_omits_source` | `MtError::not_found("project", id)` serializa exatamente `{"code":"core.not_found","message":"Recurso 'project' não encontrado.","details":{"entity":"project","id":"..."}}`; quando `details` é `None`, a chave `"details"` não existe no JSON; `with_source(...)` preserva `std::error::Error::source(&err).is_some()`, mas a chave `"source"` jamais aparece no JSON. |
 | `error.rs` | `maps_io_and_serde_errors` | `io::ErrorKind::PermissionDenied` -> `core.permission_denied`; `io::ErrorKind::NotFound` -> `core.not_found`; `io::ErrorKind::Other` -> `core.io`; `serde_json::Error` -> `core.serialization`. |

@@ -38,7 +38,7 @@ atende às metas de desempenho documentadas.
 | ID | Item | Descrição |
 |----|------|-----------|
 | I-01 | Motor de busca | `mt_db::search`: `SearchEngine`, `SearchSource`, consultas parametrizadas, `bm25` por seção, snapshots limitados e cursor ordinal opaco; cancelamento isolado por requisição/conexão. Sem truncar candidatos silenciosamente. |
-| I-02 | Índices FTS auxiliares | Consumir `command_blocks_fts` (05) e `session_scrollback_fts` (07) pela infraestrutura da 03. `NNNN_17_search.sql` adiciona somente índices/projeções sanitizadas necessários às demais fontes; tabela de sessões permanece única. |
+| I-02 | Índices FTS auxiliares | Consumir `command_blocks_fts` (05) e `session_scrollback_fts` (07) pela infraestrutura da 03. `0011_17_search.sql` adiciona somente índices/projeções sanitizadas necessários às demais fontes; tabela de sessões permanece única. |
 | I-03 | IPC de busca | Comandos `search_global`, `search_cancel`, `search_index_stats`, `search_index_rebuild`; evento `search://index-progress`. |
 | I-04 | UI de busca | `GlobalSearchPalette.vue`, `SearchFilterBar.vue`, `SearchResultSection.vue`, `SearchResultItem.vue`, `HighlightedText.vue`; store `useSearchStore`; composables `useGlobalSearch`, `useSearchNavigation`, `useSearchShortcut`. |
 | I-05 | Navegação | Resultado → seleciona projeto (06) → abre aba viva ou visualização de sessão arquivada (07) → rola até o bloco (04/05) ou linha de scrollback, com realce temporário. |
@@ -50,7 +50,7 @@ atende às metas de desempenho documentadas.
 | I-11 | CI | `.github/workflows/ci.yml`, `audit.yml`, `release.yml`, `bench.yml`. |
 | I-12 | Acessibilidade e pt-BR | ARIA (combobox/listbox/dialog), foco preso e restaurado, contraste AA com tokens `--max-*`, `axe-core` no navegador real; Vitest verifica semântica. Revisão de textos e `Intl` `pt-BR`. |
 | I-13 | Hardening | CSP final em `tauri.conf.json`, `capabilities/*.json` por janela, `cargo audit`, `cargo deny`, `npm audit`, testes de bridge loopback (Host/Origin/token) e de deep links (allowlist). |
-| I-14 | Empacotamento | `packaging/arch/PKGBUILD`, `packaging/arch/PKGBUILD-bin`, `.SRCINFO`, `maxterminal.desktop`, ícones hicolor, `bundle` AppImage/deb no `tauri.conf.json`, autostart via `tauri-plugin-autostart`, `tauri-plugin-updater` atrás de feature `updater` (desligada no pacote Arch). |
+| I-14 | Empacotamento | `packaging/arch/PKGBUILD`, `packaging/arch/PKGBUILD-bin`, `.SRCINFO`, `maxterminal.desktop`, ícones hicolor, `bundle` AppImage/deb no `tauri.conf.json`, validação do autostart da Fase 09 (`os_get_autostart`/`os_set_autostart`, `--start-hidden`), `tauri-plugin-updater` atrás de feature `updater` (desligada no pacote Arch). |
 | I-15 | Dados entre versões | Teste de upgrade a partir de bancos-fixture de versões anteriores; comandos `db_backup_list`, `db_backup_create`, `db_backup_restore` (restauração aplicada no próximo boot). |
 | I-16 | Rastreabilidade | Matriz em `spec.md` §14 + manifesto com requisito, fase, teste, execução e evidência; `scripts/check-traceability.mjs` valida referências e pendências. |
 
@@ -77,7 +77,7 @@ atende às metas de desempenho documentadas.
      **Não cria tabelas de domínio `sessions`, `commands` ou `scrollback_chunks`.**
   - **04**: `keybindings.ts`, `TerminalSearchBar.vue`, `CommandBlockLayer` com `scrollToBlock()`.
    - **05**: cria `sessions` mínima, `command_blocks` e `command_blocks_fts` em
-     `NNNN_05_shell_sessions_command_blocks.sql` (spec §7); `useTabStatusStore`.
+     `0002_05_shell_sessions_command_blocks.sql` (spec §7); `useTabStatusStore`.
   - **06**: tabela `projects`; `useProjectsStore.select()`.
    - **07**: `tabs`, `tab_templates`, extensão da `sessions` criada pela 05, vínculos
      `tab_sessions`/`tab_session_panes`, `session_scrollback` + `session_scrollback_fts`;
@@ -130,7 +130,7 @@ tray/atalho global/Wayland exigem também sessão gráfica real. Detalhes em spe
 - `crates/mt-db/src/search/sources/{command_blocks,scrollback,sessions,projects,templates,groups,issues}.rs`
   — grupos incluem execuções; issues incluem comentários.
 - `crates/mt-db/src/search/error.rs` — `SearchError` → `MtError` (códigos `search.*`).
-- `crates/mt-db/migrations/NNNN_17_search.sql` (próximo número livre).
+- `crates/mt-db/migrations/0011_17_search.sql` (versão 11, após `0010_16_github.sql`, conforme D-01; sequência contígua `1..=11`).
 - `crates/mt-db/benches/search.rs`, `crates/mt-db/examples/gen_search_corpus.rs`.
 - `crates/mt-db/tests/search_*.rs`, `crates/mt-db/tests/upgrade_from_fixtures.rs`,
   `crates/mt-db/tests/fixtures/db/*.db.zst`.
@@ -264,9 +264,9 @@ Executados na raiz da worktree (comandos `cargo` em `src-tauri/`), exit code 0 s
 - [ ] CA-32 `cargo audit` e `cargo deny check` sem vulnerabilidades não justificadas; `npm audit
       --omit=dev --audit-level=high` com 0 achados.
 - [ ] CA-33 `bridge_hardening`: requisição ao loopback sem token → 401; `Host` diferente de
-      `127.0.0.1:<porta>` → 421; `Origin` não permitido → 403; servidor nunca escuta em `0.0.0.0`/`::`.
+      `127.0.0.1:<porta>` ou `localhost:<porta>` → 403 `bridge.host_forbidden`; `Origin` não permitido → 403; servidor nunca escuta em `0.0.0.0`/`::`.
 - [ ] CA-34 `deep_link_allowlist`: URIs `maxterminal://` fora das rotas permitidas, com `..`, caminhos
-      fora de projetos cadastrados ou comandos embutidos são rejeitadas com `bridge.deeplink_rejected`.
+      fora de projetos cadastrados ou comandos embutidos são rejeitadas pelos códigos da camada proprietária: `os.activation_invalid` (estrutura), `bridge.invalid_uri` (rota/parâmetros), `bridge.invalid_path` (caminho inválido), `bridge.project_not_found` (sem cadastro) ou `bridge.cwd_outside_project` (escape de cwd), sem efeitos colaterais.
 
 ### 5.7. Empacotamento e dados
 - [ ] CA-35 Build Arch em chroot limpo e fontes verificadas gera `maxterminal-<ver>-1-x86_64.pkg.tar.zst`;
@@ -279,7 +279,7 @@ Executados na raiz da worktree (comandos `cargo` em `src-tauri/`), exit code 0 s
       declarada; testar instalação/execução em VM limpa sem `~/GitHub`, Node ou symlinks de desenvolvimento.
       Recursos, ícones, fontes e hooks funcionam offline; testar FUSE e extração da AppImage.
 - [ ] CA-38 Autostart: ativar/desativar na bandeja cria/remove `~/.config/autostart/maxterminal.desktop`
-      com `--minimized`; o app inicia na bandeja reabrindo as abas "Adicionar ao Workspace".
+      com `--start-hidden` quando `start_minimized`; consumir `os_get_autostart`/`os_set_autostart` da 09, iniciar na bandeja (ou fallback acessível sem tray) e restaurar abas "Adicionar ao Workspace" pela 07.
 - [ ] CA-39 Build do pacote Arch compila sem a feature `updater`; build AppImage com `updater` verifica
       assinatura minisign e nunca instala atualização sem confirmação do usuário.
 - [ ] CA-40 `db_backup_create` gera arquivo íntegro em `$XDG_DATA_HOME/maxterminal/backups/`;

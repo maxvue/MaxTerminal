@@ -22,13 +22,13 @@ Cada fase possui:
 | 07 | Abas, Templates, Split Panes e Sessões | 04, 05, 06 | §4.2 (nova aba, Iniciar Aba Template, Templates e parâmetros, Workspace, Split Panes, Sessões e "Iniciar nova Sessão", histórico) |
 | 08 | Indicadores Contextuais: Git/Worktree e Portas Ativas | 02, 07 | §4.2 Git & Worktree (branch, dirty, worktree), Detector de Portas (badge abrir/encerrar) |
 | 09 | Integração com o Sistema Operacional (CachyOS) | 05, 07 | §3 System Tray, Atalho Global (Quake), Links Clicáveis p/ Editor, notificações nativas (infra) |
-| 10 | Temas e Importador Tabby | 04, 06 | §2 Temas (YAML/JSON Tabby → tokens MaxComponentsUi, Max Navy/Teal) |
-| 11 | Integração Bidirecional com MaxCode | 05, 07, 09 | §6 completo (Loopback HTTP/WS, URI schemes, sync projeto ativo, botão "Inspecionar" → Plan Mode) |
-| 12 | Integração MaxAiManager (`@` / `?`) | 04, 05, 07 | §5.1 (NL→shell, popup Harness→Modelo→Raciocínio, padrão via `?`, Diagnóstico Inline, RAG, API de Geração Assistida) |
+| 10 | Temas e Importador Tabby | 04, 06, 09 | §2 Temas (YAML/JSON Tabby → tokens MaxComponentsUi, Max Navy/Teal); migrations anteriores até 0005 |
+| 11 | Integração Bidirecional com MaxCode | 05, 07, 09 | §6 completo (Loopback HTTP/WS, URI schemes, sync projeto ativo, botão "Inspecionar" → Plan Mode); transporte de issues/ciclo de bugs (§7) em 11/06 para consumo pela 16 |
+| 12 | Integração MaxAiManager (`@` / `?`) | 04, 05, 07, 10 | §5.1 (NL→shell, popup Harness→Modelo→Raciocínio, padrão via `?`, Diagnóstico Inline, RAG, API de Geração Assistida); migrations anteriores até 0006 |
 | 13 | Agentes CLI, Telemetria e MaxSkills | 07, 08, 09, 12 | §5.2 completo (4 agentes, templates/atalhos, worktree isolada, StatusLine, alerta permissão, MaxSkills + memória contextual) |
 | 14 | Comandos Rápidos: Artisan (`>`) e Atalhos Universais (`/`) | 04, 07, 11, 12 | §8.1 completo (descoberta, cache `.max-code/commands/artisan.json`, flags, modal "Criar comando", Criar / Criar com MaxCode) e §8.3 |
-| 15 | Grupos de Comandos (`>>`) | 07, 12, 14 | §8.2 completo (local/global, ordenação, Sequencial/Paralelo/Multi-Abas, criação; sugestão IA de grupos) |
-| 16 | Aba Fixa de GitHub Issues | 06, 07, 08, 11, 13 | §4.1 badge 🟣 Issues, §7 completo (24 labels, ações, gestão local, "Corrigir todos os Bugs") |
+| 15 | Grupos de Comandos (`>>`) | 07, 12, 13, 14 | §8.2 completo (local/global, ordenação, Sequencial/Paralelo/Multi-Abas, criação; sugestão IA de grupos); migrations anteriores até 0008 |
+| 16 | Aba Fixa de GitHub Issues | 06, 07, 08, 11, 13, 15 | §4.1 badge 🟣 Issues, §7 completo (24 labels, ações, gestão local, "Corrigir todos os Bugs"); migrations anteriores até 0009 |
 | 17 | Busca Global, Qualidade, Performance e Empacotamento | 01–16 | §2 busca FTS5 instantânea (UI global), testes E2E, benchmarks de rajada de output, empacotamento CachyOS (PKGBUILD/AppImage), hardening |
 
 ### Grafo de dependências (DAG — sem ciclos)
@@ -52,12 +52,14 @@ graph TD
     F07 --> F09
     F04 --> F10
     F06 --> F10
+    F09 --> F10
     F05 --> F11
     F07 --> F11
     F09 --> F11
     F04 --> F12
     F05 --> F12
     F07 --> F12
+    F10 --> F12
     F07 --> F13
     F08 --> F13
     F09 --> F13
@@ -68,12 +70,14 @@ graph TD
     F12 --> F14
     F07 --> F15
     F12 --> F15
+    F13 --> F15
     F14 --> F15
     F06 --> F16
     F07 --> F16
     F08 --> F16
     F11 --> F16
     F13 --> F16
+    F15 --> F16
     F01 --> F17
     F02 --> F17
     F03 --> F17
@@ -97,6 +101,7 @@ Funcionalidades que "atravessam" fases são resolvidas por **pontos de extensão
 (ex.: o registro de gatilhos do input rico nasce na Fase 04; `@`/`?` registra-se na 12, `>`/`/` na 14, `>>` na 15).
 
 A tabela declara dependências diretas de entrega; dependências transitivas também estão disponíveis.
+As arestas 09 → 10, 10 → 12, 13 → 15 e 15 → 16 garantem também a contiguidade das migrations D-01; não introduzem acoplamento entre os serviços desses domínios. Por transitividade, a 10 recebe as migrations 0004 (07) e 0005 (09).
 O grafo representa as mesmas arestas da tabela. Todas vão de um número menor para um maior,
 portanto a própria sequência `01` a `17` é uma ordenação topológica. A numeração define a ordem
 de implementação; a redação dos documentos pode ocorrer em paralelo, com um responsável por fase.
@@ -142,11 +147,12 @@ MaxTerminal/
 - Eventos globais: `domínio://evento` — `pty://exit`, `tab://state-changed`, `project://discovered`, `port://opened`.
 - Streams de alto volume (output de PTY) **sempre** via `tauri::ipc::Channel<T>`, nunca via `emit` global.
 - Tipos compartilhados gerados com `tauri-specta` → `src/types/bindings.ts` (proibido duplicar tipos à mão).
+- Exceção de transporte binário (Fase 02/05): `PtyChannelMessage = ArrayBuffer`, declarado em `src/ipc/ptyFrame.ts`; não é DTO JSON. A integração do canal com Specta depende do spike obrigatório de exportação e entrega `InvokeResponseBody::Raw`, sem substituir bytes por JSON.
 - Erros: todo comando retorna `Result<T, MtError>`; `MtError` serializa como `{ code: string, message: string (pt-BR), details?: unknown }`.
 - A Fase 01 configura `ErrorHandlingMode::Result` explicitamente. Wrappers de domínio usam `call(command, factory)` ou o adaptador `unwrap(promise, command?)` de `src/ipc/core.ts`, com o mesmo tratamento de erros.
 
 ### 2.3. Identificadores de domínio (definidos na Fase 01 em `mt-core`)
-`ProjectId`, `TabId`, `PaneId`, `PtyId`, `SessionId`, `TemplateId`, `CommandBlockId`, `CommandGroupId` — newtypes sobre `Uuid` v7 (string no TS).
+`ProjectId`, `TabId`, `PaneId`, `PtyId`, `SessionId`, `TabSessionId`, `TemplateId`, `CommandBlockId`, `CommandGroupId` — newtypes sobre `Uuid` v7 (string no TS).
 
 ### 2.4. Estados de Aba (definidos na Fase 05, consumidos por 06+)
 ```ts
@@ -158,12 +164,46 @@ type TabStatus = 'running' | 'continuous' | 'finished' | 'error' | 'idle';
 - Arquivo: `$XDG_DATA_HOME/maxterminal/maxterminal.db`, `PRAGMA journal_mode=WAL; foreign_keys=ON; busy_timeout=5000`.
 - Migrations versionadas em `mt-db/migrations/NNNN_<fase>_<desc>.sql` — cada fase adiciona **apenas** suas próprias migrations.
 - Todo texto de comando/scrollback/log passa por `mt_db::sanitizer::sanitize()` antes de gravar.
+- Repositórios consomem a fachada `mt_db::Db`. Dependências centralizadas no workspace: `rusqlite = "0.40"` (bundled) e `r2d2_sqlite = "0.35"`; validar uma única versão de `libsqlite3-sys` e SQLite `>= 3.51.3` (`3051003`).
+
+A versão global é contígua (`1..=N`), distinta do número da fase. Os nomes concretos seguem esta tabela; não usar placeholders nos entregáveis:
+
+| Versão | Migration | Fase proprietária |
+|---|---|---|
+| 1 | `0001_03_base.sql` | 03 |
+| 2 | `0002_05_shell_sessions_command_blocks.sql` | 05 |
+| 3 | `0003_06_projects.sql` | 06 |
+| 4 | `0004_07_workspace_templates_tabs_sessions.sql` | 07 |
+| 5 | `0005_09_os_settings.sql` | 09 |
+| 6 | `0006_10_themes.sql` | 10 |
+| 7 | `0007_12_ai.sql` | 12 |
+| 8 | `0008_13_agents_skills_memory.sql` | 13 |
+| 9 | `0009_15_command_groups.sql` | 15 |
+| 10 | `0010_16_github.sql` | 16 |
+| 11 | `0011_17_search.sql` | 17 |
 
 ### 2.6. Frontend
 - SFC na ordem `<template>` → `<script setup lang="ts">` → `<style lang="scss" scoped>`; 4 espaços; aspas simples; `;`; sem vírgula final.
 - Tags de abertura em linha única. Textos de UI em pt-BR. Tokens `--max-*` do `@maxvue/max-components-ui`.
 - Stores Pinia nomeadas `use<Domínio>Store` em `src/stores/<domínio>.ts`.
 - Typecheck com `tsgo`; testes com Vitest; Rust com `cargo test` + `clippy -D warnings`.
+- Tooling fixado pela Fase 01: `@vitejs/plugin-vue` `6.0.10`, `vitest` `5.0.5`, `splitpanes` `4.1.2`. Scripts canônicos: `typecheck`, `typecheck:vue`, `lint`, `lint:style`, `test`; usar `npm` e `npx --no-install` nas verificações do MaxTerminal.
+- Vitest inclui `tests/**/*.spec.ts` e `src/**/__tests__/**/*.spec.ts`; não criar uma terceira raiz `src/tests/`.
+- Caminhos únicos: `src/components/shell/AppTitleBar.vue`, `src/components/terminal/__dev__/TerminalPlayground.vue` e `src/terminal/triggers/providers/index.ts` (registro criado na 14, estendido na 15).
+
+### 2.7. Contratos de integração consolidados pela auditoria
+
+As decisões D-01 a D-10 do [parecer de auditoria](./AUDIT_REPORT.md#b-decisões-canônicas-transversais) prevalecem sobre os exemplos históricos dos achados:
+
+- Rust: `edition.workspace = true` (2024); `notify = "8"` e `notify-debouncer-full = "0.5"` centralizados no workspace. `mt-commands` nasce na 14 com `mt-db = { workspace = true }`, sendo ampliado pela 15.
+- Estado Tauri registrado por domínio com `app.manage(...)`; `AppState` da 01 não agrega os serviços das fases futuras. Exportador único `export_bindings`, com `default-run = "maxterminal"` no binário.
+- Erros: `MtError::new(ErrorCode("dominio.motivo"), "mensagem pt-BR").with_details(...)`; códigos em minúsculas separados por ponto. Redação de logs: `LogRedactor::redact(&self, input)`.
+- A Fase 06 é dona de `ProjectInsertContributor::after_insert(tx, project: &StoredProject) -> Result<(), DbError>` e do guard temporário obtido por `ProjectService::acquire_activity`. A 07 publica `WorkspaceLifecycleObserver`, `pane_pty(tab_id, pane_id) -> Option<PtyId>` e `WorkspaceSpawnHook`/`WorkspaceSpawnGuard` para a 08. A reserva pré-spawn é mantida até registro ou compensação; o observador pós-spawn não a substitui.
+- Autostart e listener global de deep link pertencem à 09 (`os_get_autostart`, `os_set_autostart`, `--start-hidden`). A 11 registra `ActivationHandler` e `EditorOpener`; a 17 apenas valida/empacota, sem conceder `autostart:*` à WebView.
+- Loopback da 11 aceita `Host` `127.0.0.1:<port>` ou `localhost:<port>`; os demais retornam `403` / `bridge.host_forbidden`.
+- A subetapa **11/06** fornece o protocolo proposto `issue.command` e `bugs.cycle.{preview,start,status,progress}` para a 16, condicionado às capabilities `issues_protocol_v1` e `bugs_cycle_v1` e à confirmação externa. Ausência de capability desabilita a ação com motivo; nunca simula execução.
+- Geração assistida: `useAiGenerate<T>(schemaId, schema, decode)`; `run(prompt, opts?: AiGenerateRunOptions)` retorna `Promise<T | null>` e aceita `signal?: AbortSignal`. Schemas únicos `artisan.command.v1` e `command-group.suggestion.v1`; backend via `AiService::generate_structured`.
+- A 13 expõe `AppAgentState::open_agent_tab(&self, req: AgentTabOpenRequest) -> MtResult<AgentTabOpened>` para o handler IPC e o adaptador da 16, preservando os contratos de spawn da 07 e `RuntimeBinding` completo da 05.
 
 ## 3. Fronteiras de responsabilidade e integração incremental
 
@@ -179,7 +219,7 @@ type TabStatus = 'running' | 'continuous' | 'finished' | 'error' | 'idle';
 | Identidade Git e portas por processo | 08 | Abertura de endereço local é resolvida nesta fase; não exige a futura integração de sistema da 09. |
 | Janela, tray, notificações e links para editor | 09 | 11 conecta URI bidirecional; 13 usa notificações. Fechar janela e encerrar aplicativo são operações distintas. |
 | Temas e paleta do terminal | 10 | Aplicação reativa a todos os terminais, preservando significado semântico dos indicadores de estado. |
-| Transporte e mensagens MaxCode | 11 | 14 envia criação Artisan; 16 envia ações de issues. Transporte não importa os domínios consumidores. |
+| Transporte e mensagens MaxCode | 11 | 14 envia criação Artisan; 16 consome o protocolo de issues/ciclo de bugs da 11/06 via `MaxCodePort`. Transporte não importa os domínios consumidores. |
 | Gateway IA, seleção e geração assistida | 12 | 13 usa configurações de agente; 14 e 15 consomem geração. Diagnóstico inline funciona mesmo sem ação MaxCode instalada. |
 | Adaptadores de agentes e sincronização MaxSkills | 13 | 16 pode abrir agentes vinculados a issues. Informação indisponível de contexto/cota permanece desconhecida, nunca estimada como valor real. |
 | Descoberta Artisan e resolução de atalhos | 14 | 15 reutiliza a infraestrutura de execução e seleção sem alterar a precedência dos gatilhos. |
@@ -194,8 +234,7 @@ dos sistemas externos. Os documentos devem distinguir uma **proposta de contrato
 confirmada. A ausência de um contrato externo não autoriza fabricar endpoints, flags ou labels.
 
 - **MaxCode (11, 14 e 16):** confirmar handshake HTTP/WS, rotas URI, payloads de Plan Mode,
-  catálogo versionado das **24 labels (15 de estado, 3 de encerramento e 6 de categoria)**,
-  formato de cache Artisan e ações da fila. Os nomes exemplificados no `AGENTS.md` não são o catálogo completo.
+  formato de cache Artisan e ações da fila (incluindo a proposta 11/06). O catálogo literal das **24 labels (15 de estado, 3 de encerramento e 6 de categoria)** está na Fase 16, conforme D-02; preservar a fixture versionada e testar paridade com a fonte MaxCode quando disponível.
 - **MaxAiManager (12):** preservar `X-Agent-Name: MaxTerminal` e `/v1/rags/{slug}/search`;
   confirmar métodos, payloads, descoberta de modelos, capacidades, autenticação e streaming no gateway real.
 - **Agentes CLI (13):** confirmar por versão fontes de telemetria, hooks e configurações;
@@ -241,7 +280,8 @@ confirmada. A ausência de um contrato externo não autoriza fabricar endpoints,
 3. Implementar e validar os critérios de `instructions.md` segundo os contratos de `spec.md`.
 4. Registrar versões de integrações, fixtures e medições junto à implementação quando ela existir.
 5. Mudanças de contrato exigem atualização da fase proprietária e de seus consumidores, mantendo
-   arestas apenas para fases anteriores. Novas migrations nunca reescrevem migrations já aplicadas.
+    arestas apenas para fases anteriores. Novas migrations nunca reescrevem migrations já aplicadas.
+6. Executar verificações a partir da raiz da worktree ativa (`cd "$(git rev-parse --show-toplevel)"`), sem caminhos absolutos de sessões anteriores. O planejamento das verificações não equivale a resultados de execução.
 
 Este diretório é um plano de implementação. A existência dos documentos não representa execução
 dos testes descritos nem comprovação de compatibilidade das integrações externas.

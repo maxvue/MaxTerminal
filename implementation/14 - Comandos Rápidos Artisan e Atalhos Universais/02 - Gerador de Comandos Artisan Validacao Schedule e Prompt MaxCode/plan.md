@@ -34,7 +34,7 @@
 
 ### Passo 4 — Agendamento (`schedule.rs`), `routes/console.php` (`console_routes.rs`) e `CommandGenerator` (`mod.rs`)
 - [ ] **4.1.** Implementar `render_schedule_chain`, `render_modern_schedule_statement` e `render_legacy_kernel_statement` em `src-tauri/crates/mt-commands/src/artisan/generator/schedule.rs`.
-- [ ] **4.2.** Implementar `plan_console_routes` em `src-tauri/crates/mt-commands/src/artisan/generator/console_routes.rs` com lexer de topo para PHP, detecção idempotente de agendamento existente, criação exclusiva para `routes/console.php` ausente em layout moderno referenciado por `bootstrap/app.php` e geração de `manual_steps` para arquivo existente ou layout Legacy (`app/Console/Kernel.php`).
+- [ ] **4.2.** Implementar `plan_console_routes` com lexer PHP, detecção idempotente e bloco delimitado: criação exclusiva se ausente; inserção em `routes/console.php` existente suportado após preview/confirmação da revisão e revalidação de hash. Preservar bytes externos/permissões/backup; `manual_steps` para estrutura ambígua/conflitante ou layout Legacy (`app/Console/Kernel.php`).
 - [ ] **4.3.** Implementar `CommandGenerator` em `src-tauri/crates/mt-commands/src/artisan/generator/mod.rs` unificando `form_schema`, `validate`, `preview`, `create` (com checagem de `expected_revision`, `create_new_file_under_root`, rollback seguro com verificação de inode/hash e emissão de `artisan://command-created` + `artisan.invalidate`) e `format_maxcode_prompt`.
 
 ### Passo 5 — Testes de Snapshot (`insta`), Rollback e Integração Laravel (`tests/generator.rs`, `tests/laravel_integration.rs`)
@@ -47,7 +47,7 @@
 - [ ] **5.2.** Adicionar em `tests/generator.rs` os testes comportamentais:
   - Igualdade byte a byte entre `preview.php` e o arquivo gravado por `create` (CA-19).
   - Layout Legacy (Laravel 10 com `app/Console/Kernel.php`) populando `manual_steps` sem escrever em `routes/console.php` (CA-22).
-  - `routes/console.php` já existente permanecendo intacto no disco e retornando o diff/instruções em `manual_steps` (CA-20, CA-39).
+  - `routes/console.php` existente recebe uma única inserção delimitada confirmada, preservando bytes externos; segunda aplicação é no-op. Testar preview sem escrita, alteração concorrente → `preview_stale`, aliases/`?>`, estrutura ambígua → `manual_steps` e recuperação preservando edição externa (CA-20, CA-39).
   - Destino existente retornando `artisan.file_exists`; `expected_revision` divergente retornando `artisan.preview_stale`; rollback em falha preservando edição externa com `artisan.partial_write` (CA-21, CA-39).
 - [ ] **5.3.** Criar `src-tauri/crates/mt-commands/tests/laravel_integration.rs` (com teste `#[ignore]` ativado quando `MT_LARAVEL_FIXTURE` estiver definido, mais teste de sintaxe `php -l` quando `php` estiver no `PATH`) validando que o PHP gerado passa em `php -l` sem erros (CA-20).
 
@@ -55,9 +55,10 @@
 
 ## 2. Comandos de Verificação e Validação
 
-Execute a partir de `/home/johnattas/GitHub/MaxTerminal/.max-code-worktrees/wt-6f18b3d0/src-tauri`:
+Execute a partir de a raiz da worktree ativa:
 
 ```bash
+cd "$(git rev-parse --show-toplevel)/src-tauri"
 cargo fmt --package mt-commands -- --check
 cargo clippy -p mt-commands --all-targets -- -D warnings
 cargo test -p mt-commands --test generator
@@ -73,7 +74,7 @@ cargo insta test -p mt-commands --check
 | **CA-02** | `cargo test -p mt-commands` e `cargo insta test -p mt-commands --check` passando sem snapshots pendentes. |
 | **CA-18** | Validador único em `validate.rs` cobrindo todas as regras da tabela §7.2 com mensagens em `pt-BR` por campo (`path`). |
 | **CA-19** | `CommandGenerator::preview` e `CommandGenerator::create` usam exatamente a mesma função de renderização e produzem bytes idênticos. |
-| **CA-20** | Geração de `app/Console/Commands/<Classe>.php` com namespace PSR-4, interfaces selecionadas e agendamento com argumentos obrigatórios; `routes/console.php` existente fica intacto com patch manual idempotente e ausente é criado exclusivamente. |
+| **CA-20** | Geração PHP com namespace PSR-4/interfaces/agendamento; `routes/console.php` existente suportado recebe inserção delimitada idempotente após preview/confirmação, preservando código externo; ausente é criado exclusivamente. |
 | **CA-21** | Retorno de `artisan.file_exists`, `artisan.preview_stale` e rollback seguro (`artisan.partial_write` se houve edição externa). |
 | **CA-22** | Em Laravel ≤ 10 (`LaravelLayout::Legacy`), nenhum schedule é gravado automaticamente e `manual_steps` contém o snippet para `Kernel::schedule()`. |
 | **CA-23** | `CommandGenerator::create` invalida o `ArtisanService` e emite `artisan://command-created`. |

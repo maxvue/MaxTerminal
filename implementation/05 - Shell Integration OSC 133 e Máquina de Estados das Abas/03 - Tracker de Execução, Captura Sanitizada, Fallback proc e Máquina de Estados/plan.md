@@ -30,13 +30,15 @@
   3. Implementar `BlockCapture::record_gap` chamando `sanitizer.on_gap()` e descartando fragmentos parciais até fronteira segura.
   4. Criar `src-tauri/crates/mt-shell/tests/tracker.rs` validando:
      - Segmentação de múltiplos comandos e saídas dentro de um único frame de bytes.
+     - **Fallback `/proc` (T-07):** (a) `IntegrationMode::Proc` + bloco ativo + `on_pty_exit(Some(1))` → `BlockFinished { status: Failed, exit_code: Some(1), reason: PtyExited }`, `TabStatus::Error` e `error_context` aceito (sem `shell.block_not_failed`); (b) `Proc` + bloco ativo + `on_pty_exit(None)` e `on_pty_exit(Some(0))` → `Unknown` com `exit_code: None`, aba `Idle`; (c) `IntegrationMode::Hooks` + bloco ativo sem `D` + `on_pty_exit(Some(1))` → continua `Unknown` (código do shell não é atribuído ao filho); (d) `on_pty_exit` após bloco já concluído não altera o resultado.
      - Segredo (`Authorization: Bearer abcdef123456` e chave PEM) partido exatamente na fronteira de chunk, na fronteira de 16 KiB do `head`, na fronteira de 48 KiB do `tail` e ao redor de um `Gap`: zero vazamento em `output_text` e `error_tail`.
 
 - [ ] **Passo 4: Implementar o Monitor `/proc` (`fallback.rs`), Mailbox Limitada (`runtime.rs`), Persistência (`persist.rs`) e `ShellService` (`service.rs`)**
-  1. Criar `src-tauri/crates/mt-shell/src/fallback.rs` com timer de 5 s para ausência de handshake (`Pending → Proc`) e loop de 250 ms consultando `PtyManager::process_report`/`foreground_process`, emitindo execuções inferidas (`source = Proc`, `confidence = Inferred`, `exit_code = None`) e encerrando com `ModeSwitched` caso o handshake chegue tardiamente.
+  1. Criar `src-tauri/crates/mt-shell/src/fallback.rs` com timer de 5 s para ausência de handshake (`Pending → Proc`) e loop de 250 ms consultando `PtyManager::process_report`/`foreground_process`, emitindo execuções inferidas (`source = Proc`, `confidence = Inferred`, `exit_code = None` enquanto o PTY vive) e encerrando com `ModeSwitched` caso o handshake chegue tardiamente. Em `IntegrationMode::Proc`, `CommandTracker::on_pty_exit(exit_code, ..)` finaliza o bloco ativo como `BlockStatus::Failed` com o `exit_code` do PTY quando `!= 0` (`BlockEndReason::PtyExited`, aba em `error`, "Inspecionar" habilitado); sem informação de código o bloco continua `Unknown`.
   2. Criar `src-tauri/crates/mt-shell/src/runtime.rs` com `SessionProvider`, `PtyScopedSessionProvider` e `PtySequencerMailbox` (limite de 8 MiB e 4.096 mensagens + 64 controles reservados + 1 slot terminal para `Exit`/`Overflow`).
   3. Criar `src-tauri/crates/mt-shell/src/persist.rs` com worker assíncrono limitado, cache LRU sanitizado (32 blocos / 4 MiB globais) e gravação via `SessionsRepo` e `CommandBlocksRepo`.
   4. Criar `src-tauri/crates/mt-shell/src/service.rs` integrando `ShellService::prepare_spawn`, `SpawnLifecycle`, `OutputTap` (mantendo o `TapHandle` vivo no serviço), `error_context(block_id, max_lines)` e `shutdown()`.
+  5. Preservar `ExitInfo.code` no slot terminal e repassá-lo a `CommandTracker::on_pty_exit`; aplicar `CommandFinished` e finalizar captura antes de `PtyExited`, mantendo a conclusão falha após `alive=false`. Testar o fluxo completo lifecycle → mailbox → tracker → registry → contexto sanitizado, não apenas a função isolada.
 
 ---
 
@@ -65,5 +67,6 @@ cargo clippy -p mt-shell --all-targets -- -D warnings
 
 - [x] **CA-PAR-03 (instructions.md §5):** Marcas sem nonce, nonce errado, `g` antigo, metadado duplicado ou forjado não mudam estado autoritativo.
 - [x] **CA-SHL-05 (instructions.md §5):** Opt-out/shell incompatível → `proc` imediatamente; sem handshake → após 5 s; chegada tardia de handshake reconcilia com `ModeSwitched` sem dupla conclusão.
+- [x] **CA-SHL-06 (T-07):** Em modo `Proc`, PTY encerrado com `exit_code != 0` durante bloco ativo → bloco `Failed` com esse código, aba `error` e `command_block_error_context` habilitado; sem informação de código permanece `Unknown`/`idle`.
 - [x] **CA-EST-01 a CA-EST-06 (instructions.md §5):** Tabela da spec §6 coberta integralmente; `sleep 2` → verde, sucesso não visto → âmbar, falha não vista → vermelho, visto → neutro preservando resultado; foco contínuo exige ACK pós-D; `exitCode=null` → `unknown`/`idle`; `npm run dev` → contínuo e `vite build`/`docker compose up -d` não promovem; agregação determinística e `hasActiveProcesses` por OR de todos os panes.
 - [x] **CA-CAP-01 a CA-CAP-04 (instructions.md §5):** Segredos partidos entre chunks/head/tail/gaps nunca vazam; `echo 'Authorization: Bearer abcdef123456'; false` produz `ErrorContext` mascarado sem ANSI (padrão 50 linhas, máx. 200); mailbox limitada a 8 MiB e 4.096 msgs não congela o PTY; falha de DB reporta `persistence=failed` e serve contexto do cache sanitizado.

@@ -25,8 +25,8 @@
 
 - [ ] **Passo 4 — Implementar o Serviço de Sugestão NL→Shell (`suggest.rs`):**
   1. Criar `src-tauri/crates/mt-ai/src/suggest.rs` com `SuggestRequest`, `AiTrigger`, `CommandSuggestion`, `AiStreamEvent` e `parse_suggestion()`.
-  2. Implementar `parse_suggestion()` aceitando exclusivamente JSON válido (direto ou em bloco cercado único ```` ```json ````), rejeitando prosa livre, comandos vazios (`AI_EMPTY_COMMAND`), quebras de linha `\n`/`\r` ou bytes de controle `NUL`/`ESC` (`AI_BAD_RESPONSE`).
-  3. Integrar `suggest_command` com `CatalogService::resolve()`, `AiContextSource::for_pane()`, `GatewayClient::chat()`, `RiskClassifier::combine()` e `AiRepo::insert_history()`.
+  2. Implementar `parse_suggestion()` aceitando exclusivamente JSON válido (direto ou em bloco cercado único ```` ```json ````), rejeitando prosa livre, comandos vazios (`ai.empty_command`), quebras de linha `\n`/`\r` ou bytes de controle `NUL`/`ESC` (`ai.bad_response`).
+  3. Integrar `AiService::prepare_suggest` (fase síncrona: enabled, seleção, cancelamento da sugestão anterior, registro do `request_id`) e `AiService::run_suggest_stream` (fase assíncrona; `suggest_command` = composição das duas) com `CatalogService::resolve()`, `AiContextSource::for_pane()`, `GatewayClient::chat()`, `RiskClassifier::combine()` e `AiRepo::insert_history()`.
 
 - [ ] **Passo 5 — Implementar o Serviço de Diagnóstico Rápido Inline (`diagnose.rs`):**
   1. Criar `src-tauri/crates/mt-ai/src/diagnose.rs` com `InlineDiagnosis`, `DiagnosisSkip`, `DiagnosisOutcome`, `DiagnoseRequest`, `DiagnosisCacheKey` e `DiagnosisService`.
@@ -35,10 +35,10 @@
 
 - [ ] **Passo 6 — Implementar o Serviço de Consulta RAG (`rag.rs`):**
   1. Criar `src-tauri/crates/mt-ai/src/rag.rs` com `RagSlug`, `RagSearchRequest`, `RagResult`, `RagSearchResponse` e `RagService`.
-  2. Implementar `validate_slug()` (`^[a-z0-9][a-z0-9_-]{0,63}$` → `AI_INVALID_SLUG`), construção segura de URL com `path_segments_mut()`, mapeamento de `404` na busca para `AI_RAG_NOT_FOUND`, sanitização de resultados, truncamento de `content` em 2 KiB, validação de URLs `http`/`https` e ordenação estável por `score`.
+  2. Implementar `validate_slug()` (`^[a-z0-9][a-z0-9_-]{0,63}$` → `ai.invalid_slug`), construção segura de URL com `path_segments_mut()`, mapeamento de `404` na busca para `ai.rag_not_found`, sanitização de resultados, truncamento de `content` em 2 KiB, validação de URLs `http`/`https` e ordenação estável por `score`.
 
 - [ ] **Passo 7 — Implementar o Gerador Estruturado (`structured.rs`) e Fachada `AiService` (`lib.rs`):**
-  1. Criar `src-tauri/crates/mt-ai/src/structured.rs` com `StructuredRequest`, `StructuredResponse` e `StructuredGenerator`.
+  1. Criar `src-tauri/crates/mt-ai/src/structured.rs` com `StructuredRequest`, `StructuredResponse`, `StructuredGenerator` e IDs `artisan.command.v1`/`command-group.suggestion.v1`. Não aceitar aliases sem versão; acesso de consumidores exclusivamente por `AiService::generate_structured`, mantendo `AiService.structured` privado.
   2. Implementar `validate_schema_security()` recusando schemas `> 32 KiB` ou com `$ref` externo, compilação com `jsonschema::Validator` cacheada em `DashMap` (máx. 64), e fluxo de validação com até 1 tentativa de reparo automático dentro do deadline total.
   3. Completar `src-tauri/crates/mt-ai/src/lib.rs` implementando `AiService` e o worker de health check com `tokio::sync::watch`.
 
@@ -46,7 +46,7 @@
   1. Criar `src-tauri/crates/mt-ai/tests/risk_rules.rs` com `>= 40` casos tabelados (`CA-19`), teste de não-rebaixamento (`CA-17`), verificação de `confirm_token` (`CA-16`) e benchmark `< 1 ms` para comandos `<= 1 KiB`.
   2. Criar `src-tauri/crates/mt-ai/tests/suggest_parse.rs` testando JSON direto, bloco cercado `json`, rejeição de prosa, comando vazio, multilinha, NUL/ESC e verificação de sanitização no contexto enviado (`CA-18`).
   3. Criar `src-tauri/crates/mt-ai/tests/diagnose_cache.rs` testando `error_hash`, cache hit incrementando `hits` sem HTTP (`CA-21`), `exit 130` e modo interativo ignorados (`CA-22`), substituição `Superseded` no mesmo painel, independência entre dois painéis da mesma aba (`CA-34`) e fila limitada (3) + rate limit.
-  4. Criar `src-tauri/crates/mt-ai/tests/structured.rs` testando JSON válido de primeira, reparo em 1 tentativa, falha persistente retornando `AI_SCHEMA_VALIDATION` com `details.errors` (`CA-27`) e bloqueio de `$ref` remoto (`CA-36`).
+  4. Criar `src-tauri/crates/mt-ai/tests/structured.rs` testando os dois schemas versionados, rejeição de IDs sem versão, JSON válido de primeira, reparo em 1 tentativa, falha persistente retornando `ai.schema_validation` com `details.errors` (`CA-27`) e bloqueio de `$ref` remoto (`CA-36`).
   5. Adicionar testes de RAG (`CA-25`, `CA-26`) em `src-tauri/crates/mt-ai/tests/gateway_mock.rs`.
 
 ---
@@ -90,7 +90,7 @@ cargo test --manifest-path src-tauri/Cargo.toml -p mt-ai
 | `CA-21` | Mesmo `error_hash` na 2ª vez é servido do `ai_diagnosis_cache` com `from_cache = true` e `hits` incrementado sem HTTP. | `tests/diagnose_cache.rs::second_identical_error_hits_cache_without_http` |
 | `CA-22` (backend) | `exit 130`, modo interativo/TUI e projetos com opt-out retornam `DiagnosisOutcome::Skipped`. | `tests/diagnose_cache.rs::skips_ignored_exit_interactive_and_opted_out_project` |
 | `CA-25` (backend) | Busca RAG em `/v1/rags/{slug}/search` com `{ query, top_k }` funciona mesmo sem `default_selection`. | `tests/gateway_mock.rs::rag_search_works_without_default_selection` |
-| `CA-26` | Slug `404` retorna `AI_RAG_NOT_FOUND` com mensagem pt-BR; slug fora de `[a-z0-9-_]` falha antes do HTTP com `AI_INVALID_SLUG`. | `tests/gateway_mock.rs::rag_invalid_slug_and_404_handling` |
-| `CA-27` | `generate_structured` valida JSON Schema, repara em 1 tentativa e falha com `AI_SCHEMA_VALIDATION` + `details.errors` se persistir inválido. | `tests/structured.rs` |
+| `CA-26` | Slug `404` retorna `ai.rag_not_found` com mensagem pt-BR; slug fora de `[a-z0-9-_]` falha antes do HTTP com `ai.invalid_slug`. | `tests/gateway_mock.rs::rag_invalid_slug_and_404_handling` |
+| `CA-27` | `generate_structured` valida JSON Schema, repara em 1 tentativa e falha com `ai.schema_validation` + `details.errors` se persistir inválido. | `tests/structured.rs` |
 | `CA-34` (backend) | Dois painéis da mesma aba diagnosticam independentemente; `error_hash` inclui gateway/projeto/cwd/shell/seleção/versões; dispensar um `block_id` não afeta outro bloco com o mesmo hash. | `tests/diagnose_cache.rs::split_panes_and_block_dismiss_isolation` |
 | `CA-36` (schema) | JSON Schema com `$ref` remoto (`http://...`) é rejeitado sem acesso à rede; strings da resposta estruturada são sanitizadas. | `tests/structured.rs::rejects_remote_ref_and_sanitizes_output` |

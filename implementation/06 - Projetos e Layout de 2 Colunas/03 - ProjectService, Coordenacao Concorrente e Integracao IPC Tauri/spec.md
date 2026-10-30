@@ -142,7 +142,7 @@ impl ProjectService {
    - `remove(id)`:
      1. Insere `id` em `removing_ids` (se já estiver, retorna erro/conflito).
      2. Adquire `write_owned().await` no gate do `id` (aguardando qualquer `ProjectActivityGuard` prévio encerrar e bloqueando novas aquisições).
-     3. Executa todos os `ProjectRemovalHook::before_remove(id)` em sequência **fora** do lock do coordenador e fora de transação SQLite. Se qualquer hook retornar `Err(e)`, remove `id` de `removing_ids`, libera o write lock e retorna `MtError::new("project.removal_blocked", format!("Não foi possível remover o projeto: {}", e.message)).with_details(...)`.
+     3. Executa todos os `ProjectRemovalHook::before_remove(id)` em sequência **fora** do lock do coordenador e fora de transação SQLite. Se qualquer hook retornar `Err(e)`, remove `id` de `removing_ids`, libera o write lock e retorna `MtError::new(ErrorCode("project.removal_blocked"), format!("Não foi possível remover o projeto: {}", e.message)).with_details(...)`.
      4. Coleta todas as origens (`project_root_entries`) que apontam para `project.path` (mais o próprio `project.root_id` se houver) e constrói `Vec<DismissedRow>` para que o projeto removido não volte a ser sugerido nem auto-importado pelas raízes atuais.
      5. Executa `CatalogMutation::Remove { id, dismiss }` em uma única transação e emite `ProjectChangedPayload::Deleted { ids: vec![id] }`.
 

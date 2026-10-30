@@ -31,15 +31,19 @@
 
 ## 2. Comandos Exatos de Verificação
 
-Execute os comandos abaixo a partir de `/home/johnattas/GitHub/MaxTerminal/.max-code-worktrees/wt-6f18b3d0`:
+Execute os comandos abaixo a partir de a raiz da worktree ativa:
 
 ```bash
+cd "$(git rev-parse --show-toplevel)"
 npm run typecheck
 npm run typecheck:vue
 npm run lint
 npm run lint:style
 npx --no-install vitest run tests/commandGroups --coverage
-cd src-tauri && cargo fmt --check && cargo clippy --workspace --all-targets -- -D warnings && cargo test -p mt-commands
+cargo fmt --manifest-path src-tauri/Cargo.toml --check
+cargo clippy --manifest-path src-tauri/Cargo.toml --workspace --all-targets -- -D warnings
+cargo test --manifest-path src-tauri/Cargo.toml -p mt-commands
+cargo run --manifest-path src-tauri/Cargo.toml --bin export_bindings
 git diff --exit-code src/types/bindings.ts
 ```
 
@@ -50,7 +54,7 @@ git diff --exit-code src/types/bindings.ts
 | Critério da Fase 15 | Como é atendido e verificado nesta Implementação |
 |---------------------|--------------------------------------------------|
 | **CA-10** | `npm run typecheck`, `npm run typecheck:vue`, `npm run lint`, `npm run lint:style` e `bindings.ts` sem erros. |
-| **CA-11** | `npx vitest run tests/commandGroups` verde com cobertura ≥ 90% em `commandGroups.ts` e `commandGroupsTrigger.ts` e ≥ 80% em `src/components/commandGroups/**`. |
+| **CA-11** | `npx --no-install vitest run tests/commandGroups` verde com cobertura ≥ 90% em `commandGroups.ts` e `commandGroupsTrigger.ts` e ≥ 80% em `src/components/commandGroups/**`. |
 | **CA-16** | Testado em `CommandGroupModal.spec.ts`: abrir com escopo local pré-selecionado, adicionar 3 itens, reordenar por drag e `Alt+↑/↓`, escolher modo e separador, salvar e refletir imediatamente no `>>`. |
 | **CA-17 (UI)** | Testado em `GroupRunPanel.spec.ts`: quando o painel está ocupado, em alt-screen ou sem prompt confirmado, exibe o motivo e oferece o botão "Executar em nova aba". |
 | **CA-18 (UI)** | Testado em `GroupRunPanel.spec.ts` e `GroupRunOutputView.spec.ts`: cores semânticas `--max-success-500`, `--max-info-500`, `--max-warning-500`, `--max-danger-500` e neutro; "Ver saída" em terminal somente leitura com replay + live; botão "Cancelar" por item ou execução. |

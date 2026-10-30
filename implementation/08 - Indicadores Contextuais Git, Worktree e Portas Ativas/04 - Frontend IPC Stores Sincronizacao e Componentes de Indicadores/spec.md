@@ -254,7 +254,7 @@ Todos os componentes seguem **estritamente** as regras do `AGENTS.md` §3:
 #### 1. `GitIndicator.vue`
 - **Props:** `defineProps<{ context: GitContext; compact?: boolean }>()`
 - **Exibição:**
-  - Ícone principal via `<MaxIcon :name="branchIcon" />`: `'mdi:source-Commit'` quando `context.branch.kind === 'detached'`, senão `'mdi:source-branch'`.
+  - Ícone principal via `<MaxIcon :name="branchIcon" />`: `'mdi:source-commit'` quando `context.branch.kind === 'detached'`, senão `'mdi:source-branch'`.
   - Texto da branch: `shortOid` (7 chars) em `detached` (com classe estilizada monoespaçada/destacada), ou `name` truncado em 24 caracteres com reticências (`…`).
   - Indicador visual de `dirty`: bolinha (`.git-indicator__dot`) exibida quando `isDirty` for `true`; cor `var(--max-danger-500)` se `changes.conflicted > 0`, senão `var(--max-warning-500)`.
   - Sincronismo Upstream: se `context.upstream?.gone`, exibe `<MaxIcon name="mdi:cloud-off-outline" />`; senão, exibe `↑{{ context.upstream.ahead }}` (se `> 0`) e `↓{{ context.upstream.behind }}` (se `> 0`).

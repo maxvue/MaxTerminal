@@ -43,7 +43,7 @@ Os exemplos SQL/Rust/TS são contratos para implementação futura; este planeja
 
 | # | Item | Detalhe |
 |---|------|---------|
-| I-01 | Escolha do driver | `rusqlite` com feature `bundled` (SQLite compilado com FTS5, JSON1, `STRICT`) + `r2d2`/`r2d2_sqlite` para leitores. Justificativa completa em spec §1. `tauri-plugin-sql` **rejeitado**. |
+| I-01 | Escolha do driver | `rusqlite 0.40` com feature `bundled` (SQLite ≥ 3.51.3 compilado com FTS5, JSON1, `STRICT`) + `r2d2`/`r2d2_sqlite 0.35` para leitores (D-06; `cargo tree -d` sem `libsqlite3-sys` duplicado). Justificativa completa em spec §1. `tauri-plugin-sql` **rejeitado**. |
 | I-02 | Abertura e PRAGMAs | `journal_mode=WAL`, `synchronous=NORMAL`, `foreign_keys=ON`, `busy_timeout=5000`, `temp_store=MEMORY`, `cache_size=-16000`, `mmap_size=268435456`, `auto_vacuum=INCREMENTAL` (apenas em banco novo), `query_only=ON` nos leitores. |
 | I-03 | Caminho e permissões | Campo `mt_core::paths::AppPaths::db_path` (Fase 01); isolamento por `MAXTERMINAL_HOME`; override adicional `MAXTERMINAL_DB_PATH` definido nesta fase, absoluto e apenas debug/testes; diretório `0700`, arquivo `.db`/`-wal`/`-shm` `0600`. |
 | I-04 | Writer thread única | `std::thread` dona da `Connection` de escrita, fila `crossbeam_channel` limitada, respostas via `tokio::sync::oneshot`. |
@@ -80,10 +80,24 @@ Os exemplos SQL/Rust/TS são contratos para implementação futura; este planeja
 | UI de busca global FTS5, benchmarks de rajada end-to-end, hardening final e empacotamento | 17 |
 | Tela de preferências/configurações visual (nenhuma fase anterior a 17 a exige; o AGENTS.md não define uma) | — |
 
-> Regra: **cada fase adiciona apenas suas próprias migrations** (`NNNN_<fase>_<desc>.sql`). A Fase 03 entrega
-> somente `0001_03_base.sql`. A 05 adiciona `NNNN_05_shell_sessions_command_blocks.sql` com o próximo número
-> global disponível. A 07 estende `sessions`, sem recriá-la, e cria o próprio scrollback. Não há tabela `commands`
-> nem migration `0002_03_history.sql`/`0003_03_history_fts.sql` a entregar na 03.
+> Regra: **cada fase adiciona apenas suas próprias migrations** (`NNNN_<fase>_<desc>.sql`, com `NNNN` **contíguo e
+> concreto**; placeholders `NNNN_` literais são proibidos). A Fase 03 entrega somente `0001_03_base.sql`. A 07 estende
+> `sessions` (criada pela 05), sem recriá-la, e cria o próprio scrollback. Não há tabela `commands` a entregar na 03.
+> O runner (`MigrationRunner`) exige versões contíguas `1..=N` e adota a tabela canônica **D-01** abaixo:
+>
+> | Versão | Arquivo | Fase |
+> |---|---|---|
+> | 1 | `0001_03_base.sql` | 03 |
+> | 2 | `0002_05_shell_sessions_command_blocks.sql` | 05 |
+> | 3 | `0003_06_projects.sql` | 06 |
+> | 4 | `0004_07_workspace_templates_tabs_sessions.sql` | 07 |
+> | 5 | `0005_09_os_settings.sql` | 09 |
+> | 6 | `0006_10_themes.sql` | 10 |
+> | 7 | `0007_12_ai.sql` | 12 |
+> | 8 | `0008_13_agents_skills_memory.sql` | 13 |
+> | 9 | `0009_15_command_groups.sql` | 15 |
+> | 10 | `0010_16_github.sql` | 16 |
+> | 11 | `0011_17_search.sql` | 17 |
 
 ---
 
@@ -112,7 +126,7 @@ Os exemplos SQL/Rust/TS são contratos para implementação futura; este planeja
 ## 4. Entregáveis
 
 ### 4.1. Crate `src-tauri/crates/mt-db/`
-- `Cargo.toml` (dependências: `rusqlite` [`bundled`, `backup`, `functions`, `serde_json`], `r2d2`, `r2d2_sqlite`,
+- `Cargo.toml` (dependências: `rusqlite` `0.40` [`bundled`, `backup`, `functions`, `serde_json`], `r2d2`, `r2d2_sqlite` `0.35`,
   `crossbeam-channel`, `tokio` [`sync`, `rt`, `time`], `regex`, `include_dir`, `sha2`, `serde`, `serde_json`,
   `thiserror`, `tracing`, `specta`, `mt-core`; dev: `tempfile`, `proptest`, `rstest`, `criterion`)
 - `migrations/0001_03_base.sql`

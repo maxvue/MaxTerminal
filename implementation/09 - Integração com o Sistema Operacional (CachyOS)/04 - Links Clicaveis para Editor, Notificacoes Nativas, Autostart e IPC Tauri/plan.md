@@ -31,7 +31,7 @@
   - `src-tauri/crates/mt-os/src/editor.rs`
 - **Ações**:
   1. Implementar `EditorInvocation` e `build_editor_invocation(settings, link)` cobrindo `VsCode`, `VsCodeInsiders`, `MaxCode` (`vscode://file/` com percent-encoding que preserva `/`) e `Custom` (substituição de `{file}`, `{line}`, `{column}` por elemento, sem shell).
-  2. Implementar a trait `EditorOpener` e `EditorLauncher` (`register_opener`, `open`, `detect` via `which::which("code")`, `which::which("code-insiders")` e `which::which("xdg-open")`).
+  2. Implementar a trait `EditorOpener` e `EditorLauncher` (`register_opener`, `set_bridge_opener`, `open`, `detect` via `which::which("code")`, `which::which("code-insiders")` e `which::which("xdg-open")`). O setter substitui slot prioritário idempotentemente; testar registro repetido, fallback e ausência de locks durante `await`.
   3. Garantir que `Exec` use `tokio::process::Command` com `stdin/stdout/stderr` nulos e task de reap assíncrona.
 
 ### Etapa 2.3 — Notificações Nativas, Rate Limiter e Comando Longo (`notify.rs`, `long_command.rs`)
@@ -51,7 +51,7 @@
   - `src-tauri/crates/mt-os/src/autostart.rs`
   - `src-tauri/crates/mt-os/src/lib.rs`
 - **Ações**:
-  1. Implementar `AutostartSync` (`apply`, `status`, reconciliação no startup e gravação atômica de `~/.config/autostart/maxterminal.desktop` respeitando `start_minimized` com `--minimized` apenas quando ativo).
+  1. Implementar `AutostartSync` (`apply`, `status`, reconciliação no startup e gravação atômica de `~/.config/autostart/maxterminal.desktop` respeitando `start_minimized` com `--start-hidden` apenas quando ativo).
   2. Implementar `OsDeps`, `OsRuntimeSnapshot` e `OsIntegration<R>` em `crates/mt-os/src/lib.rs`, incluindo `update_settings` serializado com compensação automática (rollback de atalho/autostart/geometria se a gravação no SQLite falhar).
 
 ### Etapa 2.5 — Adaptadores, Comandos IPC, Eventos e Capabilities no Binário (`src-tauri/src/`)
@@ -67,7 +67,7 @@
 - **Ações**:
   1. Em `adapters/os.rs`: implementar `TabStatusProvider`, `TabCwdProvider` (mantendo `cwd_epoch` por painel e emitindo `os://link-context-changed`) e `ShutdownHooks` integrando Fases 02, 03, 05 e 07.
   2. Em `events/os.rs`: definir `OsEvent<T>` e helpers de emissão com revisão monotônica.
-  3. Em `commands/os.rs`: implementar os 16 comandos `os_*` com validação de janela `"main"` e exportação `tauri-specta`.
+  3. Em `commands/os.rs`: implementar os 17 comandos `os_*` com validação de janela `"main"` e exportação `tauri-specta`.
   4. Em `src-tauri/src/lib.rs`: registrar `tauri_plugin_single_instance` como **primeiro** plugin (com feature `deep-link`), seguido de `tauri_plugin_deep_link`, `tauri_plugin_dialog`, `tauri_plugin_opener`, `tauri_plugin_global_shortcut`, `tauri_plugin_notification` e `tauri_plugin_autostart`; inicializar `OsIntegration` no `setup` e conectar `on_window_event` e `RunEvent::ExitRequested`.
   5. Configurar `build.rs`, `permissions/os.toml`, `capabilities/os.json` e `capabilities/default.json`.
 
@@ -91,7 +91,7 @@
 - [ ] `os_link_open` re-resolve o candidato no backend antes de invocar o editor.
 - [ ] Nenhum comando de editor utiliza `sh -c`; `vscode://file/` codifica `#`, `%`, `?`, `:` e espaços preservando `/`.
 - [ ] `Notifier::notify_user` sanitiza segredos com `mt_db::sanitizer::sanitize()` antes de enviar ao D-Bus.
-- [ ] Os 16 comandos `os_*` estão exportados no `tauri-specta` e protegidos por `allow-os-integration` em `permissions/os.toml`.
+- [ ] Os 17 comandos `os_*` estão exportados no `tauri-specta` e protegidos por `allow-os-integration` em `permissions/os.toml`.
 
 ---
 

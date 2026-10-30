@@ -74,9 +74,10 @@ Tudo isso vive no crate `mt-ai` (Rust) e no domínio `ai` do frontend (`useAiSto
 | 04 | `triggerRegistry.register(TriggerDefinition)`, `TriggerSelectOutcome`, `useRichInput().text`, `TerminalInstanceHandle.write`, `HybridTerminal #block-actions` → `CommandBlock #actions`. |
 | 05 | `shell://command-finished` (`CommandFinished`), `command_block_error_context`/`ShellService::error_context`, `ErrorContext` sanitizado e repositório de blocos. |
 | 06 | Stack detectada do projeto (`ProjectStack`). |
-| 07 | `TabView`/`PaneView`, sessão e PTY atuais, `WorkspaceObserver` e eventos de fechamento, substituição de PTY e arquivamento; escrita explícita segue o pipeline da 04. |
+| 07 | `TabView`/`PaneView`, sessão e PTY atuais, `WorkspaceLifecycleObserver::on_signal` e sinais de fechamento, spawn/saída de PTY e arquivamento; escrita explícita segue o pipeline da 04. |
+| 10 | Disponibilidade da migration `0006_10_themes.sql` e de todas as anteriores (`0001`–`0006`) antes de `0007_12_ai.sql`; dependência apenas de ordem de migrations (D-01). |
 
-> Dependências diretas: **04, 05, 07**; 01/03/06 são transitivas. A Fase 11 não é pré-requisito.
+> Dependências diretas: **04, 05, 07, 10**; 01/03/06 são transitivas. A aresta **10→12** garante contiguidade de migrations; não introduz dependência Cargo/serviços de temas em `mt-ai`. A Fase 11 não é pré-requisito.
 > `spec.md` §1.2 distingue contratos publicados de adaptadores novos da 12. Divergências são resolvidas nesses
 > adaptadores, sem introduzir dependência de 13/14/15 ou assumir APIs inexistentes na 04.
 
@@ -96,7 +97,7 @@ Tudo isso vive no crate `mt-ai` (Rust) e no domínio `ai` do frontend (`useAiSto
 - `src-tauri/crates/mt-ai/Cargo.toml`
 - `src-tauri/crates/mt-ai/src/lib.rs` — `AiService`, re-exports
 - `src-tauri/crates/mt-ai/src/config.rs` — `AiConfig`, `AiSettings`, validação de URL
-- `src-tauri/crates/mt-ai/src/error.rs` — códigos `AI_*` (constantes de `ErrorCode`)
+- `src-tauri/crates/mt-ai/src/error.rs` — constantes `codes::AI_*` do tipo `ErrorCode` (valores `ai.<motivo>` em minúsculas, D-07)
 - `src-tauri/crates/mt-ai/src/ids.rs` — `AiRequestId` (newtype local Uuid v7)
 - `src-tauri/crates/mt-ai/src/client/{mod.rs,http.rs,sse.rs,dialect.rs}` — `GatewayClient`, SSE, adaptação de payload
 - `src-tauri/crates/mt-ai/src/catalog/{mod.rs,fallback.rs}` + `assets/catalog.fallback.json`
@@ -110,9 +111,10 @@ Tudo isso vive no crate `mt-ai` (Rust) e no domínio `ai` do frontend (`useAiSto
 - `src-tauri/crates/mt-ai/src/registry.rs` — `AiRequestRegistry`
 - `src-tauri/crates/mt-ai/src/repo.rs` — `AiRepo` (SQLite)
 - `src-tauri/crates/mt-ai/tests/{gateway_mock.rs,risk_rules.rs,diagnose_cache.rs,structured.rs}`
-- `src-tauri/crates/mt-db/migrations/NNNN_12_ai.sql` (NNNN = próximo número livre)
+- `src-tauri/crates/mt-db/migrations/0007_12_ai.sql` (número fixo pela decisão D-01: sequência contígua `0001_03_base` … `0007_12_ai` … `0008_13_agents_skills_memory`)
 - `src-tauri/src/commands/ai.rs` — comandos IPC; `src-tauri/src/ai_context.rs` — impl `AiContextSource`
-- Registro em `src-tauri/src/specta.rs` e `src-tauri/src/state.rs` (`AiService` no `tauri::State`)
+- `src/terminal/triggers/providers/ai.ts` — providers `ai.at`/`ai.question`, registrados por `useAiTriggers` via import direto; barrel `providers/index.ts` criado na Fase 14 (D-09).
+- Registro em `src-tauri/src/specta.rs`; `src-tauri/src/ai_state.rs` define `AppAiState { service: Arc<AiService> }`, registrado por `app.manage(...)` no setup de `src-tauri/src/lib.rs` (D-09).
 - Perfil de dialeto validado e fixtures de contrato sanitizadas: URL, método, autenticação, catálogo, seleção, RAG e suporte a streaming documentados em §4 da spec antes de declarar integração real concluída.
 
 ### 4.2. Frontend
@@ -139,10 +141,10 @@ Executados na raiz da worktree; todos com exit code 0 salvo indicação.
 ### 5.2. Cliente HTTP (testes com `wiremock`)
 - [ ] CA-05 **Toda** requisição (health, catálogo, chat, RAG) contém `X-Agent-Name: MaxTerminal` — teste `every_request_has_agent_header` falha se algum endpoint omitir.
 - [ ] CA-06 URL base alterada em `ai_settings_update` passa a valer na próxima requisição sem reiniciar o app.
-- [ ] CA-07 URL com host não-loopback é rejeitada com `AI_URL_NOT_LOOPBACK` salvo `allow_remote = true`.
+- [ ] CA-07 URL com host não-loopback é rejeitada com `ai.url_not_loopback` salvo `allow_remote = true`.
 - [ ] CA-08 Dialeto com SSE confirmado: 5 deltas de origem produzem texto idêntico em 1–5 lotes ordenados + 1 `Completed`; JSON único gera 0 deltas + 1 `Completed`. EOF prematuro gera `Failed`, sem comando parcial acionável.
 - [ ] CA-09 `ai_cancel` durante stream encerra a conexão em < 200 ms e emite `Cancelled`; nenhum evento chega depois de `Cancelled`.
-- [ ] CA-10 Gateway sem resposta → `AI_TIMEOUT` após o timeout configurado (teste com timeout de 300 ms); gateway desligado → `AI_GATEWAY_UNAVAILABLE` com mensagem pt-BR "MaxAiManager não está acessível em …".
+- [ ] CA-10 Gateway sem resposta → `ai.timeout` após o timeout configurado (teste com timeout de 300 ms); gateway desligado → `ai.gateway_unavailable` com mensagem pt-BR "MaxAiManager não está acessível em …".
 
 ### 5.3. Catálogo
 - [ ] CA-11 Catálogo no endpoint validado → `source = 'gateway'`; indisponível → último catálogo validado do mesmo gateway ou fallback de identidades (`claude-code`, `codex`, `agy`, `opencode`). Modelo/nível desconhecido fica indisponível, sem enviar `default/low/medium/high` inventados.
@@ -168,11 +170,11 @@ Executados na raiz da worktree; todos com exit code 0 salvo indicação.
 
 ### 5.7. RAG
 - [ ] CA-25 Modo RAG no popup `?` funciona mesmo sem seleção padrão de geração; slug digitado/configurado → `/v1/rags/{slug}/search` pelo método/corpo validados. Fixture proposta de teste: POST `{ query, top_k }`; resultado vazio mostra "Nenhum resultado" e preserva a consulta.
-- [ ] CA-26 Slug inexistente (404) → mensagem pt-BR "Base de conhecimento '{slug}' não encontrada"; slug com caracteres fora de `[a-z0-9-_]` é rejeitado antes do HTTP (`AI_INVALID_SLUG`).
+- [ ] CA-26 Slug inexistente (404) → mensagem pt-BR "Base de conhecimento '{slug}' não encontrada"; slug com caracteres fora de `[a-z0-9-_]` é rejeitado antes do HTTP (`ai.invalid_slug`).
 
 ### 5.8. Geração Assistida
-- [ ] CA-27 `ai_generate_structured` com schema `{ name: string, signature: string }` e mock retornando JSON válido devolve o objeto; com JSON inválido, faz 1 tentativa de reparo; persistindo inválido → `AI_SCHEMA_VALIDATION` com `details.errors`.
-- [ ] CA-28 `useAiGenerate<T>()` expõe `loading`, `error`, `result`, `run()`, `cancel()` e é usado em teste por um consumidor fictício (simulando Fase 14).
+- [ ] CA-27 `ai_generate_structured` com schema `{ name: string, signature: string }` e mock retornando JSON válido devolve o objeto; com JSON inválido, faz 1 tentativa de reparo; persistindo inválido → `ai.schema_validation` com `details.errors`.
+- [ ] CA-28 `useAiGenerate<T>(schemaId, schema, decode)` exige 3 argumentos e expõe `loading`, `error`, `result`, `repaired`, `run(prompt, opts?: AiGenerateRunOptions): Promise<T | null>`, `cancel()`; opções incluem `signal?: AbortSignal`. Testar consumidores com `artisan.command.v1` e `command-group.suggestion.v1`, tratando `null` sem aplicar resultado.
 
 ### 5.9. Persistência e privacidade
 - [ ] CA-29 Migration aplica em banco limpo e é idempotente no runner da Fase 03; `PRAGMA foreign_key_check` vazio.

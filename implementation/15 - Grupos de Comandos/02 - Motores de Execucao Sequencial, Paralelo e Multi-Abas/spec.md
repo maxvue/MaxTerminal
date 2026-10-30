@@ -253,10 +253,12 @@ pub trait RecurringCommandsSource: Send + Sync {
     ) -> MtResult<Vec<RecurringCommandEntry>>;
 }
 
-/// Contexto sanitizado enviado ao `AiService.structured.generate` (Fase 12).
+/// Contexto sanitizado enviado ao `AiService::generate_structured` (Fase 12).
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SuggestPromptContext {
+    pub project_id: Option<ProjectId>,
+    pub pane_id: Option<PaneId>,
     pub scope: GroupScope,
     pub project_name: Option<String>,
     pub project_stacks: Vec<String>,
@@ -266,7 +268,7 @@ pub struct SuggestPromptContext {
     pub recurring_commands: Vec<String>,
 }
 
-/// Porta para `AiService.structured.generate` (Fase 12).
+/// Porta para `AiService::generate_structured` (Fase 12), schema `command-group.suggestion.v1`.
 #[async_trait]
 pub trait GroupAiPort: Send + Sync {
     async fn generate_group_suggestion(
@@ -617,7 +619,8 @@ impl MultiTabRunner {
 1. **Proibição de Concatenação Textual (`commands.join(" && ")`):**
    - Cada item no modo Sequencial é submetido individualmente ao PTY somente após o término correlacionado (`BlockFinished`) **e** o próximo prompt pronto (`PromptReady`) do item anterior.
    - Com `SequentialSeparator::And`, se um item terminar com `exit_code != 0`, todos os itens subsequentes ainda em `Pending` são marcados imediatamente como `Skipped` na mesma transação e a fila termina.
-   - Com `SequentialSeparator::Semicolon`, se um item terminar com `exit_code != 0`, o item fica `Failed`, a fila prossegue para o próximo item e, ao final, se houver mistura de `Succeeded` e `Failed`, o estado agregado será `Partial` (`last_exit_code` reflete o último item executado, preservando as falhas nos contadores).
+   - Com `SequentialSeparator::Semicolon` e OSC 133 confiável, se um item terminar com `exit_code != 0`, o item fica `Failed`, a fila prossegue e a mistura de `Succeeded`/`Failed` resulta em `Partial` (`last_exit_code` é apenas o último item).
+   - Sem OSC 133, `cmd1 ; cmd2` fornece somente o exit da linha/último comando: resultados intermediários são `unknown`, nunca `Succeeded`. O lease recusa execução sequencial com `commands.group.tracking_unavailable`; oferecer Multi-Abas em vez de concatenar silenciosamente. Cadeia manual dentro de um item é observada como linha única, sem inventar status por subcomando (T-18).
 2. **Isolamento de Overrides no Modo Sequencial (`env -C`):**
    - Quando um item sequencial ou o grupo define `cwd` ou `env`, o comando é executado em um processo shell filho via `env -C <cwd> <K=V...> <shell> -c <command>`. Isso garante que alterações de diretório ou variáveis do item com override **nunca vazem** para o item seguinte, inclusive no `fish` (sem usar `begin; cd ...; cd -; end`).
    - Quando o item não possui override de `cwd` nem de `env`, o comando é enviado diretamente ao shell ativo do painel, permitindo que `cd pasta` no Item 1 afete naturalmente o Item 2.

@@ -241,6 +241,7 @@ pub struct GitStatusChanged {
 
 ```rust
 use mt_core::{MtError, PaneId};
+use mt_core::error::ErrorCode;
 use serde_json::json;
 
 #[derive(Debug, thiserror::Error)]
@@ -318,7 +319,7 @@ impl GitError {
 
 impl From<GitError> for MtError {
     fn from(err: GitError) -> Self {
-        let code = err.code().to_string();
+        let code = ErrorCode(err.code());
         let message = err.to_string();
         let details = match &err {
             GitError::CommandFailed { code: exit_code, stderr } => {
@@ -328,7 +329,11 @@ impl From<GitError> for MtError {
             GitError::WorktreeInUse(panes) => Some(json!({ "paneIds": panes })),
             _ => None,
         };
-        MtError::new(code, message, details)
+        let error = MtError::new(code, message);
+        match details {
+            Some(details) => error.with_details(details),
+            None => error,
+        }
     }
 }
 ```
@@ -581,8 +586,10 @@ pub struct GitService {
     repos: DashMap<RepoKey, Arc<tokio::sync::Mutex<RepoEntry>>>,
     /// Semáforo global limitando a 4 subprocessos `git` simultâneos.
     sem: Arc<Semaphore>,
-    /// Mutex por `common_dir` para serializar operações de worktree (`add`/`remove`/`prune`) e reserva de `cwd`.
+    /// Mutex por `common_dir` para serializar operações de worktree (`add`/`remove`/`prune`).
     worktree_locks: DashMap<PathBuf, Arc<tokio::sync::Mutex<()>>>,
+    /// Barreira global de caminhos: reserva/registro lê; remoção/prune escreve até terminar o subprocesso.
+    cwd_gate: Arc<tokio::sync::RwLock<()>>,
     /// Reserva temporária de `cwd` durante abertura de aba/painel para impedir `worktree remove` concorrente.
     reserved_cwds: DashMap<u64, PathBuf>,
     // ... canais de debounce, watcher e task handles
@@ -616,13 +623,56 @@ impl GitService {
     /// Lista todos os `PaneId` rastreados cujo `cwd` (ou `work_tree`) está dentro de `target_path`.
     pub fn panes_inside(&self, target_path: &Path) -> Vec<PaneId>;
 
-    /// Reserva um `cwd` durante o ciclo de spawn de aba/painel da Fase 07; o guard remove a reserva no `Drop`.
-    pub fn reserve_cwd(self: &Arc<Self>, cwd: PathBuf) -> CwdReservationGuard;
+    /// Aguarda a barreira, canonicaliza/revalida e insere o token antes de liberar a leitura.
+    /// O token é Send + 'static, não retém o lock; Drop remove somente a reserva temporária.
+    pub async fn reserve_cwd(self: &Arc<Self>, cwd: PathBuf) -> Result<CwdReservationGuard, GitError>;
+
+    /// Rollback/saída só invalida o binding se ainda pertencer à mesma execução (PtyId único).
+    pub fn untrack_pane_if_matches(&self, tab_id: TabId, pane_id: PaneId, pty_id: PtyId);
 
     /// Verifica se há algum painel rastreado ou `cwd` reservado dentro de `target_path`.
     pub fn has_active_or_reserved_inside(&self, target_path: &Path) -> Result<(), Vec<PaneId>>;
 }
+
+pub struct CwdReservationGuard {
+    service: Arc<GitService>,
+    reservation_id: u64,
+    cwd: PathBuf,
+}
+
+impl CwdReservationGuard {
+    pub fn cwd(&self) -> &Path;
+}
+
+impl Drop for CwdReservationGuard {
+    fn drop(&mut self) {
+        // Remoção síncrona de um token; sem await, E/S ou callback para WorkspaceManager.
+        self.service.reserved_cwds.remove(&self.reservation_id);
+    }
+}
 ```
+
+#### Exclusão Entre Reserva, Registro e Remoção de Cwd
+- `reserve_cwd` adquire `cwd_gate.clone().read_owned().await`, canonicaliza e revalida o diretório
+  dentro dessa seção (E/S em `spawn_blocking`, sem mutex síncrono/guard de `DashMap` atravessando await),
+  insere um ID único em `reserved_cwds` e só então libera a leitura. A future cancelada antes da entrega
+  descarta qualquer token já criado. Não exige repositório Git: caminhos comuns também são reservados.
+- O token permanece durante spawn e confirmação de `track_pane`. Este método instala o binding ativo
+  sob leitura curta do mesmo gate, após E/S fora dos locks; sucesso só retorna após instalação. A reserva
+  não é retirada no início do registro: existe sobreposição entre token e binding, jamais uma lacuna.
+  `untrack_pane_if_matches` invalida geração/tarefas e remove somente o par aba/painel com aquele `PtyId`.
+- `remove` adquire primeiro o mutex de `common_dir`, depois `cwd_gate.clone().write_owned().await`;
+  sob escrita revalida o caminho/entrada e consulta bindings e reservas. Havendo qualquer reserva dentro
+  do alvo, retorna `WorktreeInUse` (lista de painéis pode estar vazia antes do spawn), inclusive `force`.
+  Mantém a escrita até o subprocesso Git terminar/ser encerrado e aguardado, também em erro/timeout.
+  Se a remoção vencer a corrida, a reserva aguarda e sua revalidação posterior falha, impedindo spawn.
+- A barreira é global por serviço para cobrir aliases canonicalizados, subdiretórios e repositórios
+  aninhados cujo `common_dir` difere do da worktree removida. Não manter mutex de `common_dir` dentro
+  de uma seção de leitura do gate. Hooks/registro não adquirem o mutex de worktree; nenhum caminho
+  Git chama o ator/gate de projeto. Clonar Arcs dos mapas e soltar seus guards antes de awaits.
+- `prune` usa a mesma ordem mutex → escrita e recusa entradas protegidas. Cancelamento de IPC não
+  abandona mutação Git: sua task supervisionada retém a escrita até reap/compensação do subprocesso.
+  O guard RAII de reserva não retém essa escrita e não bloqueia outras aberturas enquanto o shell vive.
 
 #### Regras de Concorrência, Single-Flight e Versionamento (`GitService`)
 1. **Envelope Versionado (`epoch`, `revision`, `generation`):**
@@ -698,14 +748,14 @@ impl CliWorktreeManager {
    - Notifica `service.refresh_repo_by_common_dir(&common_dir, RefreshReason::Manual)` e retorna o `WorktreeEntry` recém-criado consultando `list`.
 3. **`remove(path, force)`:**
    - Canonicaliza `path` e localiza o repositório e a lista de worktrees (`list`).
-   - Adquire o mutex por `common_dir`.
+    - Adquire o mutex por `common_dir`, depois a escrita de `cwd_gate`; revalida caminho e entrada sob essa exclusão e mantém a escrita até o subprocesso terminar/reap (inclusive timeout/erro).
    - Se a entrada correspondente for `is_main == true` ⇒ retorna `Err(GitError::WorktreeIsMain)`.
    - Se `is_locked == true` ⇒ retorna `Err(GitError::WorktreeLocked(path))`.
    - Verifica `service.has_active_or_reserved_inside(&canonical_path)`: se houver qualquer painel aberto ou `cwd` reservado em abertura dentro da worktree, retorna `Err(GitError::WorktreeInUse(pane_ids))` **mesmo quando `force == true`**.
    - Executa `git -C <main_work_tree> worktree remove [--force] -- <canonical_path>` (timeout 30 s). Jamais usar `std::fs::remove_dir_all` em caminho arbitrário.
    - Dispara refresh manual nos painéis do repositório.
 4. **`prune(repo_path)`:**
-   - Adquire o mutex por `common_dir`.
+    - Adquire o mutex por `common_dir`, depois a escrita de `cwd_gate`, conforme §3.8.
    - Verifica entradas `is_prunable` e garante que nenhuma está em uso ou bloqueada; executa `git -C <repo_path> worktree prune --verbose` e dispara refresh.
 5. **Doc-test Obrigatório (`src/worktree.rs`):**
    - Documentar `WorktreeManager` com exemplo compilável em doc-test (`cargo test --doc -p mt-git`) demonstrando `WorktreeCreateRequest` com `WorktreeLocation::MaxCode`, conforme critério de aceite §5.4.

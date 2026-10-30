@@ -7,8 +7,8 @@
 
 ## 1. Checklist Sequencial de Implementação
 
-### Passo 1: Migration `0017_17_search.sql`, `FtsSpec` e Projeções Sanitizadas
-1. Criar `src-tauri/crates/mt-db/migrations/0017_17_search.sql` com a tabela `search_metadata` (`STRICT`) e os índices `ix_search_metadata_project_source`, `ix_search_metadata_source_time`, `ix_sessions_project_started_id`, `ix_command_blocks_session_started_id` e `ix_command_blocks_exit_started_id`.
+### Passo 1: Migration `0011_17_search.sql`, `FtsSpec` e Projeções Sanitizadas
+1. Criar `src-tauri/crates/mt-db/migrations/0011_17_search.sql` com a tabela `search_metadata` (`STRICT`) e os índices `ix_search_metadata_project_source`, `ix_search_metadata_source_time`, `ix_sessions_project_started_id`, `ix_command_blocks_session_started_id` e `ix_command_blocks_exit_started_id`. Validar sequência `1..=11`, banco novo e upgrade de fixture v10 sem modificar migrations anteriores.
 2. Criar `src-tauri/crates/mt-db/src/search/projection.rs` implementando `SanitizedProjection`, `upsert_projection`, `delete_projection`, `backfill_all_projections` e `rebuild_search_fts` (restrito à allowlist do `FtsRegistry`).
 3. Registrar `SEARCH_METADATA_FTS` (`search_metadata_fts` com `prefix = &[2, 3]`) no `DbSetup` de `src-tauri/crates/mt-db/src/lib.rs` e conectar a `CodeMigration` para popular `search_metadata` a partir de bancos já existentes.
 
@@ -48,7 +48,7 @@
 
 ## 2. Comandos Exatos de Verificação e Testes
 
-Executar a partir de `/home/johnattas/GitHub/MaxTerminal/.max-code-worktrees/wt-6f18b3d0`:
+Executar a partir da raiz da worktree ativa (`cd "$(git rev-parse --show-toplevel)"`):
 
 ```bash
 # 1. Verificar compilação e lint estrito do workspace Rust

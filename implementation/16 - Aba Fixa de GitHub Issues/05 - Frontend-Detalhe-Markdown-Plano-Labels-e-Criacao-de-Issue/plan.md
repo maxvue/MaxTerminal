@@ -55,8 +55,9 @@
 ## 2. Comandos de Verificação e Validação
 
 ```bash
+cd "$(git rev-parse --show-toplevel)"
 # 1. Executar typecheck estrito e lint/stylelint
-npm run typecheck:tsgo
+npm run typecheck
 npm run lint
 
 # 2. Executar testes unitários da Implementação 05 no Vitest

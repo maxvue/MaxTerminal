@@ -23,7 +23,7 @@ Nenhuma tabela de domínio (`sessions`, `command_blocks`, `session_scrollback`) 
 ## 2. Lista Exata de Arquivos a Criar ou Modificar
 
 ### 2.1. Criar em `src-tauri/crates/mt-db/`
-- `src-tauri/crates/mt-db/migrations/0017_17_search.sql` — DDL da tabela `search_metadata` e índices B-tree complementares.
+- `src-tauri/crates/mt-db/migrations/0011_17_search.sql` — DDL da tabela `search_metadata` e índices B-tree complementares; versão 11 após `0010_16_github.sql` (D-01).
 - `src-tauri/crates/mt-db/src/search/mod.rs` — Módulo raiz de busca, `SearchEngine`, `SearchConfig` e `SearchOwner`.
 - `src-tauri/crates/mt-db/src/search/model.rs` — DTOs exportados (`SearchRequest`, `SearchFilters`, `ExitFilter`, `SearchSort`, `SearchSourceKind`, `HighlightSegment`, `SearchHit`, `SearchTarget`, `SearchSection`, `SearchResponse`, `SearchIndexStat`, `RebuildJobHandle`).
 - `src-tauri/crates/mt-db/src/search/error.rs` — Enum `SearchError` e conversão para `MtError` com códigos `search.*`.
@@ -64,10 +64,10 @@ Nenhuma tabela de domínio (`sessions`, `command_blocks`, `session_scrollback`) 
 
 ## 3. Especificação Técnica Exaustiva
 
-### 3.1. Migration SQL (`0017_17_search.sql`) e Registro `FtsSpec`
+### 3.1. Migration SQL (`0011_17_search.sql`) e Registro `FtsSpec`
 
 ```sql
--- Migration 0017_17_search.sql
+-- Migration 0011_17_search.sql
 -- Projeção auxiliar sanitizada e reconstruível para fontes de metadados sem FTS dedicado.
 
 CREATE TABLE IF NOT EXISTS search_metadata (

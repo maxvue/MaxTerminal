@@ -1,6 +1,6 @@
 # Implementação 04 — Links Clicáveis para Editor, Notificações Nativas, Autostart e IPC Tauri (`spec.md`)
 
-> Escopo desta sub-implementação: implementar o resolvedor de links com validação de época de diretório (`links.rs`), o construtor de invocação e abridor de editores para VS Code, VS Code Insiders, MaxCode e Custom sem shell (`editor.rs`), o subsistema de notificações nativas D-Bus com sanitização, rate limiting e stream compartilhado de cliques (`notify.rs` / `notifications.rs`), o detector de fim de comando longo (`long_command.rs`), a sincronização de autostart Desktop Entry (`autostart.rs`), a fachada `OsIntegration` (`lib.rs`), e toda a camada do crate binário (`adapters/os.rs`, 16 comandos `commands/os.rs`, `events/os.rs`, `permissions/os.toml`, `capabilities/os.json` e `capabilities/default.json`).
+> Escopo desta sub-implementação: implementar o resolvedor de links com validação de época de diretório (`links.rs`), o construtor de invocação e abridor de editores para VS Code, VS Code Insiders, MaxCode e Custom sem shell (`editor.rs`), o subsistema de notificações nativas D-Bus com sanitização, rate limiting e stream compartilhado de cliques (`notify.rs` / `notifications.rs`), o detector de fim de comando longo (`long_command.rs`), a sincronização de autostart Desktop Entry (`autostart.rs`), a fachada `OsIntegration` (`lib.rs`), e toda a camada do crate binário (`adapters/os.rs`, 17 comandos `commands/os.rs`, `events/os.rs`, `permissions/os.toml`, `capabilities/os.json` e `capabilities/default.json`).
 
 ---
 
@@ -155,14 +155,16 @@ pub trait EditorOpener: Send + Sync + 'static {
 
 pub struct EditorLauncher<R: tauri::Runtime> {
     app: tauri::AppHandle<R>,
+    bridge_opener: RwLock<Option<Arc<dyn EditorOpener>>>,
     openers: RwLock<Vec<Arc<dyn EditorOpener>>>,
     settings: Arc<RwLock<OsSettings>>,
 }
 ```
 
 - `register_opener`: insere no início do vetor (`insert(0, opener)`) para que a ponte loopback da Fase 11 tenha prioridade sobre o fallback de URI.
+- `set_bridge_opener(&self, opener: Arc<dyn EditorOpener>)`: substitui um slot dedicado consultado antes do vetor, permitindo registro idempotente pela Fase 11 e atualização após restart sem acumular openers. `register_opener` permanece para outros provedores. Copiar o `Arc` e liberar o lock antes de qualquer `await`.
 - `open`:
-  1. Consulta `openers` registrados que aceitam `settings.editor.kind`. Se um opener registrado falhar, faz fallback explícito para `build_editor_invocation`.
+   1. Consulta primeiro `bridge_opener`, depois `openers` que aceitam `settings.editor.kind`. Se falhar, faz fallback explícito para `build_editor_invocation`; a ponte só aceita `EditorKind::MaxCode`. Abertura de arquivo é idempotente e não autoriza reenvio de ações de issues/conversa.
   2. Para `EditorInvocation::Exec { program, args }`: resolve o binário via `which::which(&program)` (retornando `os.editor_not_found` em pt-BR se ausente) e dispara `tokio::process::Command::new(resolved_bin).args(&args).stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null()).spawn()`, fazendo reap do processo em background task sem bloquear a chamada IPC.
   3. Para `EditorInvocation::OpenUri(uri)`: usa `tauri_plugin_opener::OpenerExt` (`app.opener().open_url(uri, None::<&str>)`).
 
@@ -302,7 +304,7 @@ pub fn should_notify(
 ### 3.3. Sincronização de Autostart (`crates/mt-os/src/autostart.rs`)
 
 - Gerencia `~/.config/autostart/maxterminal.desktop` (respeitando `$XDG_CONFIG_HOME/autostart`).
-- Quando `enabled == true`: grava atomicamente (via arquivo temporário no mesmo diretório + `rename`) uma entrada Desktop Entry válida com `Exec=<caminho_escapado> --minimized` (quando `start_minimized == true`) ou `Exec=<caminho_escapado>` (quando `start_minimized == false`).
+- Quando `enabled == true`: grava atomicamente (via arquivo temporário no mesmo diretório + `rename`) uma entrada Desktop Entry válida com `Exec=<caminho_escapado> --start-hidden` (quando `start_minimized == true`) ou `Exec=<caminho_escapado>` (quando `start_minimized == false`).
 - Quando `enabled == false`: remove `~/.config/autostart/maxterminal.desktop` se existir.
 - No boot: se o arquivo `.desktop` foi removido manualmente pelo usuário fora do app (`status.enabled != settings.autostart`), reconcilia `settings.autostart = status.enabled` no banco (fonte da verdade = sistema — CA-30, CA-40).
 
@@ -324,7 +326,7 @@ pub struct OsEvent<T> {
 ```
 Emite os 10 eventos canônicos (`os://focus-tab`, `os://window-visibility`, `os://settings-changed`, `os://shortcut-status`, `os://counters`, `os://open-preferences`, `os://shutdown-started`, `os://shutdown-failed`, `os://environment-changed`, `os://link-context-changed`) com revisão monotônica incrementada atomicamente.
 
-### 4.2. Os 16 Comandos IPC (`src-tauri/src/commands/os.rs`)
+### 4.2. Os 17 Comandos IPC (`src-tauri/src/commands/os.rs`)
 
 Todos anotados com `#[tauri::command]` e `#[specta::specta]`, validando que a invocação parte da janela local `"main"`:
 1. `os_settings_get`
@@ -340,14 +342,15 @@ Todos anotados com `#[tauri::command]` e `#[specta::specta]`, validando que a in
 11. `os_link_open` (re-resolve o candidato no backend antes de abrir — CA-21, CA-38)
 12. `os_notify`
 13. `os_attention_set`
-14. `os_autostart_status`
+14. `os_get_autostart`
 15. `os_runtime_snapshot`
 16. `os_ui_ready`
+17. `os_set_autostart` (`enabled: bool` → `AutostartStatus`; equivale a `os_settings_update({ autostart })`, com a mesma compensação transacional; o `.desktop` usa `--start-hidden`)
 
 ### 4.3. Capabilities e Permissões (`permissions/os.toml`, `capabilities/os.json`, `capabilities/default.json`)
 
-- `src-tauri/build.rs`: registra os 16 comandos `os_*` no `tauri_build::AppManifest::new().commands(&[...])`.
-- `src-tauri/permissions/os.toml`: define a permissão `allow-os-integration` liberando exclusivamente os 16 comandos `os_*`.
+- `src-tauri/build.rs`: registra os 17 comandos `os_*` no `tauri_build::AppManifest::new().commands(&[...])`.
+- `src-tauri/permissions/os.toml`: define a permissão `allow-os-integration` liberando exclusivamente os 17 comandos `os_*`.
 - `src-tauri/capabilities/os.json` (e referência em `capabilities/default.json`): concede `allow-os-integration`, `core:event:allow-listen` e `core:event:allow-unlisten` restritos à janela `"main"` e plataforma `"linux"`, **sem** expor permissões diretas de plugins (`opener`, `global-shortcut`, `autostart`, `notification`, `dialog`, `deep-link`) para o JS (CA-37).
 
 ---
@@ -355,7 +358,7 @@ Todos anotados com `#[tauri::command]` e `#[specta::specta]`, validando que a in
 ## 5. Mapeamento para Critérios de Aceite
 
 - **CA-02**: `tests/links.rs` (≥ 25 casos), `tests/editor_argv.rs` (4 editores + caracteres especiais), `tests/rate_limit.rs` (dedupe 10 s + teto 5/30 s) e unit tests de `long_command::should_notify`.
-- **CA-06**: `npm run bindings` exporta os 16 comandos e todos os DTOs em `src/types/bindings.ts`.
+- **CA-06**: `npm run bindings` exporta os 17 comandos e todos os DTOs em `src/types/bindings.ts`.
 - **CA-21..CA-24, CA-32, CA-38**: Resolução de links com validação de `cwd_epoch`, abertura segura em vetor sem shell e URI `vscode://file/` percent-encoded.
 - **CA-26..CA-29, CA-39**: Notificações sanitizadas, rate-limited, stream D-Bus cancelável e foco na aba ao clicar.
 - **CA-30, CA-40**: Autostart `.desktop` sincronizado, reconciliação de `start_minimized` e compensação transacional em `os_settings_update`.

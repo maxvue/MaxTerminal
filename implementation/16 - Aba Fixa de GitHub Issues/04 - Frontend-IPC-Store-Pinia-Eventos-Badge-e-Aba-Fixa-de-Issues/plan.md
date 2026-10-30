@@ -61,11 +61,12 @@
 ## 2. Comandos de Verificação e Validação
 
 ```bash
+cd "$(git rev-parse --show-toplevel)"
 # 1. Validar que nenhum tipo exportado pelo Specta foi duplicado manualmente em src/
 rg -n "interface (GithubRepoRef|IssueSummary|IssueDetail|LabelDefinition|BugCycleProgress)|type (LabelKind|MaxCodeIssueCommand)" src/ --glob '!src/types/bindings.ts'
 
 # 2. Executar typecheck com tsgo e lint/stylelint
-npm run typecheck:tsgo
+npm run typecheck
 npm run lint
 
 # 3. Executar testes unitários da Implementação 04 no Vitest

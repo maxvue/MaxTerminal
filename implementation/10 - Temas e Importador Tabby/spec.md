@@ -97,10 +97,10 @@ workspace = true
 | 01 | `mt_core::{MtError, MtResult, ErrorCode}`, `MtError::{new, with_details, invalid_argument, not_found}`, `mt_core::ids::ProjectId`, `AppPaths` | erros `theme.*`, FK de projeto |
 | 01 | `specta.rs::builder()` (`collect_commands!`/`collect_events!`), `commands/mod.rs`, `BINDINGS_PATH` | registro de 9 comandos e 2 eventos |
 | 01 | `src/ipc/core.ts` (`call`, `MtIpcError`), `src/types/errors.ts` (`errorMessages`), `useIpcError()`, `src/styles/theme.scss` (fallback), `--mt-font-mono` | wrappers IPC, mensagens pt-BR, fallback pré-carregamento |
-| 03 | `mt_db::Db::{read, write}`, `DbError` → `MtError` (`db.*`), runner `migrations/NNNN_FF_desc.sql`, tabelas `STRICT`, datas em Unix ms, FKs com `ON DELETE` explícito | migration `NNNN_10_themes.sql`, repositório |
+| 03 | `mt_db::Db::{read, write}`, `DbError` → `MtError` (`db.*`), runner `migrations/<seq>_<fase>_<desc>.sql` (numeração contígua fixada por D-01), tabelas `STRICT`, datas em Unix ms, FKs com `ON DELETE` explícito | migration `0006_10_themes.sql`, repositório |
 | 04 | `TerminalTheme`, `TerminalThemeProvider`, `setThemeProvider(p)` (`src/terminal/theme/themeService.ts`), `TerminalInstance.applyTheme/applyPreferences`, `TerminalInstanceRegistry.forEach/get`, `TerminalPreferences`, `useTerminalStore().setPreferences`, `registerTerminalExtension`, `getContext(paneId).projectId`, `TerminalInstanceHandle.xterm` | aplicação ao vivo em todas as instâncias |
 | 06 | tabela `projects(id)`, `useProjectsStore` (`projects`, `selectedId`, `selectedProject`), evento `project://changed` (`{ kind: 'deleted', ids }`) | `project_themes` (FK `CASCADE`), tema por projeto |
-| 09 (opcional) | `src/components/preferences/{PreferencesDialog.vue, registry.ts}` com `registerPreferencesSection({ id, label, icon, component, order })`; `useWindowStore().openPreferences(section)` | Reutilizar se disponível; sem 09, criar contêiner mínimo previsto em I-15. Não torna 09 pré-requisito do DAG 04/06 → 10. |
+| 09 (UI opcional; migration obrigatória) | `src/components/preferences/{PreferencesDialog.vue, registry.ts}` com `registerPreferencesSection({ id, label, icon, component, order })`; `useWindowStore().openPreferences(section)` | Reutilizar o contêiner se disponível; sem a UI da 09, criar contêiner mínimo previsto em I-15. A integração SQLite exige as migrations `0001`–`0005`, incluindo as das Fases 07 e 09, por D-01. |
 
 ### 2.1. Divergências resolvidas (adaptadores isolados)
 
@@ -939,9 +939,9 @@ Listeners são instalados antes do snapshot inicial; respostas atrasadas nunca s
 
 ---
 
-## 6. SQLite — Migration `mt-db/migrations/NNNN_10_themes.sql`
+## 6. SQLite — Migration `mt-db/migrations/0006_10_themes.sql`
 
-`NNNN` = próximo número livre no merge.
+Número fixado pela decisão canônica D-01: `0006_10_themes.sql` (após `0005_09_os_settings`, antes de `0007_12_ai`).
 
 ```sql
 -- Fase 10: biblioteca de temas, configurações de aparência e sobreposição de tema por projeto.
@@ -1019,7 +1019,7 @@ Notas:
   o upsert dos builtins), preservando `PRAGMA foreign_key_check` vazio (CA-17).
 - `ON DELETE SET DEFAULT` é a rede de segurança do CA-20; o serviço também faz a troca explicitamente.
 - Nenhuma coluna guarda comando/scrollback ⇒ sanitizador não se aplica; `source_name` é relativo (sem `$HOME`).
-- Migration pertence apenas à Fase 10, após `projects`; testar também banco até Fase 06, sem exigir 07–09.
+- Migration pertence à Fase 10 e tem versão fixa `0006`. Testar banco vazio e bancos até a Fase 06 (`0003`) e até a Fase 09 (`0005`), sempre fornecendo ao runner a sequência completa `0001`–`0006`: no banco até `0003`, aplicar também `0004_07_workspace_templates_tabs_sessions.sql` e `0005_09_os_settings.sql` antes de `0006`. Não pular versões, renumerar nem criar migrations vazias para contornar D-01.
   JSON normalizado é versionado, validado ao ler e nunca contém o config Tabby bruto. Índices cobrem lista,
   deduplicação e busca reversa de projetos antes da exclusão. Trigger bloqueia DELETE de builtin; atualizações
   de builtin só são expostas pelo seed interno, não por comandos de usuário. Se schema futuro for desconhecido,
@@ -1158,18 +1158,18 @@ export function toTerminalPreferences(f: TerminalFontSettings): Pick<TerminalPre
 
 export interface TerminalBridge {
     /** Reaplica tema em todas as instâncias vivas: tema do projeto do painel (getContext) ou global. */
-    applyThemes(resolve: (projectId: ProjectId | null) => ResolvedTheme): void;
+    applyThemes(resolve: (projectId: ProjectId | null) => ResolvedTheme | null): void;
     /** applyPreferences + xterm.options.fontWeight/fontWeightBold + clearTextureAtlas(); o FitController re-fita e chama pty_resize. */
     applyFont(f: TerminalFontSettings): Promise<{ ligaturesFailed: boolean }>;
     dispose(): void;
 }
-export function installTerminalBridge(resolve: (projectId: ProjectId | null) => ResolvedTheme): TerminalBridge;
+export function installTerminalBridge(resolve: (projectId: ProjectId | null) => ResolvedTheme | null): TerminalBridge;
 ```
 
 `installTerminalBridge` chama `setThemeProvider({ getActiveTheme, onChange })` (tema global) e
 `registerTerminalExtension({ id: 'theme.project-override', activate(h) { … } })`, que aplica o tema do projeto à
 instância recém-criada antes do primeiro frame visível. `applyThemes` percorre
-`TerminalInstanceRegistry.forEach((inst, paneId) => inst.applyTheme(toTerminalTheme(resolve(getContext(paneId).projectId))))`
+`terminalInstanceRegistry.forEach((inst) => { const resolved = resolve(inst.getContext().projectId); if (resolved) inst.applyTheme(toTerminalTheme(resolved)); })`
 — troca de cores via `options.theme` é suportada nativamente pelo addon WebGL, sem reiniciar PTY (CA-24).
 Cada aplicação fornece **novo objeto** `ITheme`, em vez de mutar `options.theme` in-place. Remover campos
 opcionais do tema anterior quando ausentes no novo (ex.: seleção foreground), sem fazer merge residual.
@@ -1178,11 +1178,22 @@ de forma síncrona após broadcast global, antes do paint. Guardar geração vis
 antiga de `theme_get` após troca de projeto. Panes ocultas atualizam opções sem recriar WebGL; ao reaparecer,
 o RendererManager da Fase 04 usa essas opções e atualiza o viewport. Não chamar `clear`, `reset`, `write` ou
 replay para mudar tema. Cores truecolor emitidas pela aplicação não são recoloridas; índices ANSI 0–15 são.
-Blocos e RichInput recebem cores locais via `TerminalTheme.ui`, não herdam o tema do projeto selecionado
-quando pertencem a outro projeto. Contexto sem `projectId` usa global; resolução tardia do contexto dispara
+`toTerminalTheme` preenche os cinco campos obrigatórios de `TerminalTheme.ui` usando `resolved.tokens.vars`:
+`blockBackground` ← `--background-0`, `blockBorder` ← `--background-100`, `blockHeaderBackground` ← `--background-25`,
+`richInputBackground` ← `--background-25` e `richInputBorder` ← `--background-100`. São propriedades TypeScript;
+as chaves `--mt-terminal-*` não substituem esse contrato. A Fase 04 propaga `applyTheme` → `onThemeChange` →
+`TerminalInstanceState.themeUi` → `themeUiToCssVars`, aplicando `--mt-block-{background,border,header-background}`
+e `--mt-rich-input-{background,border}` exclusivamente na raiz `.hybrid-terminal` do painel. Blocos e RichInput
+não herdam o tema do projeto selecionado quando pertencem a outro projeto. Resolução `null` mantém o tema
+atual/fallback até reconciliação; o provider global sempre fornece um `TerminalTheme` válido (fallback da Fase 04).
+Contexto sem `projectId` usa global; resolução tardia do contexto dispara
 reconciliação pelo adapter ao mudar os vínculos do store de projetos, sem exigir a Fase 07 para esta fase compilar.
-Ligaduras: `import('@xterm/addon-ligatures')` sob demanda; erro de import/`loadAddon` ⇒ `ligaturesFailed = true`
-(o store reverte a opção e mostra o toast do CA-29).
+Ligaduras: `import('@xterm/addon-ligatures')` sob demanda e um `WeakMap<Terminal, IDisposable>` para os addons
+ativos (um por terminal). Desativar chama `dispose()` e remove as entradas; encerrar instância ou bridge executa
+os disposers da extensão. Geração monotônica invalida importações pendentes ao desligar/descartar; aplicar `true`
+repetidamente não duplica addon e instâncias novas recebem a opção vigente. Erro de import/`loadAddon` da geração
+vigente limpa addons parciais/ativados nessa aplicação e retorna `ligaturesFailed = true` (o store reverte a opção
+e mostra o toast do CA-29); falhas antigas não revertem opções novas. Detalhamento e testes em `10/04` §3.4.
 
 **`fonts.ts`**: `MONO_FONT_SUGGESTIONS` (JetBrains Mono, JetBrainsMono Nerd Font, Fira Code, Cascadia Code,
 Hack, Iosevka, Source Code Pro, monospace); `isFontAvailable(family): boolean` via `document.fonts.check('13px "<f>"')`
@@ -1558,8 +1569,9 @@ Trocar entre os 6 builtins com `htop` e `vim` abertos (scrollback preservado, se
 
 ## 14. Fontes de API e verificação de contratos
 
-- Fases 04/06 e README desta implementação definem a base obrigatória; Fase 03 é transitiva e fornece WAL,
-  migrations/repositório. Fases 07/09 podem acrescentar contexto de pane/contêiner, mas não bloqueiam a entrega.
+- Fases 04/06 definem a base funcional; Fase 03 é transitiva e fornece WAL/migrations/repositório. A integração
+  persistida de `10/03` exige também as migrations das Fases 07/09 (`0004`/`0005`) antes de `0006`, conforme D-01.
+  Contexto de pane e contêiner visual continuam desacoplados; essa independência não autoriza lacunas no runner.
 - Declarações públicas de xterm: <https://github.com/xtermjs/xterm.js/blob/master/typings/xterm.d.ts>
   (consulta em 2026-10-29): `ITheme`, atribuição de **novo objeto** em `options.theme`, `refresh` e
   `clearTextureAtlas`. Conferir novamente contra a versão fixada pela Fase 04; `master` não substitui lockfile.

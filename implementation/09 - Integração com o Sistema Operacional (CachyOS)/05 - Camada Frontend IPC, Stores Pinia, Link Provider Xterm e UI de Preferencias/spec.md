@@ -70,7 +70,8 @@ export const osIpc = {
     notify: (request: NotifyRequest): Promise<NotifyOutcome> => unwrap(commands.osNotify(request)),
     setAttention: (tabId: TabId, reason: AttentionReason | null): Promise<StatusCounters> =>
         unwrap(commands.osAttentionSet(tabId, reason)),
-    autostartStatus: (): Promise<AutostartStatus> => unwrap(commands.osAutostartStatus()),
+    getAutostart: (): Promise<AutostartStatus> => unwrap(commands.osGetAutostart()),
+    setAutostart: (enabled: boolean): Promise<AutostartStatus> => unwrap(commands.osSetAutostart(enabled)),
     runtimeSnapshot: (): Promise<OsRuntimeSnapshot> => unwrap(commands.osRuntimeSnapshot()),
     uiReady: (): Promise<OsRuntimeSnapshot> => unwrap(commands.osUiReady())
 };
@@ -123,7 +124,7 @@ export function onLinkContextChanged(cb: (e: OsEvent<LinkContext>) => void): Pro
 ### 3.2. `src/stores/osSettings.ts` (`useOsSettingsStore`)
 
 - Estado: `settings: OsSettings | null`, `saving: boolean`, `error: MtError | null`, `autostart: AutostartStatus | null`.
-- `load()`: busca `osIpc.getSettings()` e `osIpc.autostartStatus()` em paralelo e assina `onSettingsChanged`.
+- `load()`: busca `osIpc.getSettings()` e `osIpc.getAutostart()` em paralelo e assina `onSettingsChanged`.
 - `update(patch: OsSettingsPatch): Promise<boolean>`:
   - Serializa atualizações em fila; aplica atualização otimista local guardando o snapshot anterior da última revisão confirmada.
   - Em caso de falha (`MtError`), restaura o snapshot confirmado (ou recarrega via `osIpc.getSettings()`), grava `this.error = err`, exibe `Toast.show({ title: err.message, severity: 'error' })` e retorna `false` (CA-19, CA-40).

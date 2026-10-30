@@ -20,7 +20,7 @@ Esta é a **segunda unidade de implementação da Fase 11**. Com os tipos de pro
 
 | Ação | Caminho Exato | Descrição |
 |------|---------------|-----------|
-| Criar | `src-tauri/crates/mt-bridge/src/uri.rs` | `MaxTerminalUri::parse`, `MaxCodeUri::build` e constantes de limite (16 KiB, 4096 bytes, 2 KiB). |
+| Criar | `src-tauri/crates/mt-bridge/src/uri.rs` | `MaxTerminalUri::{parse,parse_parts}`, `MaxCodeUri::build` e constantes de limite (8 KiB, 4096 bytes, 2 KiB). |
 | Criar | `src-tauri/crates/mt-bridge/src/session.rs` | `PeerSession`, `PeerRegistry`, `EphemeralHttpSessionStore`, rate limiter token-bucket e heartbeat. |
 | Criar | `src-tauri/crates/mt-bridge/src/server.rs` | `BridgeServer`, `bind` estrito em `127.0.0.1` com fallback, router `axum`, handlers `/v1/health`, `/v1/messages`, `/v1/ws`. |
 | Criar | `src-tauri/crates/mt-bridge/src/client.rs` | `DeliveryChannel`, `DeliveryReport`, `UriOpener`, `XdgOpener`, `MaxCodeAdapter`, `DefaultMaxCodeAdapter`, `MaxCodeClient` e fila de wake-up. |
@@ -39,7 +39,7 @@ use crate::error::BridgeError;
 use std::path::PathBuf;
 use uuid::Uuid;
 
-pub const MAX_INCOMING_URI_BYTES: usize = 16 * 1024;
+pub const MAX_INCOMING_URI_BYTES: usize = 8 * 1024;
 pub const MAX_URI_PARAM_BYTES: usize = 4096;
 pub const MAX_OUTGOING_URI_BYTES: usize = 2 * 1024;
 
@@ -47,11 +47,15 @@ pub const MAX_OUTGOING_URI_BYTES: usize = 2 * 1024;
 pub enum MaxTerminalUri {
     ProjectOpen {
         path: PathBuf,
+        worktree: Option<PathBuf>,
+        correlation_id: Option<Uuid>,
     },
     TabOpen {
         project: PathBuf,
         cwd: Option<PathBuf>,
         request_id: Uuid,
+        worktree: Option<PathBuf>,
+        correlation_id: Option<Uuid>,
     },
 }
 
@@ -59,13 +63,16 @@ impl MaxTerminalUri {
     /// Faz o parse estrito de `maxterminal://project/open?path=<abs>` ou
     /// `maxterminal://tab/open?project=<abs>&cwd=<abs|rel>&requestId=<uuid>`.
     /// Regras:
-    /// - Rejeita URI > 16 KiB, caracteres de controle/NUL, userinfo, porta ou fragmento (`#`).
+    /// - Rejeita URI > 8 KiB, caracteres de controle/NUL, userinfo, porta ou fragmento (`#`).
     /// - Aceita apenas scheme `maxterminal`, host `project` ou `tab`, e path `/open`.
     /// - Rejeita parâmetros repetidos, desconhecidos ou proibidos (`template`, `command`, `env`, `prompt`, `token`).
     /// - Valida percent-encoding bruto antes de decodificar exatamente uma vez em UTF-8;
     ///   cada valor decodificado deve ter <= 4096 bytes e não conter `\0`.
     /// - `path` e `project` devem ser caminhos absolutos (iniciando com `/`).
     pub fn parse(raw: &str) -> Result<Self, BridgeError>;
+    /// Usa query params já decodificados pelo ActivationRouter da 09, sem segundo percent-decoding.
+    /// Ambas as rotas aceitam worktree absoluto e correlationId UUID opcionais; pertencimento Git em 11/03.
+    pub fn parse_parts(uri: &url::Url, params: &[(String, String)]) -> Result<Self, BridgeError>;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -202,6 +209,8 @@ pub fn build_router(state: Arc<ServerState>) -> Router;
 
 ### 3.4. `src-tauri/crates/mt-bridge/src/client.rs`
 
+O cliente base é estendido em 11/04 com `open_file` e em **11/06** com `send_issue_command`, `bugs_cycle_preview`, `bugs_cycle_start`, `bugs_cycle_status`, snapshot de suporte e assinatura Rust de progresso. O builder `/issue` é exceção explicitamente gated ao wake genérico; a Fase 16 só consome o cliente por `MaxCodePort`.
+
 ```rust
 use crate::discovery::MaxCodeDiscovery;
 use crate::error::BridgeError;
@@ -227,6 +236,7 @@ pub enum DeliveryChannel {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct DeliveryReport {
     pub channel: DeliveryChannel,
     pub message_id: String,
@@ -366,6 +376,7 @@ impl BridgeHandle {
    - Se `config.enabled == false`, `start_bridge` retorna um `BridgeHandle` em `BridgeState::Disabled`, sem abrir porta e removendo qualquer `bridge.json` residual desta instância.
    - Se o bind falhar em todas as portas tentadas, o erro é registrado em `last_error`, `state` passa a `BridgeState::Failed`, `on_event(BridgeEvent::StatusChanged(...))` é emitido e `start_bridge` ainda retorna o `BridgeHandle` funcional para comandos de configuração/restart.
 2. **Segurança e Limites no HTTP e WebSocket (`CA-09`, `CA-10`, `CA-11`, `CA-13`, `CA-36`)**:
+    - `HostPolicy` aceita `127.0.0.1:<port>` e `localhost:<port>`; qualquer outro Host, ausência ou duplicação retorna `403 Forbidden` + `bridge.host_forbidden` antes de Origin/Bearer (D-04).
    - Rate limit global de 200 req/s e por sessão de 50 msg/s. Excesso HTTP retorna `429 Too Many Requests` com header `Retry-After: 1`; saturação de conexões (> 16 requests HTTP em voo ou > 8 sessões WS) retorna `503 Service Unavailable`.
    - No WebSocket, mensagens fragmentadas (frames `Text` seguidos de `Continuation` sem `fin`) são acumuladas em buffer limitado a `MAX_FRAME_BYTES` (256 KiB); se ultrapassar 256 KiB antes do `fin`, a conexão é encerrada imediatamente com código `1009`.
    - Se o cliente WS não enviar `hello` válido em até 5 s após o upgrade, fechar com código `4001`.

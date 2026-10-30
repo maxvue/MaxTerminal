@@ -262,6 +262,8 @@ export interface TerminalInstanceCallbacks {
     onRendererChange?: (renderer: RendererKind) => void;
     onModesChange?: (modes: TerminalModes, prevModes: TerminalModes) => void;
     onTitleChange?: (title: string) => void;
+    /** Disparado a cada `attach` e `applyTheme`; permite expor `theme.ui` como variáveis CSS do painel. */
+    onThemeChange?: (theme: TerminalTheme) => void;
     onFlowStateChange?: (flow: {
         paused: boolean;
         pendingBytes: number;
@@ -296,6 +298,7 @@ export class TerminalInstance implements TerminalInstanceHandle, Disposable {
     public setVisible(visible: boolean): void;
     public focus(): void;
     public applyTheme(theme: TerminalTheme): void;
+    public getTheme(): TerminalTheme;
     public applyPreferences(prefs: Partial<TerminalPreferences>): void;
     public paste(text: string): void;
     public sendInput(text: string): Promise<void>;
@@ -312,8 +315,9 @@ export class TerminalInstance implements TerminalInstanceHandle, Disposable {
 1. Cria um `innerContainer: HTMLDivElement` próprio (`width: 100%; height: 100%`). Na primeira chamada a `attach(host)`, anexa `innerContainer` ao `host`, chama `xterm.open(innerContainer)` **uma única vez**, carrega `RendererManager.activate()`, observa o `host` no `FitController`, assina o `ptyStreamHub.subscribe(ptyId, ...)` e executa o `requestFit(true)` inicial.
 2. Nas chamadas subsequentes a `attach(newHost)` (ex.: após troca de aba/rota onde o componente Vue foi desmontado e remontado), apenas move `innerContainer` para `newHost` (`newHost.appendChild(innerContainer)`), restaura visibilidade (`setVisible(true)`) e reexecuta `fitController.observe(newHost)` + `requestFit(true)` — **sem** chamar `xterm.open` novamente e **sem** perder scrollback, seleção ou estado VT.
 3. Em `detach()` (chamado no `onBeforeUnmount` do componente Vue ao trocar de aba): desobserva o `host` no `FitController`, chama `setVisible(false)` (o que suspende o `WebglAddon` e muda o `WriteBatcher` para `setTimeout(16)`), e remove `innerContainer` do DOM, mas **mantém** a assinatura do `ptyStreamHub` viva para continuar recebendo e confirmando saída em segundo plano.
-4. Atualiza `onFlowStateChange` com **throttle de 250 ms** (exceto em mudanças críticas como `Gap`, `partialView`, `paused` ou `Exit`, que notificam imediatamente).
-5. Instala `xterm.attachCustomKeyEventHandler` respeitando `src/terminal/keybindings.ts`:
+4. **`applyTheme(theme)`:** (a) atribui um **novo** objeto `ITheme` a `this.xterm.options.theme = toXtermTheme(theme)` (nunca muta in-place); (b) guarda `theme` (acessível por `getTheme()`) e (c) **não descarta `theme.ui`**: invoca `callbacks.onThemeChange?.(theme)` para que `useTerminal` publique `theme.ui` em `TerminalInstanceState.themeUi` e `HybridTerminal.vue` o exponha como variáveis CSS (`themeUiToCssVars`) no container `.hybrid-terminal` do **próprio painel**. Assim `CommandBlockLayer` e `RichInput` de cada painel usam o tema daquele painel, mesmo com projetos de temas distintos abertos simultaneamente. Cada `attach`, inicial ou após remontagem, chama `onThemeChange` com `getTheme()` após conectar os callbacks; isso restaura o tema vigente mesmo se o painel recebeu mudanças enquanto estava oculto.
+5. Atualiza `onFlowStateChange` com **throttle de 250 ms** (exceto em mudanças críticas como `Gap`, `partialView`, `paused` ou `Exit`, que notificam imediatamente).
+6. Instala `xterm.attachCustomKeyEventHandler` respeitando `src/terminal/keybindings.ts`:
    - `Ctrl+Shift+C`: copia `xterm.getSelection()` para `navigator.clipboard.writeText` e retorna `false`.
    - `Ctrl+Shift+V`: retorna `false` para não enviar controle bruto ao PTY (o evento `paste` do navegador/atalho chama `paste()`).
    - `Ctrl+C` **sem** `Shift`: retorna sempre `true` para que o xterm envie `\x03` diretamente ao processo no PTY.

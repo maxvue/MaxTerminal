@@ -6,7 +6,7 @@ Esta implementação estabelece a fundação de domínio puro em Rust (`mt-core:
 
 ### Escopo Exato
 1. **Identificadores e Códigos de Erro (`mt-core`):**
-   - Novo identificador tipado `TabSessionId` (newtype sobre `Uuid` v7) exportado por `mt-core`.
+   - Identificador tipado `TabSessionId` consumido de `mt_core::ids` (gerado pelo `define_id!` da Fase 01; esta fase não o define).
    - Catálogo completo de códigos de erro da Fase 07 em `MtError` com mensagens em `pt-BR` e detalhes sanitizados.
 2. **Domínio Puro (`mt-core::workspace`):**
    - Tipos e validações de `TabTemplate`, `TabTemplateInput`, `TemplateConfig`, `TemplateEnvironment`, `EnvironmentKind`, `EnvValue`, `CommandOverride`, `TabOpenOverrides`, `TabOpenRequest` e `LaunchSnapshot`.
@@ -31,15 +31,14 @@ Esta implementação estabelece a fundação de domínio puro em Rust (`mt-core:
 - `src-tauri/crates/mt-core/src/workspace/tab.rs`
 - `src-tauri/crates/mt-core/src/workspace/layout.rs`
 - `src-tauri/crates/mt-core/src/workspace/session.rs`
-- `src-tauri/crates/mt-db/migrations/0007_07_workspace_templates_tabs_sessions.sql`
+- `src-tauri/crates/mt-db/migrations/0004_07_workspace_templates_tabs_sessions.sql`
 - `src-tauri/crates/mt-db/src/migrations/code/m07_backfill.rs`
 - `src-tauri/crates/mt-db/src/repos/templates.rs`
 
 ### Modificar
-- `src-tauri/crates/mt-core/src/ids.rs` (adicionar `TabSessionId`)
 - `src-tauri/crates/mt-core/src/error.rs` (adicionar construtores e códigos de erro da Fase 07)
-- `src-tauri/crates/mt-core/src/lib.rs` (exportar `pub mod workspace;` e `TabSessionId`)
-- `src-tauri/crates/mt-db/src/migrations/mod.rs` (registrar migration SQL 0007 e code migration `m07_backfill`)
+- `src-tauri/crates/mt-core/src/lib.rs` (exportar `pub mod workspace;`)
+- `src-tauri/crates/mt-db/src/migrations/mod.rs` (registrar migration SQL 0004 e code migration `m07_backfill`)
 - `src-tauri/crates/mt-db/src/repos/mod.rs` (exportar `templates::TemplateRepo` e registrar `DefaultTemplateContributor` na composição do repositório de projetos da Fase 06)
 
 ---
@@ -48,42 +47,10 @@ Esta implementação estabelece a fundação de domínio puro em Rust (`mt-core:
 
 ### 3.1. Identificadores e Erros em `mt-core`
 
-Em `src-tauri/crates/mt-core/src/ids.rs`:
+`TabSessionId` **não é definido nesta fase**: o `define_id!` de `src-tauri/crates/mt-core/src/ids.rs` (Fase 01) já o gera, com a mesma API dos demais ids (`new()` Uuid v7, `try_from_uuid`, `as_uuid`, `Display`, `FromStr`, `Serialize`/`Deserialize` transparentes e `specta::Type`). Os módulos desta fase apenas o importam:
 
 ```rust
-use serde::{Deserialize, Serialize};
-use specta::Type;
-use std::fmt;
-use std::str::FromStr;
-use uuid::Uuid;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Type)]
-#[serde(transparent)]
-pub struct TabSessionId(pub Uuid);
-
-impl TabSessionId {
-    pub fn new_v7() -> Self {
-        Self(Uuid::now_v7())
-    }
-
-    pub fn as_str_hyphenated(&self) -> String {
-        self.0.hyphenated().to_string()
-    }
-}
-
-impl fmt::Display for TabSessionId {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0.hyphenated())
-    }
-}
-
-impl FromStr for TabSessionId {
-    type Err = uuid::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(Uuid::parse_str(s)?))
-    }
-}
+use mt_core::ids::TabSessionId;
 ```
 
 Em `src-tauri/crates/mt-core/src/error.rs`, adicionar os construtores tipados para o catálogo da Fase 07:
@@ -91,179 +58,116 @@ Em `src-tauri/crates/mt-core/src/error.rs`, adicionar os construtores tipados pa
 ```rust
 impl MtError {
     pub fn template_invalid(field: &'static str, reason: impl Into<String>) -> Self {
-        Self::with_details(
-            "template.invalid",
-            format!("Configuração de template inválida no campo '{}': {}", field, reason.into()),
-            serde_json::json!({ "field": field }),
-        )
+        Self::new(ErrorCode("template.invalid"), format!("Configuração de template inválida no campo '{}': {}", field, reason.into()))
+            .with_details(serde_json::json!({ "field": field }))
     }
 
     pub fn template_default_required(project_id: impl fmt::Display) -> Self {
-        Self::with_details(
-            "template.default_required",
-            "Todo projeto deve possuir exatamente um template padrão. Não é permitido excluir ou desmarcar o único padrão.",
-            serde_json::json!({ "projectId": project_id.to_string() }),
-        )
+        Self::new(ErrorCode("template.default_required"), "Todo projeto deve possuir exatamente um template padrão. Não é permitido excluir ou desmarcar o único padrão.")
+            .with_details(serde_json::json!({ "projectId": project_id.to_string() }))
     }
 
     pub fn template_secret_literal(field: &'static str) -> Self {
-        Self::with_details(
-            "template.secret_literal",
-            "Credenciais, chaves privadas ou tokens literais não podem ser salvos no template. Utilize variáveis de ambiente herdadas.",
-            serde_json::json!({ "field": field }),
-        )
+        Self::new(ErrorCode("template.secret_literal"), "Credenciais, chaves privadas ou tokens literais não podem ser salvos no template. Utilize variáveis de ambiente herdadas.")
+            .with_details(serde_json::json!({ "field": field }))
     }
 
     pub fn template_cwd_not_found(path: impl Into<String>) -> Self {
-        Self::with_details(
-            "template.cwd_not_found",
-            "O diretório de trabalho configurado para o template não foi encontrado ou não é um diretório válido.",
-            serde_json::json!({ "path": path.into() }),
-        )
+        Self::new(ErrorCode("template.cwd_not_found"), "O diretório de trabalho configurado para o template não foi encontrado ou não é um diretório válido.")
+            .with_details(serde_json::json!({ "path": path.into() }))
     }
 
     pub fn template_conflict(template_id: impl fmt::Display, expected: i64, actual: i64) -> Self {
-        Self::with_details(
-            "template.conflict",
-            "O template foi modificado por outra operação. Recarregue os dados antes de salvar.",
-            serde_json::json!({
+        Self::new(ErrorCode("template.conflict"), "O template foi modificado por outra operação. Recarregue os dados antes de salvar.")
+            .with_details(serde_json::json!({
                 "templateId": template_id.to_string(),
                 "expectedRevision": expected,
                 "actualRevision": actual
-            }),
-        )
+            }))
     }
 
     pub fn template_not_found(template_id: impl fmt::Display) -> Self {
-        Self::with_details(
-            "template.not_found",
-            "Template de aba não encontrado.",
-            serde_json::json!({ "templateId": template_id.to_string() }),
-        )
+        Self::new(ErrorCode("template.not_found"), "Template de aba não encontrado.")
+            .with_details(serde_json::json!({ "templateId": template_id.to_string() }))
     }
 
     pub fn workspace_environment_unavailable(agent_id: impl Into<String>) -> Self {
-        Self::with_details(
-            "workspace.environment_unavailable",
-            "O resolvedor do agente configurado não está disponível neste ambiente.",
-            serde_json::json!({ "agentId": agent_id.into() }),
-        )
+        Self::new(ErrorCode("workspace.environment_unavailable"), "O resolvedor do agente configurado não está disponível neste ambiente.")
+            .with_details(serde_json::json!({ "agentId": agent_id.into() }))
     }
 
     pub fn workspace_request_conflict(request_id: impl Into<String>) -> Self {
-        Self::with_details(
-            "workspace.request_conflict",
-            "Conflito de idempotência: o mesmo requestId foi reutilizado com parâmetros diferentes.",
-            serde_json::json!({ "requestId": request_id.into() }),
-        )
+        Self::new(ErrorCode("workspace.request_conflict"), "Conflito de idempotência: o mesmo requestId foi reutilizado com parâmetros diferentes.")
+            .with_details(serde_json::json!({ "requestId": request_id.into() }))
     }
 
     pub fn workspace_operation_interrupted(request_id: impl Into<String>) -> Self {
-        Self::with_details(
-            "workspace.operation_interrupted",
-            "A operação anterior foi interrompida por encerramento abrupto e não pode ser retomada automaticamente.",
-            serde_json::json!({ "requestId": request_id.into() }),
-        )
+        Self::new(ErrorCode("workspace.operation_interrupted"), "A operação anterior foi interrompida por encerramento abrupto e não pode ser retomada automaticamente.")
+            .with_details(serde_json::json!({ "requestId": request_id.into() }))
     }
 
     pub fn workspace_stop_failed(tab_id: impl fmt::Display, reason: impl Into<String>) -> Self {
-        Self::with_details(
-            "workspace.stop_failed",
-            "Não foi possível encerrar todos os processos supervisionados da aba dentro do tempo limite.",
-            serde_json::json!({ "tabId": tab_id.to_string(), "reason": reason.into() }),
-        )
+        Self::new(ErrorCode("workspace.stop_failed"), "Não foi possível encerrar todos os processos supervisionados da aba dentro do tempo limite.")
+            .with_details(serde_json::json!({ "tabId": tab_id.to_string(), "reason": reason.into() }))
     }
 
     pub fn workspace_persistence_pending(tab_id: impl fmt::Display) -> Self {
-        Self::with_details(
-            "workspace.persistence_pending",
-            "A drenagem de persistência da sessão ainda está pendente ou falhou.",
-            serde_json::json!({ "tabId": tab_id.to_string() }),
-        )
+        Self::new(ErrorCode("workspace.persistence_pending"), "A drenagem de persistência da sessão ainda está pendente ou falhou.")
+            .with_details(serde_json::json!({ "tabId": tab_id.to_string() }))
     }
 
     pub fn tab_not_found(tab_id: impl fmt::Display) -> Self {
-        Self::with_details(
-            "tab.not_found",
-            "Aba não encontrada.",
-            serde_json::json!({ "tabId": tab_id.to_string() }),
-        )
+        Self::new(ErrorCode("tab.not_found"), "Aba não encontrada.")
+            .with_details(serde_json::json!({ "tabId": tab_id.to_string() }))
     }
 
     pub fn tab_closing(tab_id: impl fmt::Display) -> Self {
-        Self::with_details(
-            "tab.closing",
-            "A aba está em processo de encerramento e não aceita novas operações.",
-            serde_json::json!({ "tabId": tab_id.to_string() }),
-        )
+        Self::new(ErrorCode("tab.closing"), "A aba está em processo de encerramento e não aceita novas operações.")
+            .with_details(serde_json::json!({ "tabId": tab_id.to_string() }))
     }
 
     pub fn tab_reorder_mismatch(project_id: impl fmt::Display) -> Self {
-        Self::with_details(
-            "tab.reorder_mismatch",
-            "A lista de abas informada na reordenação não corresponde exatamente às abas abertas do projeto.",
-            serde_json::json!({ "projectId": project_id.to_string() }),
-        )
+        Self::new(ErrorCode("tab.reorder_mismatch"), "A lista de abas informada na reordenação não corresponde exatamente às abas abertas do projeto.")
+            .with_details(serde_json::json!({ "projectId": project_id.to_string() }))
     }
 
     pub fn pane_not_found(pane_id: impl fmt::Display) -> Self {
-        Self::with_details(
-            "pane.not_found",
-            "Painel não encontrado.",
-            serde_json::json!({ "paneId": pane_id.to_string() }),
-        )
+        Self::new(ErrorCode("pane.not_found"), "Painel não encontrado.")
+            .with_details(serde_json::json!({ "paneId": pane_id.to_string() }))
     }
 
     pub fn pane_limit_reached(max_panes: usize) -> Self {
-        Self::with_details(
-            "pane.limit_reached",
-            format!("Limite máximo de {} painéis por aba atingido.", max_panes),
-            serde_json::json!({ "maxPanes": max_panes }),
-        )
+        Self::new(ErrorCode("pane.limit_reached"), format!("Limite máximo de {} painéis por aba atingido.", max_panes))
+            .with_details(serde_json::json!({ "maxPanes": max_panes }))
     }
 
     pub fn pane_not_exited(pane_id: impl fmt::Display) -> Self {
-        Self::with_details(
-            "pane.not_exited",
-            "O painel ainda possui processo ativo e não pode ser reiniciado antes do término.",
-            serde_json::json!({ "paneId": pane_id.to_string() }),
-        )
+        Self::new(ErrorCode("pane.not_exited"), "O painel ainda possui processo ativo e não pode ser reiniciado antes do término.")
+            .with_details(serde_json::json!({ "paneId": pane_id.to_string() }))
     }
 
     pub fn layout_invalid(reason: impl Into<String>) -> Self {
-        Self::with_details(
-            "layout.invalid",
-            format!("Árvore de layout de painéis inválida: {}", reason.into()),
-            serde_json::json!({}),
-        )
+        Self::new(ErrorCode("layout.invalid"), format!("Árvore de layout de painéis inválida: {}", reason.into()))
+            .with_details(serde_json::json!({}))
     }
 
     pub fn layout_conflict(tab_id: impl fmt::Display, expected: i64, actual: i64) -> Self {
-        Self::with_details(
-            "layout.conflict",
-            "A estrutura de painéis mudou. Recarregue o layout atual da aba.",
-            serde_json::json!({
+        Self::new(ErrorCode("layout.conflict"), "A estrutura de painéis mudou. Recarregue o layout atual da aba.")
+            .with_details(serde_json::json!({
                 "tabId": tab_id.to_string(),
                 "expectedLayoutRevision": expected,
                 "actualLayoutRevision": actual
-            }),
-        )
+            }))
     }
 
     pub fn session_not_found(id: impl fmt::Display) -> Self {
-        Self::with_details(
-            "session.not_found",
-            "Sessão não encontrada no histórico.",
-            serde_json::json!({ "sessionId": id.to_string() }),
-        )
+        Self::new(ErrorCode("session.not_found"), "Sessão não encontrada no histórico.")
+            .with_details(serde_json::json!({ "sessionId": id.to_string() }))
     }
 
     pub fn session_query_invalid(reason: impl Into<String>) -> Self {
-        Self::with_details(
-            "session.query_invalid",
-            format!("Parâmetros de consulta de histórico inválidos: {}", reason.into()),
-            serde_json::json!({}),
-        )
+        Self::new(ErrorCode("session.query_invalid"), format!("Parâmetros de consulta de histórico inválidos: {}", reason.into()))
+            .with_details(serde_json::json!({}))
     }
 }
 ```
@@ -731,9 +635,9 @@ pub struct WorkspaceSnapshot {
 
 ---
 
-### 3.5. Migration SQLite (`0007_07_workspace_templates_tabs_sessions.sql`)
+### 3.5. Migration SQLite (`0004_07_workspace_templates_tabs_sessions.sql`)
 
-O arquivo `src-tauri/crates/mt-db/migrations/0007_07_workspace_templates_tabs_sessions.sql` deve conter exatamente o DDL abaixo (incluindo o índice FTS5 externo gerado segundo a `FtsSpec` da Fase 03):
+O arquivo `src-tauri/crates/mt-db/migrations/0004_07_workspace_templates_tabs_sessions.sql` deve conter exatamente o DDL abaixo (incluindo o índice FTS5 externo gerado segundo a `FtsSpec` da Fase 03):
 
 ```sql
 -- Fase 07: Templates, Abas, Painéis, Agrupamentos de Sessões, Scrollback FTS5 e Operações
@@ -891,7 +795,8 @@ CREATE INDEX ix_workspace_operations_pending ON workspace_operations(stage, upda
 
 #### Assinaturas de `TemplateRepo` e `DefaultTemplateContributor`
 ```rust
-use crate::Db;
+use crate::{Db, DbError};
+use crate::repos::projects::StoredProject;
 use mt_core::error::MtError;
 use mt_core::ids::{ProjectId, TemplateId};
 use mt_core::workspace::template::{TabTemplate, TabTemplateInput};
@@ -912,7 +817,8 @@ impl TemplateRepo {
     /// 2. Se não houver padrão mas existirem templates no projeto, elege o menor `(position, created_at, id)`.
     /// 3. Se não houver nenhum template no projeto, insere "Terminal" (`mdi:console`, shell, cwd=NULL,
     ///    initial_command=NULL, add_to_workspace=0, continuous=0, env_json='{}', is_default=1, position=0).
-    pub fn ensure_default_tx(tx: &Transaction<'_>, project_id: ProjectId, now_ms: i64) -> Result<TemplateId, MtError>;
+    /// Primitivo interno a `mt-db`: retorna `DbError` (convertido para `MtError` apenas nos métodos públicos `async`).
+    pub fn ensure_default_tx(tx: &Transaction<'_>, project_id: ProjectId, now_ms: i64) -> Result<TemplateId, DbError>;
 
     pub async fn list(&self, project_id: ProjectId) -> Result<Vec<TabTemplate>, MtError>;
     pub async fn get(&self, template_id: TemplateId) -> Result<TabTemplate, MtError>;
@@ -931,8 +837,11 @@ impl TemplateRepo {
 pub(crate) struct DefaultTemplateContributor;
 
 impl crate::repos::projects::ProjectInsertContributor for DefaultTemplateContributor {
-    fn after_insert(&self, tx: &Transaction<'_>, project_id: ProjectId, now_ms: i64) -> Result<(), MtError> {
-        TemplateRepo::ensure_default_tx(tx, project_id, now_ms).map(|_| ())
+    /// Assinatura idêntica a `ProjectInsertContributor::after_insert` da Fase 06
+    /// (`06/02/spec.md` §3.2): recebe `&StoredProject` e lê `project.id` e `project.created_at` do próprio registro.
+    fn after_insert(&self, tx: &Transaction<'_>, project: &StoredProject) -> Result<(), DbError> {
+        let project_id: ProjectId = project.id.parse().map_err(|_| DbError::Constraint("project.id inválido".into()))?;
+        TemplateRepo::ensure_default_tx(tx, project_id, project.created_at).map(|_| ())
     }
 }
 ```

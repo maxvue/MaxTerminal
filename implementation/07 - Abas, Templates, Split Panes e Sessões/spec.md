@@ -32,7 +32,7 @@ TabSessionId → SessionId por execução de painel
 
 | Origem | Contrato efetivo | Uso |
 |--------|------------------|-----|
-| 01 | Ids Uuid v7, `MtError`, bindings `specta` | Identidade, erros pt-BR e IPC tipado |
+| 01 | Ids Uuid v7 (inclui `TabSessionId`, gerado pelo `define_id!`), `MtError`, bindings `specta` | Identidade, erros pt-BR e IPC tipado |
 | 02 | `spawn(SpawnSpec, Option<Arc<dyn OutputSink>>)`, `write(PtyId, Bytes)` | Spawn sem view: sink `None`, ring da 02 até `pty_attach` |
 | 02 | `kill_and_wait(PtyId, KillMode, Duration) -> ExitInfo` | Chamada bloqueante em `spawn_blocking`; não confundir com `kill`, que apenas agenda |
 | 02 | `PtyOwner { tab_id: Option<TabId>, pane_id: Option<PaneId> }`, `subscribe`, `process_tree`, `pids` | Ownership e saída; nunca matar PID não validado pelo supervisor |
@@ -42,8 +42,8 @@ TabSessionId → SessionId por execução de painel
 | 05 | `RuntimeBinding`, `SessionProvider::{prepare,close,abort}`, lifecycle de spawn | Sessão por painel preparada antes do reader; hooks registrados uma vez |
 | 05 | Eventos de prompt confiável, registry de status e Reset | Prontidão, status e `seen`; geração rejeita eventos antigos |
 | 05 | `SessionsRepo::{prepare,close,abort,get}`, `CommandBlocksRepo`, `sessions`, `command_blocks` | Base de sessões por painel e blocos persistidos |
-| 06 | `ProjectInsertContributor::after_insert(tx, project)`, `ProjectActivityGuard`, `ProjectRemovalHook::before_remove` | Padrão atômico e encerramento pré-remoção |
-| 06 | `selectedId`, `attachTab(tabId, projectId)`, `detachTab`, `setActiveTab`; prop `project` do workspace | Seleção e badges; assinatura preservada |
+| 06 | `ProjectInsertContributor::after_insert(&self, tx: &rusqlite::Transaction<'_>, project: &StoredProject) -> Result<(), DbError>`, `mt_projects::service::ProjectService::acquire_activity` (retorna `ProjectActivityGuard`), `ProjectRemovalHook::before_remove` | Padrão atômico e encerramento pré-remoção |
+| 06 | `selectedId`, `attachTab(tabId, projectId)`, `detachTab(tabId)`, `setActiveTab`; prop `project` do workspace | Seleção e badges; assinatura preservada |
 
 `workspace/adapters.rs` contém `PtyLifecycleAdapter`, `ShellWorkspaceAdapter`, `BaseSessionAdapter`;
 `mt-db/src/repos/templates.rs` implementa `DefaultTemplateContributor` dentro de `mt-db`, onde a trait
@@ -54,7 +54,7 @@ trait privada. Os adapters são nomes **novos desta fase**, não métodos supost
 Reconciliações obrigatórias antes de implementar:
 
 1. A 05 é proprietária de `sessions` mínima e `command_blocks`, via
-   `NNNN_05_shell_sessions_command_blocks.sql`; a 03 fornece infraestrutura. Nenhum adapter altera
+   `0002_05_shell_sessions_command_blocks.sql`; a 03 fornece infraestrutura. Nenhum adapter altera
    silenciosamente schema ou semântica. O agrupamento da 07 não se passa por uma sessão base.
 2. A 05 deve disponibilizar barreira de fim de captura/commit por PTY e sequenciamento dentro de cada sessão.
    Os adaptadores abaixo exigem essas capacidades; se ausentes, a integração é bloqueada até implementá-las.
@@ -211,8 +211,8 @@ Backend valida conjunto e tipos, aplica atomicamente, incrementa revisão e devo
 
 ```rust
 pub enum SessionEndReason { NewSession, TabClosed, AppExit, CrashRecovered, ProjectRemoved, SpawnFailed }
-// Novo newtype desta fase, Uuid v7, exportado por mt-core::workspace.
-pub struct TabSessionId(pub uuid::Uuid);
+// Dentro de mt-core::workspace, consumir o identificador validado da Fase 01.
+use crate::ids::TabSessionId;
 pub struct SessionSummary {
     pub id: TabSessionId,
     pub tab_id: TabId,
@@ -249,6 +249,7 @@ pub struct WorkspaceManager {
     pty: Arc<PtyLifecycleAdapter>,
     shell: Arc<ShellWorkspaceAdapter>,
     environments: Arc<EnvironmentRegistry>,
+    spawn_hooks: Vec<Arc<dyn WorkspaceSpawnHook>>,
     tabs: DashMap<TabId, Arc<TabActor>>,
     pty_index: DashMap<PtyId, ExecutionOwner>,
     restore: tokio::sync::OnceCell<WorkspaceRestoreReport>,
@@ -265,11 +266,23 @@ pub struct TabActor { /* mailbox limitada, runtime exclusivo, operações serial
 pub struct WorkspaceSessionProvider { /* mapa preparado de owners e sessões persistidas */ }
 ```
 
-Locks/filas: barreira de boot → `ProjectActivityGuard` da 06 → actor por aba → transação curta no writer.
+Locks/filas: barreira de boot → `ProjectService::acquire_activity` da 06 (guard mantido só durante a operação de abertura/reinício) → actor por aba → transação curta no writer.
 Remoção usa gate exclusivo da 06; seu hook não readquire a lease, evitando deadlock. Não criar segundo gate.
 Não manter transação SQLite enquanto aguarda PTY, evento, diálogo ou E/S. Actor não espera callback que
 precise da própria mailbox: callbacks de saída completam promises separadas; eventos carregam geração.
 Cancelamento de `invoke` abandona somente a resposta; tarefas e guards de compensação pertencem ao manager.
+
+**Contrato pré-spawn (`03/spec.md` §3.4):** `workspace/spawn_hooks.rs` define `WorkspaceSpawnHook::reserve`
+com future `Send + 'static` e retorno `Box<dyn WorkspaceSpawnGuard>` (`Send + 'static`), além do contexto
+próprio `SpawnReservationRequest { owner, cwd }`. `WorkspaceManager::with_spawn_hooks(self, hooks)` instala
+a lista imutável antes de compartilhar o manager e antes de restore/abertura. A fase isolada usa lista vazia.
+Após resolver o ambiente e concluir a transação curta, cada fluxo de spawn adquire as reservas, revalida
+cwd, cria o PTY e aguarda `guard.register(pty_id)` antes de publicar `PaneSpawned` e liberar os guards.
+Em erro, para/drena os PTYs, chama `rollback` e libera; em `Blocked`, retém guards até retry. O cancelamento
+do caller não remove essa proteção. Não aguardar callbacks de observador para confirmar registro, nem
+manter transações/guards de mapas durante awaits. `Drop` apenas libera reservas temporárias.
+A Fase 08 implementa `GitWorkspaceSpawnHook` sem adicionar `mt-git` ao contrato da 07; os contratos
+`SpawnContext`/`ResolvedSpawn` consumidos pela 13 não recebem campos ou novas responsabilidades.
 
 Adaptador de shell:
 
@@ -342,8 +355,9 @@ todas as abas estiverem encerradas. Nenhum fallback “registrar erro e prossegu
 
 ## 5. Persistência SQLite: migrations exclusivamente aditivas
 
-Usar `DbSetup`/runner da 03, `foreign_keys=ON`, WAL, backup pré-migration e número global `NNNN` atribuído na
-integração. Não desligar FKs dentro de transação nem reescrever migrations já aplicadas.
+Usar `DbSetup`/runner da 03, `foreign_keys=ON`, WAL, backup pré-migration e a migration canônica
+`0004_07_workspace_templates_tabs_sessions.sql` (D-01), após `0003_06_projects.sql`.
+Não desligar FKs dentro de transação nem reescrever migrations já aplicadas.
 
 ### 5.1. Templates e padrão
 
@@ -372,11 +386,11 @@ CREATE INDEX ix_tab_templates_project ON tab_templates(project_id, position, id)
 CREATE INDEX ix_tab_templates_workspace ON tab_templates(project_id, id) WHERE add_to_workspace = 1;
 ```
 
-`TemplateRepo::ensure_default_tx(tx, project_id)` é o primitivo de todas as entradas:
+`TemplateRepo::ensure_default_tx(tx, project_id, now_ms) -> Result<TemplateId, DbError>` é o primitivo de todas as entradas:
 
 - Padrão existente: retornar sem alteração; sem padrão e com templates: eleger menor `(position,created_at,id)`;
   sem templates: criar “Terminal”, ícone `mdi:console`, shell, cwd/comando nulos, env vazio, flags falsas.
-- `DefaultTemplateContributor::after_insert(tx, project)` chama esse primitivo na transação da 06;
+- `DefaultTemplateContributor::after_insert(tx, project: &StoredProject) -> Result<(), DbError>` chama esse primitivo na transação da 06, convertendo `project.id` para `ProjectId` e usando `project.created_at` como timestamp;
   implementação e registro permanecem internos a `mt-db`, antes de aceitar comandos/watchers.
   Importação mantém atomicidade; `SqliteProjectStore` consome o resultado pela fachada tipada da 06.
   Não usar evento pós-commit nem uma segunda `Db::write` como garantia do padrão.
@@ -615,7 +629,7 @@ emitida após commit/runtime coerente, baixo volume. Saída de PTY permanece no 
 | `workspace://restored` | `WorkspaceRestoreReport` |
 
 Falha de spawn tem `newPtyId=null`, sinalizada pelo snapshot completo; não emitir substituição fictícia.
-Observer interno recebe owner completo, revisão e spawn/exit/session-archive; callbacks fora do actor e em
+Observer interno (`WorkspaceLifecycleObserver`, registrado por `WorkspaceManager::register_observer`) recebe owner completo, revisão e spawn/exit/session-archive; callbacks fora do actor e em
 fila ordenada por aba. Consumidor da 08/13 valida geração, evitando monitor reativado por callback atrasado.
 
 Erros novos: `template.invalid`, `template.default_required`, `template.secret_literal`,
@@ -750,7 +764,7 @@ Validar cargo fmt/clippy/test, bindings, tsgo, lint e suítes frontend afetadas.
 
 | Consumidor | Contrato entregue |
 |------------|-------------------|
-| 08 | Slot de indicadores; observer com owner completo e geração; aba/painel/PTY/cwd consultáveis |
+| 08 | Slot de indicadores; `WorkspaceLifecycleObserver` (registro via `register_observer`) com owner completo e geração; `WorkspaceManager::pane_pty(tab_id, pane_id) -> Option<PtyId>`; `with_spawn_hooks`, `WorkspaceSpawnHook`/`WorkspaceSpawnGuard` para reserva pré-spawn e registro confirmado antes da publicação |
 | 09 | `WorkspaceManager::shutdown`, consulta de abas/processos vivos e status da 05 |
 | 11/12 | `tab_open`, snapshot e seleção por projeto; contexto da 04 e sessão/blocos da 05 |
 | 13 | `EnvironmentResolver`, `TemplateEnvironment`, snapshot de lançamento e overrides de cwd/env |

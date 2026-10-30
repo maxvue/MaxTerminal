@@ -46,9 +46,10 @@
 
 ## 2. Comandos Exatos de Verificação
 
-Execute os comandos abaixo a partir de `/home/johnattas/GitHub/MaxTerminal/.max-code-worktrees/wt-6f18b3d0`:
+Execute os comandos abaixo a partir de a raiz da worktree ativa:
 
 ```bash
+cd "$(git rev-parse --show-toplevel)"
 npm run typecheck
 npm run lint
 npx --no-install vitest run tests/commandGroups/commandGroupsStore.spec.ts tests/commandGroups/commandGroupsTrigger.spec.ts --coverage

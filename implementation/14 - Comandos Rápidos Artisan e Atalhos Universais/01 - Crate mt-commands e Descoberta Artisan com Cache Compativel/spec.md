@@ -59,11 +59,11 @@ Esta primeira implementação estabelece a fundação do crate nativo `mt-comman
 [package]
 name = "mt-commands"
 version = "0.1.0"
-edition = "2021"
+edition.workspace = true   # 2024 (D-09)
 
 [dependencies]
 mt-core = { path = "../mt-core" }
-mt-db = { path = "../mt-db", default-features = false }
+mt-db = { workspace = true }   # sanitizador (mt_db::sanitizer) e fachada mt_db::Db (D-09)
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 schemars = "1"

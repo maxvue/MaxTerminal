@@ -8,7 +8,7 @@
 
 ## 1. Contexto, Objetivo e Escopo
 
-Esta implementação integra os crates de domínio `mt-git` (Implementação 01) e `mt-ports` (Implementação 02) ao crate binário Tauri (`src-tauri/src/`, pacote `maxterminal`) e às fases predecessoras (Fase 01 `mt-core`, Fase 02 `mt-pty`, Fase 03 `mt-db::sanitizer`, Fase 05 `mt-shell` e Fase 07 `WorkspaceManager` / `WorkspaceObserver`).
+Esta implementação integra os crates de domínio `mt-git` (Implementação 01) e `mt-ports` (Implementação 02) ao crate binário Tauri (`src-tauri/src/`, pacote `maxterminal`) e às fases predecessoras (Fase 01 `mt-core`, Fase 02 `mt-pty`, Fase 03 `mt-db::sanitizer`, Fase 05 `mt-shell` e Fase 07 `WorkspaceManager` / `WorkspaceLifecycleObserver`).
 
 Seguindo o princípio arquitetural de `spec.md` §1.3, **os adaptadores deste módulo são a única superfície que conhece os nomes concretos das Fases 02, 05 e 07**, isolando `mt-git` e `mt-ports` de mudanças futuras e mantendo a autoridade no backend Rust.
 
@@ -16,7 +16,7 @@ Seguindo o princípio arquitetural de `spec.md` §1.3, **os adaptadores deste m�
 1. **Adaptador de Árvore de Processos e Fallback de CWD (`adapters/process_tree.rs`):** Implementar `mt_ports::tree::ProcessTreeSource` e `CwdFallback` sobre `mt_pty::PtyManager` (`summary`, `process_report`, `owned_processes`) e o registro de ownership da Fase 07 (`WorkspaceManager`).
 2. **Adaptador de Sinalização Exata por `pidfd` (`adapters/exact_process_signaler.rs`):** Implementar `mt_ports::killer::ExactProcessSignaler` usando chamadas nativas Linux `pidfd_open(2)`, `pidfd_send_signal(2)` e `poll(2)` via `rustix`, validando atomicamente `PtyId`, `starttime`, UID, *network namespace* e a presença do inode do socket em `/proc/<pid>/fd/*` antes de cada sinal (`SIGTERM` e `SIGKILL`), sem jamais chamar `waitpid` ou `killpg`.
 3. **Adaptador de Abertura de URL via `tauri-plugin-opener` (`adapters/port_opener.rs`):** Registrar `.plugin(tauri_plugin_opener::init())` no crate binário na Fase 08 e implementar `mt_ports::opener::PortUrlOpener` invocando `app.opener().open_url(url, None::<&str>)` dentro de `tokio::task::spawn_blocking`.
-4. **Observador Autorizado de Workspace e Shell (`adapters/indicators.rs`):** Implementar `IndicatorWorkspaceObserver` conectado aos eventos de ciclo de vida da Fase 07 (`spawn`, `pty-replaced`, `exited`, `tab-closed`) e aos eventos da Fase 05 (mudança de `cwd` via OSC 7 e fim de comando via OSC 133 `D`), mantendo os bindings de `GitService` e `PortsService` sincronizados mesmo quando a WebView estiver oculta ou recarregando, além de coordenar a reserva de `cwd` entre abertura de aba e `git_worktree_remove`.
+4. **Reserva Pré-Spawn e Observador Autorizado (`adapters/indicators.rs`):** Implementar `GitWorkspaceSpawnHook`/`GitWorkspaceSpawnGuard` sobre o contrato da Fase 07 (§3.6), além de `IndicatorWorkspaceObserver` conectado aos sinais internos `WorkspaceLifecycleSignal` e aos eventos da Fase 05. O hook reserva o cwd antes de criar PTY e confirma o binding Git antes da liberação; o observador mantém os bindings após publicação, mesmo com WebView oculta.
 5. **Emissores de Eventos Tipados (`events/git.rs`, `events/ports.rs`):** Implementar `GitEventSink` e `PortEventSink` emitindo eventos tipados `tauri-specta` (`git://status-changed`, `port://opened`, `port://updated`, `port://closed`, `port://snapshot`) restritos à janela `main`.
 6. **Comandos IPC Tauri (`commands/git.rs`, `commands/ports.rs`) e Geração de Bindings:** Expor os 9 comandos `git_*` e os 7 comandos `port_*`, sanitizar `stderr` de erros Git via `mt_db::sanitizer::sanitize()`, configurar capabilities para a janela `main` e regenerar `src/types/bindings.ts`.
 
@@ -55,7 +55,8 @@ use std::sync::Arc;
 use mt_core::{PaneId, PtyId, TabId};
 use mt_ports::error::PortsError;
 use mt_ports::tree::{ProcId, ProcessTreeSource};
-use mt_pty::PtyManager;
+use mt_pty::{PtyManager, PtyStatus};
+use crate::workspace::manager::WorkspaceManager;
 
 /// Consulta o `cwd` real do processo shell do PTY via Fase 02 quando o frontend/OSC 7 não informar `cwd`.
 pub trait CwdFallback: Send + Sync + 'static {
@@ -64,14 +65,26 @@ pub trait CwdFallback: Send + Sync + 'static {
 
 pub struct PtyProcessTreeAdapter {
     pty_manager: Arc<PtyManager>,
-    // Referência ao registro do WorkspaceManager da Fase 07 para validar vínculo (tab_id, pane_id, pty_id)
+    workspace: Arc<WorkspaceManager>,
 }
 
 impl PtyProcessTreeAdapter {
-    pub fn new(pty_manager: Arc<PtyManager> /* , workspace: Arc<WorkspaceManager> */) -> Arc<Self>;
+    pub fn new(pty_manager: Arc<PtyManager>, workspace: Arc<WorkspaceManager>) -> Arc<Self>;
 
     /// Valida se `(tab_id, pane_id, pty_id)` corresponde ao `PtyOwner` registrado na Fase 02/07.
-    pub fn verify_pane_ownership(&self, tab_id: TabId, pane_id: PaneId, pty_id: PtyId) -> Result<(), PortsError>;
+    pub async fn verify_pane_ownership(&self, tab_id: TabId, pane_id: PaneId, pty_id: PtyId) -> Result<(), PortsError> {
+        if self.workspace.pane_pty(tab_id, pane_id).await != Some(pty_id) {
+            return Err(PortsError::NotTracked);
+        }
+        let summary = self.pty_manager.summary(pty_id).map_err(|_| PortsError::NotTracked)?;
+        if summary.owner.tab_id != Some(tab_id)
+            || summary.owner.pane_id != Some(pane_id)
+            || !matches!(summary.status, PtyStatus::Running)
+        {
+            return Err(PortsError::NotTracked);
+        }
+        Ok(())
+    }
 }
 
 impl ProcessTreeSource for PtyProcessTreeAdapter {
@@ -99,6 +112,8 @@ impl ProcessTreeSource for PtyProcessTreeAdapter {
 }
 
 impl CwdFallback for PtyProcessTreeAdapter {
+    // O chamador já resolveu/validou o vínculo pela consulta assíncrona pane_pty.
+    // Este fallback síncrono apenas consulta o cwd; não autoriza rastreamento de portas.
     fn resolve_pane_cwd(&self, _tab_id: TabId, _pane_id: PaneId, pty_id: Option<PtyId>) -> Option<PathBuf> {
         let pty = pty_id?;
         let report = self.pty_manager.process_report(pty).ok()?;
@@ -336,9 +351,10 @@ use mt_git::types::{
 use mt_git::worktree::WorktreeManager;
 use tauri::State;
 use crate::adapters::process_tree::CwdFallback;
+use crate::workspace::manager::WorkspaceManager;
 
 /// Sanitiza mensagens e `stderr` de `GitError` com `mt_db::sanitizer::sanitize` na fronteira IPC.
-fn map_git_err(err: GitError) -> MtError {
+pub(crate) fn map_git_err(err: GitError) -> MtError {
     let sanitized = match err {
         GitError::CommandFailed { code, stderr } => {
             let clean = mt_db::sanitizer::sanitize(&stderr);
@@ -355,6 +371,7 @@ fn map_git_err(err: GitError) -> MtError {
 pub async fn git_track_pane(
     git: State<'_, Arc<GitService>>,
     cwd_fallback: State<'_, Arc<dyn CwdFallback>>,
+    workspace: State<'_, Arc<WorkspaceManager>>,
     tab_id: TabId,
     pane_id: PaneId,
     cwd: Option<String>,
@@ -488,10 +505,94 @@ pub async fn port_kill(
 
 ### 3.6. Observador de Workspace e Shell (`src-tauri/src/adapters/indicators.rs`)
 
-- Implementa o `IndicatorWorkspaceObserver` conectado à Fase 07 e aos eventos de shell da Fase 05:
-  1. Ao abrir/restaurar aba ou dividir painel com `PtyId` válido: chama `git.track_pane(...)` e `ports.track_pane(...)`.
-  2. Ao substituir o `PtyId` de um painel (`pane://pty-replaced`, reinício ou nova sessão): invalida o binding anterior e registra o novo `PtyId`.
-  3. Ao encerrar painel/PTY (`pane://exited`) ou fechar aba (`tab://closed`): remove o rastreamento de portas do painel/aba e invalida os tokens `PortId` daquela execução.
+- `IndicatorWorkspaceObserver` implementa `crate::workspace::observer::WorkspaceLifecycleObserver`, recebe `WorkspaceLifecycleSignal` em `on_signal` e é registrado por `workspace.register_observer(observer)`. Os sinais internos da Fase 07, ordenados por aba e despachados fora do ator, são a fonte de ciclo de vida (não listeners de eventos IPC da WebView):
+   1. `PaneSpawned { owner, pty_id, cwd, .. }`: valida a geração e o vínculo atual via `workspace.pane_pty(owner.tab_id, owner.pane_id).await`, chama `git.track_pane(owner.tab_id, owner.pane_id, Some(pty_id), cwd, visible)` e `ports.track_pane(...)`.
+   2. Reinício/nova sessão produz novos sinais `PaneSpawned`: invalida o binding anterior e registra o novo `PtyId`. A consulta assíncrona e o rastreamento Git são processados em fila ordenada por aba, sem bloquear `on_signal` nem lançar tarefas que reordenem os sinais.
+   3. `PaneExited { owner, pty_id, .. }` ou `TabClosed { tab_id, .. }`: remove o rastreamento de portas do painel/aba e invalida os tokens `PortId` daquela execução; saída tardia de geração antiga nunca remove o novo vínculo. `TabLayoutChanged` reconcilia painéis removidos, e `TabClosed` também limpa os bindings Git.
   4. Ao receber mudança de `cwd` validada por OSC 7 da Fase 05: atualiza `git.track_pane` para o painel correspondente.
   5. Ao receber fim de comando (OSC 133 `D`) da Fase 05 para um `PtyId`: dispara `git.request_refresh(pane_id, RefreshReason::CommandFinished)` e `ports.notify_command_finished(tab_id)`.
-  6. Expõe hook de reserva de `cwd` (`git.reserve_cwd(cwd)`) para que o fluxo de abertura de aba/painel da Fase 07 impeça `git_worktree_remove` concorrente no mesmo diretório.
+   6. A reserva antecipada é entregue pelo `GitWorkspaceSpawnHook` abaixo, independente da fila de observadores. `PaneSpawned` reconcilia idempotentemente o binding já confirmado pelo guard, sem remover/recriar o vínculo da mesma execução.
+
+#### Adaptador do Contrato Pré-Spawn da Fase 07
+
+```rust
+use crate::workspace::spawn_hooks::{
+    SpawnHookFuture, SpawnReservationRequest, WorkspaceSpawnGuard, WorkspaceSpawnHook,
+};
+use crate::commands::git::map_git_err;
+use mt_core::PtyId;
+use mt_git::{CwdReservationGuard, GitService};
+use std::sync::Arc;
+
+pub struct GitWorkspaceSpawnHook {
+    pub git: Arc<GitService>,
+}
+
+pub struct GitWorkspaceSpawnGuard {
+    git: Arc<GitService>,
+    request: SpawnReservationRequest,
+    reservation: CwdReservationGuard,
+    registered_pty: Option<PtyId>,
+}
+
+impl WorkspaceSpawnHook for GitWorkspaceSpawnHook {
+    fn reserve(&self, request: SpawnReservationRequest)
+        -> SpawnHookFuture<'static, Box<dyn WorkspaceSpawnGuard>>
+    {
+        let git = self.git.clone();
+        Box::pin(async move {
+            let reservation = git.reserve_cwd(request.cwd.clone()).await.map_err(map_git_err)?;
+            Ok(Box::new(GitWorkspaceSpawnGuard {
+                git, request, reservation, registered_pty: None,
+            }) as Box<dyn WorkspaceSpawnGuard>)
+        })
+    }
+}
+
+impl WorkspaceSpawnGuard for GitWorkspaceSpawnGuard {
+    fn register(&mut self, pty_id: PtyId) -> SpawnHookFuture<'_, ()> {
+        Box::pin(async move {
+            // Registrar intenção antes do await permite desfazer registro parcial na compensação.
+            self.registered_pty = Some(pty_id);
+            self.git.track_pane(
+                self.request.owner.tab_id,
+                self.request.owner.pane_id,
+                Some(pty_id),
+                self.reservation.cwd().to_path_buf(),
+                false,
+            ).await.map_err(map_git_err)?;
+            Ok(())
+        })
+    }
+
+    fn rollback(&mut self) {
+        if let Some(pty_id) = self.registered_pty.take() {
+            self.git.untrack_pane_if_matches(
+                self.request.owner.tab_id, self.request.owner.pane_id, pty_id,
+            );
+        }
+    }
+}
+```
+
+- `map_git_err` é o helper `pub(crate)` de `commands/git.rs` (§3.5), reutilizado com a mesma sanitização.
+  A reserva possui dados/Arcs próprios (`Send + 'static`); o adaptador não captura `WorkspaceManager`
+  nem chama sua mailbox. `register` retém a reserva através do await, usa inicialmente `visible = false`
+  (visibilidade é reconciliada depois) e não aguarda `WorkspaceLifecycleObserver`.
+- O `Drop` automático de `GitWorkspaceSpawnGuard` descarta `CwdReservationGuard`, liberando somente o
+  token temporário. Após sucesso, o binding continua ativo até saída/fechamento; em erro, a Fase 07
+  chama `rollback` somente após confirmar a parada dos PTYs. Em `Blocked`, a operação mantém o guard.
+- Instalação em `lib.rs`: criar `GitService` e `GitWorkspaceSpawnHook`, aplicar
+  `WorkspaceManager::with_spawn_hooks(vec![hook])` no builder **antes** de `Arc`, `app.manage`,
+  `restore` e disponibilização dos comandos de abertura. Compartilhar esse mesmo `GitService` com
+  `CliWorktreeManager`/observador; registrar o observador após construir o manager, ainda antes do boot.
+  A Fase 07 isolada usa lista vazia; a composição da Fase 08 sempre instala este adaptador.
+- O gate de cwd de `08/01/spec.md` §3.8 serializa inserção da reserva/registro com remoção: se a abertura
+  vencer, `worktree remove --force` retorna `git.worktree_in_use` antes/durante/depois do spawn; se a remoção
+  vencer, a reserva revalida o diretório após aguardar e falha antes do spawn. Não há locks Git/SQLite
+  retidos pelo token durante o ciclo de vida do shell, nem dependência inversa da Fase 07 para `mt-git`.
+
+#### Resolução de ownership na fronteira IPC
+- `git_track_pane` resolve `let pty_id = workspace.pane_pty(tab_id, pane_id).await` e repassa esse valor tanto a `CwdFallback::resolve_pane_cwd` (quando `cwd` for `None`) quanto a `git.track_pane(tab_id, pane_id, pty_id, cwd, visible).await`. O PTY é resolvido no backend, sem novo parâmetro vindo da WebView; `None` é válido para Git de painel sem PTY, mas ausência de `cwd` informado e de fallback retorna `pane.not_found`. Não substituir um vínculo vivo por `None` constante.
+- `port_track_pane` aguarda `tree_adapter.verify_pane_ownership(tab_id, pane_id, pty_id).await?` antes de registrar o painel. Saída/substituição concorrente deve invalidar o registro por geração; toda ação sobre processo revalida a identidade na Fase 02.
+- No setup, compartilhar o mesmo `Arc<WorkspaceManager>` da Fase 07 entre comandos e adaptadores. Registrar os serviços/adaptadores necessários com `app.manage(...)`, incluindo `Arc<dyn CwdFallback>`; não ampliar o `AppState` de bootstrap da Fase 01.

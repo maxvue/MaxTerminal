@@ -239,6 +239,7 @@ export interface TerminalInstanceState {
     flow: { paused: boolean; pendingBytes: number; droppedBytes: string; cursor: OutputCursor | null }; // u64 em decimal
     search: { open: boolean; query: string; resultIndex: number; resultCount: number };
     exit: ExitInfo | null;                // de bindings.ts (Fase 02): code, signal, signalName, reason, atMs
+    themeUi: TerminalTheme['ui'];         // cores locais do painel; viram variáveis CSS em `.hybrid-terminal`
 }
 
 // ---------- Tema (preenchido pela Fase 10) ----------
@@ -252,7 +253,7 @@ export interface TerminalTheme {
         ansi: [string, string, string, string, string, string, string, string,   // 0–7
                string, string, string, string, string, string, string, string];  // 8–15
     };
-    ui?: { blockBorder?: string; blockHeaderBackground?: string; richInputBackground?: string };
+    ui: { blockBackground: string; blockBorder: string; blockHeaderBackground: string; richInputBackground: string; richInputBorder: string };
 }
 export interface TerminalThemeProvider { getActiveTheme(): TerminalTheme; onChange(cb: (t: TerminalTheme) => void): Disposable }
 
@@ -713,8 +714,8 @@ linha única, textos pt-BR, cores apenas via tokens `--max-*`/`--background-*` o
 | `RichInput.vue` | `paneId`, `disabled?: boolean` | `submit: [string]`, `mode-toggle: []` | `role="combobox"`, `aria-expanded`, `aria-controls`, `aria-activedescendant`; textarea autoexpansível (máx. 8 linhas) |
 | `CompletionPopup.vue` | `items: CompletionItem[]`, `sections?: CompletionSection[]`, `activeIndex: number`, `loading: boolean`, `error: string \| null`, `title: string`, `stageLabel?: string`, `emptyMessage?: string` | `select: [CompletionItem]`, `hover: [number]` | slot `item` com `{ item, active }`; `role="listbox"`; rolagem mantém ativo visível; virtualização acima de 200 itens |
 | `CompletionItem.vue` | `item`, `active`, `id: string` | `select`, `hover` | `role="option"`, `aria-selected`, `aria-disabled` |
-| `CommandBlock.vue` | `block: CommandBlockModel`, `actions: BlockAction[]`, `compact?: boolean` | `action: [actionId: string]` | slot `actions` com `{ block }` (após as ações registradas); mostra comando, cwd, duração (`useTimeAgo`/formatação pt-BR), badge de status |
-| `CommandBlockLayer.vue` | `paneId` | — | cria `registerMarker` + `registerDecoration` por bloco; monta `CommandBlock` via `Teleport` no elemento da decoração; oculto quando `altScreen` |
+| `CommandBlock.vue` | `block: CommandBlockModel`, `entry: VueWebTerminalProjectedEntry`, `actions: BlockAction[]`, `compact?: boolean` | `action: [actionId: string]` | slot `actions` com `{ block }` (após as ações registradas); usa a projeção do adaptador para comando truncado, duração e badge; mantém `block` para ações/metadados |
+| `CommandBlockLayer.vue` | `paneId: PaneId`, `getContext: () => TerminalContext`, `onInputIntent: (commandText: string) => Promise<void>` | — | possui a única chamada de `useCommandBlocks` por painel; usa markers da store e cria decorações; monta `CommandBlock` com `block` + `entry` via `Teleport` no elemento da decoração dentro de `.hybrid-terminal`; oculto quando `altScreen` |
 | `TerminalExitBanner.vue` | `exit: ExitInfo` | `restart-requested: []` | "Processo encerrado (código X)" ou "Processo encerrado pelo sinal SIGKILL" (`signalName`) + botão "Reiniciar" (ação real na Fase 07) |
 | `InputModeToggle.vue` | `paneId` | — | alterna override; tooltip "Input rico" / "Modo direto (raw)" |
 
@@ -734,7 +735,7 @@ Cores do badge de bloco: `running` → `--max-success-500`, `success` → `--max
   (máx. 200, sem duplicatas consecutivas).
 - `useCompletion(paneId, textRef, cursorRef)` → encapsula `CompletionSession`; expõe
   `{ open, items, sections, activeIndex, loading, error, move(delta), confirm(), cancel() }`.
-- `useCommandBlocks(paneId)` → blocos + ações filtradas.
+- `useCommandBlocks(paneId, { getContext, onInputIntent })` → blocos, entradas projetadas pelo `VueWebTerminalAdapter` (`projectedEntries`) + ações filtradas.
 
 ### 10.2. Atalhos (`src/terminal/keybindings.ts`)
 | Atalho | Ação | Escopo |

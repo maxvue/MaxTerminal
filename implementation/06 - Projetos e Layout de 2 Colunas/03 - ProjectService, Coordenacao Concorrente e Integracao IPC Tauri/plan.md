@@ -49,7 +49,7 @@
    - Inicializar `tauri_plugin_dialog::init()`.
    - Instanciar `Arc<ProjectService>` com `SqliteProjectStore::new(db.clone())` e `TauriProjectEventSink::new(app.handle().clone())`, registrá-lo via `app.manage(project_service.clone())` e disparar `tauri::async_runtime::spawn(async move { let _ = project_service.start().await; })` dentro de `.setup(...)`.
 4. Atualizar `src-tauri/capabilities/default.json` adicionando permissões para os comandos `project_*`, `project_root_*`, `project_discovery_*` e `dialog:allow-open` na janela `main`.
-5. Executar o gerador de bindings (`tauri-specta`) para atualizar `src/types/bindings.ts` e confirmar que todos os DTOs e comandos da Fase 06 estão presentes.
+5. Executar `cargo run --manifest-path src-tauri/Cargo.toml --bin export_bindings` na raiz da worktree ativa para atualizar `src/types/bindings.ts` e confirmar que todos os DTOs e comandos da Fase 06 estão presentes.
 
 ### Passo 5 — Escrever Testes de Integração de Serviço, Concorrência e Scheduler (`service_and_concurrency.rs`)
 1. Criar `src-tauri/crates/mt-projects/tests/service_and_concurrency.rs` com `MemorySink` e `FailingHook`:
@@ -69,15 +69,18 @@
 ## 2. Comandos de Verificação
 
 ```bash
+cd "$(git rev-parse --show-toplevel)"
+
 # Compilar todo o workspace Rust (incluindo o binário Tauri)
-cargo check --workspace
+cargo check --manifest-path src-tauri/Cargo.toml --workspace
 
 # Executar toda a suíte de testes de mt-projects e geração de bindings
-cargo test -p mt-projects
-cargo test -p maxterminal
+cargo test --manifest-path src-tauri/Cargo.toml -p mt-projects
+cargo test --manifest-path src-tauri/Cargo.toml -p maxterminal
+cargo run --manifest-path src-tauri/Cargo.toml --bin export_bindings
 
 # Validar Clippy sem avisos em mt-projects e maxterminal
-cargo clippy -p mt-projects -p maxterminal --all-targets -- -D warnings
+cargo clippy --manifest-path src-tauri/Cargo.toml -p mt-projects -p maxterminal --all-targets -- -D warnings
 
 # Confirmar ausência de process::Command em mt-projects
 ! rg -n "process::Command" src-tauri/crates/mt-projects/src

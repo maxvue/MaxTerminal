@@ -24,11 +24,11 @@
 
 ### Passo 2 — Estado, Logging Estruturado e Comandos IPC
 - [ ] **2.1.** Implementar `src-tauri/src/state.rs` com `AppState` e `FrontendLogState` (rate-limit monotônico de 200 eventos por segundo com contagem de descartes).
-- [ ] **2.2.** Implementar `src-tauri/src/logging.rs` com `LogRedactor`, `FoundationRedactor`, `RedactedJsonFormatter`, abertura de arquivo diário `maxterminal.log.<AAAA-MM-DD>` com modo `0o600`, `NonBlockingBuilder` com `buffered_lines_limit(4096)`, filtro `MAXTERMINAL_LOG` restrito aos targets autorizados e panic hook estático.
+- [ ] **2.2.** Implementar `src-tauri/src/logging.rs` com `LogRedactor` (assinatura de 1 parâmetro `redact<'a>(&self, input: &'a str) -> Cow<'a, str>`), `FoundationRedactor`, `RedactedJsonFormatter`, abertura de arquivo diário `maxterminal.log.<AAAA-MM-DD>` com modo `0o600`, `NonBlockingBuilder` com `buffered_lines_limit(4096)`, filtro `MAXTERMINAL_LOG` restrito aos targets autorizados e panic hook estático.
 - [ ] **2.3.** Implementar `src-tauri/src/commands/mod.rs` e `src-tauri/src/commands/app.rs` (`app_info` e `app_log_frontend` com `#[tauri::command]` e `#[specta::specta]`), além de `src-tauri/src/events/mod.rs`.
 
 ### Passo 3 — Builder Specta, Binário Exportador e Entrypoints
-- [ ] **3.1.** Implementar `src-tauri/src/specta.rs` com `builder()`, registro dos 2 comandos e dos 14 tipos exportados (`ErrorHandlingMode::Result`), `export_bindings_to` e `export_bindings`.
+- [ ] **3.1.** Implementar `src-tauri/src/specta.rs` com `builder()`, registro dos 2 comandos e dos 15 tipos exportados (9 ids, `ErrorCode`, `MtError`, `AppPathsDto`, `BuildProfile`, `AppInfo`, `FrontendLogEvent`) (`ErrorHandlingMode::Result`), `export_bindings_to` e `export_bindings`.
 - [ ] **3.2.** Implementar `src-tauri/src/bin/export_bindings.rs` e declarar/ajustar `default-run = "maxterminal"` em `src-tauri/Cargo.toml` para que `cargo run` execute o binário principal sem ambiguidade.
 - [ ] **3.3.** Implementar `src-tauri/src/lib.rs` (`run()`) e `src-tauri/src/main.rs`.
 - [ ] **3.4.** Executar a geração inicial de `src/types/bindings.ts` via `cargo test --test bindings export -- --ignored --exact` (ou `cargo run --bin export_bindings`).
@@ -51,7 +51,7 @@
 | **CA-12** (Clippy workspace) | `cd src-tauri && cargo clippy --locked --workspace --all-targets -- -D warnings` | Exit code `0` com zero warnings. |
 | **CA-13** (Testes do workspace) | `cd src-tauri && cargo test --workspace --locked` | Exit code `0` para `mt-core`, `maxterminal`, `bindings` e `capabilities`. |
 | **CA-16** (Geração e drift de bindings) | `cd src-tauri && cargo test --locked --test bindings` e `git diff --exit-code -- src/types/bindings.ts` | Duas execuções idênticas, drift detectado em mutação e zero diff no arquivo versionado. |
-| **CA-17** (Símbolos exportados em `bindings.ts`) | `cd src-tauri && cargo test --locked --test bindings exports_expected_symbols` | `AppInfo`, `AppPathsDto`, `BuildProfile`, `MtError`, `ErrorCode`, `FrontendLogEvent`, 8 IDs como `string` e wrappers dos 2 comandos presentes. |
+| **CA-17** (Símbolos exportados em `bindings.ts`) | `cd src-tauri && cargo test --locked --test bindings exports_expected_symbols` | `AppInfo`, `AppPathsDto`, `BuildProfile`, `MtError`, `ErrorCode`, `FrontendLogEvent`, 9 IDs (incluindo `TabSessionId`) como `string` e wrappers dos 2 comandos presentes. |
 | **CA-22** (Arquivo de log diário e `MAXTERMINAL_LOG`) | `cd src-tauri && cargo test --locked logging::tests` | Arquivo `maxterminal.log.<AAAA-MM-DD>` contém `MaxTerminal iniciado` com versão e respeita `MAXTERMINAL_LOG=debug`. |
 | **CA-23** (Segurança de logs do frontend e rate-limit) | `cd src-tauri && cargo test --locked commands::app::tests` | `vue_error` gera log `target=frontend`, `level=ERROR`; sentinelas nunca aparecem; enum inválido falha na desserialização; taxa limitada a 200/s. |
 | **CA-29** (Capability e ACL) | `cd src-tauri && cargo test --locked --test capabilities` | Apenas janela `main` e os 2 comandos na allowlist; janela ou comando fora da allowlist são negados. |

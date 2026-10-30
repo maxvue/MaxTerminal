@@ -12,7 +12,7 @@ Esta implementação finaliza a Fase 17 tornando o **MaxTerminal instalável, au
 - **Empacotamento Arch/CachyOS (`CA-35`, `CA-36`):** `packaging/arch/PKGBUILD` (build a partir do código-fonte em chroot limpo sem a feature `updater`), `packaging/arch/PKGBUILD-bin`, `.SRCINFO`, `maxterminal.install`, arquivo `packaging/linux/maxterminal.desktop` validado com `MimeType=x-scheme-handler/maxterminal;` e ícones `hicolor` (`16x16` a `512x512` PNG + `scalable/apps/maxterminal.svg`).
 - **Desacoplamento de Bibliotecas Locais `@maxvue/*` e Recursos Offline (`CA-37`, `CA-42`):** Manifesto `release-manifest.json` e script `scripts/prepare-release-vendors.mjs` que congela `@maxvue/max-components-ui`, `@maxvue/max-use` e `@maxvue/max-pinia` em tarballs verificados por SHA-256 (eliminando qualquer symlink para `~/GitHub`), além de empacotar hooks de shell (`bash`/`zsh`/`fish`), ícones Iconify e temas Tabby no diretório `resources` do Tauri para execução 100% offline.
 - **Sanitização de Ambiente para AppImage (`CA-37`):** Adaptador na `EnvPolicy` da Fase 02 (`src-tauri/crates/mt-pty/src/env_policy.rs`) que restaura as variáveis originais do sistema ou remove cirurgicamente os prefixos injetados pelo `AppDir` (`LD_LIBRARY_PATH`, `GIO_MODULE_DIR`, `GTK_PATH`, `QT_PLUGIN_PATH`, `PERLLIB`, `GSETTINGS_SCHEMA_DIR`) ao spawnar subprocessos no PTY.
-- **Autostart (`--minimized`) e Updater Opcional Assinado (`CA-38`, `CA-39`):** Integração com `tauri-plugin-autostart` gerando `~/.config/autostart/maxterminal.desktop` com `Exec=maxterminal --minimized` (iniciando na bandeja e restaurando as abas marcadas com `"Adicionar ao Workspace"`), e `tauri-plugin-updater` isolado atrás da Cargo feature `updater` (desligada no pacote Arch/pacman; habilitada no AppImage com verificação de assinatura `minisign` e confirmação explícita do usuário).
+- **Autostart (`--start-hidden`) e Updater Opcional Assinado (`CA-38`, `CA-39`):** Validar o `AutostartSync` entregue pela Fase 09: `Exec=<executável estável escapado> --start-hidden` quando `start_minimized`, via `os_get_autostart`/`os_set_autostart`, restaurando abas `"Adicionar ao Workspace"` pela Fase 07. `tauri-plugin-updater` fica isolado atrás da Cargo feature `updater` (desligada no pacote Arch/pacman; habilitada no AppImage com verificação de assinatura `minisign` e confirmação explícita do usuário).
 - **Pipeline de Release Reproduzível (`CA-42`):** Script `scripts/verify-reproducible-build.sh` e workflow `.github/workflows/release.yml` executando duas builds independentes com `SOURCE_DATE_EPOCH` e `--remap-path-prefix`, comparando os hashes SHA-256 dos payloads não assinados e gerando SBOM CycloneDX/SPDX.
 
 ---
@@ -28,10 +28,10 @@ Esta implementação finaliza a Fase 17 tornando o **MaxTerminal instalável, au
 - `packaging/linux/icons/hicolor/{16x16,32x32,48x48,64x64,128x128,256x256,512x512}/apps/maxterminal.png` e `packaging/linux/icons/hicolor/scalable/apps/maxterminal.svg`.
 
 ### 2.2. Criar ou Modificar em `src-tauri/` e `src/`
-- `src-tauri/Cargo.toml` — Definir `[features] default = []`, `updater = ["dep:tauri-plugin-updater"]`; incluir `tauri-plugin-autostart`.
+- `src-tauri/Cargo.toml` — Definir `[features] default = []`, `updater = ["dep:tauri-plugin-updater"]`; consumir a integração de autostart já registrada pela Fase 09.
 - `src-tauri/tauri.conf.json` — Configurar `bundle` (`targets: ["appimage", "deb"]`, `resources`, `icon`, `linux.deb.depends`, `linux.appimage`) e endpoint/pubkey `minisign` do `updater`.
 - `src-tauri/crates/mt-pty/src/env_policy.rs` — Implementar `AppImageEnvCleaner` dentro da `EnvPolicy` para limpar variáveis injetadas por `APPDIR` antes de criar processos filhos no PTY.
-- `src-tauri/src/autostart.rs` e `src-tauri/src/commands/autostart.rs` — Comandos `os_autostart_get` e `os_autostart_set(enabled: bool)`, parser do argumento de linha de comando `--minimized` no boot e integração com o menu do System Tray da Fase 09.
+- `src-tauri/crates/mt-os/src/autostart.rs` e `src-tauri/src/commands/os.rs` — Contratos existentes da Fase 09, somente consumidos em testes de pacote: `AutostartSync`, `AutostartStatus`, `os_get_autostart` e `os_set_autostart(enabled: bool)`. Nenhum módulo/comando/parser paralelo é criado.
 - `src-tauri/src/updater.rs` e `src-tauri/src/commands/updater.rs` — Comandos compilados sob `#[cfg(feature = "updater")]` (`app_update_check`, `app_update_install_confirmed`) exigindo confirmação explícita do usuário antes de baixar/aplicar atualização e retornando `{ supported: false, reason: "managed_by_system_package_manager" }` quando compilado sem a feature `updater`.
 
 ### 2.3. Criar em `scripts/` e `.github/workflows/`
@@ -199,24 +199,13 @@ package() {
 }
 ```
 
-### 3.3. Autostart (`--minimized`) e Updater Condicional (`CA-38`, `CA-39`)
+### 3.3. Autostart (`--start-hidden`) e Updater Condicional (`CA-38`, `CA-39`)
 
-```rust
-// src-tauri/src/autostart.rs
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct AutostartStatusDto {
-    pub enabled: bool,
-    pub desktop_entry_path: String,
-    pub launch_args: Vec<String>,
-}
-
-/// Configurado com `tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, Some(vec!["--minimized"]))`.
-/// Quando o app inicia com `--minimized`:
-/// 1. A janela principal (`main`) permanece oculta (`visible: false`).
-/// 2. O ícone do System Tray é inicializado imediatamente.
-/// 3. As abas marcadas com `add_to_workspace = true` (Fase 07) são restauradas em segundo plano.
-```
+O contrato pertence integralmente à Fase 09: consumir `AutostartSync`, `AutostartStatus`, `os_get_autostart` e `os_set_autostart`, sem redefinir DTOs nem instalar outro plugin. Validar no pacote instalado:
+1. Ativar/desativar cria/remove a entrada em `$XDG_CONFIG_HOME/autostart` (fallback `~/.config/autostart`), por comando Rust validado; permissões JS diretas de autostart permanecem negadas.
+2. `start_minimized = true` inclui `--start-hidden`; `false` remove a flag. O parser e `os_ui_ready` da 09 preservam a intenção inicial. Sem bandeja disponível, o fallback torna a janela acessível na taskbar.
+3. `Exec` usa executável instalado estável (ou caminho do arquivo AppImage, nunca montagem temporária). Alterar/mover o AppImage exige reconciliação pela 09.
+4. A Fase 07 restaura abas `add_to_workspace`; remoção manual do `.desktop` e falha de persistência exercitam reconciliação/compensação da 09, sem recriar regras nesta fase.
 
 ```rust
 // src-tauri/src/updater.rs

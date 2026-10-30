@@ -19,7 +19,7 @@
   1. Criar `src/components/bridge/InspectButton.vue` seguindo a ordem `<template>`, `<script setup lang="ts">`, `<style lang="scss" scoped>`, tags de abertura em linha única e recuo de 4 espaços.
   2. Criar `src/components/bridge/BridgeStatusIndicator.vue` com cores `--max-success-500`, `--max-info-500`, `--max-danger-500`, cinza neutro e tooltip detalhando porta e número de conexões.
   3. Criar `src/components/bridge/BridgeSettingsSection.vue` com controles para `enabled`, `preferred_port`, `sync_active_project`, lista de conexões ativas, botão `"Reiniciar ponte"` e botão `"Gerar novo token"` com `<MaxPopoverConfirm>`.
-  4. Integrar `useMaxCodeBridgeStore().init()` e `useActiveProjectSync()` em `src/components/layout/AppShell.vue`, `<BridgeStatusIndicator />` em `src/components/layout/AppTitleBar.vue` e `<InspectButton :block="block" />` no slot `#actions` de `src/components/terminal/CommandBlock.vue`.
+  4. Integrar `useMaxCodeBridgeStore().init()` e `useActiveProjectSync()` em `src/components/shell/AppShell.vue`, `<BridgeStatusIndicator />` em `src/components/shell/AppTitleBar.vue` e `<InspectButton :block="block" />` no slot `#actions` de `src/components/terminal/CommandBlock.vue`. DTOs de estado/eventos/entrega e fixtures usam camelCase gerado (ex.: `instanceId`, `projectId`, `wakeUsed`); não converter o wire format manualmente no frontend.
 
 - [ ] **Passo 4: Criar Testes Unitários e de Componentes (Vitest)**
   1. Criar `tests/stores/maxCodeBridge.spec.ts` testando:
@@ -46,7 +46,7 @@
 npx --no-install vitest run tests/stores/maxCodeBridge.spec.ts tests/composables/useActiveProjectSync.spec.ts tests/components/bridge/InspectButton.spec.ts tests/components/bridge/BridgeStatusIndicator.spec.ts
 
 # 2. Executar typecheck estrito (tsgo / vue-tsc) e linters (ESLint + Stylelint) (CA-02)
-npm run check-types
+npm run typecheck
 npm run lint
 
 # 3. Executar suíte completa Rust + Frontend da Fase 11 (CA-01, CA-02, CA-03)
@@ -61,7 +61,7 @@ npm test
 
 | Critério | Descrição | Como é verificado nesta Implementação |
 |----------|-----------|---------------------------------------|
-| **CA-02** | Scripts de lint, typecheck (`tsgo`/`vue-tsc`) e testes Vitest passam. | Validado por `npm run check-types`, `npm run lint` e `npx --no-install vitest run`. |
+| **CA-02** | Scripts de lint, typecheck (`tsgo`/`vue-tsc`) e testes Vitest passam. | Validado por `npm run typecheck`, `npm run lint` e `npx --no-install vitest run`. |
 | **CA-27** | Desligar "Sincronizar projeto ativo" em `BridgeSettingsSection` interrompe envio e recebimento imediatamente. | Validado em `BridgeSettingsSection.vue` e `tests/composables/useActiveProjectSync.spec.ts`. |
 | **CA-28** | Botão "Inspecionar" aparece somente em blocos com `exit_code != 0` e oculta em `null`/`0`. | Validado em `tests/components/bridge/InspectButton.spec.ts`. |
 | **CA-32** | Botão mostra loading/disabled durante envio e exibe toast `pt-BR` `"Não foi possível abrir o MaxCode"` com `code` em falha. | Validado em `tests/stores/maxCodeBridge.spec.ts` e `tests/components/bridge/InspectButton.spec.ts`. |

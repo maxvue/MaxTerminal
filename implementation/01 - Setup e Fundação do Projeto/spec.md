@@ -74,6 +74,10 @@ tauri-specta = { version = "=2.0.0-rc.27", features = ["typescript"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json"] }
 tracing-appender = "0.2"
+# Watchers de filesystem (E-10): versão única para todo o workspace (Fases 06 e 13); crates consumidores
+# declaram `notify.workspace = true` / `notify-debouncer-full.workspace = true`, nunca versão própria.
+notify = "8"
+notify-debouncer-full = "0.5"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
@@ -90,6 +94,7 @@ expect_used = "warn"
 
 [package]
 name = "maxterminal"
+default-run = "maxterminal"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -130,6 +135,12 @@ strip = "symbols"
 > O agregador executa Cargo nesse diretório; `--manifest-path` sozinho não muda a seleção do rustup.
 > Não se cria runtime Tokio adicional para dois comandos que consultam memória e enfileiram logs.
 > `mt-core/Cargo.toml` herda versão/edição/lints, declara `publish = false` e somente as dependências da tabela.
+> **Convenções de workspace (E-06/E-08/E-10):** (1) **todos** os crates do workspace (inclusive os criados pelas Fases
+> 02–16) declaram `edition.workspace = true` (2024), `version.workspace = true`, `rust-version.workspace = true` e
+> `[lints] workspace = true`; edição própria (ex.: `2021`) é proibida. (2) `default-run = "maxterminal"` evita ambiguidade de
+> `cargo run` quando existem binários auxiliares; o binário de geração de bindings chama-se `export_bindings`
+> (`src/bin/export_bindings.rs`, `cargo run --bin export_bindings`; nunca `export-bindings`). (3) `notify = "8"` e
+> `notify-debouncer-full = "0.5"` são centralizados aqui e consumidos com `workspace = true`.
 
 ### 2.2. Crates e responsabilidade
 
@@ -224,6 +235,8 @@ define_id!(/// Pseudo-terminal (Fase 02).
     PtyId);
 define_id!(/// Sessão persistida (Fases 03/07).
     SessionId);
+define_id!(/// Sessão de uma aba do workspace (Fases 07 e 17); mesma validação UUID v7 dos demais ids.
+    TabSessionId);
 define_id!(/// Template de aba (Fase 07).
     TemplateId);
 define_id!(/// Bloco de comando OSC 133 (Fase 05).
@@ -237,7 +250,7 @@ com o mecanismo de erro do Serde. Não derivar uma desserialização que contorn
 `TryFrom<Uuid>` deve delegar ao mesmo validador; não expor construtor público que aceite UUID arbitrário.
 
 Invariantes testadas: `Display` → `FromStr` é identidade; JSON é uma string; geração produz versão 7;
-nil, UUID v4, texto inválido e JSON não string falham no parsing e no Serde de todos os oito tipos.
+nil, UUID v4, texto inválido e JSON não string falham no parsing e no Serde de todos os nove tipos.
 Ordenação é temporal entre UUIDs com timestamps distintos. Não exigir `a < b` para dois `new()` no mesmo
 milissegundo nem entre processos/relógios: v7 não substitui sequência de eventos ou relógio monotônico.
 
@@ -434,7 +447,8 @@ src-tauri/src/
 
 ```rust
 /// Estado global imutável compartilhado entre comandos. Fases posteriores registram
-/// seus próprios estados via `app.manage(...)` em vez de crescer esta struct.
+/// seus próprios estados via `app.manage(...)` em vez de crescer esta struct (D-09):
+/// o `AppState` da Fase 01 **não** agrega serviços de outras fases (`state.ai`, `state.commands` etc. são proibidos).
 pub struct AppState {
     pub paths: mt_core::paths::AppPaths,
     pub info: mt_core::app::AppInfo,
@@ -501,7 +515,7 @@ retorna sucesso para não provocar repetição/recursão. Não criar timer, thre
 
 ### 4.5. `tauri-specta` (`specta.rs`)
 
-`specta.rs` concentra registro dos dois comandos, dos oito ids mesmo sem uso em argumentos, e de todos os
+`specta.rs` concentra registro dos dois comandos, dos nove ids mesmo sem uso em argumentos, e de todos os
 DTOs transitivos. A mesma coleção alimenta o handler Tauri e o exportador. Para o conjunto confirmado
 `specta = =2.0.0-rc.27`, `tauri-specta = =2.0.0-rc.27`, `specta-typescript = =0.0.14`, a documentação
 oficial confirma `collect_commands!`, `builder.invoke_handler()`, `.typ::<T>()` para tipos não referenciados,
@@ -913,10 +927,12 @@ Exemplo de convenção de SFC (obrigatória):
 ```vue
 <template>
     <header class="app-title-bar" flex items-center gap-2 px-3 h-10>
-        <MaxIcon icon="mdi:console" class="text-[var(--max-primary-400)]" />
-        <span font-semibold>{{ props.title }}</span>
-        <span v-if="props.version" text-xs op-60>{{ props.version }}</span>
-        <div ml-auto><slot name="actions" /></div>
+        <MaxIcon icon="mdi:console" class="app-title-bar__icon" />
+        <span class="app-title-bar__title" font-semibold>{{ props.title }}</span>
+        <span v-if="props.version" class="app-title-bar__version" text-xs op-60>{{ props.version }}</span>
+        <div ml-auto flex items-center gap-2>
+            <slot name="actions" />
+        </div>
     </header>
 </template>
 
@@ -931,8 +947,23 @@ Exemplo de convenção de SFC (obrigatória):
 
 <style lang="scss" scoped>
     .app-title-bar {
+        height: var(--mt-titlebar-height);
         background: var(--background-800);
         border-bottom: 1px solid var(--background-700);
+        user-select: none;
+    }
+
+    .app-title-bar__icon {
+        color: var(--max-primary-400);
+    }
+
+    .app-title-bar__title {
+        color: var(--background-50);
+    }
+
+    .app-title-bar__version {
+        color: var(--max-primary-300);
+        font-family: var(--mt-font-mono);
     }
 </style>
 ```
@@ -1050,7 +1081,7 @@ handler Vue → report('vue_error') → fila limitada/deduplicação → logFron
 
 | Arquivo | Casos |
 |---------|-------|
-| `mt-core/src/ids.rs` (`#[cfg(test)]`) | Roundtrip dos 8 ids; geração v7; ordenação com timestamps distintos; parsing e serde rejeitam v4/nil/texto inválido; sem expectativa de ordem estrita entre ids do mesmo milissegundo. |
+| `mt-core/src/ids.rs` (`#[cfg(test)]`) | Roundtrip dos 9 ids (incluindo `TabSessionId`); geração v7; ordenação com timestamps distintos; parsing e serde rejeitam v4/nil/texto inválido; sem expectativa de ordem estrita entre ids do mesmo milissegundo. |
 | `mt-core/src/error.rs` | JSON de `MtError::not_found("project", id)` == `{"code":"core.not_found","message":"…","details":{"entity":"project","id":"…"}}`; `details` omitido quando `None`; `source` nunca serializado; `From<io::Error>` mapeia `PermissionDenied`/`NotFound`. |
 | `mt-core/src/paths.rs` | `FakeEnv`: HOME e fallbacks, XDG absoluto, relativo/vazio, HOME ausente com/sem necessidade de fallback; override absoluto sem HOME e inválido; modos dos diretórios e ausência do banco, em temporários da worktree. |
 | `src-tauri/src/commands/app.rs` e `logging.rs` | Enum inválido rejeitado; relógio injetado no limitador; descarte e contador; JSON válido, modos de arquivo, encerramento normal, política descarta sentinelas em mensagens/causas brutas; nenhuma saída insegura em stderr. |
@@ -1103,7 +1134,8 @@ na versão de WebKitGTK antes de usar. A fase não depende de xterm, PTY, banco 
 |-------|------|------------|
 | `collect_commands![]` / `collect_events![]` | `src-tauri/src/specta.rs` | Todas (02–16) |
 | `commands/<domínio>.rs` + `pub mod` | `src-tauri/src/commands/mod.rs` | Todas |
-| `app.manage(<Estado>)` no `setup` | `src-tauri/src/lib.rs` | 02 (PtyManager), 03 (Db), 06+ |
+| `app.manage(<Estado>)` no `setup` (um estado por domínio; D-09) | `src-tauri/src/lib.rs` | 02 (PtyManager), 03 (`mt_db::Db`, fachada única de banco), 06+ |
+| Providers de gatilhos do input rico (D-09) | `src/terminal/triggers/providers/` (`index.ts` criado na 14, estendido na 15) | 12, 14, 15 |
 | `ErrorCode` com prefixo por domínio | `<crate>::error::codes` | Todas |
 | Ids de domínio | `mt_core::ids` | 02–16 |
 | `AppPaths` (`db_path`, `runtime_dir`, `cache_dir`) | `mt_core::paths` | 03, 09, 11, 14 |
@@ -1117,7 +1149,7 @@ na versão de WebKitGTK antes de usar. A fase não depende de xterm, PTY, banco 
 
 ### 13.1. Contratos efetivamente exportados
 
-- `mt_core::ids`: os oito ids do README, geração v7, parsing validado e serialização string.
+- `mt_core::ids`: os nove ids do README, geração v7, parsing validado e serialização string.
 - `mt_core::error`: `ErrorCode`, `MtError`, `MtResult`, códigos `core.*`; nenhuma enumeração de erros futuros.
 - `mt_core::paths`: `EnvSource`, `SystemEnv`, `AppPaths`, `AppPathsDto`, resolução sem I/O e criação explícita.
 - `mt_core::app`: `AppInfo`, `BuildProfile`, `FrontendLogEvent`.

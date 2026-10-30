@@ -137,4 +137,4 @@ export function useInlineDiagnosis(): UseInlineDiagnosisReturn;
   6. **Manutenção de Histórico e Caches:**
      - Botão com `MaxPopoverConfirm`: `"Limpar histórico de prompts"` (`ipc.clearHistory(null)`) exibindo a contagem removida (`CA-30`).
      - Botões com `MaxPopoverConfirm`: `"Limpar cache de diagnósticos"` (`ipc.clearCache('diagnosis')`) e `"Limpar todos os caches de IA"` (`ipc.clearCache('all')`) (`CA-30`).
-- Trata conflito de revisão (`AI_SETTINGS_CONFLICT`): se outra janela salvar preferências simultaneamente, exibe banner `"As preferências foram alteradas em outra janela"` com botão `"Recarregar preferências"`.
+- Trata conflito de revisão (`ai.settings_conflict`): se outra janela salvar preferências simultaneamente, exibe banner `"As preferências foram alteradas em outra janela"` com botão `"Recarregar preferências"`.

@@ -10,7 +10,7 @@
 
 Esta é a **quinta e última unidade de implementação da Fase 11**. Com o crate `mt-bridge`, o host Tauri, os 9 comandos IPC e os bindings TypeScript gerados na Implementação 04, esta etapa constrói toda a camada de frontend Vue 3.6 + TypeScript + Pinia + `@maxvue/max-components-ui`:
 1. Cliente IPC tipado `src/ipc/bridge.ts` encapsulando os 9 comandos Tauri e os 6 listeners de eventos `bridge://*`.
-2. Store Pinia `useMaxCodeBridgeStore` (`src/stores/maxCodeBridge.ts`) com inicialização idempotente single-flight, controle de geração no `dispose()`, reconciliação de `instance_id` e `revision`, deduplicação de cliques concorrentes em `inspect(blockId)`, toasts em `pt-BR` via `Toast.show` e API pública `openPlan` para consumo das Fases 14 e 16.
+2. Store Pinia `useMaxCodeBridgeStore` (`src/stores/maxCodeBridge.ts`) com inicialização idempotente single-flight, controle de geração no `dispose()`, reconciliação de `instanceId` e `revision`, deduplicação de cliques concorrentes em `inspect(blockId)`, toasts em `pt-BR` via `Toast.show` e API pública `openPlan` para a Fase 14. A Fase 16 usa o protocolo de issues de 11/06 via `MaxCodePort`.
 3. Composable `useActiveProjectSync` (`src/composables/useActiveProjectSync.ts`) montado no `AppShell.vue`, integrando a seleção de projetos da Fase 06 (`useProjectsStore`) com confirmação causal `bridge_notify_active_project(projectId, context)` sem loops.
 4. Composable `useMaxCodeInspect` (`src/composables/useMaxCodeInspect.ts`) e componente `InspectButton.vue` (`src/components/bridge/InspectButton.vue`) montado no slot `#actions` do bloco de comando (Fase 04), visível **exclusivamente** quando `exitCode !== null && exitCode !== undefined && exitCode !== 0`.
 5. Componentes `BridgeStatusIndicator.vue` (inserido na `AppTitleBar.vue` com cores semânticas `--max-success-500`, `--max-info-500`, `--max-danger-500` e tooltip de porta/conexões) e `BridgeSettingsSection.vue` (seção de configurações da ponte com `MaxPopoverConfirm` ao regenerar token).
@@ -30,7 +30,7 @@ Esta é a **quinta e última unidade de implementação da Fase 11**. Com o crat
 | Criar | `src/components/bridge/BridgeStatusIndicator.vue` | Indicador semântico de status da ponte para a `AppTitleBar.vue`. |
 | Criar | `src/components/bridge/BridgeSettingsSection.vue` | Formulário de configuração da ponte (ativar, porta preferida, sincronizar projeto ativo, lista de peers, reiniciar e gerar novo token). |
 | Modificar | `src/components/layout/AppShell.vue` | Invocar `useMaxCodeBridgeStore().init()` e `useActiveProjectSync()` no ciclo de vida do shell principal. |
-| Modificar | `src/components/layout/AppTitleBar.vue` | Inserir `<BridgeStatusIndicator />` na barra de título. |
+| Modificar | `src/components/shell/AppTitleBar.vue` | Inserir `<BridgeStatusIndicator />` na barra de título. |
 | Modificar | `src/components/terminal/CommandBlock.vue` | Renderizar `<InspectButton :block="block" />` no slot `#actions` (`order: 10`, ao lado do slot futuro da Fase 12). |
 | Criar | `tests/stores/maxCodeBridge.spec.ts` | Testes unitários da store `useMaxCodeBridgeStore`. |
 | Criar | `tests/composables/useActiveProjectSync.spec.ts` | Testes unitários do composable `useActiveProjectSync`. |
@@ -168,7 +168,7 @@ export const useMaxCodeBridgeStore = defineStore('maxCodeBridge', () => {
 ```
 
 Regras estritas de `useMaxCodeBridgeStore`:
-- **`applyStatus(incoming: BridgeStatus)`**: se `status.value` já existir e `status.value.instance_id === incoming.instance_id` e `incoming.revision < status.value.revision`, descarta o evento obsoleto. Se `instance_id` mudou ou `revision >= status.value.revision`, atualiza `status.value`.
+- **`applyStatus(incoming: BridgeStatus)`**: se `status.value` já existir e `status.value.instanceId === incoming.instanceId` e `incoming.revision < status.value.revision`, descarta o evento obsoleto. Se `instanceId` mudou ou `revision >= status.value.revision`, atualiza `status.value`.
 - **`init()`**: single-flight (se já houver Promise de `init` em andamento, retorna a mesma Promise). Instala os listeners (`onBridgeStatus`, `onPeerConnected`, `onPeerDisconnected`, `onDeliveryFailed`) **antes** de buscar `Promise.all([bridgeIpc.status(), bridgeIpc.getConfig()])`. Se `dispose()` for chamado enquanto `init()` aguarda, os listeners recém-resolvidos são imediatamente desregistrados.
 - **`inspect(blockId: CommandBlockId)`**: mantém um `Map<CommandBlockId, Promise<DeliveryReport>>` para coalescer cliques simultâneos no mesmo bloco. Adiciona `blockId` em `pendingBlockIds` antes da chamada IPC e remove no bloco `finally`.
 - **Toasts (`CA-32`)**:
@@ -192,10 +192,10 @@ Comportamento exato:
 1. Mantém uma fila/mapa de contextos remotos em aplicação (`remoteContextByProject = new Map<ProjectId, { context: SyncContext; revision: number; instanceId: string }>()`).
 2. Ao receber `onProjectFocusRequested(payload)` (ou ao reconciliar `bridgeStore.status?.selection` no startup/reload):
    - Ignora se `bridgeStore.syncEnabled` for `false`.
-   - Ignora se `payload.instance_id === lastInstanceId` e `payload.revision <= lastAppliedRevision`.
-   - Registra `remoteContextByProject.set(payload.project_id, { context: payload.context, revision: payload.revision, instanceId: payload.instance_id })`.
-   - Seleciona o projeto na store da Fase 06 (`projectsStore.selectProject(payload.project_id)`).
-   - Confirma imediatamente a aplicação para o Rust chamando `await bridgeIpc.notifyActiveProject(payload.project_id, payload.context)` (com `origin: 'maxcode'`, permitindo ao Rust resolver o ACK pendente do MaxCode sem reenviar `project.focus`).
+   - Ignora se `payload.instanceId === lastInstanceId` e `payload.revision <= lastAppliedRevision`.
+   - Registra `remoteContextByProject.set(payload.projectId, { context: payload.context, revision: payload.revision, instanceId: payload.instanceId })`.
+   - Seleciona o projeto na store da Fase 06 (`projectsStore.selectProject(payload.projectId)`).
+   - Confirma imediatamente a aplicação para o Rust chamando `await bridgeIpc.notifyActiveProject(payload.projectId, payload.context)` (com `origin: 'maxcode'`, permitindo ao Rust resolver o ACK pendente do MaxCode sem reenviar `project.focus`).
 3. Observa `() => projectsStore.selectedProjectId`:
    - Quando `selectedProjectId` muda para um `id` não nulo:
      - Se `remoteContextByProject.has(id)`, consome/remove a marcação remota e **não** gera notificação local manual (pois já foi confirmada com contexto remoto no passo 2).

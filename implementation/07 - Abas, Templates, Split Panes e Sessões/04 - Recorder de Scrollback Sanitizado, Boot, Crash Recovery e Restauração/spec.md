@@ -27,8 +27,8 @@ Esta implementação entrega o pipeline assíncrono de gravação de scrollback 
 - `src-tauri/src/workspace/restore.rs`
 
 ### Modificar
-- `src-tauri/src/workspace/mod.rs` (exportar `recorder` e `restore`)
-- `src-tauri/src/workspace/manager.rs` (integrar `ScrollbackRecorder::finish_execution` no fechamento/nova sessão e expor `boot_and_restore(&self) -> Result<WorkspaceRestoreReport, MtError>`)
+- `src-tauri/src/workspace/mod.rs` (declarar `pub mod recorder;` e `pub mod restore;`; a Implementação 03 não declara `recorder`)
+- `src-tauri/src/workspace/manager.rs` (adicionar o import `use crate::workspace::recorder::ScrollbackRecorder;` e o campo `recorder: Arc<ScrollbackRecorder>` à struct `WorkspaceManager` da Implementação 03 e injetá-lo no construtor/builder, integrar `ScrollbackRecorder::finish_execution` no fechamento/nova sessão e expor `restore(&self) -> Result<WorkspaceRestoreReport, MtError>` conforme §3.2)
 - `src-tauri/src/lib.rs` (registrar o `OutputTap` global do `ScrollbackRecorder` e acionar a sequência de inicialização do `WorkspaceManager` no startup do Tauri)
 
 ---
@@ -136,6 +136,10 @@ impl WorkspaceManager {
 ```
 
 #### Etapas Determinísticas do Boot e `restore()`
+0. **Composição antes do boot:** a lista de `WorkspaceSpawnHook` já foi fixada por `with_spawn_hooks`
+   antes do manager ser compartilhado; na composição da Fase 08 inclui o adaptador Git. Restauração
+   usa o mesmo pipeline reserva → spawn → registro confirmado → publicação de `07/03` §3.4 em cada
+   painel, sem caminho especial que ignore hooks; não instala hooks durante `restore()`.
 1. **Limpeza de Processos Remanescentes (Fase 02) e Instalação de Taps:**
    - Antes de qualquer spawn, aguarda o supervisor da Fase 02 concluir o expurgo de processos órfãos de execuções anteriores registradas.
    - Registra o `ScrollbackRecorder` via `pty_manager.add_output_tap(...)` e os hooks do `WorkspaceSessionProvider` na Fase 05.

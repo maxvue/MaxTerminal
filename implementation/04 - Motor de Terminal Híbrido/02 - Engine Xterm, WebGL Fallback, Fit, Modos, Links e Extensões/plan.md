@@ -39,6 +39,7 @@
    - Carregar addons na ordem: `Unicode11Addon` (`unicode.activeVersion = '11'`) → `FitAddon` → `SearchAddon({ highlightLimit: 2000 })` → `WebLinksAddon`.
    - Conectar `WriteBatcher`, `FlowController`, `InputPipeline`, `RendererManager`, `FitController`, `ModeTracker` e `ptyStreamHub`.
    - Implementar `attach(host)` (reutilizando `innerContainer` em remontagens), `detach()` (suspendendo WebGL sem desconectar o stream), `setVisible(v)` e `dispose()` idempotente.
+   - Implementar `applyTheme(theme)` atribuindo `xterm.options.theme = toXtermTheme(theme)` **e** chamando `callbacks.onThemeChange?.(theme)` (expondo `theme.ui`), mais `getTheme()`; cada `attach`, inclusive remontagem após troca de aba, notifica `onThemeChange` com o tema vigente.
 2. Criar `src/terminal/engine/instanceRegistry.ts`:
    - Implementar `TerminalInstanceRegistry` sobre `Map<PaneId, TerminalInstance>` não reativa.
    - Validar conflito de `ptyId` para o mesmo `paneId` em `getOrCreate`.

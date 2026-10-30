@@ -285,4 +285,4 @@ export function useRichInput(paneId: Ref<PaneId> | PaneId): UseRichInputReturn;
    - Props: `{ paneId: PaneId; disabled?: boolean }`.
    - Emits: `{ submit: [text: string]; 'mode-toggle': [] }`.
    - Textarea com `role="combobox"`, `:aria-expanded="completion.open.value"`, `:aria-controls="listboxId"`, `:aria-activedescendant="activeDescendantId"`, auto-dimensionável de 1 até 8 linhas, acompanhada do `CompletionPopup.vue` ancorado acima da barra e do `InputModeToggle.vue`.
-   - Todas as tags de abertura em linha única, 4 espaços, SCSS scoped com tokens `--max-*` e `--background-*`.
+   - Todas as tags de abertura em linha única, 4 espaços, SCSS scoped com tokens `--max-*` e `--background-*`; fundo e borda da barra usam `var(--mt-rich-input-background, var(--background-900))` e `var(--mt-rich-input-border, var(--background-700))`, definidos por painel em `.hybrid-terminal` a partir de `TerminalTheme.ui` (`HybridTerminal.vue`, `../06`).

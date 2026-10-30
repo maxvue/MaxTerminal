@@ -50,7 +50,7 @@
 | 01 | `mt_core::{MtError, TabId, PaneId, PtyId, ProjectId}` | Erros e ids |
 | 02 | `PtyManager::{summary, process_report, descendant_pids, owner_of_pid, add_listener}`, `ProcessInfo.start_time`, `PtyOwner` | `ProcessTreeSource` e `CwdFallback`; identidade do shell vem de `process_report().shell`, não só de `PtyPids.shell_pid` |
 | 05 | `TabStatus`; `cwd` por painel (OSC 7); fim de comando (OSC 133 `D`) refletido na store | Polling adaptativo e gatilho de refresh Git |
-| 07 | `WorkspaceObserver`, `workspace_snapshot`, `useTabsStore.tabsById`, `TabView.panes` e slot `#indicators="{ tab }"` | Registro backend e sincronização/renderização; status consumido separadamente da 05 |
+| 07 | `WorkspaceLifecycleObserver`, `WorkspaceManager::{register_observer, pane_pty, workspace_snapshot}`, `useTabsStore.tabsById`, `TabView.panes` e slot `#indicators="{ tab }"` | Registro backend e sincronização/renderização; status consumido separadamente da 05 |
 | 03 (transitiva) | `sanitizer::sanitize` | Erros sanitizados na borda IPC, sem dependência de SQLite nos crates de coleta |
 
 Os adaptadores são a **única** superfície que conhece nomes concretos das Fases 02/07; se esses nomes mudarem,
@@ -58,9 +58,23 @@ só os adaptadores mudam.
 
 `PaneView.pty_id` pode ser `None`; a 08 não inventa PTY nem coleta PID sem vínculo. O adaptador traduz
 campos `snake_case`/`camelCase` conforme os bindings efetivamente gerados pela 07, sem redeclarar DTOs.
-`WorkspaceObserver` não fornece mudança de cwd nem fim de cada comando: o adaptador escuta também eventos
+`WorkspaceLifecycleObserver` não fornece mudança de cwd nem fim de cada comando: o adaptador escuta também eventos
 de shell da 05 por `ptyId`, atualiza cwd somente local/validado e agenda refresh para **aquele painel**.
 Fallback de cwd usa o shell do PTY (não um filho temporariamente em outro diretório).
+
+`PtyProcessTreeAdapter` e `git_track_pane` recebem o mesmo `Arc<WorkspaceManager>` e consultam
+`pane_pty(tab_id, pane_id).await`. O comando Git repassa o `Option<PtyId>` real ao serviço;
+`verify_pane_ownership` é assíncrono e recusa divergência antes do rastreamento de portas.
+O observador consome `WorkspaceLifecycleSignal::{PaneSpawned, PaneExited, TabClosed, TabLayoutChanged}`,
+validando geração e ordem, sem depender dos eventos IPC da WebView.
+
+**Contrato pré-spawn 07 ↔ 08:** `GitWorkspaceSpawnHook` implementa `WorkspaceSpawnHook` da Fase 07,
+instalado por `WorkspaceManager::with_spawn_hooks` antes de compartilhar o manager/restore. Seu guard
+possui `CwdReservationGuard` adquirido por `GitService::reserve_cwd(...).await?`; confirma `track_pane`
+antes da publicação e só então libera o token. Em erro, a operação para o PTY antes de rollback/Drop;
+`Blocked` mantém a reserva. O observador reconcilia posteriormente, sem constituir essa barreira.
+Contrato completo e adaptador: `07/03/spec.md` §3.4 e `03/spec.md` §3.6; nenhum campo adicional em
+`SpawnContext`/`ResolvedSpawn` nem dependência `mt-git` na trait da Fase 07.
 
 **Extensão local da 08:** `ExactProcessSignaler` (§3.5) consulta a supervisão da 02 e mantém pidfd durante
 a operação. A assinatura existente `signal_process(id, pid, sig)` não promete essa atomicidade; a 08
@@ -295,7 +309,7 @@ pub trait GitEventSink: Send + Sync + 'static {
 impl GitService {
     pub fn new(runner: Arc<dyn GitRunner>, emitter: Arc<dyn GitEventSink>) -> Self;
     /// Associa/atualiza o painel ao `cwd`; retorna contexto imediato (do cache ou leitura de HEAD).
-    pub async fn track_pane(&self, tab: TabId, pane: PaneId, cwd: PathBuf, visible: bool) -> Result<GitStatusChanged, GitError>;
+    pub async fn track_pane(self: &Arc<Self>, tab_id: TabId, pane_id: PaneId, pty_id: Option<PtyId>, cwd: PathBuf, visible: bool) -> Result<GitStatusChanged, GitError>;
     pub fn untrack_pane(&self, pane: PaneId);
     pub fn set_visible(&self, tab: Option<TabId>);
     /// Agenda recomputação (debounced 150 ms) do repo do painel.
@@ -368,7 +382,10 @@ pub struct CliWorktreeManager { runner: Arc<dyn GitRunner>, service: Weak<GitSer
   (`git.worktree_in_use`, mesmo com `force`); `force` só permite dirty explicitamente confirmado pelo
   consumidor. Resolver entrada pelo caminho canônico e serializar add/remove/prune por commondir.
   Revalidar ausência de painéis/PTYs sob a mesma exclusão usada para reservar cwd na abertura de aba;
-  essa reserva é extensão do adaptador da 08 à integração 07, não garantia presumida de `panes_inside`.
+  `reserve_cwd` insere o token sob leitura de `cwd_gate`; `remove` adquire mutex de `common_dir` → escrita
+  desse gate, revalida caminho/uso e mantém escrita até término/reap do subprocesso. A aquisição da
+  reserva é assíncrona e revalida cwd após aguardar; o guard não retém locks durante spawn/vida do shell.
+  Registro ativo precede Drop do token, sem lacuna; `prune` usa a mesma exclusão (`01/spec.md` §3.8).
   Depois executar `git worktree remove [--force] -- <path>`; nunca remover pasta arbitrária recursivamente.
 - `prune`: usar primeiro `git worktree prune --dry-run --verbose`, proteger entradas em uso/bloqueadas,
   revalidar sob exclusão e remover apenas metadados obsoletos. Principal bare/desconhecida pode listar,

@@ -13,7 +13,7 @@
 
 ### Passo 2: Limpeza de Ambiente AppImage na `EnvPolicy`, Autostart e Updater Condicional
 1. Atualizar `src-tauri/crates/mt-pty/src/env_policy.rs` adicionando `AppImageEnvSnapshot::sanitize_child_env` para remover segmentos do `APPDIR` de `LD_LIBRARY_PATH`, `GIO_MODULE_DIR`, `GTK_PATH`, etc., preservando as variáveis legítimas do usuário.
-2. Criar `src-tauri/src/autostart.rs` e `src-tauri/src/commands/autostart.rs` integrando `tauri-plugin-autostart` com a flag `--minimized`, iniciando oculto na bandeja e reabrindo as abas configuradas com `"Adicionar ao Workspace"`.
+2. Validar o autostart existente da Fase 09 via `os_get_autostart`/`os_set_autostart` e `AutostartSync`, com `--start-hidden` somente quando `start_minimized`, restauração da Fase 07, fallback sem tray, reconciliação e compensação. Não criar módulos, comandos, DTOs ou parser paralelos; nenhuma permissão direta de autostart é concedida ao JS.
 3. Configurar a feature opcional `updater` em `src-tauri/Cargo.toml` e criar `src-tauri/src/updater.rs` + `src-tauri/src/commands/updater.rs` garantindo verificação de assinatura `minisign` e exigência de confirmação explícita do usuário.
 
 ### Passo 3: Arquivos Desktop, Ícones Hicolor e Receitas `PKGBUILD` / `PKGBUILD-bin`
@@ -29,7 +29,7 @@
 
 ## 2. Comandos Exatos de Verificação e Testes
 
-Executar a partir de `/home/johnattas/GitHub/MaxTerminal/.max-code-worktrees/wt-6f18b3d0`:
+Executar a partir da raiz da worktree ativa (`cd "$(git rev-parse --show-toplevel)"`):
 
 ```bash
 # 1. Validar arquivo .desktop e presença dos ícones hicolor (CA-36)
@@ -41,7 +41,7 @@ cargo check --manifest-path src-tauri/Cargo.toml --features updater
 
 # 3. Executar testes unitários da sanitização de ambiente AppImage e autostart (CA-37, CA-38)
 cargo nextest run --manifest-path src-tauri/Cargo.toml -p mt-pty env_policy
-cargo nextest run --manifest-path src-tauri/Cargo.toml -p maxterminal autostart
+cargo nextest run --manifest-path src-tauri/Cargo.toml -p mt-os autostart
 
 # 4. Validar PKGBUILD e pacote gerado com makepkg e namcap (CA-35)
 namcap packaging/arch/PKGBUILD
@@ -63,6 +63,6 @@ bash scripts/verify-reproducible-build.sh
 | `CA-35` | `makepkg` em chroot limpo + `namcap PKGBUILD` + `namcap *.pkg.tar.zst` | Gera `maxterminal-<ver>-1-x86_64.pkg.tar.zst` sem erros (`E:`) no `namcap`. |
 | `CA-36` | `desktop-file-validate` + teste de invocação `maxterminal://` | `.desktop` válido; ícones presentes em `/usr/share/icons/hicolor/{16x16..512x512,scalable}/apps/`; URI válida abre/foca o app e inválida é rejeitada sem alterar MIME global no post-install. |
 | `CA-37` | `npm run tauri -- build --bundles appimage,deb` + teste de `EnvPolicy` | Gera AppImage e `.deb` autocontidos sem depender de `~/GitHub` ou Node; FUSE e `--appimage-extract` funcionam offline e subprocessos não herdam `LD_LIBRARY_PATH` do `AppDir`. |
-| `CA-38` | Testes de `autostart` + smoke de inicialização `--minimized` | Ativar/desativar na bandeja cria/remove `~/.config/autostart/maxterminal.desktop` com `--minimized`; inicia oculto na bandeja reabrindo as abas `"Adicionar ao Workspace"`. |
+| `CA-38` | Testes de `AutostartSync` (09) + smoke instalado com `--start-hidden` | Comandos `os_get_autostart`/`os_set_autostart` criam/removem a entrada XDG; flag segue `start_minimized`, sem tray há janela acessível; abas `"Adicionar ao Workspace"` restauradas pela 07. |
 | `CA-39` | Build `--no-default-features` vs `--features updater` | Pacote Arch compila sem `updater`; AppImage com `updater` valida assinatura `minisign` e exige confirmação explícita do usuário. |
 | `CA-42` | `bash scripts/verify-reproducible-build.sh` + `release-manifest.json` | Duas builds limpas do mesmo manifesto reproduzem exatamente os hashes SHA-256 dos payloads não assinados. |

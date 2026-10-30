@@ -175,7 +175,7 @@ tipado, sem falso “nenhum resultado”. Não criar um SQL executor genérico n
 
 **Ownership obrigatório:** a Fase 03 fornece WAL, writer/leitores, runner de migrations, sanitização e
 registro/manutenção FTS. A Fase 05 cria os domínios `sessions`, `command_blocks` e `command_blocks_fts`
-na migration `NNNN_05_shell_sessions_command_blocks.sql` (spec §7). A Fase 07 estende essas sessões e
+na migration `0002_05_shell_sessions_command_blocks.sql` (spec §7). A Fase 07 estende essas sessões e
 acrescenta vínculos de workspace e scrollback. A Fase 17 consome o schema resultante; não pressupõe
 `sessions`, `commands` ou `scrollback_chunks` criadas pela 03.
 
@@ -216,7 +216,7 @@ sem FTS, adotar **uma** projeção auxiliar sanitizada, em vez dos quatro índic
 inicialmente propostos sobre configurações possivelmente sensíveis:
 
 ```sql
--- NNNN_17_search.sql; número global atribuído pelo runner da 03.
+-- 0011_17_search.sql; versão global 11 da sequência canônica D-01.
 CREATE TABLE search_metadata (
     rowid INTEGER PRIMARY KEY,
     source TEXT NOT NULL CHECK (source IN
@@ -292,6 +292,7 @@ ranking. Não usar `LIKE` como oráculo de relevância/tokenização; fixtures d
 ### 4.4. Manutenção e migrations
 
 Migrations são imutáveis e registradas pelo runner da 03, com backup pré-migration, checksum, FK e rollback.
+Esta fase registra `0011_17_search.sql`, após `0010_16_github.sql`, completando a sequência contígua `0001..0011` de D-01. Não usar número da fase como versão nem renumerar migrations já aplicadas. Validar banco novo e upgrade de fixture na versão 10, com `PRAGMA user_version = 11` após sucesso.
 Rebuild usa allowlist de `FtsRegistry`, nunca nome arbitrário do IPC; exclusão/retention verifica MATCH,
 conteúdo externo e `integrity-check` FTS com comparação ao conteúdo (`rank=1` quando suportado).
 Um `SELECT count(*)` sem MATCH pode contar a origem e não comprova integridade FTS.
@@ -613,6 +614,7 @@ listener exclusivamente loopback. Não inventar rota `maxterminal://focus` sem c
   conforme Tauri fixado. `invoke_handler` por si só não representa uma allowlist por janela. Teste em janela
   sem autorização e origem remota deve recusar busca, backup, rebuild e comandos de processo.
 - Plugins com escopo mínimo; retirar permissões default sobrando, WebDriver e comandos de perf de produção.
+  Acesso direto JS a autostart permanece negado (09/CA-37); preservar `os_get_autostart`/`os_set_autostart` via ACL dos comandos Rust. Testes de bridge seguem D-04: Host `127.0.0.1:<porta>`/`localhost:<porta>` aceito; outro Host → `403 bridge.host_forbidden`. Deep links preservam códigos da camada proprietária, conforme 17/04 §3.4.
   Auditorias Cargo/npm incluem dependências locais empacotadas; exceções têm justificativa, dono e prazo.
 
 ## 11. CachyOS/Arch, AppImage e release reproduzível
@@ -665,7 +667,7 @@ Desktop: `Exec=maxterminal %u`, `Terminal=false`, `Icon=maxterminal`,
 `MimeType=x-scheme-handler/maxterminal;`, nome/comentário pt-BR, ícones hicolor e escalável. URI passa pelo
 parser 09/11, sem interpolação shell. Associação MIME é preferência do usuário; instalador só registra
 capacidade. Autostart é opt-in via mecanismo 09/plugin escolhido, sem duplicar entradas. Testar login,
-`--minimized`, reabertura de workspace, tray e ausência de monitor quando aplicável.
+`--start-hidden`, reabertura de workspace, tray e ausência de monitor quando aplicável. Consumir `AutostartSync` e `os_get_autostart`/`os_set_autostart` da Fase 09, preservando reconciliação e compensação; esta fase apenas empacota e valida, sem novo serviço, parser ou comandos de autostart.
 
 ### 11.4. Pipeline de release
 

@@ -18,13 +18,13 @@ pub enum CliAction {
     Show,
     Toggle,
     Hide,
-    StartMinimized,
+    StartHidden,
     None,
 }
 
-/// Whitelist estrita: aceita apenas `--show`, `--toggle`, `--hide`, `--minimized`.
+/// Whitelist estrita: aceita apenas `--show`, `--toggle`, `--hide`, `--start-hidden`.
 /// Ignora `argv[0]` e quaisquer outros argumentos ou caminhos (logando apenas a contagem em `debug!`, sem ecoar valores).
-/// Ordem de precedência: `--show > --toggle > --hide > --minimized`.
+/// Ordem de precedência: `--show > --toggle > --hide > --start-hidden`.
 pub fn parse_cli_args<I, S>(args: I) -> CliAction
 where
     I: IntoIterator<Item = S>,
@@ -33,7 +33,7 @@ where
     let mut has_show = false;
     let mut has_toggle = false;
     let mut has_hide = false;
-    let mut has_minimized = false;
+    let mut has_start_hidden = false;
 
     for (idx, raw) in args.into_iter().enumerate() {
         if idx == 0 {
@@ -43,7 +43,7 @@ where
             "--show" => has_show = true,
             "--toggle" => has_toggle = true,
             "--hide" => has_hide = true,
-            "--minimized" => has_minimized = true,
+            "--start-hidden" => has_start_hidden = true,
             _ => {}
         }
     }
@@ -54,8 +54,8 @@ where
         CliAction::Toggle
     } else if has_hide {
         CliAction::Hide
-    } else if has_minimized {
-        CliAction::StartMinimized
+    } else if has_start_hidden {
+        CliAction::StartHidden
     } else {
         CliAction::None
     }
@@ -83,7 +83,7 @@ pub fn handle_second_instance<R: Runtime>(app: &AppHandle<R>, argv: Vec<String>)
 1. **Cold Start (1ª instância)**:
    - A janela principal inicia com `"visible": false` no `tauri.conf.json`.
    - `CliAction::Toggle` no cold start equivale a `Show`.
-   - `CliAction::StartMinimized` (ou `settings.autostart && settings.start_minimized` quando acionado via autostart) preserva a janela oculta **somente** se `env.tray_available == true`; caso a bandeja não esteja disponível, degrada para mostrar/minimizar visível na taskbar (CA-13, CA-30, CA-40).
+   - `CliAction::StartHidden` (ou `settings.autostart && settings.start_minimized` quando acionado via autostart) preserva a janela oculta **somente** se `env.tray_available == true`; caso a bandeja não esteja disponível, degrada para mostrar/minimizar visível na taskbar (CA-13, CA-30, CA-40).
    - O frontend chama `os_ui_ready` após o primeiro render (nunca `os_window_show` incondicional). O backend aplica a intenção inicial de visibilidade no `os_ui_ready`, garantindo que a inicialização minimizada não seja desfeita pelo frontend (CA-40).
    - Um watchdog assíncrono de **3 segundos** exibe a janela automaticamente se a intenção de startup era visível e `os_ui_ready` ainda não tiver sido chamado; se o modo inicial era minimizado na bandeja e saudável, permanece oculto.
 2. **Warm Start (2ª instância via D-Bus)**:
@@ -94,7 +94,7 @@ pub fn handle_second_instance<R: Runtime>(app: &AppHandle<R>, argv: Vec<String>)
      - `CliAction::Toggle` → `QuakeController::toggle(ToggleSource::Cli)` (sem debounce de repetição de tecla; alvo < 150 ms ponta a ponta — CA-18).
      - `CliAction::Show` ou `CliAction::None` → `QuakeController::show_and_focus()`.
      - `CliAction::Hide` → `QuakeController::hide()`.
-     - `CliAction::StartMinimized` em instância já aberta é ignorado (não esconde uma janela que já estava em uso).
+     - `CliAction::StartHidden` em instância já aberta é ignorado (não esconde uma janela que já estava em uso).
 
 ---
 
@@ -115,6 +115,9 @@ pub const MAX_URI_BYTES: usize = 8 * 1024; // 8 KiB
 pub const MAX_QUEUE_LEN: usize = 32;
 pub const ENVELOPE_TTL: Duration = Duration::from_secs(30);
 pub const TRANSPORT_DEDUPE_WINDOW: Duration = Duration::from_secs(1);
+pub const MAX_QUERY_PARAMS: usize = 16;
+pub const MAX_PARAM_KEY_BYTES: usize = 64;
+pub const MAX_PARAM_VALUE_BYTES: usize = 4096;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ActivationSource {
@@ -129,6 +132,10 @@ pub struct ActivationEnvelope {
     pub received_at_ms: i64,
     pub received_instant: Instant,
     pub source: ActivationSource,
+    /// Query params já decodificados (percent-decoding único) e validados estruturalmente, na ordem original.
+    /// A Fase 09 NÃO interpreta nem rejeita chaves de negócio (ex.: `worktree`, `correlationId`, `requestId`, `path`):
+    /// repassa-as ao `ActivationHandler`, que as valida semanticamente. Nunca logar nem publicar em eventos.
+    pub params: Vec<(String, String)>,
 }
 
 #[async_trait::async_trait]
@@ -162,8 +169,10 @@ impl ActivationRouter {
    - Parse via `Url::parse(raw)`:
      - `scheme() == "maxterminal"` (exato).
      - `username() == ""`, `password().is_none()`, `port().is_none()`, `fragment().is_none()`.
+   - **Query params repassados, não rejeitados**: o parser extrai `url.query_pairs()` para `ActivationEnvelope.params` aplicando apenas limites estruturais — no máximo `MAX_QUERY_PARAMS` (16) pares; chave não vazia, `<= 64` bytes e restrita a `[A-Za-z0-9_-]`; valor UTF-8 válido `<= 4096` bytes sem NUL/controles após o percent-decoding (decodificado exatamente uma vez); chave repetida é inválida. Chaves de negócio como `worktree`, `correlationId` e `requestId` **passam** ao handler; quem as interpreta (Fase 11) decide aceitar, ignorar ou rejeitar. A Fase 09 nunca rejeita um parâmetro por ser desconhecido.
    - Qualquer violação retorna `Err(os_err(codes::ACTIVATION_INVALID, "URI de ativação inválida ou malformada."))`.
-   - **Privacidade de logs**: nunca logar a query string da URI (pode conter tokens de ponte da Fase 11).
+   - **Privacidade de logs**: nunca logar a query string da URI nem `params` (podem conter caminhos e identificadores da Fase 11).
+   - **Listener único (E-04)**: este módulo é o **único** consumidor de `app.deep_link().on_open_url(...)` e de `get_current()` em todo o aplicativo. Fases posteriores (11) apenas implementam `ActivationHandler` e chamam `register_handler`; registrar um segundo `on_open_url`/`get_current` é proibido.
 2. **Deduplicação de Transporte e Fila Limitada**:
    - No cold start, `get_current()` e `on_open_url` podem entregar a mesma URI: o `ActivationRouter` mantém o histórico recente `(uri_string, Instant)` e descarta silenciosamente entregas idênticas dentro de `1 s` (`TRANSPORT_DEDUPE_WINDOW`) — garantindo entrega única (CA-36).
    - Enquanto `ready == false`:

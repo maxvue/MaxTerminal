@@ -52,12 +52,25 @@ ids Uuid v7, erros, geração de bindings e ferramentas.
 | 03 | `Db::write/read`, migrations versionadas, `BatchWriter::flush`, `SanitizedText`, `StreamSanitizer`, `FtsSpec`, infraestrutura de retenção |
 | 04 | `HybridTerminal(paneId, ptyId, visible)`, `TerminalInstanceRegistry`, hub de stream, `CommandBlockFeed.clear`, provedor de contexto |
 | 05 | Runtime de shell, `SessionProvider`, registry de status, eventos de comandos, `sessions` mínima e `command_blocks`; `useTabStatusStore` |
-| 06 | `Project`, `ProjectInsertContributor`, `ProjectActivityGuard`, `ProjectRemovalHook`, `useProjectsStore.attachTab/detachTab/setActiveTab`, `ProjectWorkspace(project: Project \| null)` |
+| 06 | `Project`, `ProjectInsertContributor::after_insert(tx, &StoredProject)`, `ProjectService::acquire_activity`/`ProjectActivityGuard`, `ProjectRemovalHook`, `useProjectsStore.attachTab/detachTab/setActiveTab`, `ProjectWorkspace(project: Project \| null)` |
 
-**Contrato canônico:** a migration `NNNN_05_shell_sessions_command_blocks.sql` da 05 define `sessions`
+**Contrato canônico:** a migration `0002_05_shell_sessions_command_blocks.sql` da 05 define `sessions`
 mínima e `command_blocks`. Cada sessão base corresponde a um painel/stream. A 07 acrescenta colunas de
 arquivamento, agrupamento por aba e scrollback, sem redefinir as tabelas existentes. A 03 fornece apenas
 infraestrutura WAL/migrations/sanitização/FTS. Ver `spec.md` §5.3.
+
+`TabSessionId` vem de `mt_core::ids`/`define_id!` da Fase 01; tipos de PTY (`ExitInfo`, `KillMode`,
+`PtyOwner`, `SpawnSpec`) vêm de `mt_pty`. O `WorkspaceManager` guarda `Arc<ProjectService>` e adquire
+`acquire_activity(project_id)` apenas durante operações que criam/reiniciam PTYs; o hook de remoção não
+readquire essa lease. Para a Fase 08, expõe `pane_pty(tab_id, pane_id).await` e
+`register_observer(Arc<dyn WorkspaceLifecycleObserver>)`. A integração frontend usa `detachTab(tabId)`.
+O módulo/import/campo de `ScrollbackRecorder` só entra em `07/04`, após `07/03` compilável isoladamente.
+`WorkspaceSpawnHook`/`WorkspaceSpawnGuard` em `workspace/spawn_hooks.rs` entregam a barreira pré-spawn
+(`03/spec.md` §3.4): futures `Send`, contexto próprio com owner/cwd e guard RAII até registro confirmado
+ou compensação. `with_spawn_hooks` instala a lista imutável antes de compartilhar o manager e iniciar
+restore/abertura; na fase isolada, lista vazia. Falha de parada mantém guards em `Blocked`, e cancelar
+o caller não cancela a operação supervisionada. Não importar `mt-git` nesse contrato nem alterar
+`SpawnContext`/`ResolvedSpawn`. O observador pós-mudança não substitui a confirmação do guard.
 
 Também devem estar verificadas as barreiras de término da captura e persistência da 05 e a alocação de
 sequência contínua de comandos/chunks por sessão de painel (`spec.md` §4). Eventos visuais não substituem
@@ -68,13 +81,13 @@ essas barreiras. Adaptadores desta fase traduzem tipos e nomes; não fabricam ga
 ### Rust e SQLite
 
 - `mt-core/src/workspace/{mod,template,tab,layout,session}.rs`: DTOs, validação e operações puras da árvore.
-- `mt-db/migrations/NNNN_07_*.sql`: templates, abas, painéis, extensão aditiva de sessões05,
-  agrupamentos/vínculos, scrollback/FTS e recibos; numeração global após migrations anteriores.
+- `mt-db/migrations/0004_07_workspace_templates_tabs_sessions.sql`: templates, abas, painéis, extensão aditiva de sessões05,
+  agrupamentos/vínculos, scrollback/FTS e recibos; número canônico `0004` (D-01), após `0003_06_projects`.
 - `mt-db/src/migrations/code/m07_backfill.rs`: templates padrão para projetos existentes e vínculo não destrutivo
   do histórico identificável; sem modificar migrations já aplicadas.
 - `mt-db/src/repos/{templates,tabs,panes,tab_sessions,scrollback,workspace_operations}.rs`:
   compõem o repositório base de sessões, sem substituí-lo.
-- `src-tauri/src/workspace/{mod,manager,runtime,environment,recorder,restore,observer,adapters,errors}.rs`:
+- `src-tauri/src/workspace/{mod,manager,runtime,environment,recorder,restore,observer,spawn_hooks,adapters,errors}.rs`:
   orquestração, single-flight de boot, idempotência, compensação e supervisão.
 - `src-tauri/crates/mt-db/src/repos/templates.rs`: `DefaultTemplateContributor` implementa internamente a trait `pub(crate)` `ProjectInsertContributor` e cria padrão na transação do
   projeto, inclusive importação/auto-descoberta; usa o hook fornecido pela 06.
@@ -121,6 +134,9 @@ essas barreiras. Adaptadores desta fase traduzem tipos e nomes; não fabricam ga
   spawn substituto. Nunca retorna sucesso descartando uma árvore de processos ainda viva.
 - [ ] Concorrência split × close × nova sessão × remoção de projeto não cria PTYs sem dono; cancelamento do
   `invoke` não cancela a supervisão nem deixa operação pela metade.
+- [ ] Hooks fake verificam reserva antes de spawn, registro antes de publicação, rollback após parada,
+  liberação em falha anterior ao spawn e retenção em `Blocked`; futures/guards são `Send` e não reentram
+  no ator. Restauração também respeita a lista instalada antes do boot (`03/spec.md` §3.4).
 
 ### Sessões, histórico e restauração
 

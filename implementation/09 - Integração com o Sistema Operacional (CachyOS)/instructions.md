@@ -38,21 +38,21 @@ Wayland ou X11), implementando no crate `mt-os` e na camada de frontend correspo
 | # | Item | Detalhe |
 |---|------|---------|
 | I-01 | Crate `mt-os` | Módulos `settings`, `environment`, `tray`, `lifecycle`, `quake`, `shortcut` (backends plugin/portal/CLI), `cli`, `activation`, `links`, `editor`, `notify`, `attention`, `autostart`, `error` (ver spec §2). |
-| I-02 | Persistência de settings de SO | Migration própria `NNNN_09_os_settings.sql` (tabela `os_settings`, linha única JSON versionada) + repositório `OsSettingsRepo` no `mt-db` (somente arquivo desta fase). |
+| I-02 | Persistência de settings de SO | Migration própria `0005_09_os_settings.sql` (tabela `os_settings`, linha única JSON versionada) + repositório `OsSettingsRepo` no `mt-db` (somente arquivo desta fase). |
 | I-03 | Ciclo de vida da janela | Interceptação de `WindowEvent::CloseRequested` e `RunEvent::ExitRequested`; política `CloseBehavior` (`auto` / `always_tray` / `always_quit`); decisão pura `decide_close()` testável. |
 | I-04 | Encerramento sem órfãos | `ShutdownCoordinator` serializa saída, bloqueia novos spawns, chama `WorkspaceManager::shutdown` (07), reconcilia PTYs restantes (02), drena gravações/sessões (03/05/07) e só então autoriza `app.exit(0)`; sobreviventes impedem saída interativa bem-sucedida. |
 | I-05 | Tray | `TrayIconBuilder` (Tauri v2 `tray-icon`), menu dinâmico com contadores (Executando, Execução Contínua, Finalizado, Com Erro, Aguardando intervenção), Mostrar/Ocultar, Preferências, Sair; 3 variantes de ícone (`idle`, `active`, `attention`); atualização com debounce. |
 | I-06 | Detecção de tray disponível | Verificação do `org.kde.StatusNotifierWatcher` no D-Bus de sessão; se ausente, "fechar para bandeja" degrada para minimizar (nunca deixa o app invisível sem forma de retorno). |
 | I-07 | Confirmação de saída | Diálogo nativo (`tauri-plugin-dialog`) quando há abas `running`/`continuous`, funcional mesmo com a janela oculta. |
 | I-08 | Atalho global | `ShortcutManager` com cadeia de backends: `tauri-plugin-global-shortcut` (X11), portal `org.freedesktop.portal.GlobalShortcuts` via `ashpd` (Wayland), e `CliOnly` (instruções para o compositor). Status exposto à UI. |
-| I-09 | Single-instance + CLI + deep links | `tauri-plugin-single-instance` com feature `deep-link`, **primeiro** plugin; `tauri-plugin-deep-link` registra `maxterminal`; flags `--toggle`, `--show`, `--hide`, `--minimized`; recepção única e fila até os handlers e workspace estarem prontos. |
+| I-09 | Single-instance + CLI + deep links | `tauri-plugin-single-instance` com feature `deep-link`, **primeiro** plugin; `tauri-plugin-deep-link` registra `maxterminal`; flags `--toggle`, `--show`, `--hide`, `--start-hidden`; recepção única e fila até os handlers e workspace estarem prontos. |
 | I-10 | Quake Mode | Decisão pura `decide_toggle(visible, focused, minimized)`; modo `normal` e `drop_down` (topo do monitor sob o cursor, largura total, altura %, always-on-top, ocultar ao perder foco opcional) com degradação documentada no Wayland. |
 | I-11 | Links para editor | Parser TS de candidatos (`caminho:linha[:coluna]`), link provider xterm da Fase 04, validação em lote via `os_link_resolve` com `LinkContext` (aba/painel/PTY/geração de cwd); abertura via `os_link_open`, recusando contexto obsoleto. |
 | I-12 | Editores | `EditorKind`: `vs_code`, `vs_code_insiders`, `max_code` (URI `vscode://file/`), `custom` (argv com placeholders `{file}`, `{line}`, `{column}`); detecção de binário/handler MIME; trait `EditorOpener` como ponto de extensão (Fase 11). |
 | I-13 | Notificações | `Notifier` sobre `notify-rust` (D-Bus `org.freedesktop.Notifications`, ação `default` = clique) com fallback `tauri-plugin-notification` (sem clique); dedupe, rate limit, sanitização do corpo; evento `os://focus-tab` no clique. |
 | I-14 | Hook de comando longo | Listener sobre o evento de fim de comando da Fase 05: se duração ≥ limiar configurado e janela sem foco → `notify_user(CommandFinished|CommandFailed, …)`. Opcional, desligável. |
 | I-15 | Registro de atenção | `AttentionRegistry` (`set/clear` por `TabId` com `AttentionReason::AwaitingInput`) que alimenta ícone/contador da bandeja — ponto de extensão para a Fase 13. |
-| I-16 | Autostart | `tauri-plugin-autostart` (arquivo `.desktop` em `~/.config/autostart/` com `--minimized`), sincronizado com `OsSettings.autostart`. |
+| I-16 | Autostart | `tauri-plugin-autostart` (arquivo `.desktop` em `~/.config/autostart/` com `--start-hidden`), sincronizado com `OsSettings.autostart`. |
 | I-17 | Frontend | `src/ipc/os.ts`, `src/stores/window.ts` (`useWindowStore`), `src/stores/osSettings.ts` (`useOsSettingsStore`), composables `useEditorLinks`, `useOsFocusTab`, `useShortcutRecorder`; componentes em `src/components/preferences/` e `src/components/os/`. |
 | I-18 | Preferências > Sistema | Seção com: comportamento ao fechar, atalho global (gravador + status do backend + ajuda Wayland), modo drop-down, editor, notificações, autostart. Cria o contêiner de Preferências com registro de seções se ainda não existir. |
 | I-19 | Capabilities | `src-tauri/capabilities/os.json` e permissões dos comandos próprios; somente webview local `main`. Uso Rust de plugins não exige liberar suas APIs JS. |
@@ -129,8 +129,8 @@ nenhum contrato de Fase 11/13 é importado por `mt-os` ou `mt-db`.
 - `crates/mt-os/src/autostart.rs` — `AutostartSync`
 - `crates/mt-os/icons/tray/{idle,active,attention}.png` (22/32 px, embutidos com `include_bytes!`)
 - `crates/mt-os/tests/{close_decision.rs,toggle.rs,links.rs,editor_argv.rs,rate_limit.rs,cli.rs,environment.rs,settings.rs}`
-- `crates/mt-db/migrations/NNNN_09_os_settings.sql` + `crates/mt-db/src/repos/os_settings.rs`
-- `src/commands/os.rs` (binário) — 16 comandos IPC (spec §3) registrados no builder `tauri-specta`
+- `crates/mt-db/migrations/0005_09_os_settings.sql` + `crates/mt-db/src/repos/os_settings.rs`
+- `src/commands/os.rs` (binário) — 17 comandos IPC (spec §3) registrados no builder `tauri-specta`
 - `src/adapters/os.rs` — integração com Fases 02/03/05/07, sem dependência reversa
 - `src/lib.rs` — registro dos plugins (single-instance primeiro), `setup` de `OsIntegration`, handlers de janela/run-event
 - `capabilities/os.json`, `permissions/os.toml`, manifesto de comandos próprios em `build.rs`, configuração estática do scheme
@@ -165,8 +165,8 @@ Comandos executados na raiz da worktree; todos devem retornar **exit 0**, salvo 
 - [ ] CA-03 `cargo test -p mt-db os_settings` passa: migration aplica, linha default é criada, JSON inválido é rejeitado
   pelo `CHECK (json_valid(...))`, roundtrip de `OsSettings` com campos ausentes usa defaults (compatibilidade futura).
 - [ ] CA-04 `npm run typecheck && npm run typecheck:vue && npm run lint` passam.
-- [ ] CA-05 `npx vitest run tests/composables/editorLinks tests/stores/window.spec.ts tests/stores/osSettings.spec.ts tests/composables/useShortcutRecorder.spec.ts tests/components/preferences` passa, com cobertura ≥ 90% de linhas em `parseLinkCandidates.ts`.
-- [ ] CA-06 `npm run bindings && git diff --exit-code src/types/bindings.ts` retorna 0 e `bindings.ts` exporta os 16
+- [ ] CA-05 `npx --no-install vitest run tests/composables/editorLinks tests/stores/window.spec.ts tests/stores/osSettings.spec.ts tests/composables/useShortcutRecorder.spec.ts tests/components/preferences` passa, com cobertura ≥ 90% de linhas em `parseLinkCandidates.ts`.
+- [ ] CA-06 `npm run bindings && git diff --exit-code src/types/bindings.ts` retorna 0 e `bindings.ts` exporta os 17
   comandos `os*` e os tipos `OsSettings`, `OsEnvironment`, `ShortcutStatus`, `ResolvedLink`, `NotificationKind`.
 
 ### 5.2. System Tray e ciclo de vida (manual, KDE Plasma 6 Wayland e Hyprland)
@@ -226,7 +226,7 @@ Comandos executados na raiz da worktree; todos devem retornar **exit 0**, salvo 
 - [ ] CA-29 20 chamadas idênticas em 2 s produzem 1 notificação (dedupe/`replaces_id`); 20 chamadas distintas produzem ≤ 5.
 
 ### 5.6. Autostart
-- [ ] CA-30 Ligar "Iniciar com o sistema" cria `~/.config/autostart/maxterminal.desktop` contendo `Exec=… --minimized`;
+- [ ] CA-30 Ligar "Iniciar com o sistema" cria `~/.config/autostart/maxterminal.desktop` contendo `Exec=… --start-hidden`;
   desligar remove o arquivo. Após login, o app inicia oculto na bandeja e restaura as abas "Adicionar ao Workspace" (Fase 07).
 
 ### 5.7. Convenções

@@ -10,7 +10,7 @@
 Esta é a **quarta unidade de implementação da Fase 11**. Ela conecta o crate puro `mt-bridge` ao binário Tauri v2 (`src-tauri/`), implementando:
 1. Camada de adaptadores (`src-tauri/src/bridge/adapters.rs`) para isolar o consumo dos contratos das Fases 01 (`AppPaths`, `MtError`), 03 (`mt_db::sanitizer::sanitize`), 05 (`ShellService::error_context`), 06 (`ProjectRepo` / listagem e busca por caminho), 07 (`WorkspaceManager::open_tab` e `TemplateRepo::list` com seleção estrita de template neutro `Shell` para URIs) e 09 (`SingleInstance` com feature `deep-link`, `QuakeController::show_and_focus`, `ShutdownHooks`).
 2. Implementação concreta `TauriBridgeHost` (`src-tauri/src/bridge/host.rs`) da trait `BridgeHost`, emitindo eventos tipados `bridge://*` para a janela principal e coordenando o snapshot `BridgeStatus` com revisão monotônica e confirmação de foco da UI.
-3. Roteador e fila de deep links `maxterminal://` (`src-tauri/src/bridge/deep_link.rs`) com barreira de readiness (`projects_ready` + consumidor de UI pronto com timeout de 10 s), fila limitada a 32 itens, deduplicação por `requestId` (TTL 5 min) para `tab/open` e coalescência de 2 s para `project/open`, integrando startup (`get_current()`), `on_open_url` e `single-instance`.
+3. `BridgeActivationHandler` para deep links `maxterminal://` (`src-tauri/src/bridge/deep_link.rs`), registrado no único `ActivationRouter` da Fase 09. Consumir sua fila de 32 envelopes/TTL 30 s; coordenar readiness de projetos/workspace/UI (timeout UI 10 s), deduplicar por `requestId` (TTL 5 min) para `tab/open` e coalescer foco por 2 s. Implementar também `BridgeEditorOpener` registrado via `EditorLauncher::set_bridge_opener`.
 4. Os **9 comandos IPC Tauri** anotados com `#[tauri::command]` e `#[specta::specta]` em `src-tauri/src/commands/bridge.rs` e os **6 eventos `bridge://*`** em `src-tauri/src/events/bridge.rs`.
 5. Configuração do `tauri.conf.json` (`plugins.deep-link.desktop.schemes = ["maxterminal"]`), revisão de menor privilégio em `src-tauri/capabilities/default.json`, criação de `packaging/linux/maxterminal.desktop` e regeneração de `src/types/bindings.ts`.
 
@@ -24,7 +24,10 @@ Esta é a **quarta unidade de implementação da Fase 11**. Ela conecta o crate 
 | Criar | `src-tauri/src/bridge/mod.rs` | `BridgeStateManaged`, `init(app)` no `setup()` e registro do hook de encerramento em `ShutdownHooks` da Fase 09. |
 | Criar | `src-tauri/src/bridge/adapters.rs` | Adaptadores desacoplados para Fases 03, 05, 06, 07 e 09 (`InspectBlockContext`, resolução de template neutro `Shell`, foco de janela e sanitização). |
 | Criar | `src-tauri/src/bridge/host.rs` | `TauriBridgeHost` implementando `mt_bridge::handler::BridgeHost`. |
-| Criar | `src-tauri/src/bridge/deep_link.rs` | Inicialização do `tauri-plugin-deep-link`, fila de 32 URIs, barreira `projects_ready`, dedup `requestId`/2s e roteamento `maxterminal://`. |
+| Criar | `src-tauri/src/bridge/deep_link.rs` | `BridgeActivationHandler`, registro no roteador da 09, barreira de prontidão conjunta e dedup de negócio; nenhum listener/plugin/fila de transporte adicional. |
+| Criar | `src-tauri/src/bridge/editor.rs` | `BridgeEditorOpener`, composição com `EditorLauncher::set_bridge_opener`, consumo de `MaxCodeClient::open_file`. |
+| Modificar | `src-tauri/crates/mt-bridge/src/{protocol,client}.rs` | Extensão proposta `editor_open_v1` / `maxcode.open_file`, payload e método `open_file`, condicionados ao adaptador validado e ao handshake. |
+| Criar | `src-tauri/tests/bridge_os_adapters.rs` | Contratos `ActivationHandler`/`EditorOpener`, dedup, prontidão, camelCase, fallback e registro idempotente. |
 | Criar | `src-tauri/src/events/bridge.rs` | Constantes e emissão tipada dos 6 eventos `bridge://*`. |
 | Criar | `src-tauri/src/commands/bridge.rs` | Implementação dos 9 comandos IPC (`bridge_status`, `bridge_get_config`, `bridge_set_config`, `bridge_restart`, `bridge_regenerate_token`, `maxcode_open_plan`, `maxcode_open_project`, `maxcode_inspect_block`, `bridge_notify_active_project`). |
 | Modificar | `src-tauri/src/lib.rs` (ou `main.rs` / registro specta) | Registrar `bridge::init`, os 9 comandos IPC e os eventos no builder `tauri_specta`. |
@@ -140,47 +143,69 @@ use mt_core::MtResult;
 use std::sync::Arc;
 use tauri::AppHandle;
 
-pub const DEEP_LINK_QUEUE_CAPACITY: usize = 32;
 pub const PROJECTS_READY_TIMEOUT_SECS: u64 = 10;
 pub const TAB_OPEN_DEDUP_TTL_SECS: u64 = 300;
 pub const PROJECT_OPEN_COALESCE_MS: u64 = 2000;
 
-pub struct DeepLinkRouter {
-    // Fila mpsc(32), watch::Receiver<bool> de readiness, cache de requestId (5 min) e último project/open (2 s)
+pub struct BridgeActivationHandler {
+    // Host, bridge, barreira de prontidão e cache de dedup de negócio; transporte/fila pertencem à 09.
 }
 
-impl DeepLinkRouter {
-    /// Enfileira URIs brutas vindas de `get_current()`, `on_open_url` ou do callback `single-instance` da Fase 09.
-    /// Nunca loga a URI crua (apenas rota e resultado).
-    pub fn enqueue(&self, raw_uris: Vec<String>);
-
-    /// Sinaliza que os repositórios de projetos (Fase 06) e a store do frontend estão prontos para processar URIs.
+impl BridgeActivationHandler {
+    /// Sinaliza consumidor de UI pronto; só a composição conjunta libera ActivationRouter::set_ready().
     pub fn mark_ready(&self);
 }
 
-/// Inicializa o roteador de deep links:
-/// 1) Em `cfg!(debug_assertions)`, executa `app.deep_link().register_all()` (ignorando falha apenas com log WARN em ambientes headless sem XDG).
-/// 2) Registra `app.deep_link().on_open_url(...)` ANTES de ler `app.deep_link().get_current()`.
-/// 3) Enfileira URLs iniciais de `get_current()`.
-pub fn init(
-    app: &AppHandle,
+#[async_trait::async_trait]
+impl mt_os::activation::ActivationHandler for BridgeActivationHandler {
+    // Aceita o scheme maxterminal para produzir InvalidUri também em rotas de negócio desconhecidas.
+    fn accepts(&self, uri: &url::Url) -> bool;
+    async fn handle(&self, envelope: &mt_os::activation::ActivationEnvelope) -> mt_os::error::OsResult<()>;
+}
+
+/// Registra handler antes da prontidão. A 09 possui o único on_open_url/get_current e o plugin single-instance.
+pub async fn init(
+    activation: &mt_os::activation::ActivationRouter,
     bridge: BridgeHandle,
     host: Arc<TauriBridgeHost>,
-) -> MtResult<Arc<DeepLinkRouter>>;
+) -> MtResult<Arc<BridgeActivationHandler>>;
 
-/// Processa uma URI individual após a barreira `projects_ready`:
-/// - `MaxTerminalUri::ProjectOpen { path }`: canonicaliza e resolve worktree (`resolve_worktree_root_cached`),
-///   faz `match_project`, aplica coalescência de 2 s, gera `SyncContext { origin: PeerApp::Maxterminal, correlation_id: Uuid::now_v7() }`,
+/// Processa envelope individual após a barreira de prontidão, usando MaxTerminalUri::parse_parts(&envelope.uri, &envelope.params).
+/// - `MaxTerminalUri::ProjectOpen { path, worktree, correlation_id }`: canonicaliza e resolve worktree (`resolve_worktree_root_cached`),
+///   valida worktree opcional, faz match_project, aplica coalescência de 2 s e SyncContext de origem Maxterminal,
 ///   chama `host.focus_project` e `host.show_main_window()`.
-/// - `MaxTerminalUri::TabOpen { project, cwd, request_id }`: verifica dedup de `request_id` (TTL 5 min),
+/// - `MaxTerminalUri::TabOpen { project, cwd, request_id, worktree, correlation_id }`: verifica dedup de request_id (TTL 5 min),
 ///   resolve projeto, valida `cwd` com `validate_cwd_within_project`, chama `host.open_tab` com `template: None`
 ///   (forçando template Shell neutro sem comando inicial), foca o projeto e exibe a janela.
 pub async fn route_single_uri(
     host: &TauriBridgeHost,
     bridge: &BridgeHandle,
-    raw: &str,
+    envelope: &mt_os::activation::ActivationEnvelope,
 ) -> Result<(), BridgeError>;
 ```
+
+`handle` converte `BridgeError` em `MtError` preservando código (`OsResult` é alias de `MtResult`). A estrutura inválida já é rejeitada pela 09 como `os.activation_invalid`. `correlationId` não muda origem/autorização e nunca substitui `requestId`; se ausente, gerar UUID v7. Não repetir percent-decoding. `register_all()` só no perfil explícito de teste da 09, sem sobrescrever associação MIME em todo boot debug.
+
+### 3.3.1. `src-tauri/src/bridge/editor.rs` — contrato T-13
+
+```rust
+pub struct BridgeEditorOpener {
+    // Referência ao estado gerenciado da ponte para obter o cliente atual após restart.
+}
+
+#[async_trait::async_trait]
+impl mt_os::editor::EditorOpener for BridgeEditorOpener {
+    fn handles(&self, kind: mt_os::settings::EditorKind) -> bool;
+    async fn open(&self, link: &mt_os::links::ResolvedLink) -> mt_os::error::OsResult<()>;
+}
+```
+
+- `handles` retorna verdadeiro somente para `EditorKind::MaxCode`; no setup, registrar `Arc<BridgeEditorOpener>` via `EditorLauncher::set_bridge_opener`. O setter substitui o slot e evita duplicações ao reiniciar.
+- Estender aditivamente `protocol.rs` com `Capability::EditorOpenV1` (`editor_open_v1`), `MessageType::MaxcodeOpenFile` (`maxcode.open_file`), `Message::MaxcodeOpenFile(OpenFilePayload)` e `OpenFilePayload { path: PathBuf, line: u32, column: u32 }`. São **propostas** a confirmar com a extensão, não API comprovada. Direção MT → MC; envelope/dedup e limites de 11/01–02 preservados.
+- Adicionar `MaxCodeClient::open_file(&self, path: &Path, line: u32, column: u32) -> Result<DeliveryReport, BridgeError>` em `client.rs`. Exigir adaptador validado e peer autenticado com `editor_open_v1`; validar arquivo absoluto regular, ≤4096 bytes, sem controles, linha/coluna `1..=10_000_000`. Linha/coluna ausentes do `ResolvedLink` viram 1. A 09 já revalida contexto/cwd antes da chamada.
+- Selecionar peer por workspace do arquivo, ou único peer de editor compatível quando o arquivo está fora de projeto; ambiguidade retorna indisponibilidade, nunca broadcast. Enviar `maxcode.open_file`, confirmar apenas ACK do mesmo peer/`reply_to` com `handled:true`. Arquivos externos de compiladores são permitidos pela 09, sem exigir cadastro de projeto.
+- Sem suporte, desconectado ou em erro: retornar `BridgeError` convertido para `MtError`; `EditorLauncher` executa seu fallback explícito `vscode://file/...`. Não usar `open_plan` para abrir arquivos nem atribuir sucesso do fallback à ponte. Sanitizar logs, não enviar conteúdo do arquivo.
+- Testar sucesso autenticado, capability ausente (nenhum frame), `handled:false`, erro/timeout com fallback, linha/coluna/Unicode preservados e registro idempotente.
 
 ### 3.4. `src-tauri/src/commands/bridge.rs`
 
@@ -293,6 +318,6 @@ StartupWMClass=maxterminal
    - Se apenas `sync_active_project` mudou (e `enabled`, `preferred_port`, `fallback_range`, `allow_ephemeral_fallback`, `extra_allowed_origins` e `ack_timeout_ms` permaneceram iguais), aplica `bridge.sync().set_enabled(config.sync_active_project)` a quente sem derrubar as conexões WS ativas.
    - Se parâmetros de rede/segurança ou `enabled` mudaram, invoca `bridge.restart(config).await`.
 3. **Coordenação Single-Instance + Deep Link + Shutdown (`CA-14`, `CA-17`, `CA-18`, `CA-35`)**:
-   - O plugin `single-instance` (Fase 09) permanece único e registrado antes de `tauri_plugin_deep_link`. Qualquer URL `maxterminal://...` recebida via `argv` na segunda instância é encaminhada para `DeepLinkRouter::enqueue` (que deduplica se o plugin `deep-link` também notificar `on_open_url`).
-   - Quando `bridge_status` é chamado pela primeira vez pelo `useMaxCodeBridgeStore.init()`, o backend marca a barreira `DeepLinkRouter::mark_ready()`, garantindo que a UI já instalou seus listeners antes de disparar o foco inicial de uma URI de startup.
+    - O plugin `single-instance` da 09 permanece único e anterior ao deep-link; ele encaminha a URI ao listener único da 09, sem reenfileiramento manual. `BridgeActivationHandler` é registrado antes de liberar o transporte.
+    - A primeira chamada `bridge_status` por `useMaxCodeBridgeStore.init()` sinaliza `BridgeActivationHandler::mark_ready()` após a UI instalar listeners. A composição aguarda também projetos/workspace restaurados e chama `ActivationRouter::set_ready().await` uma vez; nenhuma camada libera fila prematuramente.
    - O encerramento real do aplicativo ("Sair" na bandeja do sistema, Fase 09) invoca `bridge.shutdown().await` dentro de `ShutdownHooks`, fechando todas as sessões com código `1001` e removendo `bridge.json`. Minimizar para a bandeja mantém a ponte ativa.

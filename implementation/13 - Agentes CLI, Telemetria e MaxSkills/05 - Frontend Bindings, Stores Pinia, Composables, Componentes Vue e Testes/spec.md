@@ -10,7 +10,7 @@
 Esta quinta e última unidade da Fase 13 entrega toda a camada de Frontend (Vue 3.6 + TypeScript estrito `tsgo` + Pinia + UnoCSS + SCSS Scoped) integrada aos contratos Rust das Implementações 01 a 04:
 
 1. **Bindings Gerados e Wrappers IPC (`src/types/bindings.ts` e `src/ipc/{agents,skills,memory}.ts`)**:
-   - Regeneração automática de `src/types/bindings.ts` via `npm run bindings` (`tauri-specta`), sem tipos duplicados à mão.
+   - Regeneração automática de `src/types/bindings.ts` via `cargo run --manifest-path src-tauri/Cargo.toml --bin export_bindings` (`tauri-specta`), sem tipos duplicados à mão.
    - Wrappers tipados usando `call` / `unwrap` de `src/ipc/core.ts` e assinaturas tipadas de eventos (`listen`).
 2. **Stores Pinia (`useAgentsStore` e `useSkillsStore`)**:
    - Hidratação livre de condição de corrida: registra listeners IPC **antes** de buscar snapshots iniciais, bufferiza eventos recebidos durante o carregamento e aplica somente `revision` superior do `runId` ativo (`spec.md` §6.2).
@@ -20,7 +20,7 @@ Esta quinta e última unidade da Fase 13 entrega toda a camada de Frontend (Vue 
    - `useAgentTelemetry`: relógio compartilhado de 1 s para calcular idade individual por campo, marcando dados > `staleAfterS` (60 s) como `"desatualizado"`, exibindo `"—"` com tooltip `"Indisponível para este agente"` quando `null` (CA-19), e distinguindo nos rótulos/tooltips `Reported` ("Fonte estruturada"), `Derived` ("Derivado da sessão"), `Estimated` ("Estimado") e `Configured` ("Modelo configurado") (CA-34).
    - `useAgentAttention`: integra `xterm.onData` via `registerTerminalExtension` para disparar `ackAttention(tabId, runId, episode, 'userInput')` (reconhecendo visualização sem resolver a espera no backend — CA-24) e distingue visualmente `Suspected` ("Possivelmente aguardando intervenção") de `Awaiting` ("Aguardando aprovação" / "Aguardando resposta").
    - `useCommandMemorySuggestions`: consulta com debounce de 150 ms, número de sequência monotônico para descartar respostas antigas, limite de 20 itens e inserção explícita no draft de `useRichInput(paneId)` sem executar no PTY nem adulterar `.history`.
-4. **Componentes Vue 3.6 (`src/components/agents/*` e `src/components/skills/*`) e Suíte Vitest (`src/tests/**`)**:
+4. **Componentes Vue 3.6 (`src/components/agents/*` e `src/components/skills/*`) e Suíte Vitest (`tests/**`)**:
    - Seguindo estritamente as diretrizes do `AGENTS.md`: ordem `<template>` → `<script setup lang="ts">` → `<style lang="scss" scoped>`, recuo de 4 espaços (`baseIndent: 1`), aspas simples, ponto e vírgula obrigatório, sem vírgula final, tags de abertura em linha única e tokens semânticos `--max-*`.
 
 ---
@@ -47,14 +47,14 @@ Esta quinta e última unidade da Fase 13 entrega toda a camada de Frontend (Vue 
 - `src/components/skills/SkillsSyncPanel.vue`
 - `src/components/skills/SkillConflictList.vue`
 - `src/components/skills/CommandMemoryList.vue`
-- `src/tests/stores/agents.spec.ts`
-- `src/tests/stores/skills.spec.ts`
-- `src/tests/components/agents/AgentStatusLine.spec.ts`
-- `src/tests/components/agents/AgentWorktreeCloseDialog.spec.ts`
-- `src/tests/composables/useAgentShortcuts.spec.ts`
+- `tests/stores/agents.spec.ts`
+- `tests/stores/skills.spec.ts`
+- `tests/components/agents/AgentStatusLine.spec.ts`
+- `tests/components/agents/AgentWorktreeCloseDialog.spec.ts`
+- `tests/composables/useAgentShortcuts.spec.ts`
 
 ### 2.2. Arquivos Modificados
-- `src/types/bindings.ts` — regenerado via `npm run bindings`.
+- `src/types/bindings.ts` — regenerado via `cargo run --manifest-path src-tauri/Cargo.toml --bin export_bindings`.
 - Componentes de barra de abas/workspace da Fase 07 (`ProjectWorkspaceHeader.vue` / `TabBarItem.vue`) — montagem de `AgentLauncherMenu.vue`, `AgentStatusLine.vue`, `AgentAttentionIndicator.vue`, `AgentTabOpenDialog.vue` e `AgentWorktreeCloseDialog.vue`.
 
 ---
@@ -75,7 +75,7 @@ import {
     type AgentsSettings,
     type AgentTabLink,
     type AgentTabOpenRequest,
-    type AgentTabOpenResult,
+    type AgentTabOpened,
     type AgentTelemetry,
     type AgentTemplateOptions,
     type AttentionSnapshot,

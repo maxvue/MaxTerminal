@@ -46,7 +46,7 @@
 
 ### Passo 6 — Cache, Single-Flight e `GitService` (`cache.rs`, `lib.rs`)
 1. Implementar `RepoCache` / `RepoEntry` e `GitService` com `Semaphore::new(4)`, `DashMap<PaneId, PaneBinding>`, `epoch`, `revision` monotônica e `generation` por binding.
-2. Implementar `track_pane`, `untrack_pane`, `set_visible`, `request_refresh`, `status_once`, `panes_inside`, `reserve_cwd` e `has_active_or_reserved_inside`.
+2. Implementar `track_pane`, `untrack_pane`, `untrack_pane_if_matches`, `set_visible`, `request_refresh`, `status_once`, `panes_inside`, `reserve_cwd` assíncrono e `has_active_or_reserved_inside`. Exportar `CwdReservationGuard: Send + 'static` (token proprietário, Drop síncrono). Usar `cwd_gate` conforme `spec.md` §3.8: leitura para reserva/instalação do binding, mutex de `common_dir` → escrita para remoção/prune, sem manter locks no token durante spawn.
 3. Garantir single-flight com flag `dirty_again` (se um evento ocorrer enquanto `status` estiver rodando, reexecuta ao terminar).
 4. Implementar expiração de cache em 60 s após `refcount == 0` e loop de reconciliação periódica (30 s para repos com aba visível, 120 s para repos ocultos com painel vivo, pausado sem bindings).
 
@@ -54,14 +54,18 @@
 1. Implementar `WorktreeManager` e `CliWorktreeManager` (`list`, `create`, `remove`, `prune`).
 2. Adicionar doc-test em `WorktreeManager` mostrando uso de `WorktreeCreateRequest` com `WorktreeLocation::MaxCode`.
 3. Criar `tests/discover.rs`, `tests/watcher.rs` e `tests/worktree.rs` cobrindo todos os cenários obrigatórios.
+4. Em `tests/worktree.rs`, usar barreiras/notificações (sem sleeps arbitrários) para testar reserva × remoção: reserva já inserida recusa `remove(force=true)`; remoção já iniciada bloqueia reserva até reap e depois falha na revalidação do cwd; registrar binding antes de Drop mantém proteção; Drop após falha sem PTY libera token. Cobrir subdiretório, alias e repositório aninhado, rollback condicional por `PtyId` e cancelamento de subprocesso sem liberar a escrita prematuramente.
 
 ---
 
 ## 2. Comandos de Verificação e Testes
 
-Execute os comandos abaixo a partir de `/home/johnattas/GitHub/MaxTerminal/.max-code-worktrees/wt-6f18b3d0/src-tauri`:
+Execute os comandos abaixo na worktree ativa:
 
 ```bash
+cd "$(git rev-parse --show-toplevel)"
+cd src-tauri
+
 # 1. Verificar compilação e tipos do crate mt-git
 cargo check -p mt-git --all-targets
 

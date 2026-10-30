@@ -9,7 +9,7 @@
 ## 1. Checklist Sequencial de Implementação
 
 ### Passo 1: Criar os Artefatos do Catálogo MaxCode e Implementar `labels.rs`
-1. Criar `src-tauri/crates/mt-github/fixtures/maxcode/labels.v1.json` contendo o export estruturado de `~/GitHub/MaxCode/src/core/labelsDeBugs.ts` (commit `1054eb8a886de412de8912ad56f64b1367da8b09`) com as 24 labels exatas (15 `state`, 3 `closure`, 6 `category`), as regras de transição exportadas e os hashes SHA-256 (`sourceSha256` e `exportSha256`).
+1. Criar `src-tauri/crates/mt-github/fixtures/maxcode/labels.v1.json` com os 24 nomes literais de `spec.md` §3.1 (D-02: 15 `state`, 3 `closure`, 6 `category`), preservando export, transições e hashes SHA-256 (`sourceSha256`, `exportSha256`) da referência MaxCode `1054eb8a886de412de8912ad56f64b1367da8b09`. Validar a fixture local em CI; adicionar teste de paridade com `MaxCode/src/core/labelsDeBugs.ts` quando disponível, registrando ausência como teste opcional não executado, sem inventar metadados/transições.
 2. Criar `src-tauri/crates/mt-github/fixtures/maxcode/labels-cases.v1.json` com vetores de comparação (caixa mista, espaços extras, strings vazias, labels externas e combinações válidas/inválidas de estado).
 3. Implementar `src-tauri/crates/mt-github/src/labels.rs`:
    - `LabelCatalogValidator::load_embedded()` e `validate_raw_json()` verificando cardinalidade exata (24 total, 15 `State`, 3 `Closure`, 6 `Category`), unicidade byte a byte e por chave normalizada, integridade das referências em `transitions` e verificação do `exportSha256`.
@@ -26,8 +26,8 @@
    - Calcular `start_line` e `end_line` (base 1) e retornar a última ocorrência no documento.
 2. Implementar `resolve_issue_plan()` avaliando o corpo da issue e todos os comentários carregados, selecionando o plano de maior `(updated_at_ms, created_at_ms, source_comment_id)` e atribuindo `provisional = !comments_complete`.
 
-### Passo 3: Criar a Migration SQLite (`NNNN_16_github.sql`) e o Repositório `GithubCacheRepo` (`cache.rs`)
-1. Criar a migration `src-tauri/crates/mt-db/migrations/NNNN_16_github.sql` (usando o próximo prefixo numérico sequencial em `mt-db/migrations/`) com as 10 tabelas e todos os índices definidos em `spec.md` §3.3.
+### Passo 3: Criar a Migration SQLite (`0010_16_github.sql`) e o Repositório `GithubCacheRepo` (`cache.rs`)
+1. Criar a migration `src-tauri/crates/mt-db/migrations/0010_16_github.sql` (versão 10 fixa após `0009_15_command_groups.sql`, D-01) com as 10 tabelas e todos os índices definidos em `spec.md` §3.3; injetar a fachada `mt_db::Db` no repositório.
 2. Implementar `src-tauri/crates/mt-github/src/cache.rs`:
    - Utilizar o writer thread do `mt-db` para transações de escrita e `spawn_blocking` com conexões de leitura para consultas.
    - Passar todos os campos textuais (`title`, `body`, `comment.body`, `label.description`, `sanitized_json`, `sanitized_progress_json`, `result_json`) por `mt_db::sanitizer::sanitize()` antes de executar `INSERT`/`UPDATE`.
@@ -67,6 +67,7 @@
 ## 2. Comandos de Verificação e Validação
 
 ```bash
+cd "$(git rev-parse --show-toplevel)/src-tauri"
 # 1. Compilar mt-db e mt-github com todos os testes
 cargo check -p mt-db -p mt-github --all-targets
 

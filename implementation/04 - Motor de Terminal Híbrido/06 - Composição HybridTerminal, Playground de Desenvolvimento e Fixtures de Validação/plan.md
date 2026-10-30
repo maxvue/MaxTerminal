@@ -11,7 +11,8 @@
 1. Criar `src/components/terminal/HybridTerminal.vue` compondo:
    - Banner superior de aviso de truncamento de replay (`flow.droppedBytes !== '0'`).
    - `TerminalSearchBar.vue` condicional (`v-if="instanceState?.search.open"`).
-   - Área central com `TerminalView.vue` e `CommandBlockLayer.vue` sobreposta (repassando `<template #block-actions="{ block }">`).
+   - Área central com `TerminalView.vue` e `CommandBlockLayer.vue` sobreposta (repassando `<template #block-actions="{ block }">`); `CommandBlockLayer` usa `useCommandBlocks` e, portanto, o `VueWebTerminalAdapter` (Implementação 05), que é a via real de projeção dos blocos.
+   - Raiz `.hybrid-terminal` com `:style` derivado de `themeUiToCssVars(instanceState.themeUi)` (variáveis `--mt-block-*` e `--mt-rich-input-*` por painel).
    - `TerminalExitBanner.vue` condicional (`v-if="instanceState?.exit"`).
    - `RichInput.vue` condicional (`v-if="richInput && !isPassthrough"`).
 2. Adicionar handlers de atalho de painel (`Ctrl+Shift+F` para busca, `Ctrl+Shift+I` para alternar modo de input) e restauração inteligente de foco ao sair de `altScreen`.
@@ -38,6 +39,8 @@
    - Unicidade de assinatura no `ptyStreamHub`, unicidade de listener `onData`/`onBinary` no `InputPipeline` e loteamento no `WriteBatcher`.
    - Alternância entre 2 instâncias preservando o estado e mantendo apenas 1 contexto WebGL ativo (`webglCount === 1`).
    - Atalhos `Ctrl+Shift+F` e `Ctrl+Shift+I`, exibição do banner de `Gap` e exibição do `TerminalExitBanner` somente após `End`.
+   - Composição do pipeline de blocos: ao injetar `begin`/`end` no `commandBlocksStore.feed`, o `HybridTerminal` renderiza `CommandBlock` a partir de `projectedEntries` do `VueWebTerminalAdapter` (spy em `projectBlocks` chamado ≥ 1 vez; 1 adaptador por painel).
+   - Tema por painel: dois `HybridTerminal` com `TerminalTheme.ui` distintos (`applyTheme` em cada instância) têm `.hybrid-terminal` com valores diferentes de `--mt-block-background`/`--mt-rich-input-background`; `applyTheme` em um painel não altera o outro. Ocultar/desmontar um painel, alterar seu tema e remontá-lo restaura as cinco cores vigentes via `onThemeChange` de `attach`, sem voltar ao tema global nem acessar estado ainda ausente.
    - Sequências UTF-8 de 2, 3 e 4 bytes e escapes CSI/OSC divididos em múltiplos offsets de frame.
 2. Executar toda a suíte `tests/terminal/*.spec.ts` com verificação de cobertura (`>= 90%` em `src/terminal/**` e `>= 80%` em `src/components/terminal/**`).
 
@@ -67,6 +70,7 @@ cargo clippy --workspace -- -D warnings
 
 ## 3. Critérios de Aceite desta Implementação (Mapeamento Fase 04)
 
-- **[CA-5.1.1 / CA-5.1.2 / CA-5.1.4]** `npm run typecheck`, `npm run lint`, `npm run lint:style`, `cargo clippy --workspace -- -D warnings` e `npx vitest run tests/terminal` passam com 100% de sucesso, atingindo cobertura ≥ 90% de linhas em `src/terminal/**` e ≥ 80% em `src/components/terminal/**`.
+- **[CA-5.1.1 / CA-5.1.2 / CA-5.1.4]** `npm run typecheck`, `npm run lint`, `npm run lint:style`, `cargo clippy --workspace -- -D warnings` e `npx --no-install vitest run tests/terminal` passam com 100% de sucesso, atingindo cobertura ≥ 90% de linhas em `src/terminal/**` e ≥ 80% em `src/components/terminal/**`.
 - **[CA-5.1.5]** Sequências UTF-8 de 2/3/4 bytes e sequências CSI/OSC divididas em todos os offsets preservam o resultado no xterm; apenas 1 write em voo; nenhum eco ou envio duplicado ao alternar modos `rich` ↔ `passthrough`.
 - **[CA-5.2.1 a CA-5.2.13]** Rota `/dev/terminal` permite validar em `cargo tauri dev` todas as metas observáveis: abertura de shell real (< 300 ms após spawn), gradiente 24 bits (`truecolor.py`), tabela Unicode (`unicode-width.txt`), rajada de 3 milhões de linhas / 200 MiB (`burst.sh`) com UI responsiva e `Ctrl+C` < 500 ms, redimensionamento deduplicado, busca `Ctrl+Shift+F`, links seguros `Ctrl+Clique`, perda de contexto WebGL sem perder scrollback, troca entre 2 abas mantendo apenas 1 WebGL ativo, input rico com os 5 gatilhos fictícios (`>`, `>>`, `@`, `?`, `/`), blocos ancorados pelo `CommandBlockFeed` simulado e reinício limpo de PTY sem processos órfãos.
+- **[CA-5.1.8 — `HybridTerminal.spec.ts`]** A composição `HybridTerminal` → `CommandBlockLayer` → `useCommandBlocks` → `VueWebTerminalAdapter` projeta os blocos do feed simulado (o adaptador não é código órfão) e `theme.ui` (5 campos) é exposto como variáveis CSS no `.hybrid-terminal` de cada painel, com isolamento entre painéis de temas distintos.

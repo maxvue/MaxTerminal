@@ -14,12 +14,12 @@ Esta segunda unidade implementa toda a orquestração de lançamento de Agentes 
    - Binário leve `src-tauri/crates/mt-agents/src/bin/mt-agent-relay.rs` (usando apenas `std`, `serde_json` e `base64`, sem runtime async) que atende `statusline [--chain <b64>]`, `hook <Evento>` (sempre exit 0 e stdout vazio) e `codex-notify [--chain <b64>] <json>`.
 2. **Planejador de Lançamento (`launch.rs`) e `AgentResolver` (`src-tauri/src/agents/resolver.rs`)**:
    - Criação idempotente dos 4 templates dedicados por projeto (`agent_templates_ensure`) com rastreamento em `agent_template_seeds` (respeitando exclusões manuais do usuário quando `template_id IS NULL`) e opções em `agent_template_options`.
-   - Implementação do `EnvironmentResolver` da Fase 07 (`AgentResolver`) que delega ao `ShellResolver` para iniciar o login shell com OSC 133 e compõe o `initial_input` com quoting específico para `bash`, `zsh` e `fish`.
+    - Implementação síncrona do `EnvironmentResolver` da Fase 07 (`AgentResolver`) que delega ao `ShellResolver` para iniciar o login shell com OSC 133 e compõe `ResolvedSpawn.initial_command` com quoting específico para `bash`, `zsh` e `fish`.
    - Injeção segura e reversível de `--settings <runtime_dir>/claude-settings.json` para o Claude Code (resolvendo a configuração efetiva antes de encadear o `statusLine` original em `--chain <b64>` — R-04, CA-21) e `-c notify=[...]` para o Codex (encadeando `notify` original).
 3. **Isolamento em Git Worktree (`isolation.rs`)**:
    - Proposta somente-leitura (`agent_worktree_propose`) calculando slug, branch (`agent/<short>/<slug>`), caminho (`.worktrees/wt-<slug>` ou `.max-code-worktrees/wt-<slug>`), `base_ref` (OID completo) e checagem de `.gitignore` (`git check-ignore -q`).
    - Abertura (`agent_tab_open`) suportando `WorktreeIsolation::{None, Create, Existing}` com registro durável em `agent_launch_operations` e vínculo em `agent_tab_links`, rollback seguro caso `open_tab` falhe após criar worktree limpa, e reconciliação no startup.
-   - Inspeção pós-fechamento (`WorkspaceObserver::on_tab_closed` / `agent_tab_close_check`) e resolução conservadora (`agent_worktree_resolve`: `Keep`, `Remove`, `RemoveAndDeleteBranch`) validada por `inspection_token` sob lock por repositório.
+    - Inspeção pós-fechamento (`WorkspaceLifecycleObserver::on_signal` com `TabClosed` / `agent_tab_close_check`) e resolução conservadora (`agent_worktree_resolve`: `Keep`, `Remove`, `RemoveAndDeleteBranch`) validada por `inspection_token` sob lock por repositório.
 
 ---
 
@@ -97,6 +97,7 @@ use dashmap::DashMap;
 use mt_core::{AppPaths, MtResult, TabId};
 use tokio::sync::mpsc;
 use crate::ports::RunBinding;
+use crate::launch::PendingRunBinding;
 
 /// Token opaco de 256 bits codificado em base64url sem padding; Debug nunca imprime o segredo.
 #[derive(Clone)]
@@ -123,6 +124,8 @@ pub struct AuthenticatedRelayEvent {
 pub struct RelayServer {
     socket_path: PathBuf,
     tokens: DashMap<[u8; 32], RunBinding>,
+    // Reservas anteriores a PaneSpawned, sem identidade de PTY inventada.
+    pending_tokens: DashMap<[u8; 32], PendingRunBinding>,
     tx: mpsc::Sender<AuthenticatedRelayEvent>,
     shutdown: tokio_util::sync::CancellationToken,
 }
@@ -135,7 +138,8 @@ impl RelayServer {
         tx: mpsc::Sender<AuthenticatedRelayEvent>,
     ) -> MtResult<Arc<Self>>;
 
-    pub fn issue(&self, binding: RunBinding) -> RelayToken;
+    pub fn issue(&self, binding: PendingRunBinding) -> RelayToken;
+    pub fn activate(&self, binding: RunBinding) -> MtResult<()>;
     pub fn revoke_run(&self, run_id: &str) -> bool;
     pub fn revoke_tab(&self, tab: TabId) -> usize;
     pub fn socket_path(&self) -> &Path;
@@ -152,7 +156,7 @@ impl RelayServer {
    - Lê até `\n` com `AsyncReadExt::take(64 * 1024 + 1)` e timeout de 1 s. Se exceder 64 KiB, responde `RelayAck { ok: false, error: Some("payload_too_large".into()) }`.
    - Decodifica o token `base64url`, calcula `Sha256::digest` e busca na tabela `tokens` comparando o digest com `subtle::ConstantTimeEq`. Token desconhecido ou já revogado responde `RelayAck { ok: false, error: None }` sem vazar detalhes (R-05).
    - Envia `AuthenticatedRelayEvent` no `mpsc::Sender` com `try_send`. Se a fila estiver cheia e a mensagem for `Hook` ou `CodexNotify`, registra sinal de reconciliação para que o detector de atenção não presuma resolução silenciosa.
-3. Tokens são revogados imediatamente em `on_pane_exited`, `on_session_archived` e `on_tab_closed`.
+3. Tokens e reservas são revogados em `WorkspaceLifecycleSignal::{PaneExited, SessionArchived, TabClosed}` e em falha de spawn. `activate` só aceita o mesmo `run_id`, owner e geração reservados, após `PaneSpawned` fornecer o PTY real; então move o token para `tokens`. Mensagens que chegarem antes ficam em fila limitada (256 eventos/256 KiB por reserva) e não alteram atenção/telemetria até a ativação. Overflow invalida a observação e pede reconciliação, nunca presume aprovação; falha/cancelamento descarta a fila.
 
 ---
 
@@ -180,7 +184,7 @@ Interface de linha de comando:
 ```rust
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
-use mt_core::{AppPaths, MtResult, ProjectId, TabId, TemplateId};
+use mt_core::{AppPaths, MtResult, PaneId, ProjectId, SessionId, TabId, TemplateId};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use crate::detect::AgentInstallation;
@@ -228,9 +232,22 @@ pub struct PendingLaunch {
 }
 
 #[derive(Debug, Clone)]
+pub struct PendingRunBinding {
+    pub tab_id: TabId,
+    pub pane_id: PaneId,
+    pub session_id: SessionId,
+    pub generation: i64,
+    pub project_id: ProjectId,
+    pub run_id: String,
+    pub agent: AgentKind,
+    pub cwd: PathBuf,
+    pub started_at_ms: i64,
+}
+
+#[derive(Debug, Clone)]
 pub struct LaunchPlan {
     pub kind: AgentKind,
-    pub run_binding: RunBinding,
+    pub pending_binding: PendingRunBinding,
     pub program: PathBuf,
     pub args: Vec<String>,
     pub env: BTreeMap<String, String>,
@@ -261,7 +278,7 @@ impl LaunchPlanner {
         installation: &AgentInstallation,
         opts: &AgentTemplateOptions,
         pending: Option<&PendingLaunch>,
-        binding: RunBinding,
+        binding: PendingRunBinding,
         token: RelayToken,
         relay_sock: &Path,
         settings: &AgentsSettings,
@@ -293,7 +310,81 @@ pub fn command_line(
    - `MAXTERMINAL_AGENT_TOKEN = plan.token.as_str()` *(nunca gravado em `args`, logs ou SQLite)*
    - `MAXTERMINAL_RELAY_SOCK = relay_sock.display().to_string()`
    - `MAXTERMINAL_RELAY_BIN = relay_bin.display().to_string()`
-   - A chave transitória `MAXTERMINAL_AGENT_LAUNCH` usada em `overrides.extra_env` para correlacionar `open_tab` ao `PendingLaunch` é **obrigatoriamente removida** da cópia final de `base.spec.env` antes do spawn do PTY.
+    - A chave transitória `MAXTERMINAL_AGENT_LAUNCH` usada em `overrides.extra_env` para correlacionar `open_tab` ao `PendingLaunch` é **obrigatoriamente removida** da cópia final de `base.spawn_spec.env` antes do spawn do PTY.
+
+#### `AgentResolver`: consumo literal do contrato da Fase 07 (T-17)
+
+```rust
+impl EnvironmentResolver for AgentResolver {
+    fn resolve(&self, ctx: &SpawnContext) -> MtResult<ResolvedSpawn>;
+}
+```
+
+1. Registrar cada ID de `AgentKind::ALL` por `EnvironmentRegistry::register_agent_resolver(id, resolver)`;
+   não há `supports`, `async fn resolve` ou lifetime em `SpawnContext` no contrato proprietário.
+2. Usar `self.shell.resolve(ctx)?`; preservar `base.shell_integration_enabled`. Ler agente de
+   `ctx.snapshot.environment.agent_id`, variáveis de `ctx.snapshot.env_vars`, cwd de `ctx.cwd` e
+   identidades/geração de `ctx.owner`. `ShellResolver` já resolveu `EnvValue` e `CommandOverride`.
+3. Ler/retirar `MAXTERMINAL_AGENT_LAUNCH` de `base.spawn_spec.env` e consultar o `PendingLaunch` compartilhado.
+   Se `!ctx.is_primary || !ctx.emit_initial_command`, retornar o shell sem lançar agente nem emitir token.
+   Splits são shells comuns; restaurar sem comando inicial não relança o agente.
+4. Usar instalação e opções previamente carregadas; descoberta assíncrona e leitura de opções do banco
+   acontecem no serviço antes de `open_tab`, nunca `await`/`block_on` no resolvedor síncrono.
+5. Criar `PendingRunBinding` usando o owner (sem PTY ainda), emitir token reservado e montar o plano.
+   Aplicar `plan.env` em `base.spawn_spec.env`; definir
+   `base.initial_command = Some(command_line(&plan, base.initial_command.as_deref(), shell_kind)?)`.
+   O shell executa esse comando uma única vez no fluxo de prompt da Fase 07.
+6. `AgentWorkspaceObserver` implementa `WorkspaceLifecycleObserver::on_signal(signal)`:
+   `PaneSpawned { owner, pty_id, .. }` completa `RunBinding`, ativa o relay e conecta taps/telemetria;
+   `PaneExited` revoga somente a execução correspondente; `SessionArchived` limpa as execuções da sessão;
+   `TabClosed` revoga a aba e agenda a inspeção de worktree. Comparar owner/geração antes de qualquer
+   alteração; não reatribuir evento antigo ao PTY atual. O dispatcher da Fase 07 já opera fora do mailbox.
+
+#### Serviço de aplicação reutilizável (D-08)
+
+Em `src-tauri/src/agents/mod.rs`, `AppAgentState` mantém `Arc<AgentService>`, `Arc<WorkspaceManager>` e
+o mapa de `PendingLaunch` compartilhado com `AgentResolver`. Registrar esse estado por
+`app.manage(AppAgentState { ... })` no setup, separado do `AppState` da Fase 01 (D-09).
+
+```rust
+#[derive(Debug, Clone, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct AgentTabOpened {
+    pub tab: mt_core::workspace::tab::TabView,
+    pub link: Option<AgentTabLink>,
+}
+
+impl AppAgentState {
+    pub async fn open_agent_tab(&self, req: AgentTabOpenRequest) -> MtResult<AgentTabOpened>;
+}
+
+// src-tauri/src/commands/agents.rs — handler fino, toda regra reside no serviço acima.
+#[tauri::command]
+#[specta::specta]
+pub async fn agent_tab_open(
+    state: tauri::State<'_, AppAgentState>,
+    request: AgentTabOpenRequest,
+) -> MtResult<AgentTabOpened> {
+    state.open_agent_tab(request).await
+}
+```
+
+Contrato de `open_agent_tab`:
+- Valida projeto, agente instalado/habilitado, modelo e template pertencente ao projeto com agente
+  correspondente; quando `template_id` é ausente, resolve o template dedicado por `ensure_agent_templates`.
+- Carrega opções/instalação para o resolvedor síncrono, prepara isolamento e registra a operação durável.
+  Registra `PendingLaunch` com UUID v7 antes de abrir a aba.
+- Constrói o `TabOpenRequest` da Fase 07 com `request_id` da operação, `project_id`, `template_id`, `focus`
+  e `overrides: Some(TabOpenOverrides { title, cwd, initial_command: CommandOverride::Inherit,
+  extra_env, continuous: None, cwd_fallback_to_project: false })`; a chave de correlação em `extra_env`
+  é `EnvValue::Literal { value: launch_id.to_string() }`, sem segredos. O cwd de uma worktree `Existing`
+  é exatamente o caminho validado, nunca o checkout principal por fallback.
+- Chama `WorkspaceManager::open_tab`, persiste o vínculo, conclui o estágio durável e retorna
+  `AgentTabOpened { tab, link }`. Em falha, remove reservas/tokens e executa rollback conservador;
+  se o PTY já foi criado, solicita fechamento supervisionado antes de qualquer remoção de worktree.
+  Se fechamento/rollback não puder completar, preserva os recursos e marca `recovery_required`.
+- A Fase 16 implementa `AgentPort` chamando **este método Rust**, com
+  `WorktreeIsolation::Existing { path }`; não chama o handler Tauri nem duplica a orquestração.
 
 ---
 
@@ -476,4 +567,4 @@ impl IsolationService {
 2. **Falha de `WorkspaceManager::open_tab` após criar a worktree**:
    - `IsolationService::rollback` verifica se a worktree recém-criada continua limpa (sem arquivos criados por hooks `post-checkout` e `HEAD == base_oid`). Se estiver limpa, remove a worktree e a branch recém-criada e marca a operação como `resolved`; se um hook escreveu arquivos, preserva a worktree, marca `stage = 'recovery_required'` e inclui na lista de pendências para decisão do usuário (`spec.md` §2.7 e §8.2).
 3. **Fechamento da aba com processo do agente ainda rodando (CA-16)**:
-   - A decisão sobre a worktree nunca ocorre em um interceptador antes do fechamento, e sim no `WorkspaceObserver::on_tab_closed` **após** a Fase 02/07 ter encerrado a árvore de processos do PTY.
+    - A decisão sobre a worktree nunca ocorre em um interceptador antes do fechamento, e sim no sinal `WorkspaceLifecycleSignal::TabClosed` **após** a Fase 02/07 ter encerrado a árvore de processos do PTY.

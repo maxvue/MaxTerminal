@@ -11,7 +11,7 @@ Esta **Implementação 06** conclui a **Fase 04 (Motor de Terminal Híbrido)** i
 
 Escopo exato desta implementação:
 1. **`HybridTerminal.vue` (`src/components/terminal/HybridTerminal.vue`):**
-   - Componente orquestrador que compõe `TerminalView.vue`, `CommandBlockLayer.vue` (repassando o slot `block-actions`), `TerminalSearchBar.vue` (aberto via `Ctrl+Shift+F`), banner não-intrusivo de `Gap` de replay (`"[MaxTerminal: N bytes descartados antes da exibição — visualização parcial]"`), `TerminalExitBanner.vue` (exibido após drenagem de `End`) e `RichInput.vue` (exibido quando `richInput !== false` e `inputMode === 'rich'`).
+   - Componente orquestrador que compõe `TerminalView.vue`, `CommandBlockLayer.vue` (repassando o slot `block-actions`; é por esta composição que o `VueWebTerminalAdapter` de `../05` entra no pipeline real: `CommandBlockLayer` → `useCommandBlocks` → `VueWebTerminalAdapter.projectBlocks`), `TerminalSearchBar.vue` (aberto via `Ctrl+Shift+F`), banner não-intrusivo de `Gap` de replay (`"[MaxTerminal: N bytes descartados antes da exibição — visualização parcial]"`), `TerminalExitBanner.vue` (exibido após drenagem de `End`) e `RichInput.vue` (exibido quando `richInput !== false` e `inputMode === 'rich'`).
    - Intercepta os atalhos de escopo de painel (`Ctrl+Shift+F` para abrir/focar busca e `Ctrl+Shift+I` para alternar `inputModeOverride` entre `'rich'` e `'passthrough'`) e preserva/restaura o foco adequadamente ao entrar e sair de TUIs (`altScreen`).
 2. **Playground de Desenvolvimento (`src/components/terminal/__dev__/TerminalPlayground.vue` + rota `/dev/terminal`):**
    - Carregado **exclusivamente** quando `import.meta.env.DEV === true`.
@@ -73,6 +73,8 @@ export interface HybridTerminalEmits {
 - **Slots:**
   - `block-actions`: `{ block: CommandBlockModel }` (repassado para `CommandBlockLayer.vue` → `CommandBlock.vue`).
 - **Comportamento Interno:**
+  - **Tema por painel:** o elemento raiz `.hybrid-terminal` recebe `:style="themeUiStyle"` com `themeUiStyle = computed(() => instanceState.value ? themeUiToCssVars(instanceState.value.themeUi) : {})` (`src/terminal/theme/themeUiVars.ts`), expondo `--mt-block-background`, `--mt-block-border`, `--mt-block-header-background`, `--mt-rich-input-background` e `--mt-rich-input-border` (origem: `TerminalInstance.applyTheme` → `onThemeChange` → `TerminalInstanceState.themeUi`). `CommandBlockLayer`/`CommandBlock.vue` e `RichInput.vue` consomem essas variáveis (com fallback para `--background-*`), de modo que dois painéis com temas distintos exibem blocos e input com cores distintas. Alterar o tema de um painel (`applyTheme`) atualiza as variáveis apenas daquele `.hybrid-terminal`.
+  - Após a instância estar pronta, obtém a `TerminalInstance` concreta em `terminalInstanceRegistry.get(paneId)` e monta `CommandBlockLayer` com `:key="paneId"` e props `paneId`, `getContext` (consulta `instance.getContext()`) e `onInputIntent` (chama `instance.sendLine(commandText)`, delegando ao `InputPipeline` único). Só a camada chama `useCommandBlocks`; o `HybridTerminal` não cria um segundo adaptador. Não chamar `sendLine` no `TerminalInstanceHandle` reduzido, que só expõe `sendInput`.
   - Sincroniza a prop `richInput` com o cálculo do modo de entrada do painel (se `richInput === false`, o painel opera em `'passthrough'` ocultando a barra `RichInput.vue`).
   - Exibe um banner superior de aviso (`role="status"`) quando `Number(instanceState.flow.droppedBytes) > 0`:
     `"[MaxTerminal: {{ instanceState.flow.droppedBytes }} bytes descartados antes da exibição — visualização parcial]"`.
@@ -100,7 +102,7 @@ export interface HybridTerminalEmits {
      - Etapa 1 (`stageLabel: 'Harness › Modelo'`): modelos do harness escolhido.
      - Etapa 2 (`stageLabel: 'Harness › Modelo › Nível de Raciocínio'`): `Baixo`, `Médio`, `Alto`, retornando `{ kind: 'replace-input', text: '? ' }` ou `{ kind: 'submit', text: 'echo "[IA Simulada]"' }`.
    - `?` (`id: 'dev.ai.quick'`, `prefix: '?'`, `label: 'Comando por Linguagem Natural (Simulado)'`): demonstra `refreshAfter` (responde inicialmente com item de carregamento e atualiza com sugestão de comando shell) e `onSubmitWithoutSelection`.
-   - `/` (`id: 'dev.shortcuts'`, `prefix: '/'`, `label: 'Atalhos Universais (Simulado)'`): `/install`, `/install-force`, `/update`, `/update-force`, `/build`, `/deploy`, `/test`, retornando `{ kind: ' true', passthrough: true }` quando o texto parece um caminho POSIX (`/usr/...`, `/etc/...`, `/home/...`, `/tmp/...`).
+   - `/` (`id: 'dev.shortcuts'`, `prefix: '/'`, `label: 'Atalhos Universais (Simulado)'`): `/install`, `/install-force`, `/update`, `/update-force`, `/build`, `/deploy`, `/test`, retornando `{ items: [], passthrough: true }` quando o texto parece um caminho POSIX (`/usr/...`, `/etc/...`, `/home/...`, `/tmp/...`).
 
 ---
 

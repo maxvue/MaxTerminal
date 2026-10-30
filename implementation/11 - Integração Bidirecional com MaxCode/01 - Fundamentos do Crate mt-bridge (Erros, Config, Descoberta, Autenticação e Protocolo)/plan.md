@@ -51,7 +51,7 @@
 
 ## 2. Comandos Exatos de Verificação
 
-Execute a partir da raiz da worktree (`/home/johnattas/GitHub/MaxTerminal/.max-code-worktrees/wt-6f18b3d0`):
+Execute a partir da raiz da worktree ativa (`cd "$(git rev-parse --show-toplevel)"`):
 
 ```bash
 # 1. Verificar que mt-bridge não possui dependência de tauri (CA-04)

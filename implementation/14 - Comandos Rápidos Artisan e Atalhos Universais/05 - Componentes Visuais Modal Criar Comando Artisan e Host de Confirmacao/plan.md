@@ -31,16 +31,17 @@
   - Atualização do preview com debounce de 250 ms (`vi.useFakeTimers`) em ≤ 300 ms (CA-19).
   - Fluxo de `"Preencher com IA"` e `"Desfazer sugestão"` pela UI (CA-25).
   - Fluxo de `"Criar com MaxCode"` enviando o prompt ao Plan Mode (CA-24).
-  - Exibição de `manualSteps` após criar comando em layout Legacy ou com `routes/console.php` existente (CA-20, CA-22).
+  - Pré-visualização do diff e confirmação explícita do bloco de agendamento em `routes/console.php` existente suportado; `manualSteps` apenas para layout Legacy ou estrutura ambígua/conflitante (CA-20, CA-22).
   - Confirmação em `QuickCommandsHost.vue` aprovando ou recusando `/install-force`, `/update-force` e `/deploy` (CA-31).
 
 ---
 
 ## 2. Comandos de Verificação e Validação Final da Fase 14
 
-Execute a partir da raiz da worktree `/home/johnattas/GitHub/MaxTerminal/.max-code-worktrees/wt-6f18b3d0`:
+Execute a partir da raiz da worktree a raiz da worktree ativa:
 
 ```bash
+cd "$(git rev-parse --show-toplevel)"
 # Testes unitários focados dos componentes e stores da Fase 14
 npx --no-install vitest run src/composables/quick-commands/__tests__/ src/stores/__tests__/quickCommands.spec.ts src/components/quick-commands/__tests__/
 
@@ -51,7 +52,7 @@ npm run lint
 npm run lint:style
 
 # Verificação de sincronia dos bindings Specta (CA-04)
-npm run bindings && git diff --exit-code src/types/bindings.ts
+cargo run --manifest-path src-tauri/Cargo.toml --bin export_bindings && git diff --exit-code src/types/bindings.ts
 
 # Verificações completas de Backend Rust e Snapshots (CA-01, CA-02)
 cargo fmt --manifest-path src-tauri/Cargo.toml -- --check

@@ -9,8 +9,8 @@
 
 - [ ] **Passo 1: Implementar `uri.rs` e Testes `tests/uri_it.rs`**
   1. Criar `src-tauri/crates/mt-bridge/src/uri.rs` com `MaxTerminalUri::parse` e `MaxCodeUri::build`.
-  2. Garantir validação de limite de 16 KiB para URI de entrada, 4096 bytes por parâmetro decodificado, rejeição de parâmetros duplicados/desconhecidos/proibidos (`template`, `command`, `env`, `prompt`, `token`), rejeição de userinfo, porta, fragmento e NUL, e decodificação UTF-8 única.
-  3. Criar `src-tauri/crates/mt-bridge/tests/uri_it.rs` testando caminhos com acentos e espaços (`%20`), parâmetros proibidos, caminhos relativos em `path`/`project`, tamanhos > 4096 bytes / > 16 KiB e formato exato de `vscode://johnattas.maxcode/bridge/wake?requestId=<uuid>`.
+   2. Garantir limite de 8 KiB para URI de entrada (igual à 09), 4096 bytes por parâmetro, rejeição de duplicados/desconhecidos/proibidos (`template`, `command`, `env`, `prompt`, `token`), userinfo, porta, fragmento e NUL. Aceitar opcionais `worktree`/`correlationId` validados; implementar `parse_parts` para os params já decodificados da 09, sem segundo decoding.
+   3. Criar `src-tauri/crates/mt-bridge/tests/uri_it.rs` testando acentos/espaços (`%20`), parâmetros proibidos, paths relativos, tamanho >4096 bytes/>8 KiB, params preservados e formato exato de `vscode://johnattas.maxcode/bridge/wake?requestId=<uuid>`. A exceção `/issue` entra em 11/06 com seu gate próprio.
 
 - [ ] **Passo 2: Implementar `session.rs` (`PeerSession`, `PeerRegistry`, Rate Limit e Heartbeat)**
   1. Criar `src-tauri/crates/mt-bridge/src/session.rs` com `PeerSession`, `PeerRegistry`, `EphemeralHttpSessionStore` (TTL 5 min para `X-Bridge-Session`), token-bucket rate limiter (50 msg/s por sessão; excesso por 3 s fecha com `4008`) e semáforo global de 8 sessões WS e 128 pending ACKs.
@@ -25,7 +25,7 @@
 
 - [ ] **Passo 4: Implementar `client.rs` (`MaxCodeClient`, `MaxCodeAdapter`, `XdgOpener` e Fila de Wake-up)**
   1. Criar `src-tauri/crates/mt-bridge/src/client.rs` com `DeliveryChannel`, `DeliveryReport`, `UriOpener`, `XdgOpener` (`tokio::process::Command::new("xdg-open")` sem shell e timeout de 5 s), `MaxCodeAdapter`, `DefaultMaxCodeAdapter` e `MaxCodeClient`.
-  2. Implementar o fluxo de `open_plan` e `open_project`:
+   2. Implementar o fluxo de `open_plan(prompt, project_path, source, pre_truncated)` e `open_project`, com `DeliveryReport` camelCase e teste de preservação de `pre_truncated`:
      - Sanitização via `host.sanitize()`, validação de tamanho (`<= 64 KiB`) e seleção de peer compatível.
      - Envio via WS se houver peer conectado; se não houver, tentativa HTTP local (`127.0.0.1`, `.no_proxy()`, `redirect::Policy::none()`) somente se `adapter.discover_http` retornar descoberta validada; se não houver conexão, enfileiramento na fila efêmera (máx. 32 itens / 2 MiB, TTL 30 s) + abertura de `vscode://johnattas.maxcode/bridge/wake?requestId=<uuid>` + espera por reconexão autenticada e ACK terminal.
      - Tratamento de `AckTimeout` pós-envio retornando `BridgeError::DeliveryUnknown` (ou retry com mesmo `id` se o peer suportar `IdempotentRequests`).

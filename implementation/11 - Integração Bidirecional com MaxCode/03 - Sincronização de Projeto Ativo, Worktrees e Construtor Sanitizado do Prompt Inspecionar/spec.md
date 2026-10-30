@@ -210,20 +210,20 @@ pub fn clean_terminal_text(raw: &str) -> String;
 
 /// Trunca o início da string mantendo o sufixo final com no máximo `max_chars` escalares Unicode (`char`),
 /// prefixando com `"[…] "` quando truncado (incluindo os 4 chars do prefixo na contagem total `max_chars`).
-pub fn truncate_utf8_keep_end(text: &str, max_chars: usize) -> (String, bool);
+pub fn truncate_utf8_suffix(text: &str, max_chars: usize) -> (String, bool);
 
 /// Trunca o final da string mantendo o prefixo inicial com no máximo `max_chars` escalares Unicode (`char`),
 /// adicionando `" […]"` ao final quando truncado (incluindo os 4 chars do sufixo na contagem total `max_chars`).
-pub fn truncate_utf8_keep_start(text: &str, max_chars: usize) -> (String, bool);
+pub fn truncate_utf8_prefix(text: &str, max_chars: usize) -> (String, bool);
 
 /// Constrói o prompt canônico do botão "Inspecionar" seguindo rigorosamente os 5 passos:
 /// 1) Limpa ANSI/OSC e normaliza `\r\n` / `\r` em `command` e `output` completos.
 /// 2) Aplica `sanitize(command_clean)` e `sanitize(output_clean)` ANTES de qualquer recorte (evita cortar delimitador de segredo).
 /// 3) Faz `trim()` externo:
-///    - Se o comando sanitizado exceder `limits.command_chars` (2000), trunca mantendo o início (`truncate_utf8_keep_start`).
+///    - Se o comando sanitizado exceder `limits.command_chars` (2000), trunca mantendo o início (`truncate_utf8_prefix`).
 ///    - Se a saída sanitizada estiver vazia após `trim()`, usa `format!("código de saída {exit_code}")`.
 ///    - Caso contrário, retém as últimas `limits.error_lines` (80) linhas (preservando linhas vazias internas)
-///      e, se exceder `limits.error_chars` (6000) caracteres, trunca mantendo o final com prefixo `"[…] "` (`truncate_utf8_keep_end`).
+///      e, se exceder `limits.error_chars` (6000) caracteres, trunca mantendo o final com prefixo `"[…] "` (`truncate_utf8_suffix`).
 /// 4) Interpola no template exato: `Ao executar o comando "{comando}" tive o seguinte erro: "{erro}"`
 ///    (sem escapar aspas internas nem quebras de linha).
 /// 5) Executa verificação final passando os valores recortados por `sanitize` novamente; se houver diferença,

@@ -30,7 +30,7 @@
 
 ## 2. Comandos Exatos de Verificação e Testes
 
-Executar a partir de `/home/johnattas/GitHub/MaxTerminal/.max-code-worktrees/wt-6f18b3d0`:
+Executar a partir da raiz da worktree ativa (`cd "$(git rev-parse --show-toplevel)"`):
 
 ```bash
 # 1. Compilar os exemplos de geração de corpus (1M linhas) e rajada de PTY

@@ -297,9 +297,9 @@ pub struct RawModelSuggestion {
 
 /// Faz o parse estrito da sugestão retornada pelo modelo:
 /// - Aceita JSON direto ou um único bloco cercado ```json ... ```.
-/// - Rejeita prosa fora do JSON, múltiplos blocos, JSON malformado (`AI_BAD_RESPONSE`).
-/// - Rejeita `command` vazio após trim (`AI_EMPTY_COMMAND`).
-/// - Rejeita `command` contendo `\n`, `\r`, `\0`, `\x1b` (ESC) ou outros caracteres de controle (`AI_BAD_RESPONSE`).
+/// - Rejeita prosa fora do JSON, múltiplos blocos, JSON malformado (`ai.bad_response`).
+/// - Rejeita `command` vazio após trim (`ai.empty_command`).
+/// - Rejeita `command` contendo `\n`, `\r`, `\0`, `\x1b` (ESC) ou outros caracteres de controle (`ai.bad_response`).
 /// - Nunca remove `$ ` nem junta múltiplas linhas com `&&`.
 pub fn parse_suggestion(raw: &str) -> MtResult<RawModelSuggestion>;
 ```
@@ -501,11 +501,15 @@ use tokio_util::sync::CancellationToken;
 pub const MAX_SCHEMA_BYTES: usize = 32 * 1024;
 pub const MAX_STRUCTURED_PROMPT_CHARS: usize = 8000;
 pub const MAX_CACHED_VALIDATORS: usize = 64;
+/// Ids builtin (versionados, sem alias): D-05 / C-05 / C-06.
+pub const BUILTIN_SCHEMA_IDS: [&str; 2] = ["artisan.command.v1", "command-group.suggestion.v1"];
 
 #[derive(Clone, Debug, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct StructuredRequest {
     pub request_id: AiRequestId,
+    /// Versionado, casa `^[a-z][a-z0-9]*([.-][a-z0-9]+)*\.v[0-9]+$`: `artisan.command.v1` (Fase 14) ou
+    /// `command-group.suggestion.v1` (Fase 15). Sem alias sem `.vN`.
     pub schema_id: String,
     pub schema: Value,
     pub prompt: String,
@@ -540,11 +544,13 @@ impl StructuredGenerator {
 }
 ```
 - **Regras obrigatórias do `StructuredGenerator` (`CA-27`, `CA-36`):**
-  1. `validate_schema_security(&req.schema)` verifica que o JSON serializado do schema tem `<= 32 KiB`, profundidade `<= 16` e percorre recursivamente todos os nós garantindo que qualquer chave `"$ref"` comece estritamente com `"#"` (referência local no mesmo documento). Qualquer `$ref` externo (`http://`, `https://`, `file://`, caminho relativo) é rejeitado imediatamente com `AI_SCHEMA_VALIDATION` (`CA-36`).
+  1. `validate_schema_security(&req.schema)` verifica que o JSON serializado do schema tem `<= 32 KiB`, profundidade `<= 16` e percorre recursivamente todos os nós garantindo que qualquer chave `"$ref"` comece estritamente com `"#"` (referência local no mesmo documento). Qualquer `$ref` externo (`http://`, `https://`, `file://`, caminho relativo) é rejeitado imediatamente com `ai.schema_validation` (`CA-36`).
+  1b. Valida `schema_id` contra o regex acima (`core.invalid_argument`, campo `schemaId`, se violar); ids de `BUILTIN_SCHEMA_IDS` são os contratos das Fases 14 e 15 e `artisan.command` / `command-group.suggestion` (sem `.vN`) são rejeitados. O schema em si vem do consumidor.
   2. Compila o `jsonschema::Validator` (draft 2020-12) e armazena no cache `compiled` indexado por `(schema_id, sha256(schema))` até o limite de 64 validadores.
   3. Envia a 1ª requisição ao gateway com `json_mode = true`. Se o JSON retornado não passar no validador (ou não for JSON sintaticamente válido), coleta até 10 mensagens de erro do validador (sanitizadas), monta o prompt de reparo (`prompts/structured.rs`) e faz **exatamente 1 tentativa adicional** dentro do mesmo `CancellationToken` e do mesmo deadline total (`structured_ms` = 90 s).
   4. Se a 2ª resposta passar na validação, retorna `StructuredResponse { repaired: true, .. }`. Se continuar inválida, retorna `Err(ai_error_with_details(codes::AI_SCHEMA_VALIDATION, "A resposta da IA não segue o formato esperado.", json!({ "errors": sanitized_errors })))` (`CA-27`).
   5. Sanitiza todas as strings dentro do `Value` final antes de entregá-lo ao chamador (`CA-36`).
+  6. **Entrada pública única:** consumidores (Fases 14 e 15) usam somente `AiService::generate_structured(&self, req: StructuredRequest) -> MtResult<StructuredResponse>` (IPC `ai_generate_structured`); `StructuredGenerator::generate` é interno ao crate.
 
 ---
 
@@ -583,6 +589,9 @@ use parking_lot::RwLock;
 use std::sync::Arc;
 use tokio::sync::watch;
 
+/// Token opaco devolvido por `prepare_suggest`; não é `Clone` nem serializável.
+pub struct SuggestTicket { /* RequestGuard, AiSelection resolvida, CancellationToken */ }
+
 pub struct AiService {
     pub settings: RwLock<AiSettings>,
     pub client: Arc<GatewayClient>,
@@ -590,7 +599,7 @@ pub struct AiService {
     pub risk: RiskClassifier,
     pub diagnosis: DiagnosisService,
     pub rag: RagService,
-    pub structured: StructuredGenerator,
+    structured: StructuredGenerator,
     pub requests: AiRequestRegistry,
     pub repo: Arc<AiRepo>,
     pub context: Arc<dyn AiContextSource>,
@@ -608,6 +617,27 @@ impl AiService {
     pub async fn catalog_refresh(&self) -> MtResult<HarnessCatalog>;
     pub async fn context_preview(&self, pane_id: PaneId) -> MtResult<AiContext>;
     pub fn classify_risk(&self, command: &str) -> RiskAssessment;
+    /// Fase síncrona do fluxo de sugestão, usada pelo comando IPC `ai_suggest_command` (12/03 §3.2).
+    /// Valida `settings.enabled` (`ai.disabled`), resolve a seleção (`req.selection` ou `default_selection`:
+    /// `ai.no_default_selection` / `ai.unknown_selection` via `CatalogService::resolve`), cancela a sugestão
+    /// anterior do mesmo `pane_id` (emitindo `Cancelled` no canal antigo) e registra `req.request_id` no
+    /// `AiRequestRegistry::begin` (`ai.request_conflict` se duplicado; consome tombstone → `ai.cancelled`).
+    /// Não faz I/O de rede nem `await`; o `SuggestTicket` devolvido carrega o `RequestGuard`, a `AiSelection`
+    /// resolvida e o `CancellationToken`.
+    pub fn prepare_suggest(&self, req: &SuggestRequest) -> MtResult<SuggestTicket>;
+    /// Fase assíncrona: monta `AiContext` (`AiContextSource::for_pane`), chama o gateway com stream, emite
+    /// `Started`/`Delta`/`Completed|Failed|Cancelled` por `on_event` (um único produtor; nenhum evento após o
+    /// terminal) e grava histórico sanitizado. `on_event` retorna `false` quando o Channel falhou; nesse caso a
+    /// requisição é cancelada e o guard liberado. Erros de rede chegam como `Failed` e também no `Err` de retorno.
+    pub async fn run_suggest_stream(
+        &self,
+        req: SuggestRequest,
+        ticket: SuggestTicket,
+        on_event: impl Fn(AiStreamEvent) -> bool + Send + Sync + 'static,
+    ) -> MtResult<CommandSuggestion>;
+    /// Conveniência para consumidores em processo e testes: `prepare_suggest` + `run_suggest_stream`
+    /// (callback sem retorno de saúde do canal). O IPC usa a forma em duas fases porque o aceite do invoke
+    /// precisa ser síncrono.
     pub async fn suggest_command(
         &self,
         req: SuggestRequest,
@@ -618,6 +648,10 @@ impl AiService {
     pub fn dismiss_diagnosis(&self, block_id: CommandBlockId);
     pub async fn rag_list_slugs(&self) -> MtResult<Vec<RagSlug>>;
     pub async fn rag_search(&self, req: RagSearchRequest) -> MtResult<RagSearchResponse>;
+    /// ÚNICO ponto de entrada público para geração estruturada por consumidores (Fases 14 e 15, via IPC
+    /// `ai_generate_structured` e adaptadores TS). Nenhum consumidor chama `StructuredGenerator` diretamente
+    /// nem cria rota/cliente próprio; validação de schema, reparo único, sanitização, histórico e registro
+    /// de requisição acontecem aqui.
     pub async fn generate_structured(&self, req: StructuredRequest) -> MtResult<StructuredResponse>;
     pub async fn history_list(&self, filter: AiHistoryFilter) -> MtResult<AiHistoryPage>;
     pub async fn history_clear(&self, project_id: Option<ProjectId>) -> MtResult<u32>;

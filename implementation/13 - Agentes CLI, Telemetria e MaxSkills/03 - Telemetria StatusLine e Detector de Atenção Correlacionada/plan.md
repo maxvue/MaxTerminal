@@ -27,7 +27,7 @@
   3. Implementar `AttentionDetector` em `crates/mt-agents/src/attention/detector.rs` com máquina de estados por execução e episódio (`Inactive`, `Working`, `Suspected`, `Awaiting`), deduplicação de notificações por episódio, supressão quando a janela está focada e a aba é a ativa, distinção entre `UserInput`/`ack` e resolução nativa correlacionada, e integração com `TabStatePort` e `NotifyPort`.
 
 - [ ] **Passo 5 — Conectar Portas no Binário e Expor Comandos IPC (`src-tauri/src/commands/agents.rs`)**
-  1. Implementar `TabStatePort` e `NotifyPort` em `src-tauri/src/agents/adapters.rs` conectando ao `TabStateRegistry` (Fase 05) e ao `AttentionRegistry` + `Notifier` (Fase 09).
+   1. Implementar `TabStatePort` e `NotifyPort` em `src-tauri/src/agents/adapters.rs`: `apply(pane_id, StateInput)` com `RuntimeBinding { tab_id, pane_id, pty_id, session_id }`, geração do owner validada separadamente no índice de runs da 13, mesmo `attention_id` por run/episódio na abertura e limpeza, e conexão ao `AttentionRegistry` + `Notifier` (Fase 09). `ExecutionRef.generation` é geração de bloco, não do owner. Testar evento antigo após restart e limpeza de episódio anterior sem afetar o atual.
   2. Expor os comandos `agent_telemetry_get`, `agent_telemetry_list`, `agent_attention_get` e `agent_attention_ack` em `src-tauri/src/commands/agents.rs` e registrá-los em `src-tauri/src/specta.rs`.
 
 - [ ] **Passo 6 — Criar Fixtures Versionados e Testes (`tests/telemetry.rs` e `tests/attention.rs`)**
@@ -39,9 +39,10 @@
 
 ## 2. Comandos de Verificação e Testes
 
-Executar na raiz da worktree (`/home/johnattas/GitHub/MaxTerminal/.max-code-worktrees/wt-6f18b3d0`):
+Executar na raiz da worktree ativa:
 
 ```bash
+cd "$(git rev-parse --show-toplevel)"
 # 1. Checagem de lint e formatação
 cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
 cargo clippy --manifest-path src-tauri/Cargo.toml --workspace --all-targets -- -D warnings

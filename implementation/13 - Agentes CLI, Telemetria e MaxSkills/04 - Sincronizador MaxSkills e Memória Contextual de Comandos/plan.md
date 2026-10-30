@@ -19,7 +19,7 @@
 - [ ] **Passo 3 — Implementar `skills_plan`, `skills_apply` e Watcher (`sync.rs` e `watch.rs`)**
   1. Implementar `SkillsService::plan` (100% *dry-run*, sem criar pastas ou backups, armazenando o plano em memória por 5 min com `fingerprint` do estado da fonte, destino e banco).
   2. Implementar `SkillsService::apply` validando o `fingerprint` sob lock do destino (`skills.plan_stale`), executando resoluções `Keep`, `Adopt` (somente quando o hash/alvo coincide com a fonte) e `Overwrite` (criando backup completo em `$XDG_STATE_HOME/maxterminal/skills-backup/`), operando via staging irmão + rename atômico e gravando `.maxterminal-skill.json` apenas no modo `Copy`.
-  3. Implementar `watch.rs` com `notify-debouncer-full` (debounce 500 ms) emitindo `skills://changed` em ≤ 2 s e acionando `auto_sync` somente para ações sem conflito.
+   3. Implementar `watch.rs` com `notify-debouncer-full` (0.5) / `notify` (8), herdados via `workspace = true` (debounce 500 ms), emitindo `skills://changed` em ≤ 2 s e acionando `auto_sync` somente para ações sem conflito.
 
 - [ ] **Passo 4 — Implementar `CommandMemory` (`crates/mt-agents/src/memory.rs`)**
   1. Implementar `CommandMemory::normalize`, `command_hash` e `score` conforme as regras de privacidade, sanitização (`[REDACTED:` rejeitado), preservação de espaços internos/aspas e fórmula de *frecency*.
@@ -39,9 +39,10 @@
 
 ## 2. Comandos de Verificação e Testes
 
-Executar na raiz da worktree (`/home/johnattas/GitHub/MaxTerminal/.max-code-worktrees/wt-6f18b3d0`):
+Executar na raiz da worktree ativa:
 
 ```bash
+cd "$(git rev-parse --show-toplevel)"
 # 1. Formatação e lint de todo o workspace Rust
 cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
 cargo clippy --manifest-path src-tauri/Cargo.toml --workspace --all-targets -- -D warnings

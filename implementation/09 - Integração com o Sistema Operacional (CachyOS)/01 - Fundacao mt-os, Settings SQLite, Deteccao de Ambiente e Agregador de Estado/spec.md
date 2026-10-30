@@ -80,7 +80,7 @@ pub mod codes {
 
 /// Construtor auxiliar para erros do domínio `os.*` com mensagem em pt-BR.
 pub fn os_err(code: &'static str, message: impl Into<String>) -> MtError {
-    MtError::new(code, message.into())
+    MtError::new(mt_core::ErrorCode::try_from(code).expect("código estático válido"), message.into())
 }
 
 pub type OsResult<T> = MtResult<T>;
@@ -88,9 +88,9 @@ pub type OsResult<T> = MtResult<T>;
 
 ---
 
-## 3. Persistência no `mt-db` (`NNNN_09_os_settings.sql` e `os_settings_repo.rs`)
+## 3. Persistência no `mt-db` (`0005_09_os_settings.sql` e `os_settings_repo.rs`)
 
-### 3.1. Migration SQL (`crates/mt-db/migrations/NNNN_09_os_settings.sql`)
+### 3.1. Migration SQL (`crates/mt-db/migrations/0005_09_os_settings.sql`)
 
 ```sql
 -- Fase 09: configurações de integração com o SO (linha única, JSON versionado).
@@ -111,7 +111,8 @@ VALUES (1, 1, '{}', CAST(strftime('%s','now') AS INTEGER) * 1000);
 
 ```rust
 use mt_core::error::{MtError, MtResult};
-use rusqlite::{params, Connection};
+use crate::error::DbError;
+use rusqlite::{params, Connection, Transaction};
 use serde::{Deserialize, Serialize};
 
 /// Linha crua da tabela `os_settings`.
@@ -125,11 +126,11 @@ pub struct OsSettingsRow {
 /// Repositório desacoplado de `mt-os` para leitura e gravação atômica do JSON de configurações de SO.
 #[derive(Clone)]
 pub struct OsSettingsRepo {
-    db: crate::DbPool, // Pool/Writer padronizado na Fase 03
+    db: crate::Db, // Fachada única da Fase 03 (D-09).
 }
 
 impl OsSettingsRepo {
-    pub fn new(db: crate::DbPool) -> Self {
+    pub fn new(db: crate::Db) -> Self {
         Self { db }
     }
 
@@ -148,15 +149,15 @@ impl OsSettingsRepo {
                         })
                     },
                 )
-                .map_err(|e| MtError::new("db.query_failed", format!("Falha ao ler os_settings: {e}")))
+                .map_err(DbError::from)
             })
-            .await
+            .await.map_err(MtError::from)
     }
 
     /// Atualiza transacionalmente a linha única (id = 1), garantindo que exatamente 1 linha foi afetada.
     pub async fn save_row(&self, schema_version: u32, value_json: String, updated_at: i64) -> MtResult<OsSettingsRow> {
         self.db
-            .write(move |conn: &Connection| {
+            .write(move |conn: &Transaction<'_>| {
                 let affected = conn
                     .execute(
                         "UPDATE os_settings
@@ -164,13 +165,10 @@ impl OsSettingsRepo {
                          WHERE id = 1",
                         params![schema_version, value_json, updated_at],
                     )
-                    .map_err(|e| MtError::new("db.write_failed", format!("Falha ao salvar os_settings: {e}")))?;
+                    .map_err(DbError::from)?;
 
                 if affected != 1 {
-                    return Err(MtError::new(
-                        "db.write_failed",
-                        format!("Esperado atualizar 1 linha em os_settings, mas {affected} foram afetadas."),
-                    ));
+                    return Err(DbError::Constraint(format!("Esperado atualizar 1 linha em os_settings, mas {affected} foram afetadas.")));
                 }
 
                 Ok(OsSettingsRow {
@@ -179,7 +177,7 @@ impl OsSettingsRepo {
                     updated_at,
                 })
             })
-            .await
+            .await.map_err(MtError::from)
     }
 }
 ```

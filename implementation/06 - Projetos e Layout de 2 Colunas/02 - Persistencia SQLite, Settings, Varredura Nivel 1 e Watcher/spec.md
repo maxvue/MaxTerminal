@@ -10,7 +10,7 @@
 Esta implementação constrói a camada de persistência transacional da Fase 06 sobre o `mt-db` (Fase 03), o registro das settings de seleção e proporção das colunas, o motor de varredura de subpastas de nível 1 (`scanner.rs`) e o subsistema de monitoramento de diretórios via `notify` + `notify-debouncer-full` (`watcher.rs`).
 
 ### 1.1. Escopo Incluído
-- Migration SQL `src-tauri/crates/mt-db/migrations/NNNN_06_projects.sql` criando `project_roots`, `projects`, `project_root_entries` e `project_discovery_dismissed`.
+- Migration SQL `src-tauri/crates/mt-db/migrations/0003_06_projects.sql` criando `project_roots`, `projects`, `project_root_entries` e `project_discovery_dismissed`.
 - Repositório tipado interno `src-tauri/crates/mt-db/src/repos/projects.rs` (usando `Db::read`/`Db::write`, `SanitizedText::new`, `prepare_cached` e o ponto de extensão interno `pub(crate) trait ProjectInsertContributor`).
 - Adaptador `SqliteProjectStore` e trait `ProjectStore` em `src-tauri/crates/mt-projects/src/store.rs`.
 - Registro das settings `projects.selected_id` e `layout.columns.left_size` via `mt_projects::register_db(&mut DbSetup)` em `src-tauri/crates/mt-projects/src/settings.rs`.
@@ -27,7 +27,7 @@ Esta implementação constrói a camada de persistência transacional da Fase 06
 
 | Ação | Caminho Exato | Descrição |
 |------|---------------|-----------|
-| Criar | `src-tauri/crates/mt-db/migrations/0003_06_projects.sql` | Migration SQL da Fase 06 (ou próximo `NNNN` sequencial livre após as migrations das Fases 03 e 05) |
+| Criar | `src-tauri/crates/mt-db/migrations/0003_06_projects.sql` | Migration SQL da Fase 06 (número canônico `0003`, após `0001_03_base` e `0002_05_shell_sessions_command_blocks`) |
 | Criar | `src-tauri/crates/mt-db/src/repos/projects.rs` | Repositório tipado `ProjectsRepo`, rows de persistência e `ProjectInsertContributor` |
 | Modificar | `src-tauri/crates/mt-db/src/repos/mod.rs` (e `src-tauri/crates/mt-db/src/lib.rs`) | Exportar `pub mod projects;` |
 | Criar | `src-tauri/crates/mt-projects/src/store.rs` | Trait `ProjectStore`, `SqliteProjectStore` e tipos de mutação do catálogo |
@@ -42,7 +42,7 @@ Esta implementação constrói a camada de persistência transacional da Fase 06
 
 ## 3. Especificação Técnica Detalhada
 
-### 3.1. Migration SQLite (`src-tauri/crates/mt-db/migrations/NNNN_06_projects.sql`)
+### 3.1. Migration SQLite (`src-tauri/crates/mt-db/migrations/0003_06_projects.sql`)
 
 ```sql
 -- Fase 06: projetos, pastas de projetos, origens observadas e sugestões dispensadas

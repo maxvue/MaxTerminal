@@ -5,7 +5,7 @@
 Esta implementação estabelece a base de domínio, validação determinística, resolução segura de diretórios/ambiente, redutor de estados de execução e persistência transacional no SQLite (em modo WAL) para a **Fase 15: Grupos de Comandos (`>>`)** dentro do crate `mt-commands` e das migrations do `mt-db`.
 
 ### 1.1. Escopo Incluído
-- **Itens da Fase 15 cobertos:** `I-01` (Modelo de domínio e DTOs), `I-02` (Migration SQLite `NNNN_15_command_groups.sql`), `I-03` (`CommandGroupRepo` e `SqliteCommandGroupRepo`), `I-04` (Validação de rascunho, normalização Unicode NFC, env POSIX, `cwd` confinado e detecção bloqueante de segredos via `mt_db::sanitizer`) e `I-08` (Persistência do histórico de execuções `command_group_runs` e `command_group_run_items` e redutor determinístico de estados).
+- **Itens da Fase 15 cobertos:** `I-01` (Modelo de domínio e DTOs), `I-02` (Migration SQLite `0009_15_command_groups.sql`), `I-03` (`CommandGroupRepo` e `SqliteCommandGroupRepo`), `I-04` (Validação de rascunho, normalização Unicode NFC, env POSIX, `cwd` confinado e detecção bloqueante de segredos via `mt_db::sanitizer`) e `I-08` (Persistência do histórico de execuções `command_group_runs` e `command_group_run_items` e redutor determinístico de estados).
 - **Critérios de Aceite cobertos:** `CA-01`, `CA-02`, `CA-03`, `CA-04`, `CA-22`, `CA-23`, `CA-24`, `CA-25`, `CA-26`.
 
 ### 1.2. Escopo Excluído (Fases/Implementações Posteriores)
@@ -20,8 +20,8 @@ Esta implementação estabelece a base de domínio, validação determinística,
 
 | Ação | Caminho Absoluto / Relativo ao Workspace | Descrição |
 |------|------------------------------------------|-----------|
-| Criar | `src-tauri/crates/mt-db/migrations/0015_15_command_groups.sql` | Migration SQLite com `command_groups`, `command_group_labels`, `command_group_items`, `command_group_runs`, `command_group_run_items` e índices (ajustar prefixo numérico `NNNN` caso o último arquivo em `migrations/` seja diferente). |
-| Modificar | `src-tauri/crates/mt-commands/Cargo.toml` | Garantir dependências `unicode-normalization`, `sha2`, `uuid`, `serde`, `serde_json`, `specta`, `rusqlite` e `mt-core` / `mt-db`. |
+| Criar | `src-tauri/crates/mt-db/migrations/0009_15_command_groups.sql` | Migration SQLite com `command_groups`, `command_group_labels`, `command_group_items`, `command_group_runs`, `command_group_run_items` e índices; versão 9 fixa na sequência contígua D-01. |
+| Modificar | `src-tauri/crates/mt-commands/Cargo.toml` | Acrescentar apenas dependências ainda ausentes (`unicode-normalization`, `sha2`, `uuid`, `serde`, `serde_json`, `specta`, `rusqlite`, via workspace); preservar `edition.workspace = true` e `mt-db = { workspace = true }` criados na Fase 14 (D-09). |
 | Modificar | `src-tauri/crates/mt-commands/src/lib.rs` | Exportar o módulo público `pub mod groups;` além do módulo `artisan` da Fase 14. |
 | Criar | `src-tauri/crates/mt-commands/src/groups/mod.rs` | Reexportações públicas do submódulo `groups`. |
 | Criar | `src-tauri/crates/mt-commands/src/groups/model.rs` | Identificadores newtype UUID v7, enums, structs de domínio, snapshots históricos, entradas de CRUD, filtros e códigos de erro `GroupErrorCode`. |
@@ -34,7 +34,7 @@ Esta implementação estabelece a base de domínio, validação determinística,
 
 ---
 
-## 3. Especificação da Migration SQLite (`0015_15_command_groups.sql`)
+## 3. Especificação da Migration SQLite (`0009_15_command_groups.sql`)
 
 ```sql
 -- Fase 15: Grupos de Comandos (Local e Global), Itens, Labels e Histórico de Execuções
@@ -660,11 +660,11 @@ impl GroupErrorCode {
     }
 
     pub fn into_error(self, message: impl Into<String>) -> MtError {
-        MtError::new(self.as_str(), message.into())
+        MtError::new(mt_core::ErrorCode(self.as_str()), message.into())
     }
 
     pub fn into_error_with_fields(self, message: impl Into<String>, fields: Vec<String>) -> MtError {
-        MtError::new(self.as_str(), message.into())
+        MtError::new(mt_core::ErrorCode(self.as_str()), message.into())
             .with_details(serde_json::json!({ "fields": fields }))
     }
 }
@@ -1004,11 +1004,11 @@ pub trait CommandGroupRepo: Send + Sync {
 }
 
 pub struct SqliteCommandGroupRepo {
-    db: mt_db::DatabasePool,
+    db: mt_db::Db,
 }
 
 impl SqliteCommandGroupRepo {
-    pub fn new(db: mt_db::DatabasePool) -> Self {
+    pub fn new(db: mt_db::Db) -> Self {
         Self { db }
     }
 }

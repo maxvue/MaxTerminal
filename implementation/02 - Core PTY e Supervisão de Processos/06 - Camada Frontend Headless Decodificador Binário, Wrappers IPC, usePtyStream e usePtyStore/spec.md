@@ -14,7 +14,7 @@ Esta é a sexta e última unidade de implementação da **Fase 02 — Core PTY e
 ## 2. Arquivos a Criar ou Modificar
 
 ### 2.1. Arquivos Criados
-- `src/ipc/ptyFrame.ts` — decodificador de frames binários v1 (`ArrayBuffer` → `PtyFrame`) e utilitários (`decodeEnd`, `decodeGap`, `encodeBinary`).
+- `src/ipc/ptyFrame.ts` — decodificador de frames binários v1 (`ArrayBuffer` → `PtyFrame`) e utilitários (`decodeEnd`, `decodeGap`, `encodeBinary`), além do tipo manual `export type PtyChannelMessage = ArrayBuffer;` — **exceção única** à regra "tipos só via `tauri-specta`" (contrato T-06, `05/spec.md` §3.1).
 - `src/ipc/pty.ts` — wrappers tipados dos 9 comandos `pty_*` e dos 4 eventos `pty://*` usando o helper `unwrap` / `call` de `src/ipc/core.ts`.
 - `src/composables/usePtyStream.ts` — composable de consumo de stream de PTY com controle de fluxo, cursor e reconexão.
 - `src/stores/pty.ts` — store Pinia `usePtyStore` em memória para ciclo de vida e metadados de PTYs.
@@ -52,6 +52,13 @@ export interface PtyFrame {
     byteOffset: bigint;
     payload: Uint8Array;
 }
+
+/**
+ * Mensagem entregue pelo `Channel` de saída do PTY (`InvokeResponseBody::Raw` → `ArrayBuffer`).
+ * EXCEÇÃO ÚNICA à regra "tipos só via tauri-specta": `BinaryPtyFrame` transporta bytes, não um DTO JSON.
+ * A representação Specta deve ser validada pelo gate T-06 antes de integrar este wrapper.
+ */
+export type PtyChannelMessage = ArrayBuffer;
 
 export class PtyFrameError extends Error {
     public readonly code = 'pty.frame_invalid';
@@ -160,7 +167,7 @@ export function encodeBinary(data: string): Uint8Array {
 import { Channel } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { unwrap } from '@/ipc/core';
-import { decodeFrame, type PtyFrame } from '@/ipc/ptyFrame';
+import { decodeFrame, type PtyChannelMessage, type PtyFrame } from '@/ipc/ptyFrame';
 import {
     commands,
     type AttachInfo,
@@ -189,13 +196,14 @@ export async function ptyAttach(
     ptyId: PtyId,
     onFrame: (frame: PtyFrame) => void,
     cursor?: OutputCursor
-): Promise<{ info: AttachInfo; channel: Channel<ArrayBuffer> }> {
-    const channel = new Channel<ArrayBuffer>();
-    channel.onmessage = (raw: ArrayBuffer) => {
+): Promise<{ info: AttachInfo; channel: Channel<PtyChannelMessage> }> {
+    const channel = new Channel<PtyChannelMessage>();
+    channel.onmessage = (raw: PtyChannelMessage) => {
         const frame = decodeFrame(raw);
         onFrame(frame);
     };
-    const info = await unwrap(commands.ptyAttach(ptyId, cursor ?? null, channel));
+    // Único cast da fronteira binária; válido apenas após a prova de transporte do gate T-06.
+    const info = await unwrap(commands.ptyAttach(ptyId, cursor ?? null, channel as Parameters<typeof commands.ptyAttach>[2]));
     return { info, channel };
 }
 
@@ -329,7 +337,7 @@ Regras da `usePtyStore`:
 
 ## 4. Critérios de Aceite Mapeados
 
-- **CA-03**: `pnpm typecheck` (`tsgo`) e `pnpm test` (Vitest) passam sem erros; `src/types/bindings.ts` está sincronizado.
+- **CA-03**: `npm run typecheck` (`tsgo`) e `npm run test` (Vitest) passam sem erros; `src/types/bindings.ts` está sincronizado.
 - **CA-09 (frontend)**: `decodeFrame` retorna `Uint8Array` bruto sem decodificar texto; teste com `TextDecoder('utf-8', { stream: true })` reconstrói caracteres UTF-8 multibyte divididos entre frames sem corrupção.
 - **CA-30**: Suíte Vitest valida `decodeFrame`/`decodeEnd`/`decodeGap`/`encodeBinary`, ACK cumulativo somente após `consumer.write`, ACKs duplicados/antigos/futuros, replay sob crédito, reconexão simultânea ao output, `detach` explícito, consumidor lento/falho, troca de `ptyId`, inversão de chegada entre `pty://exit` e frame `End`, store mantendo tombstone, reconciliação por `revision` e limpeza de listeners no `dispose`.
-- **CA-35 (frontend)**: Teste comprova que enquanto a Promise de `consumer.write` está pendente, nenhum `ptyAck` é enviado para aquele frame (ACK representa consumo concluído, não entrega no transporte).
+- **CA-35 (frontend)**: Teste comprova que enquanto a Promise de `consumer.write` está pendente, nenhum `ptyAck` é enviado para aquele frame (ACK representa consumo concluído, não entrega no transporte). Completar o gate T-06 de `05/spec.md` §3.1 com tipagem e prova binária em WebView real; os testes mockados não encerram esse gate. O teste de contrato deve localizar a única declaração manual de `PtyChannelMessage` em `src/ipc/ptyFrame.ts`, não em `src/types/`.

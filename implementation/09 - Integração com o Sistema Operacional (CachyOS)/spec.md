@@ -10,7 +10,7 @@
 ```
 ┌──────────────────────────── crate binário `maxterminal` ────────────────────────────┐
 │ lib.rs: plugins (single-instance 1º) → setup(OsIntegration::init) → on_window_event │
-│ commands/os.rs: 16 comandos IPC `os_*`                                              │
+│ commands/os.rs: 17 comandos IPC `os_*`                                              │
 │ adapters/os.rs: impl TabStatusProvider / TabCwdProvider / ShutdownHooks             │
 │                 (pontes finas para mt-shell (05), mt-pty (02), mt-db (03), tabs (07))│
 └───────────────┬───────────────────────────────────────────────────────────────────┘
@@ -127,7 +127,7 @@ pub struct OsSettings {
     pub editor: EditorSettings,
     pub notifications: NotificationSettings,
     pub autostart: bool,                  // padrão: false
-    pub start_minimized: bool,            // padrão: true (só tem efeito com autostart / --minimized)
+    pub start_minimized: bool,            // padrão: true (só tem efeito com autostart / --start-hidden)
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, specta::Type, PartialEq, Eq)]
@@ -506,7 +506,7 @@ efetivo concedido. O estado do backend é observado após suspend/resume e rein�
 ### 2.9. `cli.rs` — single-instance
 ```rust
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CliAction { Toggle, Show, Hide, StartMinimized, None }
+pub enum CliAction { Toggle, Show, Hide, StartHidden, None }
 
 /// Whitelist estrita; qualquer outro argumento é ignorado e logado em `debug` (sem eco do valor).
 pub fn parse_cli_args<I: IntoIterator<Item = S>, S: AsRef<str>>(args: I) -> CliAction;
@@ -515,8 +515,8 @@ pub fn parse_cli_args<I: IntoIterator<Item = S>, S: AsRef<str>>(args: I) -> CliA
 pub fn handle_second_instance<R: Runtime>(app: &AppHandle<R>, argv: Vec<String>);
 ```
 Primeira instância: ignorar argv[0], interpretar flags sem executar caminhos/comandos. Prioridade explícita:
-`--show > --toggle > --hide > --minimized`; `--toggle` no cold start equivale a mostrar. `--minimized` só oculta se
-tray comprovada, senão mostra. Segunda instância sem ação nem URI ⇒ `Show`; `--minimized` não esconde instância já
+`--show > --toggle > --hide > --start-hidden`; `--toggle` no cold start equivale a mostrar. `--start-hidden` só oculta se
+tray comprovada, senão mostra. Segunda instância sem ação nem URI ⇒ `Show`; `--start-hidden` não esconde instância já
 aberta. `cwd` recebido do segundo processo não modifica cwd de nenhum terminal.
 Janela inicialmente `visible: false`; após primeiro render a UI chama **`os_ui_ready`**, não `os_window_show`.
 O Rust aplica intenção de startup preservada. Watchdog de 3 s mostra janela se startup visível ficou sem handshake;
@@ -541,7 +541,9 @@ pub struct ActivationEnvelope {
     pub id: uuid::Uuid,
     pub uri: url::Url,
     pub received_at_ms: i64,
+    pub received_instant: std::time::Instant,
     pub source: ActivationSource,
+    pub params: Vec<(String, String)>, // query params validados estruturalmente e repassados ao handler (worktree, correlationId...)
 }
 pub enum ActivationSource { Startup, DeepLink }
 #[async_trait::async_trait]
@@ -551,7 +553,7 @@ pub trait ActivationHandler: Send + Sync {
 }
 pub struct ActivationRouter { /* inbox limitada, handlers, prontidão e dedupe */ }
 impl ActivationRouter {
-    pub fn register_handler(&self, handler: Arc<dyn ActivationHandler>) -> MtResult<()>;
+    pub async fn register_handler(&self, handler: Arc<dyn ActivationHandler>) -> MtResult<()>;
     pub async fn enqueue(&self, envelope: ActivationEnvelope) -> MtResult<()>;
     pub async fn set_ready(&self) -> MtResult<()>;
 }
@@ -559,7 +561,10 @@ impl ActivationRouter {
 
 Usar UUID do workspace (dependência `uuid` compartilhada), envelope somente Rust: não publicar URI completa em
 eventos/logs nem persistir queries que possam conter credenciais. Aceitar scheme exato `maxterminal`, UTF-8/URL válido,
-≤ 8 KiB, sem NUL/controles, usuário/senha/porta/fragmento; rejeitar escapes percentuais inválidos. Fila ≤ 32 envelopes,
+≤ 8 KiB, sem NUL/controles, usuário/senha/porta/fragmento; rejeitar escapes percentuais inválidos. Query params são extraídos
+para `ActivationEnvelope.params` (≤ 16 pares, chave `[A-Za-z0-9_-]{1,64}`, valor ≤ 4096 bytes, sem repetição) e **repassados**
+ao handler — nunca rejeitados por serem chaves de negócio (`worktree`, `correlationId`). Esta fase mantém o **único**
+listener `on_open_url`/`get_current`; consumidores só registram `ActivationHandler`. Fila ≤ 32 envelopes,
 TTL 30 s, processamento serial. Dedupe de transporte (mesma URL ≤ 1 s) elimina duplicação de entrega; dedupe de negócio
 por request id/autenticação pertence à Fase 11. Saturação retorna `os.activation_busy`; expiração/rota sem handler →
 `os.activation_unavailable`; conteúdo inválido → `os.activation_invalid`.
@@ -642,9 +647,10 @@ pub trait EditorOpener: Send + Sync {
     async fn open(&self, link: &ResolvedLink) -> MtResult<()>;
 }
 
-pub struct EditorLauncher { openers: RwLock<Vec<Arc<dyn EditorOpener>>>, settings: Arc<RwLock<OsSettings>> }
+pub struct EditorLauncher { bridge_opener: RwLock<Option<Arc<dyn EditorOpener>>>, openers: RwLock<Vec<Arc<dyn EditorOpener>>>, settings: Arc<RwLock<OsSettings>> }
 impl EditorLauncher {
     pub fn register_opener(&self, opener: Arc<dyn EditorOpener>); // inserido no início (maior prioridade)
+    pub fn set_bridge_opener(&self, opener: Arc<dyn EditorOpener>); // slot dedicado, substituição idempotente, prioridade sobre openers/fallback
     pub async fn open(&self, link: &ResolvedLink) -> MtResult<()>;
     pub fn detect() -> Vec<EditorAvailability>; // `which::which("code")`, `code-insiders`; MaxCode = `code` + `xdg-open`
 }
@@ -726,7 +732,7 @@ Título: "Comando concluído" / "Comando falhou"; corpo: `"{comando_sanitizado} 
 ```rust
 pub struct AutostartSync;
 impl AutostartSync {
-    /// `tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, Some(vec!["--minimized"]))` no binário.
+    /// `tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, Some(vec!["--start-hidden"]))` no binário.
     pub fn apply<R: Runtime>(app: &AppHandle<R>, enabled: bool) -> MtResult<AutostartStatus>;
     pub fn status<R: Runtime>(app: &AppHandle<R>) -> MtResult<AutostartStatus>;
 }
@@ -739,7 +745,7 @@ o setting é corrigido (fonte da verdade = sistema).
 
 `start_minimized` precisa ter efeito real: argumentos do launcher refletem o setting. Como `init` configura args
 no startup, alternar essa preferência deve reconciliar a entrada autostart por API suportada ou adaptador `.desktop`
-próprio, com escrita atômica e escaping Desktop Entry (nunca shell). Não manter `--minimized` fixo ignorando o setting.
+próprio, com escrita atômica e escaping Desktop Entry (nunca shell). Não manter `--start-hidden` fixo ignorando o setting.
 Falha de leitura do sistema não equivale a `enabled=false`; preservar setting e expor erro. Respeitar
 `$XDG_CONFIG_HOME/autostart` (fallback `~/.config/autostart`) e caminho estável do executável instalado/AppImage.
 
@@ -804,11 +810,16 @@ Todos retornam `Result<T, MtError>` e são exportados via `tauri-specta` para `s
 | 11 | `os_link_open` | `context: LinkContext, candidate: LinkCandidate` | `()` | `os.link_not_found`, `os.link_context_stale`, `os.editor_not_found`, `os.editor_launch_failed` |
 | 12 | `os_notify` | `request: NotifyRequest` | `NotifyOutcome` | `os.notify_failed` |
 | 13 | `os_attention_set` | `tabId: TabId, reason: AttentionReason \| null` | `StatusCounters` | `os.tab_not_found` |
-| 14 | `os_autostart_status` | — | `AutostartStatus` | `os.autostart_failed` |
+| 14 | `os_get_autostart` | — | `AutostartStatus` (leitura do estado real do `.desktop`) | `os.autostart_failed` |
 | 15 | `os_runtime_snapshot` | — | `OsRuntimeSnapshot` | `os.not_ready` |
 | 16 | `os_ui_ready` | — | `OsRuntimeSnapshot` | `os.not_ready` |
+| 17 | `os_set_autostart` | `enabled: bool` | `AutostartStatus` | `os.autostart_failed`, `os.settings_invalid` |
 
 `os_link_open` **re-resolve** o candidato no backend (não confia em caminho absoluto vindo do frontend).
+
+`os_get_autostart`/`os_set_autostart` são a **única** superfície de autostart do produto (a Fase 17 apenas empacota e valida).
+`os_set_autostart(enabled)` equivale a `os_settings_update({ autostart: enabled })` (mesma serialização, compensação e
+persistência) e devolve o `AutostartStatus` real após aplicar. O `.desktop` gerado usa a flag `--start-hidden`.
 
 `OsRuntimeSnapshot` contém `{ revision, window: WindowVisibilityPayload, environment, shortcutStatus, counters,
 shutdownPhase, linkContexts: LinkContext[], pendingFocus: FocusTabPayload | null }`; tipos definidos em Rust e gerados.
@@ -860,7 +871,7 @@ domínio: manter revisão por domínio e processar intenções por id/revisão p
 }
 ```
 `allow-os-integration` é permissão **própria**, definida em `permissions/os.toml`, com `commands.allow` enumerando
-exatamente os 16 nomes da §3. Usar `tauri_build::AppManifest::new().commands(&[...])` em `build.rs`, preservando todos
+exatamente os 17 nomes da §3. Usar `tauri_build::AppManifest::new().commands(&[...])` em `build.rs`, preservando todos
 os comandos anteriores, para submeter comandos próprios à ACL; apenas registrá-los em `invoke_handler` não restringe
 acesso por janela. Validar schema gerado pelo build. Não habilitar origens remotas nem curingas de webview.
 
@@ -875,7 +886,7 @@ bypass. Wrapper Rust valida inputs, origem/label local e scopes de URI; ACL não
 
 ## 4. Banco de Dados (SQLite)
 
-Migration `crates/mt-db/migrations/NNNN_09_os_settings.sql` (NNNN = próximo número livre no momento da implementação):
+Migration `crates/mt-db/migrations/0005_09_os_settings.sql` (numeração contígua canônica D-01: `0005`, após `0004_07_workspace_templates_tabs_sessions`):
 ```sql
 -- Fase 09: configurações de integração com o SO (linha única, JSON versionado).
 CREATE TABLE IF NOT EXISTS os_settings (
@@ -920,7 +931,8 @@ export const osIpc = {
     openLink: (context: LinkContext, c: LinkCandidate) => unwrap(commands.osLinkOpen(context, c)),
     notify: (r: NotifyRequest) => unwrap(commands.osNotify(r)),
     setAttention: (tabId: TabId, reason: AttentionReason | null) => unwrap(commands.osAttentionSet(tabId, reason)),
-    autostartStatus: () => unwrap(commands.osAutostartStatus()),
+    getAutostart: () => unwrap(commands.osGetAutostart()),
+    setAutostart: (enabled: boolean) => unwrap(commands.osSetAutostart(enabled)),
     runtimeSnapshot: () => unwrap(commands.osRuntimeSnapshot()),
     uiReady: () => unwrap(commands.osUiReady())
 };
@@ -1150,7 +1162,7 @@ Mensagens de erro nunca incluem conteúdo de comandos não sanitizado.
 | `tests/links.rs` | `LinkResolver::join` + `resolve` com `tempfile::TempDir` e `MockCwdProvider`: relativo, absoluto, `~`, `./`, `../`, symlink, diretório, inexistente, arquivo sem permissão de leitura (ainda é link), lote 65 ⇒ `os.link_rejected`, linha 0/overflow |
 | `tests/editor_argv.rs` | `build_editor_invocation` para 4 editores; caminhos com espaço, `#`, `%`, `ç`; custom sem `{file}` ⇒ `os.settings_invalid` |
 | `tests/rate_limit.rs` | Dedupe 10 s, teto 5/30 s inclusive `AgentAwaitingInput`, relógio injetado (`Instant` simulado), mapa/TTL limitados |
-| `tests/cli.rs` | Whitelist, flags desconhecidas ignoradas, combinação `--minimized --toggle` (prioridade definida: `Toggle`) |
+| `tests/cli.rs` | Whitelist, flags desconhecidas ignoradas, combinação `--start-hidden --toggle` (prioridade definida: `Toggle`) |
 | `tests/environment.rs` | `classify_display` com mapas de env (KDE Wayland, Hyprland, GNOME, Sway, X11, XWayland, vazio) |
 | `tests/settings.rs` | Defaults, `apply_patch` + `SettingsDiff`, `validate` (faixas), desserialização de `{}` e de JSON com campos extras |
 | unit em `long_command.rs` | `should_notify` (limiar, foco, desligado, exit 0/≠0) |
@@ -1192,7 +1204,7 @@ spawn em andamento, erro de WAL e sobrevivente simulado; nenhum cleanup começa 
   sem grants diretos; nenhuma capability adicional amplia origem remota ou oferece `process.exit` como bypass.
 - Settings: falha de registrar novo atalho mantém anterior; falha DB após efeito compensa; versão futura não é
   sobrescrita; `.desktop` ausente difere de consulta falha; `start_minimized=false` reconcilia argv.
-- Frontend: init assina antes do snapshot, eventos com revisão antiga são ignorados, ready não desfaz `--minimized`,
+- Frontend: init assina antes do snapshot, eventos com revisão antiga são ignorados, ready não desfaz `--start-hidden`,
   links de dois splits isolados e ranges wide/Unicode corretos; listeners tardios removidos no dispose.
 - Matriz manual registra distro, compositor/protocolo, versão do portal, versão das crates, executável instalado ou
   dev, suporte a ações e resultado real. Suporte em tabela é cenário alvo a verificar, não certificação automática.

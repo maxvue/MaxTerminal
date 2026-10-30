@@ -10,17 +10,17 @@
    - `panes.rs` (`pane_split`, `pane_close`, `pane_restart`, `pane_layout_update`)
    - `sessions.rs` (`session_new`, `session_list`, `session_get`, `session_scrollback_get`, `session_search`)
    - `workspace.rs` (`workspace_snapshot`, `workspace_initial_command_run`)
-3. Registrar todos os 22 comandos e 10 eventos no builder `tauri_specta` em `src-tauri/src/lib.rs` e executar o teste/binário gerador para atualizar `src/types/bindings.ts` sem edições manuais.
+3. Registrar todos os 22 comandos e 10 eventos no builder `tauri_specta` em `src-tauri/src/lib.rs` e executar `cargo run --manifest-path src-tauri/Cargo.toml --bin export_bindings` (gerador da Fase 01) para atualizar `src/types/bindings.ts` sem edições manuais.
 
 ### Passo 2: Wrappers IPC e Composables do Workspace
 1. Criar `src/ipc/templates.ts`, `src/ipc/tabs.ts`, `src/ipc/sessions.ts` e `src/ipc/workspace.ts` encapsulando as chamadas `invoke` e assinaturas `listen` tipadas.
 2. Criar `src/composables/workspace/layoutTree.ts` com funções puras `leaves(node)`, `findPane(node, paneId)` e `findNode(node, nodeId)`.
-3. Criar `src/composables/workspace/usePaneLayout.ts` com o normalizador do evento `resized` do `splitpanes` (suportando formatos v3 e v4), debounce de 300 ms, coalescência por `nodeId` e tratamento de `layout.conflict`.
+3. Criar `src/composables/workspace/usePaneLayout.ts` com o normalizador do evento `resized` do `splitpanes` (suportando formatos v3 e v4; `splitpanes` `4.1.2` já está instalado na Fase 01 e é tipado, sem `@types/splitpanes`), debounce de 300 ms, coalescência por `nodeId` e tratamento de `layout.conflict`.
 4. Criar `src/composables/workspace/useWorkspaceEvents.ts` (assinatura pré-snapshot, buffer ordenado por `eventSeq`, detecção de gap/`bootId` e cleanup seguro no `onScopeDispose`) e `src/composables/workspace/useActiveTabSeen.ts`.
 
 ### Passo 3: Stores Pinia (`templates.ts`, `tabs.ts`, `sessions.ts`)
 1. Criar `src/stores/templates.ts` (`useTemplatesStore`) com cache por `ProjectId`, controle de `revision` e reação ao evento `template://changed`.
-2. Criar `src/stores/tabs.ts` (`useTabsStore`) com `tabsById`, `orderByProject`, `tombstones` por revisão, integração com `useProjectsStore` (`attachTab`, `detachTab`, `setActiveTab`), `useTabStatusStore` e descarte de instâncias no `TerminalInstanceRegistry`.
+2. Criar `src/stores/tabs.ts` (`useTabsStore`) com `tabsById`, `orderByProject`, `tombstones` por revisão, integração com `useProjectsStore` (`attachTab(tabId, projectId)`, `detachTab(tabId)`, `setActiveTab`), `useTabStatusStore` e descarte de instâncias no `TerminalInstanceRegistry`.
 3. Criar `src/stores/sessions.ts` (`useSessionsStore`) com cache paginado por aba, LRU de 3 sessões detalhadas com teto de bytes de scrollback e busca FTS5 com cancelamento lógico por token de requisição.
 
 ### Passo 4: Componentes Vue 3.6 de Abas, Templates, Split Panes e Histórico
@@ -42,13 +42,16 @@
 ## 2. Comandos de Verificação
 
 ```bash
+cd "$(git rev-parse --show-toplevel)"
+
 # 1. Verificação completa do Backend Rust e geração de bindings
 cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
 cargo clippy --manifest-path src-tauri/Cargo.toml --workspace --all-targets -- -D warnings
 cargo test --manifest-path src-tauri/Cargo.toml --workspace
+cargo run --manifest-path src-tauri/Cargo.toml --bin export_bindings
 
 # 2. Verificação de tipos TypeScript (tsgo), lint e testes Frontend (Vitest)
-npm run check-types
+npm run typecheck
 npm run lint
 npx --no-install vitest run src/stores/__tests__/templates.spec.ts src/stores/__tests__/tabs.spec.ts src/stores/__tests__/sessions.spec.ts src/composables/workspace/__tests__/ src/components/workspace/__tests__/
 npm run build
@@ -62,4 +65,4 @@ npm run build
 - [ ] **CA-05.2 (Ciclo de Vida de Instâncias xterm e Stream):** Alternar entre abas apenas oculta/reanexa a view (`visible`) mantendo xterm e PTYs ativos; iniciar nova sessão (`session_new`) ou reiniciar painel descarta a instância xterm antiga e limpa o `CommandBlockFeed` antes de anexar o novo `PtyId`, mantendo uma única cadeia de ACK por PTY.
 - [ ] **CA-05.3 (Splitpanes, Acessibilidade e Teclado):** `PaneLayout` normaliza o payload real de `resized` do `splitpanes`, envia `expectedLayoutRevision` e aciona `fit` da Fase 04; conflito de revisão recarrega o snapshot sem corromper outros nós; `tablist`, abas e divisores têm navegação completa por teclado.
 - [ ] **CA-05.4 (Histórico Somente Leitura e Políticas 05/06):** `SessionHistoryDrawer` e `SessionReadonlyViewer` exibem sessões, blocos e scrollback paginados e filtráveis por painel sem interpretar escapes/HTML e sem enviar input a PTY; badges e `seen` usam exclusivamente a política integrada das Fases 05 e 06.
-- [ ] **CA-05.5 (Qualidade Estática e Bindings sem Drift):** `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace`, geração de `src/types/bindings.ts` sem drift, `npm run check-types` (`tsgo`), `npm run lint`, testes Vitest e `npm run build` passam sem erros.
+- [ ] **CA-05.5 (Qualidade Estática e Bindings sem Drift):** `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace`, geração de `src/types/bindings.ts` sem drift, `npm run typecheck` (`tsgo`), `npm run lint`, testes Vitest e `npm run build` passam sem erros.

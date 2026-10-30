@@ -28,24 +28,25 @@
 ### Passo 3 — Integração no Binário Tauri (`src-tauri/src/`)
 - [ ] **3.1.** Implementar `TauriCommandsEventSink` (emitindo `artisan://catalog-updated`, `artisan://discovery-failed` e `artisan://command-created`), `ProjectLookupImpl` (conectado ao serviço de projetos da Fase 06) e `MaxCodeConfigLocatorImpl`.
 - [ ] **3.2.** Implementar `src-tauri/src/commands/quick_commands.rs` com `QuickCommandsState` e os 10 comandos Tauri anotados com `#[tauri::command]` e `#[specta::specta]`.
-- [ ] **3.3.** Registrar `QuickCommandsState` em `src-tauri/src/state.rs` e registrar todos os 10 comandos no builder do `specta.rs` e no `invoke_handler` de `src-tauri/src/lib.rs`.
+- [ ] **3.3.** Registrar `QuickCommandsState` via `app.manage(...)` no `setup` de `src-tauri/src/lib.rs` (sem campo em `AppState`) e registrar todos os 10 comandos no builder do `specta.rs` e no `invoke_handler` de `src-tauri/src/lib.rs`.
 
 ### Passo 4 — Exportação de Bindings TypeScript e Cliente IPC (`src/types/bindings.ts`, `src/ipc/quickCommands.ts`)
-- [ ] **4.1.** Executar `npm run bindings` para regenerar `src/types/bindings.ts` e verificar que todos os 10 comandos e tipos (`ArtisanRoot`, `ArtisanCatalog`, `ArtisanCommandForm`, `ValidationReport`, `ArtisanPreview`, `ArtisanCreateResult`, `ShortcutList`, `ResolvedShortcut`, `ShortcutId`) foram exportados (CA-04).
+- [ ] **4.1.** Executar `cargo run --manifest-path src-tauri/Cargo.toml --bin export_bindings` para regenerar `src/types/bindings.ts` e verificar que todos os 10 comandos e tipos (`ArtisanRoot`, `ArtisanCatalog`, `ArtisanCommandForm`, `ValidationReport`, `ArtisanPreview`, `ArtisanCreateResult`, `ShortcutList`, `ResolvedShortcut`, `ShortcutId`) foram exportados (CA-04).
 - [ ] **4.2.** Implementar `src/ipc/quickCommands.ts` com `quickCommandsIpc`, `onCatalogUpdated`, `onDiscoveryFailed` e `onCommandCreated`.
 
 ---
 
 ## 2. Comandos de Verificação e Validação
 
-Execute a partir da raiz da worktree `/home/johnattas/GitHub/MaxTerminal/.max-code-worktrees/wt-6f18b3d0`:
+Execute a partir da raiz da worktree a raiz da worktree ativa:
 
 ```bash
+cd "$(git rev-parse --show-toplevel)"
 cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
 cargo clippy --manifest-path src-tauri/Cargo.toml --workspace --all-targets -- -D warnings
 cargo test --manifest-path src-tauri/Cargo.toml -p mt-commands --test shortcuts
 cargo test --manifest-path src-tauri/Cargo.toml -p mt-commands
-npm run bindings && git diff --exit-code src/types/bindings.ts
+cargo run --manifest-path src-tauri/Cargo.toml --bin export_bindings && git diff --exit-code src/types/bindings.ts
 npm run typecheck
 ```
 
@@ -56,7 +57,7 @@ npm run typecheck
 | Critério | Cobertura nesta Implementação |
 |----------|-------------------------------|
 | **CA-01 / CA-02** | Workspace Rust (`mt-commands` + binário `maxterminal`) compilando sem warnings no `clippy` e passando em todos os testes do crate. |
-| **CA-04** | `npm run bindings && git diff --exit-code src/types/bindings.ts` retorna 0 com os 10 comandos exportados. |
+| **CA-04** | `cargo run --manifest-path src-tauri/Cargo.toml --bin export_bindings && git diff --exit-code src/types/bindings.ts` retorna 0 com os 10 comandos exportados. |
 | **CA-26** | Resolução exata para projetos híbridos Laravel + Vue (npm). |
 | **CA-27** | Resolução exata para projetos Tauri com `pnpm-lock.yaml` + `src-tauri/Cargo.toml`. |
 | **CA-28** | Script `test` padrão do `npm init` ignorado, deixando `/test` desabilitado com `"Nenhum comando de teste encontrado"`. |

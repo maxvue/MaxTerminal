@@ -54,9 +54,10 @@
 
 ## 2. Comandos de Verificação e Validação
 
-Execute a partir de `/home/johnattas/GitHub/MaxTerminal/.max-code-worktrees/wt-6f18b3d0/src-tauri`:
+Execute a partir de a raiz da worktree ativa:
 
 ```bash
+cd "$(git rev-parse --show-toplevel)/src-tauri"
 cargo fmt --package mt-commands -- --check
 cargo clippy -p mt-commands --all-targets -- -D warnings
 cargo test -p mt-commands --lib

@@ -49,7 +49,7 @@ cargo test --workspace
 cargo clippy --workspace --all-targets -- -D warnings
 
 # 4. Validar tipagem estrita TypeScript dos novos wrappers IPC e bindings
-npm run check-types
+npm run typecheck
 ```
 
 ---

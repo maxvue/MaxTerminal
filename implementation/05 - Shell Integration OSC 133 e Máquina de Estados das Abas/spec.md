@@ -196,7 +196,7 @@ Fases `Unknown/Prompt/Input/Executing`. Handshake não cria bloco. A/B alteram a
 - C duplicado da mesma g: idempotente. C de g maior com bloco aberto: fecha anterior `unknown/MissingEnd`, abre novo. D só fecha execução correspondente uma vez.
 - D inexistente, g antiga, outro PTY: ignorar. A confiável após execução sem D: fechar `unknown/MissingEnd`; prompt não prova código zero.
 - Cwd antes de C é o diretório de execução; cwd após D é o diretório do próximo prompt. `cd` não reescreve retrospectivamente o cwd do próprio bloco.
-- Exit do PTY após D não altera resultado já conhecido. Exit com bloco aberto fecha `unknown/PtyExited`, salvo evidência explícita de que o código pertence ao comando (D): código do shell é mantido em `ptyExit`, não atribuído arbitrariamente ao filho.
+- Exit do PTY após D não altera resultado já conhecido. Exit com bloco aberto fecha `unknown/PtyExited`, salvo evidência explícita de que o código pertence ao comando (D): código do shell é mantido em `ptyExit`, não atribuído arbitrariamente ao filho. **Exceção em `IntegrationMode::Proc`** (sem hooks, logo sem D): PTY encerrado com `exit_code != 0` durante bloco ativo fecha `failed/PtyExited` com esse código (estado `error`, "Inspecionar" habilitado); sem informação de código segue `unknown`.
 - Relógio monotônico para duration; wall clock apenas timestamps. Desligamento drena parser/captura e encerra blocos desconhecidos antes de fechar DB.
 
 ### 5.3. Fila e captura
@@ -264,7 +264,8 @@ Redutor puro `transition(state, input) -> Option<StateChange>`, inputs com bindi
 | Seen de conclusão atual efetivamente apresentada | Mantém status/resultado, `seen=true`; bucket finished/error → idle |
 | Seen de geração anterior ou durante running | Ignorar; nunca autoriza confirmação futura |
 | Política On/Off durante execução | `continuous`/`running`; Auto reavalia heurística; não altera resultado concluído |
-| Exit PTY com bloco aberto | Fecha bloco unknown, alive=false, status idle; erro/sinal do PTY em campo separado |
+| Exit PTY com bloco aberto em `Proc` e código conhecido ≠0 | Finaliza primeiro como failed/PtyExited com esse código, status error e seen=false; em seguida marca alive=false preservando a conclusão |
+| Exit PTY com bloco aberto nos demais casos | Fecha bloco unknown, exit_code=None, alive=false, status idle; código/sinal do PTY em campo separado (inclusive código 0 em Proc, que não prova sucesso do bloco) |
 | Exit PTY após conclusão conhecida | alive=false, preserva conclusão/status/seen |
 | Novo binding/reset após encerrar PTY anterior | idle e nova identidade; ignorar mensagens do binding anterior |
 | AttentionRequired atual (futuro) | Overlay de atenção não vista produz error no badge; execução/atividade permanecem |
@@ -296,7 +297,7 @@ Prioridade do bucket por pane: atenção/erro **não visto** > running > continu
 
 Esta fase cria `sessions` mínima; 07 a estende por migration posterior, sem recriar tabela ou exigir que já exista. `tab_id`, `pane_id`, `project_id` são identidades lógicas, sem FK para tabelas futuras. A 05 mantém integridade do vínculo no serviço. Sessão corresponde a um pane; encerramento fecha sua sessão. `SessionProvider` reutilizável evita dependência circular.
 
-Migration `NNNN_05_shell_sessions_command_blocks.sql`, próximo número global após base03. Tabelas STRICT; INTEGER PRIMARY KEY estabiliza rowid para FTS mesmo em manutenção. Uuid continua id público TEXT UNIQUE; rowid nunca sai por IPC.
+Migration `0002_05_shell_sessions_command_blocks.sql`, número fixado pela decisão canônica D-01 (logo após `0001_03_base`). Tabelas STRICT; INTEGER PRIMARY KEY estabiliza rowid para FTS mesmo em manutenção. Uuid continua id público TEXT UNIQUE; rowid nunca sai por IPC.
 
 ```sql
 CREATE TABLE sessions (

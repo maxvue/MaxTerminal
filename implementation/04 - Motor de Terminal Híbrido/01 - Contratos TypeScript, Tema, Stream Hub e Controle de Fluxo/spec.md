@@ -31,6 +31,7 @@ Esta é a implementação fundacional da **Fase 04 (Motor de Terminal Híbrido)*
 - `src/terminal/keybindings.ts` — constantes e matchers puros para atalhos do terminal, barra de busca, input rico e popup.
 - `src/terminal/theme/defaultTheme.ts` — definição do tema padrão `Max Navy/Teal` lendo variáveis CSS `--max-*` com fallback hexadecimal seguro.
 - `src/terminal/theme/themeService.ts` — provedor reativo/observável de `TerminalTheme` (`getActiveTheme`, `setThemeProvider`, `onChange`).
+- `src/terminal/theme/themeUiVars.ts` — helper puro `themeUiToCssVars(ui: TerminalTheme['ui']): Record<string, string>` que devolve `--mt-block-background`, `--mt-block-border`, `--mt-block-header-background`, `--mt-rich-input-background` e `--mt-rich-input-border` (consumido por `HybridTerminal.vue`, `04/06`).
 - `src/terminal/stream/ptyClient.ts` — fachada sobre `src/ipc/pty.ts` e `src/ipc/ptyFrame.ts`.
 - `src/terminal/stream/ptyStreamHub.ts` — hub central de assinatura de streams PTY por `PtyId`, controle de gerações e cursores confirmados.
 - `src/terminal/engine/flowController.ts` — controlador de crédito e emissão de `pty_ack` cumulativo pós-parse.
@@ -192,6 +193,8 @@ export interface TerminalInstanceState {
     flow: TerminalFlowState;
     search: TerminalSearchState;
     exit: ExitInfo | null;
+    /** Cores locais de UI do tema aplicado a este painel (espelho de `TerminalTheme['ui']`); alimenta as variáveis CSS do `.hybrid-terminal`. */
+    themeUi: TerminalTheme['ui'];
 }
 
 export interface TerminalTheme {
@@ -211,10 +214,13 @@ export interface TerminalTheme {
             string, string, string, string, string, string, string, string
         ];
     };
-    ui?: {
-        blockBorder?: string;
-        blockHeaderBackground?: string;
-        richInputBackground?: string;
+    /** Cores locais do painel para `CommandBlockLayer` e `RichInput` (contrato canônico de 5 campos; Fase 10 `toTerminalTheme` sempre os preenche). */
+    ui: {
+        blockBackground: string;
+        blockBorder: string;
+        blockHeaderBackground: string;
+        richInputBackground: string;
+        richInputBorder: string;
     };
 }
 
@@ -389,7 +395,7 @@ export type { AttachmentId };
 
 - **`defaultTheme.ts`:**
   - Exporta `resolveCssToken(tokenName: string, fallbackHex: string): string` (lê `getComputedStyle(document.documentElement).getPropertyValue(tokenName).trim()`, retornando `fallbackHex` em ambiente SSR/jsdom vazio ou se não for cor hexadecimal/RGB válida para o canvas/WebGL do xterm).
-  - Exporta `createMaxNavyTealTheme(): TerminalTheme` com `id: 'max-navy-teal'`, `name: 'Max Navy/Teal'`, `source: 'builtin'`, mapeando paleta 16 ANSI coerente com `--max-primary-*`, `--max-success-*`, `--max-warning-*`, `--max-danger-*`, `--max-info-*` e `--background-*`.
+  - Exporta `createMaxNavyTealTheme(): TerminalTheme` com `id: 'max-navy-teal'`, `name: 'Max Navy/Teal'`, `source: 'builtin'`, mapeando paleta 16 ANSI coerente com `--max-primary-*`, `--max-success-*`, `--max-warning-*`, `--max-danger-*`, `--max-info-*` e `--background-*`, e preenchendo `ui` com os 5 campos (`blockBackground`, `blockBorder`, `blockHeaderBackground`, `richInputBackground`, `richInputBorder`) resolvidos via `resolveCssToken` a partir de tokens `--background-*`.
 - **`themeService.ts`:**
   ```ts
   import type { Disposable, TerminalTheme, TerminalThemeProvider } from '@/types/terminal';

@@ -51,7 +51,7 @@ MaxTerminal, totalmente compatível com o workflow de bugs do MaxCode:
   explícita; metadados ausentes exigem definição explícita antes da criação, sem sobrescrever existentes.
 - `cache`: repositórios SQLite para `github_repos`, `github_issues`, `github_issue_comments`, `github_labels`,
   `github_http_cache`, vínculos projeto/repositório, joins de labels e `github_bug_cycles`
-  (migration `NNNN_16_github.sql`), com TTL, partição de autenticação e revisão monotônica.
+  (migration `0010_16_github.sql`, D-01), com TTL, partição de autenticação e revisão monotônica.
 - `sync`: `IssueSyncService` com refresh em background (TTL padrão 120 s para lista, 300 s para detalhe), refresh
   incremental por `since`/`updatedAt`, coalescência de pedidos concorrentes, backoff em rate limit e contagem de
   issues abertas por projeto.
@@ -105,12 +105,13 @@ MaxTerminal, totalmente compatível com o workflow de bugs do MaxCode:
 | 07 | `TabBar #pinned`, `useTabsStore`, `tab_open(TabOpenRequest { overrides: TabOpenOverrides { cwd, cwd_fallback_to_project: false, … }, … })` |
 | 08 | `mt-git`: `GitRunner` para remote `origin`, descoberta de `common_dir`, `git_worktree_list`, `git_worktree_create(WorktreeCreateRequest)`, validação de branch |
 | 09 | Notificação nativa (`os_notify`) para término do ciclo em lote |
-| 11 | `Envelope`/`Message`, `PeerRegistry::request`, handshake/capabilities e entrega/URI; extensão adicional de issues/ciclos negociada em spec §8 |
-| 13 | `AgentKind` (`claude-code`, `codex`, `agy`, `opencode`), `agent_tab_open(AgentTabOpenRequest)` com `WorktreeIsolation::Existing { path }` |
+| 11/06 | `MaxCodeClient::{send_issue_command, bugs_cycle_preview, bugs_cycle_start, bugs_cycle_status}`, capabilities `issues_protocol_v1`/`bugs_cycle_v1`, evento `bugs.cycle.progress` e URI; consumidor via `MaxCodePort` (D-03) |
+| 13 | `AgentKind` (`claude-code`, `codex`, `agy`, `opencode`), `AppAgentState::open_agent_tab(AgentTabOpenRequest) -> MtResult<AgentTabOpened>` com `WorktreeIsolation::Existing { path }` (D-08) |
+| 15 | Pré-requisito de persistência: `0009_15_command_groups.sql` deve existir antes de `0010_16_github.sql` (D-01); sem acoplamento aos serviços de grupos. |
 
-> Conferidos os contratos das Fases 06, 07, 08, 11 e 13. Adaptadores ficam em `mt-github/src/ports.rs`
-> e `src/ipc/github.ts`; a extensão de protocolo da 11 exige implementação futura negociada, pois seus enums
-> atuais não transportam os novos tipos. Não declarar essa lacuna resolvida somente por um adaptador.
+> Portas são definidas em `mt-github/src/ports.rs`; adaptadores nativos ficam em `src-tauri/src/github/adapters.rs`
+> e wrappers frontend em `src/ipc/github.ts`. A 11/06 fornece a extensão de protocolo D-03; a 16 somente consome.
+> O suporte remoto ainda requer confirmação bilateral com MaxCode, nunca inferida da existência do adaptador.
 > O catálogo exportado e o handshake de issues/ciclo são gates de entrega. Ausentes, leitura/criação/edição
 > genérica continuam disponíveis; ações de workflow ficam indisponíveis com motivo explícito.
 
@@ -150,7 +151,7 @@ MaxTerminal, totalmente compatível com o workflow de bugs do MaxCode:
 | `src-tauri/crates/mt-github/src/ports.rs` | Adaptadores para `mt-git`, `mt-bridge`, `mt-agents`, notificações |
 | `src-tauri/crates/mt-github/src/events.rs` | Payloads e trait `GithubEventSink` |
 | `src-tauri/crates/mt-github/tests/*.rs` | `remote.rs`, `labels.rs`, `plan.rs`, `rest_client.rs` (wiremock), `gh_cli.rs` (gh falso em `PATH`), `cache.rs`, `sync.rs`, `bulk.rs` |
-| `src-tauri/crates/mt-db/migrations/NNNN_16_github.sql` | DDL (próximo número livre) |
+| `src-tauri/crates/mt-db/migrations/0010_16_github.sql` | DDL (versão 10 fixa; D-01) |
 | `src-tauri/src/commands/github.rs` | Comandos `github_*` |
 | `src-tauri/src/events/github.rs` | `TauriGithubEventSink` |
 
@@ -197,7 +198,7 @@ MaxTerminal, totalmente compatível com o workflow de bugs do MaxCode:
 2. Teste de segurança: após `github_auth_set_token`, `SELECT` em **todas** as tabelas e em `settings` não contém o
    token; logs de teste (`tracing` capturado) não contêm o token.
 3. `cargo clippy -p mt-github -p maxterminal -- -D warnings` sem avisos.
-4. `npm run bindings && git diff --exit-code src/types/bindings.ts` ⇒ 0; `bindings.ts` exporta
+4. Na raiz da worktree, `cargo run --manifest-path src-tauri/Cargo.toml --bin export_bindings` e depois `git diff --exit-code src/types/bindings.ts` ⇒ 0; `bindings.ts` exporta
    `GithubRepoRef`, `IssueSummary`, `IssueDetail`, `LabelDefinition`, `LabelKind`, `BugCycleProgress`,
    `MaxCodeIssueCommand` e nenhum deles é declarado manualmente em `src/` (`grep` vazio).
 5. `tsgo --noEmit`, ESLint e Stylelint sem erros.

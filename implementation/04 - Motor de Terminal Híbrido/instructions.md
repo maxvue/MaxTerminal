@@ -104,7 +104,7 @@ o terminal continua funcional sem qualquer feed ou provider registrado.
   na implementação, sem pressupor que documentação é código já disponível.
 
 ### 3.2. Ferramentas
-- Node ≥ 22, pnpm/npm conforme Fase 01; Rust stable + `cargo tauri dev` (Tauri v2, WebKitGTK no CachyOS).
+- Node ≥ 22, `npm` (Fase 01); Rust stable + `cargo tauri dev` (Tauri v2, WebKitGTK no CachyOS).
 - Binários para validação manual: `zsh`, `bash`, `fish`, `vim`/`nvim`, `htop`, `claude`, `opencode`,
   `agy`, `codex`, `tmux` (opcional), `python3` (scripts de fixture).
 - Dependências npm adicionadas nesta fase: `@xterm/xterm`, `@xterm/addon-webgl`, `@xterm/addon-fit`,
@@ -173,7 +173,7 @@ o terminal continua funcional sem qualquer feed ou provider registrado.
 
 ### 5.1. Automatizados (bloqueantes)
 1. `npm run typecheck` (`tsgo --noEmit`) sem erros; `npm run lint` e `npm run lint:style` sem erros.
-2. `npx vitest run tests/terminal` verde, com cobertura ≥ 90% de linhas em `src/terminal/**` e
+2. `npx --no-install vitest run tests/terminal` verde, com cobertura ≥ 90% de linhas em `src/terminal/**` e
    ≥ 80% em `src/components/terminal/**`.
 3. Testes obrigatórios existentes e passando (nomes de arquivo exatos):
    - `writeBatcher.spec.ts`: N chunks no mesmo frame resultam em **1** `term.write`; orçamento por frame
@@ -211,6 +211,12 @@ o terminal continua funcional sem qualquer feed ou provider registrado.
 7. Spike e teste de integração usam `vue-web-terminal` real na versão fixada: projetam blocos do feed,
    comprovam um único editor/pipeline de entrada e não duplicam execução, eco ou listeners de PTY.
    Mock isolado não satisfaz este critério; incompatibilidade exige decisão arquitetural explícita.
+   `HybridTerminal` → `CommandBlockLayer` → `useCommandBlocks` → `VueWebTerminalAdapter` é o pipeline
+   real: um adaptador por painel, `projectedEntries` consumidas por `CommandBlock`, descarte no unmount.
+8. `TerminalTheme.ui` tem os cinco campos obrigatórios (`blockBackground`, `blockBorder`,
+   `blockHeaderBackground`, `richInputBackground`, `richInputBorder`), publicados por `applyTheme`/`onThemeChange`
+   em `themeUi` e aplicados como variáveis CSS locais na raiz `.hybrid-terminal`. Dois painéis com temas distintos
+   mantêm blocos/input isolados, inclusive após ocultar, alterar o tema e remontar; nenhuma cor é aplicada globalmente.
 
 ### 5.2. Comportamento observável (validar em `cargo tauri dev`, rota `/dev/terminal`)
 1. Shell padrão abre sem fases 05/07. Registrar latência de spawn e montagem separadas; meta de

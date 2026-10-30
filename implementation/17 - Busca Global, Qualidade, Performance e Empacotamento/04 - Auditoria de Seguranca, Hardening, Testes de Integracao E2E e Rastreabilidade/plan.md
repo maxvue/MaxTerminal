@@ -14,8 +14,8 @@
 4. Implementar `src-tauri/tests/capabilities_minimal.rs` testando as permissões efetivas da janela `main` e a recusa para janelas/origens não autorizadas.
 
 ### Passo 2: Testes de Hardening do Bridge Loopback e Deep Links
-1. Criar `src-tauri/tests/bridge_hardening.rs` validando bind exclusivo em `127.0.0.1`, falta de token (`401`), `Host` inválido (`421`) e `Origin` proibido (`403`).
-2. Criar `src-tauri/tests/deep_link_allowlist.rs` validando rejeição (`bridge.deeplink_rejected`) de URIs `maxterminal://` com `..`, rotas desconhecidas, caminhos não cadastrados ou comandos embutidos.
+1. Criar `src-tauri/tests/bridge_hardening.rs` validando bind exclusivo em `127.0.0.1`, falta de token nas rotas autenticadas (`401`), `Host` inválido (`403 bridge.host_forbidden`) e `Origin` proibido (`403`). Aceitar Host `127.0.0.1:<porta>` e `localhost:<porta>`; health permanece sem Bearer.
+2. Criar `src-tauri/tests/deep_link_allowlist.rs` validando códigos por camada: `os.activation_invalid`, `bridge.invalid_uri`, `bridge.invalid_path`, `bridge.project_not_found` e `bridge.cwd_outside_project`. Canonicalizar `..` e testar o destino; testar o fluxo único `ActivationRouter` → `ActivationHandler` sem duplicação de efeitos. Em `capabilities_minimal.rs`, negar autostart JS direto e preservar comandos Rust `os_*` autorizados.
 
 ### Passo 3: Suítes de Integração `no_orphans.rs` e `sanitizer_e2e.rs`
 1. Criar `src-tauri/tests/no_orphans.rs` cobrindo filhos diretos, netos, `nohup`, `setsid`, double-fork, processos que ignoram `SIGHUP`/`SIGTERM`, detecção de zumbis, proteção contra reuso de PID via `(pid, start_time)`, preservação no tray e reconciliação no boot após `SIGKILL`.
@@ -28,13 +28,13 @@
 ### Passo 5: Matriz de Rastreabilidade e Workflows de CI
 1. Criar `traceability-manifest.json` e `scripts/check-traceability.mjs` validando que todos os requisitos canônicos possuem fase responsável, teste executável existente e artefato de evidência.
 2. Criar `.github/workflows/ci.yml` (jobs `frontend`, `rust`, `e2e-frontend`, `e2e-native`, `audit`, `bundle-budget`, `traceability`, `package`), `.github/workflows/audit.yml` e `.github/workflows/bench.yml`.
-3. Atualizar o script `"check"` no `package.json` para encadear `lint`, `lint:style`, `typecheck:tsgo`, `typecheck:vue`, `vitest run`, `cargo fmt --check`, `cargo clippy -- -D warnings` e `cargo nextest run`.
+3. Atualizar o script `"check"` no `package.json` para encadear `lint`, `lint:style`, `typecheck`, `typecheck:vue`, `vitest run`, `cargo fmt --check`, `cargo clippy -- -D warnings` e `cargo nextest run`.
 
 ---
 
 ## 2. Comandos Exatos de Verificação e Testes
 
-Executar a partir de `/home/johnattas/GitHub/MaxTerminal/.max-code-worktrees/wt-6f18b3d0`:
+Executar a partir da raiz da worktree ativa (`cd "$(git rev-parse --show-toplevel)"`):
 
 ```bash
 # 1. Executar gate unificado de qualidade (CA-22)
@@ -75,6 +75,6 @@ node scripts/check-traceability.mjs
 | `CA-30` | `tauri.conf.json` + `e2e/specs/tabs.e2e.ts` | CSP sem `unsafe-eval` ou CDNs; bloqueio de script remoto confirmado no WebView real. |
 | `CA-31` | `tests/capabilities_minimal.rs` | Valida permissões mínimas por janela e rejeição de janela/origem não autorizada nos comandos próprios. |
 | `CA-32` | `cargo audit`, `cargo deny check`, `npm audit` | Zero vulnerabilidades ou licenças proibidas não justificadas. |
-| `CA-33` | `tests/bridge_hardening.rs` | Sem token → `401`; `Host` inválido → `421`; `Origin` proibido → `403`; bind exclusivo em `127.0.0.1`. |
-| `CA-34` | `tests/deep_link_allowlist.rs` | URIs inválidas, com `..`, caminhos externos ou comandos retornam `bridge.deeplink_rejected`. |
+| `CA-33` | `tests/bridge_hardening.rs` | Sem token nas rotas autenticadas → `401`; `Host` inválido → `403 bridge.host_forbidden`; Hosts loopback canônicos aceitos; `Origin` proibido → `403`; bind exclusivo em `127.0.0.1`. |
+| `CA-34` | `tests/deep_link_allowlist.rs` | Rejeições usam códigos reais por camada conforme spec §3.4, após canonicalização dos caminhos; nenhum efeito colateral. |
 | `CA-41` | `node scripts/check-traceability.mjs` | Todos os requisitos canônicos possuem fase, teste existente e artefato de evidência validados. |

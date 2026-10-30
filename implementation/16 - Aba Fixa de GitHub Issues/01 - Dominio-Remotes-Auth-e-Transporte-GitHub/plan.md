@@ -75,6 +75,7 @@
 ## 2. Comandos de Verificação e Validação
 
 ```bash
+cd "$(git rev-parse --show-toplevel)/src-tauri"
 # 1. Verificar compilação e tipagem do crate mt-github
 cargo check -p mt-github --all-targets
 

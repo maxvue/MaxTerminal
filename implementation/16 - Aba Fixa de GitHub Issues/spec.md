@@ -1,7 +1,8 @@
 # Fase 16 — Especificação técnica da aba fixa de GitHub Issues
 
 > Escopo e aceite: [`instructions.md`](./instructions.md). Contratos comuns: [`../README.md`](../README.md).
-> Dependências diretas: 06, 07, 08, 11 e 13; infraestrutura transitiva: 01/03/09.
+> Dependências diretas: 06, 07, 08, 11, 13 e 15; infraestrutura transitiva: 01/03/09.
+> A aresta 15→16 é de persistência: `0009_15_command_groups.sql` deve preceder `0010_16_github.sql` (D-01), sem consumo obrigatório de serviços de grupos.
 > Este documento especifica implementação futura. Nomes da integração adicional MaxCode em §8 são
 > **propostas de contrato**, não handlers comprovadamente disponíveis na extensão.
 
@@ -35,9 +36,10 @@ eventos + IPC → useGithubIssuesStore → TabBar #pinned / ProjectBadgeProvider
 | 06 | `useProjectsStore.selectedId`, `Project.path`, `ProjectBadgeProvider`, `register(provider)`, `project://removed` | Badge `id: 'github-issues'`, `order: 60`; reatividade do contador; desligar assinatura ao remover projeto |
 | 07 | `TabBar #pinned`; `TabOpenRequest { project_id, template_id, overrides, focus }`; `TabOpenOverrides.cwd` | Composição virtual; `cwd_fallback_to_project: false`; nunca fingir API `registerPinnedTab` |
 | 08 | `GitRunner`, descoberta de `common_dir`/repo, `WorktreeManager::{list,create}` e `WorktreeCreateRequest` | Remote por argv `git remote get-url origin`; validar pertencimento e branches; não criar segundo gerenciador |
-| 11 | `Envelope`, `Message`, `PeerRegistry::request`, handshake, URI/entrega, `maxcode_open_plan` | §8 requer extensão de tipos/capabilities; enum atual só conversa em Plan, não ciclo nem execução |
-| 13 | `agent_tab_open(AgentTabOpenRequest)`, `WorktreeIsolation::Existing { path }`, `AgentKind` | IDs `claude-code`, `codex`, `agy`, `opencode`; usar worktree já resolvida, sem isolamento adicional |
+| 11/06 | `MaxCodeClient::{send_issue_command, bugs_cycle_preview, bugs_cycle_start, bugs_cycle_status}`, capabilities `issues_protocol_v1`/`bugs_cycle_v1`, evento `bugs.cycle.progress` e builder de URI | Consumir via `MaxCodePort`; contrato D-03 ainda sujeito à confirmação bilateral com MaxCode, sem alterar a bridge nesta fase |
+| 13 | `AppAgentState::open_agent_tab(AgentTabOpenRequest) -> MtResult<AgentTabOpened>`, `WorktreeIsolation::Existing { path }`, `AgentKind` | Adaptador de `AgentPort` chama o serviço D-08; IDs `claude-code`, `codex`, `agy`, `opencode`; usar worktree já resolvida |
 | 03/09 | Writer, migrations WAL, sanitizer, retenção e notificação nativa | Persistir antes de emitir; notificar término somente confirmado pelo MaxCode |
+| 15 | Migration `0009_15_command_groups.sql` | Pré-requisito da versão 10 de GitHub; nenhuma porta/serviço de grupos é injetado por causa desta aresta. |
 
 `ports.rs` define portas assíncronas testáveis `ProjectPort`, `GitPort`, `WorkspacePort`, `AgentPort`,
 `MaxCodePort` e `NotificationPort`. Implementações no composition root de `maxterminal`; `mt-github` não
@@ -51,8 +53,17 @@ Fonte conferida somente para leitura: `~/GitHub/MaxCode/src/core/labelsDeBugs.ts
 `1054eb8a886de412de8912ad56f64b1367da8b09`. A fonte exporta `LABELS_DE_ESTADO`,
 `LABELS_DE_ENCERRAMENTO`, `LABELS_DE_CATEGORIA`, `TRANSICOES` e helpers de comparação.
 `cicloDeBugs.ts::nomeDaWorktreeDeIssue` retorna `wt-implement-issue-${numero}` no checkout consultado.
-Constantes executáveis, não comentários, determinam a grafia. Este documento não transcreve nem completa
-um suposto catálogo; os exemplos de AGENTS.md não bastam para gerar 24 entradas.
+Constantes executáveis determinam a grafia; D-02 estabiliza o catálogo literal abaixo, preservado byte a byte:
+
+| Tipo | Quantidade | Nomes exatos |
+|------|------------|-------------|
+| `state` | 15 | `Waiting Plan`, `Waiting More Info`, `Planned`, `Waiting Execute`, `Executed`, `Waiting Check`, `Checked Approved`, `Checked Rejected`, `Waiting Re-plan`, `Fix Merged`, `Waiting Deploy`, `Deployed`, `Waiting user test`, `User Rejected`, `User Approved` |
+| `closure` | 3 | `Duplicated`, `Evidence not Found`, `Dismissed` |
+| `category` | 6 | `Regra de Negocio`, `Testes`, `Desempenho`, `Seguranca`, `Audit`, `Documentacao` |
+
+O catálogo acima é suficiente para conferir os 24 nomes sem checkout externo. A fixture versionada mantém
+procedência, transições e vetores de comparação; teste de paridade consulta a fonte MaxCode quando disponível,
+registrando ausência como teste opcional não executado. Build/CI normal valida a fixture embutida e esta lista.
 
 Entregáveis futuros em `mt-github/fixtures/maxcode/`:
 
@@ -354,7 +365,7 @@ para terminal pausa apenas detalhamento prioritário, mantendo atualização or�
 
 ## 7. SQLite, índices, transações e retenção
 
-Migration futura `mt-db/migrations/NNNN_16_github.sql` usa próximo número disponível. DDL abaixo assume
+Migration futura `mt-db/migrations/0010_16_github.sql` usa a versão 10 fixa da sequência D-01. DDL abaixo assume
 `projects(id TEXT PRIMARY KEY)` da Fase 06. WAL/FK/busy_timeout vêm da conexão da Fase 03; nada de conexão
 concorrente de escrita criada por `mt-github`. `auth_scope` nunca contém segredo.
 
@@ -504,17 +515,19 @@ CREATE INDEX idx_github_mutations_pending ON github_mutations(repo_id, auth_scop
 
 ### 8.1. Gate de protocolo
 
-A Fase 11 define `Capability::{ProjectSync,OpenTab,OpenConversation,OpenProject,Unknown}` e mensagens de
-conversa com `ConversationMode::Plan`. `ConversationSource::IssueFix` é rastreabilidade, **não autorização
-nem implementação de execução**. `issue.command` e `bugs.cycle.*` exigem extensão negociada nos dois lados:
-adicionar variantes tipadas e decoder/dispatch à bridge, handlers no MaxCode e fixtures de contrato.
-Somente inserir strings em `Envelope.payload` não funciona com o enum atual. Não editar a especificação
-da Fase 11 nesta tarefa; registrar esta dependência como bloqueio de integração.
+A sub-implementação **11/06** é proprietária do protocolo D-03: `issue.command`, `bugs.cycle.preview`,
+`bugs.cycle.start`, `bugs.cycle.status`, evento `bugs.cycle.progress`, capabilities `issues_protocol_v1` e
+`bugs_cycle_v1` e fallback URI `vscode://johnattas.maxcode/issue?action=<open|plan|fix>&repo=…&number=…`.
+A Fase 16 somente consome `MaxCodeClient::{send_issue_command, bugs_cycle_preview, bugs_cycle_start,
+bugs_cycle_status}` por um adaptador de `MaxCodePort`, sem editar `mt-bridge` nem duplicar decoder/dispatch.
+O contrato continua proposta a confirmar com a extensão; fixtures locais não comprovam suporte remoto.
 
-Proposta `issues_protocol_v1`, anunciando capacidades separadas de abrir/plan/fix, preview/start/status de ciclo,
-deduplicação durável por requestId, catálogo aceito e versão da convenção Git. `MaxCodePort::capabilities`
-traduz o handshake para `IssueCapabilities`; `Unknown` não equivale a suporte. URI também deve ter rota e
-versão declaradas. Sem capacidade, UI explica indisponibilidade; não substitui fix por conversa em Plan.
+`MaxCodePort::issue_capabilities` traduz o handshake: `issues_protocol_v1` habilita ações individuais;
+`bugs_cycle_v1` habilita ciclo. `Unknown`/ausência desabilita a ação com motivo em pt-BR, nunca simula suporte
+ou degrada `fix` para conversa Plan. Catálogo compatível e deduplicação durável continuam gates adicionais.
+O adaptador converte o DTO de domínio abaixo para o DTO de transporte da 11/06: `command → action`,
+`request_id → correlationId` estável, `repo → owner/name`, `issue_number → issueNumber`,
+`project_path → projectPath` e worktree validada opcional. Não serializar diretamente o DTO de domínio como wire.
 
 ```rust
 pub enum MaxCodeIssueCommand { Open, Plan, Fix }
@@ -522,6 +535,7 @@ pub struct IssueCommandPayload {
     pub schema_version: u16,
     pub request_id: RequestId,
     pub project_path: String,
+    pub worktree: Option<String>,
     pub repo: GithubRepoRef,
     pub issue_number: u32,
     pub command: MaxCodeIssueCommand,
@@ -605,7 +619,7 @@ registro Git não é adotado. Múltiplos candidatos exigem escolha; nunca checko
   criação autorizada usa a política `ensure_gitignore` da Fase 08. Nenhuma remoção/merge automático nesta fase.
 - Terminal: `tab_open` com template escolhido, `overrides.cwd = path`, `cwd_fallback_to_project = false`,
   título `Issue #<n>`. Comando inicial é o do template aprovado, nunca texto da issue.
-- Agente: `agent_tab_open` com `isolation: Existing { path }`; telemetria, PTY e teardown ficam na Fase 13.
+- Agente: `AgentPort` delega a `AppAgentState::open_agent_tab` com `isolation: Existing { path }`; telemetria, PTY e teardown ficam na Fase 13. O handler IPC `agent_tab_open` não é chamado internamente.
   A abertura não inicia `BUG FIX` implicitamente. No erro de spawn, informar worktree criada e preservá-la;
   não apagar diretório que MaxCode pode ter começado a usar. Guardar vínculo issue↔aba em memória recuperável.
 

@@ -48,7 +48,7 @@ Esta é a **primeira unidade de implementação da Fase 11 (Integração Bidirec
 [package]
 name = "mt-bridge"
 version = "0.1.0"
-edition = "2024"
+edition.workspace = true   # D-09: 2024 herdado do [workspace.package]
 publish = false
 
 [dependencies]
@@ -84,6 +84,7 @@ tempfile = "3"
 
 ```rust
 use mt_core::{ErrorCode, MtError};
+use serde_json::json;
 
 /// Erros da ponte MaxCode. Convertidos para `MtError` com código `bridge.*` e mensagem em pt-BR.
 #[derive(Debug, thiserror::Error)]
@@ -160,7 +161,15 @@ impl BridgeError {
 
 impl From<BridgeError> for MtError {
     fn from(err: BridgeError) -> Self {
-        MtError::new(ErrorCode::from(err.code()), err.to_string())
+        // D-07: `ErrorCode` é `ErrorCode(&'static str)`; código `dominio.motivo` minúsculo; mensagem pt-BR.
+        let code = err.code();
+        let message = err.to_string();
+        let mut out = MtError::new(ErrorCode(code), message);
+        // Detalhes estruturados apenas quando úteis e sem segredo (ex.: versão não suportada).
+        if let BridgeError::UnsupportedVersion(v) = &err {
+            out = out.with_details(json!({ "version": v }));
+        }
+        out
     }
 }
 ```
@@ -174,8 +183,10 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 /// Configuração persistida em `$XDG_CONFIG_HOME/maxterminal/bridge.toml` (permissão 0600).
+/// Também é o DTO Tauri: usa `camelCase` (T-11) tanto no IPC quanto nas chaves do TOML
+/// (`preferredPort`, `syncActiveProject`, ...), evitando uma segunda representação.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, PartialEq, Eq)]
-#[serde(default, rename_all = "snake_case")]
+#[serde(default, rename_all = "camelCase")]
 pub struct BridgeConfig {
     pub enabled: bool,
     pub preferred_port: u16,
@@ -392,6 +403,8 @@ pub fn verify_bearer(headers: &HeaderMap, token: &Token) -> Result<(), BridgeErr
 ```
 
 ### 3.6. `src-tauri/crates/mt-bridge/src/protocol.rs`
+
+Esta unidade entrega o protocolo base abaixo. **11/04** acrescenta a extensão proposta de arquivo (`editor_open_v1`/`maxcode.open_file`) e **11/06** acrescenta `issues_protocol_v1`, `bugs_cycle_v1`, `issue.command` e `bugs.cycle.{preview,start,status,progress}`, metadados de handshake e ACKs tipados. Manter `v=1` por adição e gates desabilitados até validação real; nenhuma fase posterior à 11 precisa editar este crate. DTOs Tauri de estado/entrega/eventos usam camelCase, enquanto o protocolo base conserva seus nomes explícitos.
 
 ```rust
 use crate::error::BridgeError;
@@ -670,7 +683,10 @@ use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use uuid::Uuid;
 
+// T-11: todo DTO que cruza o IPC/eventos Tauri usa `camelCase`. Payloads de fio (WS/HTTP, `protocol.rs`)
+// seguem o contrato externo snake_case, exceto `senderId`/`correlationId`.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct ProjectRef {
     pub id: ProjectId,
     pub path: PathBuf,
@@ -678,9 +694,9 @@ pub struct ProjectRef {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct SyncContext {
     pub origin: PeerApp,
-    #[serde(rename = "correlationId")]
     pub correlation_id: Uuid,
 }
 
@@ -710,6 +726,7 @@ pub enum BridgeState {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct PeerInfo {
     pub id: String,
     pub app: String,
@@ -720,6 +737,7 @@ pub struct PeerInfo {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct ProjectFocusRequested {
     pub project_id: ProjectId,
     pub worktree_path: Option<String>,
@@ -729,6 +747,7 @@ pub struct ProjectFocusRequested {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
 pub struct BridgeStatus {
     pub instance_id: String,
     pub revision: u64,
@@ -742,12 +761,14 @@ pub struct BridgeStatus {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct PeerDisconnectedEvent {
     pub peer_id: String,
     pub reason: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct TabOpenedEvent {
     pub tab_id: TabId,
     pub project_id: ProjectId,
@@ -755,6 +776,7 @@ pub struct TabOpenedEvent {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct DeliveryFailedEvent {
     pub message_id: String,
     pub code: String,

@@ -38,7 +38,7 @@ Esta implementação entrega toda a camada frontend em **Vue 3.6 + TypeScript (`
 - `src/types/bindings.ts` — Regenerado automaticamente a partir do `tauri-specta` com os tipos da Implementação 01.
 - `src/composables/terminal/keybindings.ts` (Fase 04) — Registrar a ação `search.global.open` (`Ctrl+K`) e a regra de escalonamento de `terminal.search.open` (`Ctrl+Shift+F` quando a `TerminalSearchBar` já estiver aberta).
 - `src/components/terminal/TerminalSearchBar.vue` (Fase 04) — Expor evento/ação de escalonamento para abrir a paleta global levando a query atual.
-- `src/components/app/AppTitleBar.vue` (Fase 01) — Adicionar botão `"Buscar em tudo…"` (`Ctrl+K`) no slot `actions`.
+- `src/components/shell/AppTitleBar.vue` (Fase 01) — Adicionar botão `"Buscar em tudo…"` (`Ctrl+K`) no slot `actions`.
 - `src/app/App.vue` — Montar `<GlobalSearchPalette />` e inicializar `useSearchShortcut()`.
 - `eslint.config.js` — Garantir que a regra `'vue/no-v-html': 'error'` esteja ativa sem exceções em `src/components/search/**`.
 

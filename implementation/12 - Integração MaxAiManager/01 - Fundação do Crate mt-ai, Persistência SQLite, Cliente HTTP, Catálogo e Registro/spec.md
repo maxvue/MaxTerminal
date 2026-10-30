@@ -2,7 +2,7 @@
 
 > **Fase:** 12 — Integração MaxAiManager (`@` / `?`)
 > **Unidade:** `01 - Fundação do Crate mt-ai, Persistência SQLite, Cliente HTTP, Catálogo e Registro`
-> **Pré-requisitos:** Fase 01 (`mt-core`), Fase 03 (`mt-db` e `mt_db::sanitizer::sanitize()`)
+> **Pré-requisitos:** Fase 01 (`mt-core`), Fase 03 (`mt-db` e `mt_db::sanitizer::sanitize()`) e Fase 10 para disponibilidade de todas as migrations `0001`–`0006_10_themes.sql` antes de `0007_12_ai.sql` (D-01; sem dependência de serviços de temas).
 > **Cobertura de Escopo da Fase 12:** `I-01`, `I-02`, `I-03`, `I-04`, `I-13`, `I-15` (parcial)
 > **Cobertura de Critérios de Aceite:** `CA-01` (parcial), `CA-05`, `CA-06`, `CA-07`, `CA-08`, `CA-09`, `CA-10`, `CA-11`, `CA-12`, `CA-29`, `CA-30`, `CA-31`, `CA-32`, `CA-33` (invariantes backend), `CA-35`, `CA-36` (sanitização em fronteiras de chunks)
 
@@ -12,7 +12,7 @@
 
 Esta primeira unidade estabelece a fundação do domínio de Inteligência Artificial do MaxTerminal no backend Rust:
 1. **Isolamento estrutural (`mt-ai`):** Cria o crate `src-tauri/crates/mt-ai` dependendo exclusivamente de `mt-core` e `mt-db` (sem dependência de `mt-pty`, `mt-shell`, `mt-projects` ou `tauri`), garantindo estruturalmente que a camada de IA jamais possa escrever bytes diretamente em um PTY (`CA-15`).
-2. **Persistência SQLite (`NNNN_12_ai.sql` e `AiRepo`):** Cria as tabelas `ai_settings`, `ai_catalog_cache`, `ai_diagnosis_cache` e `ai_prompt_history`, garantindo sanitização obrigatória (`mt_db::sanitizer::sanitize()`) antes de toda gravação, retenção automática de no máximo 5.000 itens de histórico, expiração de cache e contador monotônico de geração de limpeza para impedir que requisições em voo repovoem dados recém-limpos.
+2. **Persistência SQLite (`0007_12_ai.sql` e `AiRepo`):** Cria as tabelas `ai_settings`, `ai_catalog_cache`, `ai_diagnosis_cache` e `ai_prompt_history`, garantindo sanitização obrigatória (`mt_db::sanitizer::sanitize()`) antes de toda gravação, retenção automática de no máximo 5.000 itens de histórico, expiração de cache e contador monotônico de geração de limpeza para impedir que requisições em voo repovoem dados recém-limpos.
 3. **Registro de Requisições e Cancelamento (`AiRequestRegistry`):** Gerencia o ciclo de vida atômico (`Pending/Running → Completed | Failed | Cancelled`) por `AiRequestId` (Uuid v7), suportando tombstones para cancelamentos que cheguem antes do início da requisição, cancelamento por painel (`cancel_pane`) e cancelamento global (`cancel_all`).
 4. **Cliente HTTP e Streaming Condicional (`GatewayClient`, `GatewayDialect`, `sse.rs`):** Conecta ao gateway local do **MaxAiManager** injetando obrigatoriamente o header `X-Agent-Name: MaxTerminal` em **todas** as requisições (`CA-05`), validando que a URL seja loopback salvo `allow_remote = true` (`CA-07`), aplicando timeouts por operação, retry restrito a leituras idempotentes homologadas (`Health`/`Catalog`), streaming SSE condicional com coalescência de 32 ms e sanitização incremental capaz de reter caudas parciais para impedir vazamento de segredos divididos entre chunks (`CA-36`).
 5. **Catálogo de Harnesses (`CatalogService`):** Gerencia a cascata **Harness → Modelo → Nível de Raciocínio** com cache em memória + SQLite (TTL de 6 horas, revalidação `If-None-Match` / `ETag` separada por `gateway_key`) e fallback estático contendo exclusivamente as identidades visuais dos 4 harnesses canônicos (`claude-code`, `codex`, `agy`, `opencode`) com `models: []`, sem jamais inventar modelos ou níveis de raciocínio (`CA-11`, `CA-12`).
@@ -23,10 +23,10 @@ Esta primeira unidade estabelece a fundação do domínio de Inteligência Artif
 
 ### 2.1. Arquivos a Modificar
 - `src-tauri/Cargo.toml` — inclusão de `crates/mt-ai` em `[workspace.members]` e dependências compartilhadas no workspace (`eventsource-stream`, `strip-ansi-escapes`, `jsonschema`, `shell-words`, `wiremock`).
-- `src-tauri/crates/mt-db/src/migrations.rs` — registro da migration da Fase 12 (`NNNN_12_ai.sql`) no runner de migrations da Fase 03.
+- `src-tauri/crates/mt-db/src/migrations.rs` — registro da migration da Fase 12 (`0007_12_ai.sql`) no runner de migrations da Fase 03.
 
 ### 2.2. Arquivos a Criar
-- `src-tauri/crates/mt-db/migrations/0006_12_ai.sql` *(ajustar prefixo numérico caso o próximo índice livre na pasta `migrations/` seja diferente, preservando o sufixo `_12_ai.sql`)*
+- `src-tauri/crates/mt-db/migrations/0007_12_ai.sql` *(número fixo `0007` pela decisão D-01 — sequência contígua de migrations do projeto; o runner da Fase 03 rejeita lacunas e duplicatas)*
 - `src-tauri/crates/mt-ai/Cargo.toml`
 - `src-tauri/crates/mt-ai/assets/catalog.fallback.json`
 - `src-tauri/crates/mt-ai/src/lib.rs` *(estrutura base e re-exports desta unidade; expandido na Implementação 02)*
@@ -56,7 +56,7 @@ Esta primeira unidade estabelece a fundação do domínio de Inteligência Artif
 [package]
 name = "mt-ai"
 version = "0.1.0"
-edition = "2024"
+edition.workspace = true
 rust-version = "1.85"
 
 [dependencies]
@@ -93,7 +93,7 @@ tempfile = "3"
 
 ---
 
-### 3.2. Migration SQLite (`src-tauri/crates/mt-db/migrations/0006_12_ai.sql`)
+### 3.2. Migration SQLite (`src-tauri/crates/mt-db/migrations/0007_12_ai.sql`)
 
 ```sql
 -- Fase 12: configurações, caches e histórico de IA (todo texto gravado já sanitizado via mt_db::sanitizer::sanitize)
@@ -200,40 +200,43 @@ impl fmt::Display for AiRequestId {
 use mt_core::{ErrorCode, MtError};
 use serde_json::json;
 
+/// Códigos canônicos `ai.<motivo>` (D-07). Nomes Rust com prefixo `AI_`; valor IPC em minúsculas.
 pub mod codes {
-    pub const AI_GATEWAY_UNAVAILABLE: &str = "AI_GATEWAY_UNAVAILABLE";
-    pub const AI_TIMEOUT: &str = "AI_TIMEOUT";
-    pub const AI_CANCELLED: &str = "AI_CANCELLED";
-    pub const AI_HTTP_STATUS: &str = "AI_HTTP_STATUS";
-    pub const AI_BAD_RESPONSE: &str = "AI_BAD_RESPONSE";
-    pub const AI_SCHEMA_VALIDATION: &str = "AI_SCHEMA_VALIDATION";
-    pub const AI_URL_INVALID: &str = "AI_URL_INVALID";
-    pub const AI_URL_NOT_LOOPBACK: &str = "AI_URL_NOT_LOOPBACK";
-    pub const AI_INVALID_SLUG: &str = "AI_INVALID_SLUG";
-    pub const AI_RAG_NOT_FOUND: &str = "AI_RAG_NOT_FOUND";
-    pub const AI_NO_DEFAULT_SELECTION: &str = "AI_NO_DEFAULT_SELECTION";
-    pub const AI_UNKNOWN_SELECTION: &str = "AI_UNKNOWN_SELECTION";
-    pub const AI_RATE_LIMITED: &str = "AI_RATE_LIMITED";
-    pub const AI_EMPTY_COMMAND: &str = "AI_EMPTY_COMMAND";
-    pub const AI_DISABLED: &str = "AI_DISABLED";
-    pub const AI_NOT_CONFIGURED: &str = "AI_NOT_CONFIGURED";
-    pub const AI_CAPABILITY_UNAVAILABLE: &str = "AI_CAPABILITY_UNAVAILABLE";
-    pub const AI_AUTH_REQUIRED: &str = "AI_AUTH_REQUIRED";
-    pub const AI_REQUEST_CONFLICT: &str = "AI_REQUEST_CONFLICT";
-    pub const AI_CONTEXT_STALE: &str = "AI_CONTEXT_STALE";
-    pub const AI_SETTINGS_CONFLICT: &str = "AI_SETTINGS_CONFLICT";
+    use mt_core::ErrorCode;
+
+    pub const AI_GATEWAY_UNAVAILABLE: ErrorCode = ErrorCode("ai.gateway_unavailable");
+    pub const AI_TIMEOUT: ErrorCode = ErrorCode("ai.timeout");
+    pub const AI_CANCELLED: ErrorCode = ErrorCode("ai.cancelled");
+    pub const AI_HTTP_STATUS: ErrorCode = ErrorCode("ai.http_status");
+    pub const AI_BAD_RESPONSE: ErrorCode = ErrorCode("ai.bad_response");
+    pub const AI_SCHEMA_VALIDATION: ErrorCode = ErrorCode("ai.schema_validation");
+    pub const AI_URL_INVALID: ErrorCode = ErrorCode("ai.url_invalid");
+    pub const AI_URL_NOT_LOOPBACK: ErrorCode = ErrorCode("ai.url_not_loopback");
+    pub const AI_INVALID_SLUG: ErrorCode = ErrorCode("ai.invalid_slug");
+    pub const AI_RAG_NOT_FOUND: ErrorCode = ErrorCode("ai.rag_not_found");
+    pub const AI_NO_DEFAULT_SELECTION: ErrorCode = ErrorCode("ai.no_default_selection");
+    pub const AI_UNKNOWN_SELECTION: ErrorCode = ErrorCode("ai.unknown_selection");
+    pub const AI_RATE_LIMITED: ErrorCode = ErrorCode("ai.rate_limited");
+    pub const AI_EMPTY_COMMAND: ErrorCode = ErrorCode("ai.empty_command");
+    pub const AI_DISABLED: ErrorCode = ErrorCode("ai.disabled");
+    pub const AI_NOT_CONFIGURED: ErrorCode = ErrorCode("ai.not_configured");
+    pub const AI_CAPABILITY_UNAVAILABLE: ErrorCode = ErrorCode("ai.capability_unavailable");
+    pub const AI_AUTH_REQUIRED: ErrorCode = ErrorCode("ai.auth_required");
+    pub const AI_REQUEST_CONFLICT: ErrorCode = ErrorCode("ai.request_conflict");
+    pub const AI_CONTEXT_STALE: ErrorCode = ErrorCode("ai.context_stale");
+    pub const AI_SETTINGS_CONFLICT: ErrorCode = ErrorCode("ai.settings_conflict");
 }
 
-pub fn ai_error(code: &'static str, message: impl Into<String>) -> MtError {
-    MtError::new(ErrorCode::from(code), message.into())
+pub fn ai_error(code: ErrorCode, message: impl Into<std::borrow::Cow<'static, str>>) -> MtError {
+    MtError::new(code, message)
 }
 
 pub fn ai_error_with_details(
-    code: &'static str,
-    message: impl Into<String>,
+    code: ErrorCode,
+    message: impl Into<std::borrow::Cow<'static, str>>,
     details: serde_json::Value,
 ) -> MtError {
-    MtError::with_details(ErrorCode::from(code), message.into(), details)
+    MtError::new(code, message).with_details(details)
 }
 
 pub fn gateway_unavailable(base_url: &str) -> MtError {
@@ -595,8 +598,8 @@ impl AiRequestRegistry {
     }
 
     /// Registra o início de uma requisição.
-    /// - Se o `id` já estiver ativo ou tiver sido concluído recentemente, retorna `AI_REQUEST_CONFLICT`.
-    /// - Se um cancelamento chegou antes do `begin` (tombstone), consome o tombstone e retorna `AI_CANCELLED`.
+    /// - Se o `id` já estiver ativo ou tiver sido concluído recentemente, retorna `ai.request_conflict`.
+    /// - Se um cancelamento chegou antes do `begin` (tombstone), consome o tombstone e retorna `ai.cancelled`.
     pub fn begin(&self, id: AiRequestId, meta: RequestMeta) -> MtResult<RequestGuard> {
         let now = Instant::now();
         {
@@ -906,91 +909,57 @@ impl AiRepo {
         self.cache_generation.load(Ordering::SeqCst)
     }
 
-    pub async fn get_settings(&self) -> MtResult<AiSettings> {
-        // Lê singleton id=1; se inexistente, retorna AiSettings::default()
-        todo!("Implementado conforme contrato SQLite da Fase 03 em repo.rs")
-    }
+    /// Lê singleton id=1 via Db::read; ausência retorna AiSettings::default().
+    pub async fn get_settings(&self) -> MtResult<AiSettings>;
 
-    /// Atualiza `ai_settings` validando `expected_revision` (concorrência otimista -> `AI_SETTINGS_CONFLICT`).
-    pub async fn save_settings(&self, mut next: AiSettings) -> MtResult<AiSettings> {
-        next.validate()?;
-        next = next.sanitized();
-        // Verifica revisão atual no banco; se divergente de next.revision, retorna AI_SETTINGS_CONFLICT.
-        // Caso contrário, incrementa next.revision += 1 e faz INSERT OR REPLACE na linha id = 1.
-        todo!("Implementado em repo.rs")
-    }
+    /// Atualiza `ai_settings` validando `expected_revision` (concorrência otimista -> `ai.settings_conflict`).
+    pub async fn save_settings(&self, next: AiSettings) -> MtResult<AiSettings>;
 
-    pub async fn get_catalog_cache(&self, gateway_key: &str) -> MtResult<Option<CachedCatalogRow>> {
-        todo!("Implementado em repo.rs")
-    }
+    pub async fn get_catalog_cache(&self, gateway_key: &str) -> MtResult<Option<CachedCatalogRow>>;
 
     pub async fn put_catalog_cache(
         &self,
         expected_cache_gen: u64,
         row: &CachedCatalogRow,
-    ) -> MtResult<bool> {
-        if self.current_cache_generation() != expected_cache_gen {
-            return Ok(false);
-        }
-        todo!("Implementado em repo.rs")
-    }
+    ) -> MtResult<bool>;
 
     pub async fn get_diagnosis_cache(
         &self,
         error_hash: &str,
         now_rfc3339: &str,
-    ) -> MtResult<Option<CachedDiagnosisRow>> {
-        // Filtra `expires_at > :now`; se encontrar, incrementa `hits = hits + 1` e atualiza `last_hit_at = :now` (sem estender expires_at).
-        todo!("Implementado em repo.rs")
-    }
+    ) -> MtResult<Option<CachedDiagnosisRow>>;
 
     pub async fn put_diagnosis_cache(
         &self,
         expected_cache_gen: u64,
         row: &CachedDiagnosisRow,
-    ) -> MtResult<bool> {
-        // Aplica mt_db::sanitizer::sanitize() em summary e fix_command antes do INSERT.
-        todo!("Implementado em repo.rs")
-    }
+    ) -> MtResult<bool>;
 
     pub async fn insert_history(
         &self,
         expected_history_gen: u64,
         save_history_enabled: bool,
-        mut item: AiHistoryItem,
-    ) -> MtResult<bool> {
-        if !save_history_enabled || self.current_history_generation() != expected_history_gen {
-            return Ok(false);
-        }
-        item.prompt_sanitized = mt_db::sanitizer::sanitize(&item.prompt_sanitized);
-        item.response_sanitized = item
-            .response_sanitized
-            .as_deref()
-            .map(mt_db::sanitizer::sanitize);
-        // Insere linha e, a cada HISTORY_PRUNE_BATCH inserções, poda linhas antigas mantendo no máximo HISTORY_MAX_ROWS.
-        todo!("Implementado em repo.rs")
-    }
+        item: AiHistoryItem,
+    ) -> MtResult<bool>;
 
-    pub async fn list_history(&self, filter: &AiHistoryFilter) -> MtResult<AiHistoryPage> {
-        // Paginação keyset: WHERE id < :before_id ORDER BY id DESC LIMIT :limit (máx 200).
-        todo!("Implementado em repo.rs")
-    }
+    pub async fn list_history(&self, filter: &AiHistoryFilter) -> MtResult<AiHistoryPage>;
 
-    pub async fn clear_history(&self, project_id: Option<ProjectId>) -> MtResult<u32> {
-        self.history_generation.fetch_add(1, Ordering::SeqCst);
-        todo!("Executa DELETE e retorna linhas afetadas")
-    }
+    pub async fn clear_history(&self, project_id: Option<ProjectId>) -> MtResult<u32>;
 
-    pub async fn clear_cache(&self, scope: CacheClearScope) -> MtResult<u32> {
-        self.cache_generation.fetch_add(1, Ordering::SeqCst);
-        todo!("Executa DELETE em ai_diagnosis_cache e/ou ai_catalog_cache e retorna linhas afetadas")
-    }
+    pub async fn clear_cache(&self, scope: CacheClearScope) -> MtResult<u32>;
 
-    pub async fn prune_expired_diagnoses(&self, now_rfc3339: &str) -> MtResult<u32> {
-        todo!("DELETE FROM ai_diagnosis_cache WHERE expires_at <= ?1")
-    }
+    pub async fn prune_expired_diagnoses(&self, now_rfc3339: &str) -> MtResult<u32>;
 }
 ```
+
+Comportamento obrigatório das assinaturas do repositório (pseudocódigo de contrato, não corpos executáveis):
+- Acesso exclusivamente por `mt_db::Db` (Fase 03); SQL parametrizado, escrita no writer e erros convertidos para `MtError` sem expor valores secretos.
+- `save_settings`: valida e sanitiza `next`; compara `next.revision` dentro da transação com a revisão atual do singleton, retorna `ai.settings_conflict` se divergir; salva revisão incrementada e devolve o valor persistido.
+- `get_catalog_cache`: busca somente por `gateway_key`, retorna `None` se ausente; `put_catalog_cache` faz upsert da linha sanitizada apenas se a geração ainda coincidir.
+- `get_diagnosis_cache`: busca por hash com `expires_at > now_rfc3339`, incrementa `hits` e atualiza `last_hit_at` atomicamente, sem prorrogar a expiração. `put_diagnosis_cache` sanitiza `summary`/`fix_command` e faz upsert condicionado à geração.
+- `insert_history`: retorna `false` se o histórico estiver desativado ou a geração divergir; sanitiza prompt/resposta, insere e poda a cada `HISTORY_PRUNE_BATCH` inserções, mantendo no máximo `HISTORY_MAX_ROWS`. `list_history` aplica filtros e paginação keyset (`id < before_id`, `ORDER BY id DESC`, limite máximo 200).
+- `clear_history`/`clear_cache`: incrementam a geração correspondente e executam `DELETE` no escopo solicitado, retornando a contagem; a comparação de geração de cada escrita e a limpeza são serializadas no writer, impedindo que uma escrita já enfileirada repovoe dados após a limpeza. A checagem antes do enqueue sozinha não basta.
+- `prune_expired_diagnoses`: executa `DELETE FROM ai_diagnosis_cache WHERE expires_at <= ?1` e retorna as linhas removidas.
 
 ---
 
@@ -1041,7 +1010,8 @@ impl GatewayCapabilities {
         }
     }
 
-    pub fn all_validated() -> Self {
+    #[cfg(test)]
+    fn all_validated() -> Self {
         Self {
             catalog: CapabilityState::Validated,
             generation: CapabilityState::Validated,
@@ -1118,11 +1088,16 @@ impl OpenAiCompatDialect {
     pub fn new(capabilities: GatewayCapabilities) -> Self {
         Self { capabilities }
     }
+
+    #[cfg(test)]
+    pub fn for_tests() -> Self {
+        Self::new(GatewayCapabilities::all_validated())
+    }
 }
 
 impl Default for OpenAiCompatDialect {
     fn default() -> Self {
-        Self::new(GatewayCapabilities::all_validated())
+        Self::new(GatewayCapabilities::unconfigured("Aguardando validação do gateway (probe/configuração)."))
     }
 }
 

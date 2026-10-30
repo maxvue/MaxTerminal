@@ -42,20 +42,21 @@
 ## 2. Comandos de Verificação e Validação Final da Fase 16
 
 ```bash
+cd "$(git rev-parse --show-toplevel)"
 # 1. Executar toda a suíte de testes Rust do crate mt-github
-cargo test -p mt-github
+cargo test --manifest-path src-tauri/Cargo.toml -p mt-github
 
 # 2. Validar clippy sem avisos em mt-github e maxterminal
-cargo clippy -p mt-github -p maxterminal --all-targets -- -D warnings
+cargo clippy --manifest-path src-tauri/Cargo.toml -p mt-github -p maxterminal --all-targets -- -D warnings
 
 # 3. Validar sincronia de bindings TypeScript gerados via tauri-specta
-npm run bindings && git diff --exit-code src/types/bindings.ts
+cargo run --manifest-path src-tauri/Cargo.toml --bin export_bindings && git diff --exit-code src/types/bindings.ts
 
 # 4. Validar ausência de tipos duplicados manualmente no frontend
 rg -n "interface (GithubRepoRef|IssueSummary|IssueDetail|LabelDefinition|BugCycleProgress)|type (LabelKind|MaxCodeIssueCommand)" src/ --glob '!src/types/bindings.ts'
 
 # 5. Executar verificação de tipos TypeScript (tsgo) e linters (ESLint + Stylelint)
-npm run typecheck:tsgo
+npm run typecheck
 npm run lint
 
 # 6. Executar toda a suíte Vitest da Fase 16

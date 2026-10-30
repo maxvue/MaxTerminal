@@ -13,7 +13,7 @@
 ### Passo 2: Wrappers IPC Tipados (`src/ipc/pty.ts`)
 1. Criar `src/ipc/pty.ts` implementando `ptySpawn`, `ptyAttach`, `ptyDetach`, `ptyWrite`, `ptyResize`, `ptyKill`, `ptyAck`, `ptyList`, `ptyProcessInfo`, `onPtyExit`, `onPtySpawned`, `onPtyForegroundChanged` e `onPtyCleanupFailed`.
 2. Em `ptyWrite`, implementar o fatiamento automático para entradas maiores que `1 MiB` (`MAX_WRITE_PAYLOAD_BYTES`), garantindo que strings UTF-8 grandes não sejam cortadas no meio de um code point (surrogate pair) entre fatias.
-3. Em `ptyAttach`, instanciar `new Channel<ArrayBuffer>()`, registrar `channel.onmessage` decodificando com `decodeFrame` antes de invocar `commands.ptyAttach(ptyId, cursor ?? null, channel)` e retornar `{ info, channel }`.
+3. Após evidência Rust/exportador do gate T-06 (`05/spec.md` §3.1), em `ptyAttach`, instanciar `new Channel<PtyChannelMessage>()` (tipo manual `PtyChannelMessage = ArrayBuffer` de `ptyFrame.ts`, exceção única à regra de bindings), registrar `channel.onmessage` decodificando com `decodeFrame` antes de invocar `commands.ptyAttach` com o único cast localizado `channel as Parameters<typeof commands.ptyAttach>[2]` e retornar `{ info, channel }`.
 
 ### Passo 3: Composable `usePtyStream` (`src/composables/usePtyStream.ts` e `src/composables/__tests__/usePtyStream.spec.ts`)
 1. Criar `src/composables/usePtyStream.ts` implementando:
@@ -46,7 +46,8 @@
    - Remoção completa de listeners ao chamar `dispose()`.
 
 ### Passo 5: Verificação Integrada Final da Fase 02
-1. Executar `pnpm typecheck` (`tsgo`), `pnpm lint`, `pnpm test` (Vitest) e `cargo test --workspace` para confirmar que todas as 6 implementações da Fase 02 funcionam perfeitamente integradas.
+1. Executar `npm run typecheck` (`tsgo`), `npm run lint`, `npm run test` (Vitest) e `cargo test --workspace` para confirmar que todas as 6 implementações da Fase 02 funcionam perfeitamente integradas.
+2. Completar o gate T-06 (`05/spec.md` §3.1): comprovar o `ArrayBuffer` em WebView real, preservação de bytes/ordem e ausência de JSON/base64, além de verificar a única declaração manual `PtyChannelMessage` em `src/ipc/ptyFrame.ts`. Registrar comandos, resultados e versões; sem essa prova CA-35 continua pendente, mesmo com mocks e typecheck aprovados.
 
 ---
 
@@ -54,11 +55,11 @@
 
 ```bash
 # 1. Verificar tipagem estrita TypeScript (tsgo) e linter (ESLint)
-pnpm typecheck
-pnpm lint
+npm run typecheck
+npm run lint
 
 # 2. Executar os testes unitários e de integração frontend no Vitest
-pnpm test -- --run src/ipc/__tests__/ptyFrame.spec.ts src/composables/__tests__/usePtyStream.spec.ts src/stores/__tests__/pty.spec.ts
+npx --no-install vitest run src/ipc/__tests__/ptyFrame.spec.ts src/composables/__tests__/usePtyStream.spec.ts src/stores/__tests__/pty.spec.ts
 
 # 3. Verificação completa da Fase 02 (Rust + Bindings + Frontend)
 cargo fmt --manifest-path src-tauri/Cargo.toml --check
@@ -73,7 +74,7 @@ git diff --exit-code src/types/bindings.ts
 
 | Critério da Fase 02 | Descrição da Validação nesta Implementação |
 |---------------------|--------------------------------------------|
-| **CA-03** | `pnpm typecheck` (`tsgo`) e `pnpm test` (Vitest) passam sem erros; `src/types/bindings.ts` permanece limpo no `git diff`. |
+| **CA-03** | `npm run typecheck` (`tsgo`) e `npm run test` (Vitest) passam sem erros; `src/types/bindings.ts` permanece limpo no `git diff`. |
 | **CA-09** | `decodeFrame` preserva `Uint8Array` intacto e `ptyFrame.spec.ts` comprova reconstrução de UTF-8 multibyte e ANSI divididos entre frames. |
 | **CA-30** | `ptyFrame.spec.ts`, `usePtyStream.spec.ts` e `pty.spec.ts` cobrem e aprovam todos os cenários de frames, ACK cumulativo, replay, reconexão, `detach`, consumidor lento/falho, troca de `ptyId`, exit antecipado, tombstone, reconciliação de lista/eventos e liberação de listeners. |
 | **CA-35 (TS)** | `usePtyStream.spec.ts` demonstra que a entrega no `Channel` não envia `ptyAck` enquanto a Promise de `consumer.write` não tiver concluído. |

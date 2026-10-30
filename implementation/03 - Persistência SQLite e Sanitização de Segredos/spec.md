@@ -12,7 +12,7 @@
 |----------|---------------------------------------------|---------------------------|
 | Garantia "sanitizar antes de gravar" (AGENTS.md §3, Diretriz §4) | Toda escrita passa por APIs Rust tipadas com `SanitizedText` | SQL é emitido do JavaScript; o WebView poderia gravar texto cru |
 | Acesso a partir de crates Rust (`mt-shell`, `mt-pty` via 05/07) | Direto, sem passar pelo WebView | Plugin é pensado para o frontend; uso Rust é secundário |
-| FTS5, JSON1, `STRICT` | Garantidos pelo `libsqlite3-sys` bundled (SQLite ≥ 3.45, `SQLITE_ENABLE_FTS5`) | Dependem do build do `libsqlite3-sys` do sqlx; menos controle |
+| FTS5, JSON1, `STRICT` | Garantidos pelo `libsqlite3-sys` bundled (SQLite ≥ 3.51.3, `SQLITE_ENABLE_FTS5`) | Dependem do build do `libsqlite3-sys` do sqlx; menos controle |
 | Serialização de escritas / batching de scrollback | Controle total (uma thread, transações agrupadas) | Pool sqlx genérico, sem política de batch |
 | Superfície de ataque IPC | Apenas comandos de domínio | Expõe `execute/select` arbitrários ao WebView (exigiria capabilities restritivas) |
 | Online Backup API, `update_hook`, funções SQL customizadas | Disponíveis (`backup`, `functions`) | Indisponíveis/indiretos |
@@ -21,7 +21,7 @@
 `r2d2_sqlite` (as leituras já rodam em `spawn_blocking`, logo um pool síncrono simples basta; `deadpool-sqlite`
 adicionaria um runtime de interação sem benefício). `tauri-plugin-sql` **não** é adicionado ao projeto.
 
-Fixar versões compatíveis de `rusqlite`/`r2d2_sqlite` no lockfile, evitando duas versões de `libsqlite3-sys`.
+Fixar `rusqlite = "0.40"` e `r2d2_sqlite = "0.35"` (D-06) em `[workspace.dependencies]`; invariante: `cargo tree -d` sem `libsqlite3-sys` duplicado.
 Validar `sqlite_version()`, FTS5 e JSON na conexão real; `bundled` não substitui teste do binário distribuído.
 Para builds novos, exigir SQLite ≥ 3.51.3 (correção do WAL-reset; backports só com validação explícita).
 
@@ -291,9 +291,12 @@ implementar representação segura dos erros, inclusive para panic hook. Não re
 ## 4. Migrations
 
 ### 4.1. Convenções
-- Arquivo: `migrations/NNNN_FF_desc.sql` — `NNNN` = versão global sequencial (atribuída no merge da fase),
-  `FF` = número da fase dona, `desc` em `snake_case` inglês. Nesta fase: `0001_03_base.sql`;
-  próxima versão disponível é atribuída globalmente à migration da fase dona.
+- Arquivo: `migrations/NNNN_FF_desc.sql` — `NNNN` = versão global sequencial **contígua** (formato; nunca escrever o
+  placeholder `NNNN_` literal em nomes concretos), `FF` = número da fase dona, `desc` em `snake_case` inglês.
+  Nesta fase: `0001_03_base.sql`. A tabela canônica D-01 (`0001_03_base` · `0002_05_shell_sessions_command_blocks` ·
+  `0003_06_projects` · `0004_07_workspace_templates_tabs_sessions` · `0005_09_os_settings` · `0006_10_themes` ·
+  `0007_12_ai` · `0008_13_agents_skills_memory` · `0009_15_command_groups` · `0010_16_github` · `0011_17_search`)
+  está em `02/spec.md` §6.2 (sub-spec da Fase 03) e no `README.md` §2.5.
 - Uma migration é imutável após mergeada; correções exigem nova migration.
 - Tabelas indexadas têm `rowid INTEGER PRIMARY KEY` **explícito** (estável após VACUUM), além do id `TEXT`
   UUID v7 `UNIQUE NOT NULL`. `content_rowid` usa esse inteiro; ids públicos nunca dependem de rowid.
@@ -377,12 +380,11 @@ CREATE TABLE settings (
 | Fase dona | Migration/tabelas | Contrato de adoção |
 |---|---|---|
 | 03 | `0001_03_base.sql`: settings; bootstrap schema_migrations | WAL, runner, writer/readers, sanitizer, FTS/retention registry; nenhuma tabela de sessão/comando/scrollback |
-| 05 | `NNNN_05_shell_sessions_command_blocks.sql`: sessions, command_blocks, command_blocks_fts | Cria sessões mínimas por pane, blocos e índices; repositórios/SessionProvider usam Db::read/write |
-| 07 | Migration própria com extensão de sessions e scrollback/FTS | Consome sessions da 05 sem recriar; acrescenta arquivamento/workspace, retenção e UI |
+| 05 | `0002_05_shell_sessions_command_blocks.sql`: sessions, command_blocks, command_blocks_fts | Cria sessões mínimas por pane, blocos e índices; repositórios/SessionProvider usam Db::read/write |
+| 07 | `0004_07_workspace_templates_tabs_sessions.sql`: extensão de sessions e scrollback/FTS | Consome sessions da 05 sem recriar; acrescenta arquivamento/workspace, retenção e UI |
 
 A 03 não entrega `commands`, `scrollback_chunks`, `SessionsRepo`, `CommandsRepo` ou `ScrollbackRepo`.
-O DDL canônico de sessões/blocos está na spec da 05 §7.1. Não duplicá-lo nesta fase; versões globais são
-atribuídas na integração. FKs só apontam para tabelas da própria migration ou de fases anteriores já aplicadas.
+O DDL canônico de sessões/blocos está na spec da 05 §7.1. Não duplicá-lo nesta fase; as versões seguem a tabela D-01. FKs só apontam para tabelas da própria migration ou de fases anteriores já aplicadas.
 
 - A 05 mantém `tab_id/pane_id/project_id` como identidades lógicas sem FK para tabelas futuras; repositórios
   dela validam vínculos. A 07 pode acrescentar relacionamentos apenas após tabelas-alvo existirem, com
@@ -1248,7 +1250,7 @@ Execução: `cargo test -p mt-db`, `cargo test -p maxterminal db_`, `cargo bench
 
 | Ponto | Consumidor | Uso |
 |-------|-----------|-----|
-| Arquivos `migrations/NNNN_FF_*.sql` / `CodeMigration` | 05, 06, 07, 10, 13, 15, 16 | 05 cria sessions/command_blocks/FTS; 07 estende sessions e cria scrollback; cada fase possui seu DDL |
+| Arquivos `migrations/NNNN_FF_*.sql` (tabela D-01) / `CodeMigration` | 05, 06, 07, 09, 10, 12, 13, 15, 16, 17 | 05 cria sessions/command_blocks/FTS; 07 estende sessions e cria scrollback; cada fase possui seu DDL |
 | `Db::read/write` + `DbSetup` | 05, 07 e demais | Repositórios de domínio confiáveis, transações e contribuições de inicialização |
 | `FtsSpec` + `build_match_query` | 05, 07, 17 | Registry/manutenção e construção segura; tabelas/queries/IPC concretos nas fases donas |
 | `BatchWriter::push/flush` + `StreamSanitizer` | 05, 07 | Batching e sanitização antes de bind/disco; sem dependência de PTY na 03 |

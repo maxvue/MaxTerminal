@@ -52,9 +52,12 @@
 
 ## 2. Comandos de Verificação e Testes
 
-Execute os comandos abaixo a partir de `/home/johnattas/GitHub/MaxTerminal/.max-code-worktrees/wt-6f18b3d0/src-tauri`:
+Execute os comandos abaixo na worktree ativa:
 
 ```bash
+cd "$(git rev-parse --show-toplevel)"
+cd src-tauri
+
 # 1. Verificar compilação e tipos do crate mt-ports
 cargo check -p mt-ports --all-targets
 

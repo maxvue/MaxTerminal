@@ -25,7 +25,7 @@
      - `TauriGroupPtyAdapter` → `mt_pty::PtyManager` (usando `PtyOwner { tab_id: None, pane_id: None }` nos spawns headless).
      - `TauriGroupShellAdapter` → rastreador OSC 133 da Fase 05 e coordenador de leases de painel, além da detecção `env --version` / suporte a `env -C`.
      - `TauriGroupTabAdapter` → `WorkspaceManager` da Fase 07 e serviço de projetos da Fase 06.
-     - `TauriGroupAiAdapter` → serviço de geração estruturada da Fase 12 (`schema_id = "command-group.suggestion"`).
+     - `TauriGroupAiAdapter` → `AiService::generate_structured` da Fase 12 (`schema_id = "command-group.suggestion.v1"`); seguir §3.4 da spec para request, cancelamento e decode estrito.
      - `TauriRecurringCommandsAdapter` → repositório de memória contextual da Fase 13 (ou fallback inativo se não habilitado).
   2. Criar `src-tauri/src/command_groups/mod.rs` expondo `AppCommandGroupState { pub service: Arc<CommandGroupService> }`.
 
@@ -45,13 +45,15 @@
 
 ## 2. Comandos Exatos de Verificação
 
-Execute os comandos abaixo a partir de `/home/johnattas/GitHub/MaxTerminal/.max-code-worktrees/wt-6f18b3d0`:
+Execute os comandos abaixo a partir de a raiz da worktree ativa:
 
 ```bash
-cd src-tauri && cargo fmt --check
-cd src-tauri && cargo clippy --workspace --all-targets -- -D warnings
-cd src-tauri && cargo test -p mt-commands --test groups_service
-cd src-tauri && cargo test -p mt-commands
+cd "$(git rev-parse --show-toplevel)"
+cargo fmt --manifest-path src-tauri/Cargo.toml --check
+cargo clippy --manifest-path src-tauri/Cargo.toml --workspace --all-targets -- -D warnings
+cargo test --manifest-path src-tauri/Cargo.toml -p mt-commands --test groups_service
+cargo test --manifest-path src-tauri/Cargo.toml -p mt-commands
+cargo run --manifest-path src-tauri/Cargo.toml --bin export_bindings
 npm run typecheck
 git diff --exit-code src/types/bindings.ts
 ```

@@ -47,7 +47,7 @@ Toda a lógica de domínio vive no crate `mt-commands` (módulos `artisan` e `sh
 | I-10 | Modal `ArtisanCommandModal.vue` | Campos: Nome da Classe, Signature, Descrição, construtor visual de Argumentos e Flags (nome, opcional, array, default, descrição, atalho, aceita valor), checkboxes Isolatable, PromptsForMissingInput, Agendamento (frequência + parâmetros), Objetivo/Regras; validação por campo; preview do PHP e do patch de `routes/console.php`. |
 | I-11 | Ação **Criar** | Gera `app/Console/Commands/<Classe>.php` via template e PSR-4 validado, interfaces conforme versão; schedule em arquivo ausente e referenciado pelo bootstrap pode ser criado exclusivamente. Arquivo de routes existente ou layout customizado recebe patch/passos manuais. Preview vinculado à criação, sem sobrescrita; invalida catálogo após sucesso. |
 | I-12 | Ação **Criar com MaxCode** | Chama `maxcode_open_plan` (Fase 11) com o texto exato `"Criar comando artisan:\n${dados_formatados_do_formulario}"` no formato definido em spec §7.3. |
-| I-13 | Geração Assistida | Botão "Preencher com IA" no modal, usando `ai_generate_structured` (Fase 12) com JSON Schema exportado pelo Rust; resultado validado pelo mesmo validador e reversível ("Desfazer sugestão"). |
+| I-13 | Geração Assistida | Botão "Preencher com IA" no modal, usando `ai_generate_structured` (Fase 12, `schemaId = 'artisan.command.v1'`, via `useAiGenerate<T>(schemaId, schema, decode)`) com JSON Schema exportado pelo Rust; retorno `null` da IA = sem sugestão; resultado validado pelo mesmo validador e reversível ("Desfazer sugestão"). |
 | I-14 | Crate `mt-commands` — módulo `shortcuts` | Evidências de manifesto, `packageManager`, lockfiles e versão/capacidades (incluindo Cargo em `src-tauri`); conflito sem evidência conclusiva fica desabilitado, sem escolha arbitrária. Plano tipado com cwd/argv e origem, scripts de build/deploy/test e configuração MaxCode validada; composição Composer → JS → Cargo com `&&`. Deploy somente com configuração explícita. |
 | I-15 | Gatilho `/` | Provedor no `TriggerRegistry`: lista os 7 atalhos com a linha resolvida como descrição; itens não resolvíveis aparecem desabilitados com o motivo; `/install-force`, `/update-force` e `/deploy` exigem confirmação antes de inserir (mesma regra do MaxCode). |
 | I-16 | Comandos IPC e eventos | `artisan_*` e `shortcut_*` (spec §5) + eventos `artisan://catalog-updated`, `artisan://discovery-failed`, `artisan://command-created` (spec §6). |
@@ -100,7 +100,7 @@ Toda a lógica de domínio vive no crate `mt-commands` (módulos `artisan` e `sh
 ## 4. Entregáveis
 
 ### 4.1. Rust (`src-tauri/crates/mt-commands/`)
-- `Cargo.toml` (deps: `mt-core`, `mt-db` (sanitizer), `serde`, `serde_json`, `schemars`, `specta`, `tokio`, `thiserror`, `tracing`, `sha2`, `walkdir`, `async-trait`, `dashmap`; dev: `tempfile`, `insta`, `pretty_assertions`).
+- `Cargo.toml` (nasce nesta fase com `edition.workspace = true` e `mt-db = { workspace = true }`; a Fase 15 só acrescenta dependências — D-09; deps: `mt-core`, `mt-db` (sanitizer), `serde`, `serde_json`, `schemars`, `specta`, `tokio`, `thiserror`, `tracing`, `sha2`, `walkdir`, `async-trait`, `dashmap`; dev: `tempfile`, `insta`, `pretty_assertions`).
 - `src/lib.rs`, `src/error.rs`, `src/ports.rs`, `src/fs_util.rs`.
 - `src/artisan/{mod.rs, model.rs, root.rs, runner.rs, parser.rs, cache.rs, fingerprint.rs, service.rs}`.
 - `src/artisan/generator/{mod.rs, form.rs, validate.rs, signature.rs, psr4.rs, template.rs, schedule.rs, console_routes.rs, maxcode_prompt.rs}`.
@@ -109,14 +109,14 @@ Toda a lógica de domínio vive no crate `mt-commands` (módulos `artisan` e `sh
 
 ### 4.2. Binário (`src-tauri/src/`)
 - `commands/quick_commands.rs` (comandos `artisan_*`, `shortcut_*`), registro no builder do `specta.rs` e no `invoke_handler`.
-- `state.rs`: campo `quick_commands: Arc<QuickCommandsState>`.
+- `lib.rs` (`setup`): `app.manage(QuickCommandsState { … })` (estado próprio do domínio; sem campo no `AppState` da Fase 01 — D-09).
 
 ### 4.3. Frontend (`src/`)
 - `ipc/quickCommands.ts`.
 - `stores/quickCommands.ts` (`useQuickCommandsStore`).
-- `composables/quick-commands/{adapters.ts, fuzzy.ts, artisanLineParser.ts, useArtisanTrigger.ts, useShortcutTrigger.ts, useArtisanForm.ts, registerQuickCommandTriggers.ts}`.
+- `composables/quick-commands/{adapters.ts, fuzzy.ts, artisanLineParser.ts, useArtisanTrigger.ts, useShortcutTrigger.ts, useArtisanForm.ts}` (lógica dos provedores; o **registro** fica em `terminal/triggers/providers/index.ts`).
 - `components/quick-commands/{QuickCommandsHost.vue, ArtisanCommandModal.vue, ArtisanParamsBuilder.vue, ArtisanParamRow.vue, ArtisanSchedulePicker.vue, ArtisanPhpPreview.vue, QuickCommandItem.vue}`.
-- Chamada de `registerQuickCommandTriggers()` no bootstrap (`src/app/main.ts`).
+- `terminal/triggers/providers/index.ts` (criado nesta fase; registra `>` e `/` no `triggerRegistry` e inicializa `useQuickCommandsStore().init()`; a Fase 15 o estende com `>>` — D-09). Esta fase não registra gatilhos via `src/composables/quick-commands/` nem altera `src/app/main.ts`.
 - Testes em `src/composables/quick-commands/__tests__/`, `src/stores/__tests__/quickCommands.spec.ts`, `src/components/quick-commands/__tests__/`.
 - `src/types/bindings.ts` regenerado.
 
@@ -128,7 +128,7 @@ Toda a lógica de domínio vive no crate `mt-commands` (módulos `artisan` e `sh
 - [ ] CA-01 `cargo clippy --workspace --all-targets -- -D warnings` e `cargo fmt --check` retornam 0.
 - [ ] CA-02 `cargo test -p mt-commands` passa; `cargo insta test -p mt-commands --check` sem snapshots pendentes.
 - [ ] CA-03 `npm run typecheck`, `npm run typecheck:vue`, `npm run lint`, `npm run lint:style` e `npm run test` retornam 0.
-- [ ] CA-04 `npm run bindings && git diff --exit-code src/types/bindings.ts` retorna 0 e o arquivo expõe `commands.artisanResolveRoot`, `artisanCatalogGet`, `artisanCatalogRefresh`, `artisanFormSchema`, `artisanValidateForm`, `artisanPreviewCommand`, `artisanCreateCommand`, `artisanFormatMaxcodePrompt`, `shortcutList`, `shortcutResolve`.
+- [ ] CA-04 Na raiz da worktree, `cargo run --manifest-path src-tauri/Cargo.toml --bin export_bindings` e depois `git diff --exit-code src/types/bindings.ts` retornam 0 e o arquivo expõe `commands.artisanResolveRoot`, `artisanCatalogGet`, `artisanCatalogRefresh`, `artisanFormSchema`, `artisanValidateForm`, `artisanPreviewCommand`, `artisanCreateCommand`, `artisanFormatMaxcodePrompt`, `shortcutList`, `shortcutResolve`.
 
 ### 5.2. Descoberta e cache Artisan
 - [ ] CA-05 Num projeto Laravel sem cache, abrir o popup `>` executa **uma única vez** `php artisan list --format=json` (verificado por teste com `FakeRunner` e 10 chamadas concorrentes → 1 execução) e cria `.max-code/commands/artisan.json`, `.max-code/commands/artisan.meta.json` e `.max-code/.gitignore` (`*\n`, sem sobrescrever se existir).
@@ -150,7 +150,7 @@ Toda a lógica de domínio vive no crate `mt-commands` (módulos `artisan` e `sh
 ### 5.4. Modal, geração e MaxCode
 - [ ] CA-18 Validações bloqueiam "Criar" e exibem mensagem pt-BR por campo: classe não PascalCase/palavra reservada PHP, signature inválida ou já existente no catálogo, nomes duplicados entre argumentos/opções, argumento obrigatório após opcional, array que não seja o último argumento, atalho inválido/duplicado/reservado (`h q V n v`), opção reservada (`help`, `quiet`, `verbose`, `version`, `ansi`, `no-ansi`, `no-interaction`, `env`, e `isolated` quando Isolatable), cron inválido, `{`/`}` em descrições.
 - [ ] CA-19 O preview do PHP atualiza em ≤ 300 ms após a última edição (debounce 250 ms) e é idêntico byte a byte ao arquivo gravado por "Criar" (teste).
-- [ ] CA-20 "Criar" num layout moderno suportado gera `app/Console/Commands/SendWeeklyReport.php` com namespace PSR-4 e interfaces selecionadas; schedule inclui argumentos obrigatórios (ex.: `Schedule::command(SendWeeklyReport::class, ['42'])->weeklyOn(1, '08:00');`). Arquivo de routes existente fica intacto com patch manual idempotente; ausente e referenciado pode ser criado exclusivamente. `php -l`, descoberta e `schedule:list` validam a fixture com o patch aplicado.
+- [ ] CA-20 "Criar" num layout moderno suportado gera `app/Console/Commands/SendWeeklyReport.php` com namespace PSR-4/interfaces; schedule inclui argumentos obrigatórios. Routes existente suportado recebe inserção delimitada idempotente após preview/confirmação da revisão, preservando bytes externos; ausente é criado exclusivamente. Segunda aplicação não duplica agendamento; `php -l`, descoberta e `schedule:list` validam a fixture com o patch aplicado.
 - [ ] CA-21 Destino existente retorna `artisan.file_exists` sem alterar arquivos. Preview obsoleto retorna `artisan.preview_stale` antes de gravar. Falha de schedule reverte somente arquivos próprios ainda idênticos aos bytes gravados; edição externa é preservada e retorna estado parcial com caminhos e passos de recuperação.
 - [ ] CA-22 Em Laravel ≤ 10 (sem `withSchedule` em `bootstrap/app.php` e com `app/Console/Kernel.php`), o schedule **não** é escrito; o resultado traz `manualSteps` com o trecho para `Kernel::schedule()` exibido no modal.
 - [ ] CA-23 Após "Criar", o cache é invalidado, `artisan://command-created` é emitido e o novo comando aparece no popup `>` sem reiniciar o app.
@@ -190,7 +190,7 @@ Toda a lógica de domínio vive no crate `mt-commands` (módulos `artisan` e `sh
 | R-04 | Projeto depende de Docker/Sail (sem `php` no host). | Médio | `SailRunner` opcional auto-detectado (`vendor/bin/sail` + serviço `laravel.test` em execução); erro `artisan.php_not_found` sugere Sail na mensagem. |
 | R-05 | Gatilhos `/` e `>` colidirem com uso legítimo do shell (`/usr/bin/x`, `> arquivo`). | Médio | `/` só abre popup se algum atalho corresponder ao token; `>` só em projetos Laravel e com Esc desativando o gatilho até o input ser limpo; Enter sem item destacado segue o fluxo normal. |
 | R-06 | Gerar PHP inválido ou sobrescrever código do usuário. | Alto | Validador único (UI, IA e criação), escape de strings PHP, `create_new` (O_EXCL), rollback, snapshot tests e `php -l` no teste de integração. |
-| R-07 | Patch de `routes/console.php` corromper arquivo customizado. | Médio | Preview conservador com compreensão de tokens/aliases; arquivo existente recebe patch manual, novo usa publicação exclusiva; hash+rename não é tratado como CAS. |
+| R-07 | Patch de `routes/console.php` corromper arquivo customizado. | Médio | Inserção delimitada idempotente após preview/confirmação, preservação de bytes externos, revalidação da base e backup; estrutura ambígua recebe passos manuais, novo usa publicação exclusiva; hash+rename não é CAS. |
 | R-08 | Atalhos executarem ações destrutivas sem intenção (`--force`, deploy). | Alto | Nada executa sem Enter; confirmação para `*-force` e `/deploy`; a linha resolvida fica visível no input. |
 | R-09 | Saída da IA maliciosa/inconsistente. | Médio | Tratada como dado não confiável: desserialização estrita + mesmo validador; nunca grava sem clique em "Criar". |
 | R-10 | Contratos das Fases 04/06/11/12 com nomes diferentes dos assumidos. | Médio | Acoplamento isolado em `adapters.ts` / `ports.rs`; fase dona prevalece. |

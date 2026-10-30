@@ -7,7 +7,7 @@
 ## 1. Checklist Sequencial de Execução
 
 - [ ] **Passo 1 — Regenerar Bindings TypeScript e Criar Wrappers IPC (`src/types/bindings.ts` e `src/ipc/`)**
-  1. Executar `npm run bindings` para gerar `src/types/bindings.ts` a partir das structs/comandos Rust das Implementações 01–04.
+   1. Executar `cargo run --manifest-path src-tauri/Cargo.toml --bin export_bindings` para gerar `src/types/bindings.ts` (incluindo `AgentTabOpened`) a partir das structs/comandos Rust das Implementações 01–04.
   2. Criar `src/ipc/agents.ts`, `src/ipc/skills.ts`, `src/ipc/memory.ts` e `src/composables/agents/adapters.ts`.
 
 - [ ] **Passo 2 — Implementar `useAgentsStore` e `useSkillsStore` (`src/stores/agents.ts` e `src/stores/skills.ts`)**
@@ -29,36 +29,38 @@
   1. Criar `SkillConflictList.vue` e `SkillsSyncPanel.vue` (com fluxo *dry-run* obrigatório antes de aplicar e seleção de resolução por conflito).
   2. Criar `CommandMemoryList.vue` permitindo filtrar, inserir no draft do input rico, fixar, ocultar, esquecer e reconstruir a memória contextual do projeto.
 
-- [ ] **Passo 6 — Escrever as Suítes de Testes Vitest (`src/tests/`) e Validar Qualidade Completa**
-  1. Criar `src/tests/stores/agents.spec.ts` (testando corrida entre hidratação e eventos, rejeição de revisão antiga/run encerrado e limpeza em `tab://closed`).
-  2. Criar `src/tests/stores/skills.spec.ts` (testando fluxo `scan` → `planSync` → `applySync` com resoluções e operações de memória `suggest`/`pin`/`hide`/`forget`).
-  3. Criar `src/tests/components/agents/AgentStatusLine.spec.ts` (testando renderização de `"—"` com tooltip `"Indisponível para este agente"`, marcação `"desatualizado"` após > 60 s e rótulos `"Modelo configurado"` vs `"Estimado"`).
-  4. Criar `src/tests/components/agents/AgentWorktreeCloseDialog.spec.ts` (testando botões habilitados conforme `allowed`, exibição de blockers quando `dirty = true` e bloqueio de exclusão de branch não mesclada).
-  5. Criar `src/tests/composables/useAgentShortcuts.spec.ts` (testando `Ctrl+Alt+C/X/A/O`, variante `+Shift`, intercepção no xterm sem vazar teclas ao PTY, toast para agente não instalado e ignorar IME/`event.repeat`).
+- [ ] **Passo 6 — Escrever as Suítes de Testes Vitest (`tests/`) e Validar Qualidade Completa**
+   1. Criar `tests/stores/agents.spec.ts` (testando corrida entre hidratação e eventos, rejeição de revisão antiga/run encerrado e limpeza em `tab://closed`).
+   2. Criar `tests/stores/skills.spec.ts` (testando fluxo `scan` → `planSync` → `applySync` com resoluções e operações de memória `suggest`/`pin`/`hide`/`forget`).
+   3. Criar `tests/components/agents/AgentStatusLine.spec.ts` (testando renderização de `"—"` com tooltip `"Indisponível para este agente"`, marcação `"desatualizado"` após > 60 s e rótulos `"Modelo configurado"` vs `"Estimado"`).
+   4. Criar `tests/components/agents/AgentWorktreeCloseDialog.spec.ts` (testando botões habilitados conforme `allowed`, exibição de blockers quando `dirty = true` e bloqueio de exclusão de branch não mesclada).
+   5. Criar `tests/composables/useAgentShortcuts.spec.ts` (testando `Ctrl+Alt+C/X/A/O`, variante `+Shift`, intercepção no xterm sem vazar teclas ao PTY, toast para agente não instalado e ignorar IME/`event.repeat`). Confirmar descoberta pelo glob `tests/**/*.spec.ts` da Fase 01, preservando também `src/**/__tests__/**/*.spec.ts` (E-09).
 
 ---
 
 ## 2. Comandos de Verificação e Testes
 
-Executar na raiz da worktree (`/home/johnattas/GitHub/MaxTerminal/.max-code-worktrees/wt-6f18b3d0`):
+Executar na raiz da worktree ativa:
 
 ```bash
+cd "$(git rev-parse --show-toplevel)"
 # 1. Regenerar bindings e garantir que src/types/bindings.ts está sincronizado (CA-03)
-npm run bindings
+cargo run --manifest-path src-tauri/Cargo.toml --bin export_bindings
 git diff --exit-code src/types/bindings.ts
 
 # 2. Executar ESLint, Stylelint e checagem estrita de tipos (tsgo + vue-tsc) (CA-03)
 npm run lint
+npm run lint:style
 npm run typecheck
 npm run typecheck:vue
 
 # 3. Executar as suítes Vitest da Fase 13 e a suíte completa de frontend (CA-03)
 npx --no-install vitest run \
-    src/tests/stores/agents.spec.ts \
-    src/tests/stores/skills.spec.ts \
-    src/tests/components/agents/AgentStatusLine.spec.ts \
-    src/tests/components/agents/AgentWorktreeCloseDialog.spec.ts \
-    src/tests/composables/useAgentShortcuts.spec.ts
+    tests/stores/agents.spec.ts \
+    tests/stores/skills.spec.ts \
+    tests/components/agents/AgentStatusLine.spec.ts \
+    tests/components/agents/AgentWorktreeCloseDialog.spec.ts \
+    tests/composables/useAgentShortcuts.spec.ts
 npm run test
 
 # 4. Validação final integrada Rust + Frontend da Fase 13 (CA-01, CA-02, CA-03, CA-04)
@@ -72,7 +74,7 @@ cargo test --manifest-path src-tauri/Cargo.toml -p mt-agents
 ## 3. Critérios de Aceite Atendidos nesta Implementação
 
 - **CA-01**: `cargo clippy --workspace --all-targets -- -D warnings` e `cargo fmt --all --check` passam em todo o projeto.
-- **CA-03**: `npm run lint`, `npm run typecheck`, `npm run typecheck:vue` e `npm run test` passam; `git diff --exit-code src/types/bindings.ts` após `npm run bindings` retorna `0`.
+- **CA-03**: `npm run lint`, `npm run lint:style`, `npm run typecheck`, `npm run typecheck:vue` e `npm run test` passam; `git diff --exit-code src/types/bindings.ts` após `cargo run --manifest-path src-tauri/Cargo.toml --bin export_bindings` retorna `0`.
 - **CA-09**: Clicar em um agente no `AgentLauncherMenu.vue` abre uma aba cujo processo em foreground é o binário do agente no `cwd` do projeto/template.
 - **CA-10**: `Ctrl+Alt+C/X/A/O` abrem a aba do agente correspondente mesmo com foco dentro do xterm; com `Shift` abrem o `AgentTabOpenDialog.vue` com isolamento marcado; agente não instalado exibe toast pt-BR `"Agente não encontrado no PATH"` e não cria aba.
 - **CA-11**: Edição de atalho no `AgentSettingsPanel.vue` igual a outro atalho existente é rejeitada com `agents.shortcut_conflict`.

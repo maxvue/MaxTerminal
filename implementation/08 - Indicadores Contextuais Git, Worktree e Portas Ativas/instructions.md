@@ -90,17 +90,18 @@ que será consumida pelas Fases 13 (isolamento opcional de Agentes CLI) e 16 (ab
   `ProcessInfo.start_time`, `PtyOwner`, árvore supervisionada e `cwd` do shell. Consumido por adaptadores
   (`ProcessTreeSource`, `CwdFallback`) implementados no crate binário (ver `spec.md` §1.3).
 - **Fase 05** (transitiva via 07) — `TabStatus`, `cwd` por painel (OSC 7) e marcador de fim de comando (OSC 133 `D`).
-- **Fase 07** — `WorkspaceObserver`, snapshot de workspace, `useTabsStore.tabsById`, `TabView.panes`,
+- **Fase 07** — `WorkspaceLifecycleObserver`/`WorkspaceLifecycleSignal`, `WorkspaceManager::register_observer`, `pane_pty(tab_id, pane_id).await`, snapshot de workspace, `useTabsStore.tabsById`, `TabView.panes`,
   painel ativo e slot `TabBar #indicators="{ tab }"`. Status vem da Fase 05, não de um campo inexistente de `TabView`.
 - **Extensão implementada pela 08 sobre a base 02:** `ExactProcessSignaler` com `pidfd` e validação do
   registro do PTY; `signal_process(id, pid, sig)` sozinho não elimina a corrida entre checagem e sinal.
 - **Fase 03** (transitiva via 07) — sanitização de erros de Git no adaptador; nenhuma persistência nova.
+- **Contrato pré-spawn 07 ↔ 08:** `GitWorkspaceSpawnHook: WorkspaceSpawnHook` e seu guard RAII usam `GitService::reserve_cwd(...).await?`, confirmam registro antes da publicação e liberam após sucesso/compensação, retendo em `Blocked`. Instalar por `with_spawn_hooks` antes de compartilhar o manager/restore; respeitar futures `Send`, ausência de reentrada no ator e ordem mutex de `common_dir` → escrita de `cwd_gate` nas remoções (`01/spec.md` §3.8, `03/spec.md` §3.6).
 
 ### 3.2. Ferramentas
 - `git` ≥ 2.38 no `PATH` (porcelain v2 com `-z`, `worktree list --porcelain -z`). Ausência ⇒ modo degradado.
 - `tauri-plugin-opener` v2, no crate binário, inicializado pela 08; navegador padrão configurado no SO.
 - Kernel Linux com `/proc/net/{tcp,tcp6,udp,udp6}`, inotify e `pidfd_open`/`pidfd_send_signal` (CachyOS).
-- Crates: `notify` (versão compatível com o workspace), `nix`/`rustix` (sinais e pidfd), `tokio` (time, process, sync), `thiserror`,
+- Crates: `notify = { workspace = true }` (versão 8 centralizada na Fase 01), `nix`/`rustix` (sinais e pidfd), `tokio` (time, process, sync), `thiserror`,
   `serde`, `specta`, `tracing`, `dunce` (canonicalização), `tempfile` (dev).
 - `python3` (apenas testes de integração de `mt-ports`; testes marcados `#[ignore]` se ausente).
 
@@ -165,7 +166,7 @@ que será consumida pelas Fases 13 (isolamento opcional de Agentes CLI) e 16 (ab
 - [ ] `cargo test -p mt-ports -- --ignored` passa em máquina com `python3`.
 - [ ] `src/types/bindings.ts` regenerado contém `GitContext`, `WorktreeEntry`, `ListeningPort`, `KillOutcome`
       e nenhum desses tipos está duplicado à mão em `src/`.
-- [ ] `pnpm typecheck` (tsgo) e `pnpm lint` passam; `pnpm vitest run src/stores src/components/indicators` passa.
+- [ ] Na raiz da worktree ativa (`cd "$(git rev-parse --show-toplevel)"`), `npm run typecheck`, `npm run typecheck:vue`, `npm run lint` e `npm run lint:style` passam; `npx --no-install vitest run src/stores src/components/indicators` passa. Bindings são gerados por `cargo run --manifest-path src-tauri/Cargo.toml --bin export_bindings`.
 
 ### 5.2. Testes unitários obrigatórios (Rust)
 - [ ] Parser porcelain: repo limpo; staged+unstaged no mesmo arquivo (`1 MM`); renomeado (`2 R.` com caminho
@@ -191,10 +192,14 @@ que será consumida pelas Fases 13 (isolamento opcional de Agentes CLI) e 16 (ab
 - [ ] Abrir badge funciona com apenas fases 01–08, via plugin opener; IPv6 usa URL com colchetes quando
       necessário; bind exclusivo em IP de LAN não abre um serviço diferente em localhost.
 - [ ] Worktree: `create` com nome inválido (`../x`, vazio, com `/`) ⇒ `git.invalid_name`; `remove` da worktree
-      principal ⇒ `git.worktree_is_main`; `remove` com painel rastreado dentro ⇒ `git.worktree_in_use`, inclusive com `force`.
+       principal ⇒ `git.worktree_is_main`; `remove` com painel rastreado dentro ⇒ `git.worktree_in_use`, inclusive com `force`.
+- [ ] Teste determinístico abertura × remoção com barreiras: reserva vence ⇒ remoção recusada antes e
+  após registro, mesmo com observador atrasado; remoção vence ⇒ reserva revalida e falha antes de spawn.
+  Cobrir falha de spawn/registro, cancelamento do caller, retenção em `Blocked`, retry, restauração e
+  caminho aninhado/alias; nenhuma liberação antecipada nem reserva órfã após compensação concluída.
 
 ### 5.3. Comportamento observável (teste manual roteirizado, registrado no PR)
-1. Abrir aba em `~/GitHub/MaxTerminal` ⇒ `GitIndicator` mostra `main` em ≤ 500 ms após o `cwd` ser conhecido.
+1. Abrir aba na raiz da worktree ativa (`git rev-parse --show-toplevel`) ⇒ `GitIndicator` mostra a branch retornada por `git branch --show-current` em ≤ 500 ms após o `cwd` ser conhecido.
 2. `touch tmp.txt` na aba ⇒ após o fim do comando, contador de *untracked* = 1 em ≤ 1 s; `rm tmp.txt` ⇒ some.
 3. Em **outro** terminal, `git checkout -b teste` no mesmo repo ⇒ a aba atualiza para `teste` em ≤ 1 s
       (watch de `HEAD`, sem interação na aba).

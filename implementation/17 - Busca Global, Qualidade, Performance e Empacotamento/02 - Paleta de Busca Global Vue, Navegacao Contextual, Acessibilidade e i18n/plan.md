@@ -25,7 +25,7 @@
 2. Criar `src/components/search/SearchFilterBar.vue` com seletores de projeto, período, código de saída (`Qualquer`, `Sucesso (0)`, `Com erro (!= 0)`, `Desconhecido`) e fontes, exibindo explicação em `pt-BR` quando um filtro oculta fontes incompatíveis.
 3. Criar `src/components/search/SearchResultItem.vue` e `src/components/search/SearchResultSection.vue` com formatação `Intl.DateTimeFormat('pt-BR')` e botão `"Carregar mais"`.
 4. Criar `src/components/search/GlobalSearchPalette.vue` com atributos ARIA completos (`role="dialog"`, `aria-modal="true"`, input `role="combobox"`, `aria-expanded`, `aria-controls`, `aria-activedescendant`, lista `role="listbox"`), navegação por `ArrowDown`/`ArrowUp`/`Home`/`End`, `Enter` (abrir), `Ctrl+Enter` (abrir template em nova aba) e `Escape` (fechar e devolver foco).
-5. Adicionar o botão `"Buscar em tudo…"` no slot `actions` de `src/components/app/AppTitleBar.vue` e montar `<GlobalSearchPalette />` em `src/app/App.vue`.
+5. Adicionar o botão `"Buscar em tudo…"` no slot `actions` de `src/components/shell/AppTitleBar.vue` e montar `<GlobalSearchPalette />` em `src/app/App.vue`.
 
 ### Passo 5: Testes Unitários, Acessibilidade (`axe-core`) e Auditoria `pt-BR`
 1. Criar `tests/unit/search/useSearchStore.spec.ts`, `HighlightedText.spec.ts`, `useSearchShortcut.spec.ts` e `useSearchNavigation.spec.ts`.
@@ -36,7 +36,7 @@
 
 ## 2. Comandos Exatos de Verificação e Testes
 
-Executar a partir de `/home/johnattas/GitHub/MaxTerminal/.max-code-worktrees/wt-6f18b3d0`:
+Executar a partir da raiz da worktree ativa (`cd "$(git rev-parse --show-toplevel)"`):
 
 ```bash
 # 1. Lint de código (incluindo regra vue/no-v-html) e estilos SCSS
@@ -44,7 +44,7 @@ npm run lint
 npm run lint:style
 
 # 2. Typecheck estrito com tsgo e vue-tsc
-npm run typecheck:tsgo
+npm run typecheck
 npm run typecheck:vue
 
 # 3. Executar suíte unitária da busca global (CA-09, CA-11 a CA-14)

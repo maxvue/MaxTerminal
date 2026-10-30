@@ -47,17 +47,21 @@
 
 ## 2. Comandos de Verificação e Testes
 
-Execute os comandos abaixo a partir da raiz da worktree `/home/johnattas/GitHub/MaxTerminal/.max-code-worktrees/wt-6f18b3d0`:
+Execute os comandos abaixo na raiz da worktree ativa:
 
 ```bash
+cd "$(git rev-parse --show-toplevel)"
+
 # 1. Executar verificação de tipos TypeScript (tsgo)
-pnpm typecheck
+npm run typecheck
+npm run typecheck:vue
 
 # 2. Executar ESLint e Stylelint (verificando regras Vue SFC e SCSS scoped)
-pnpm lint
+npm run lint
+npm run lint:style
 
 # 3. Executar suíte de testes Vitest das stores, composable e componentes da Fase 08
-pnpm vitest run src/stores/__tests__/git.spec.ts src/stores/__tests__/ports.spec.ts src/composables/__tests__/useTabIndicatorsSync.spec.ts src/components/indicators/__tests__
+npx --no-install vitest run src/stores/__tests__/git.spec.ts src/stores/__tests__/ports.spec.ts src/composables/__tests__/useTabIndicatorsSync.spec.ts src/components/indicators/__tests__
 
 # 4. Verificar que nenhum estilo usa cores hardcoded fora dos tokens semânticos --max-* / --background-*
 rg -n "#[0-9a-fA-F]{3,8}|rgb\(|hsl\(" src/components/indicators/
@@ -67,7 +71,7 @@ rg -n "#[0-9a-fA-F]{3,8}|rgb\(|hsl\(" src/components/indicators/
 
 ## 3. Critérios de Aceite da Implementação 04 (Mapeados para a Fase 08)
 
-- [ ] **CA-08-18 (`typecheck` & `lint`):** `pnpm typecheck` (`tsgo`) e `pnpm lint` (ESLint + Stylelint) passam sem erros e sem warnings; todos os `.vue` respeitam a ordem `<template>` → `<script setup lang="ts">` → `<style lang="scss" scoped>`, recuo de 4 espaços, tags de abertura em linha única e tokens `--max-*`.
+- [ ] **CA-08-18 (`typecheck` & `lint`):** `npm run typecheck` (`tsgo`), `npm run typecheck:vue`, `npm run lint` e `npm run lint:style` passam sem erros e sem warnings; todos os `.vue` respeitam a ordem `<template>` → `<script setup lang="ts">` → `<style lang="scss" scoped>`, recuo de 4 espaços, tags de abertura em linha única e tokens `--max-*`.
 - [ ] **CA-08-19 (`useGitStore`):** `trackPane` popula `contextByPane`; dois `cd` consecutivos com respostas fora de ordem nunca exibem o repositório antigo; `worktreeCreate()` e `worktreeList()` estão disponíveis e cobertos por Vitest (contrato para Fases 13 e 16).
 - [ ] **CA-08-20 (`usePortsStore`):** `opened`/`updated`/`closed` mantêm lista ordenada e sem duplicatas; lacunas de `revision` ou mudança de `epoch` disparam recarga; `portsForProject(projectId)` agrega portas de todas as abas do projeto.
 - [ ] **CA-08-21 (`useTabIndicatorsSync`):** Sincroniza criação/remoção de painéis, aplica debounce de 100 ms em mudanças de `cwd`, ignora `ptyId: null` para portas, atualiza repo em fim de comando (OSC 133 `D`) mesmo em painel inativo e não duplica listeners ao remontar.

@@ -85,7 +85,7 @@ exemplo de linha de comando (`cargo run --example pty_smoke`).
 - Helper launcher/watchdog entregue nesta fase, inclusive no exemplo headless; não depende da Fase 09/17.
 - Shells para testes: `bash` e `sh` obrigatórios; `zsh` e `fish` opcionais (testes marcados `#[ignore]` se ausentes).
 - Utilitários usados nos testes: `stty`, `sleep`, `head`, `base64`, `setsid`, `sha256sum`.
-- Node/pnpm conforme Fase 01 (Vitest, `tsgo`).
+- Node/npm conforme Fase 01 (Vitest, `tsgo`).
 
 ### 3.3. Dependências Rust novas (crate `mt-pty`)
 `portable-pty 0.9`, `nix`/`rustix` compatíveis com o MSRV (wrappers seguros para pidfd, poll, sinais, termios e subreaper), `procfs 0.17`,
@@ -127,7 +127,7 @@ mt-pty/
 ### 4.2. Backend — crate binário `src-tauri/src/`
 - `commands/pty.rs` — os nove comandos `#[tauri::command]` + `#[specta::specta]`.
 - `events/pty.rs` — `TauriEventListener`, `ChannelSink` e `BinaryPtyFrame`: `Channel<BinaryPtyFrame>` com
-  `IpcResponse` retornando `InvokeResponseBody::Raw`, tipo exportado como `ArrayBuffer` (spec §9.3).
+  `IpcResponse` retornando `InvokeResponseBody::Raw`, marcador Specta opaco (sem DTO JSON); o TS recebe `ArrayBuffer` por tipo declarado manualmente (`PtyChannelMessage`), exceção única à regra de bindings (spec §9.3 e `05/spec.md` §3.1).
 - `lib.rs` — registro do `Arc<PtyManager>`, comandos no builder, `ExitRequested` → shutdown assíncrono coordenado;
    `Exit` verifica conclusão. Resolver binário helper sem shell e instalar recovery por instância.
 - `capabilities/default.json` — permissões dos comandos `pty_*` restritas à janela `main`.
@@ -148,9 +148,9 @@ virtual; mocks não substituem a prova binária do Channel. Metas temporais usam
 ### 5.1. Qualidade estática
 1. `cargo fmt --check` e `cargo clippy --workspace --all-targets -- -D warnings` passam sem avisos.
 2. `cargo test -p mt-pty` passa (testes com `zsh`/`fish` podem estar `#[ignore]` quando o shell não existe).
-3. `pnpm typecheck` (`tsgo`) e `pnpm test` (Vitest) passam; `src/types/bindings.ts` contém `PtySummary`, `SpawnSpec`,
+3. `npm run typecheck` (`tsgo`) e `npm run test` (Vitest) passam; `src/types/bindings.ts` contém `PtySummary`, `SpawnSpec`,
    `PtyExitEvent`, `ProcessInfo` e os nove comandos, e `git diff --exit-code src/types/bindings.ts` é limpo após
-   `cargo run --bin export-bindings` (ou mecanismo equivalente da Fase 01).
+   `cargo run --bin export_bindings` (ou mecanismo equivalente da Fase 01).
 
 ### 5.2. Spawn, I/O e resize (testes `tests/spawn.rs`, `tests/io.rs`)
 4. `spawn` de `/bin/sh -c 'printf hello; exit 3'` produz exatamente os bytes `hello` no sink e `ExitInfo { code: Some(3), signal: None, reason: Exited }`.
@@ -223,6 +223,9 @@ virtual; mocks não substituem a prova binária do Channel. Metas temporais usam
 35. `pty_attach` recebe Channel como argumento direto, nunca dentro de DTO; geração com pins da Fase 01
     (Specta RC27 e conjunto compatível) preserva `Result<T, MtError>` explícito. Teste demonstra que `send(Ok)`
     sem callback do consumidor concluído não libera crédito: ACK representa consumo, não aceitação no transporte.
+    O gate T-06 (`05/spec.md` §3.1) permanece pendente até comprovar compilação/exportação e transporte Raw em
+    WebView real. A estratégia de marcador Specta opaco não é implementação validada; o alias manual
+    `PtyChannelMessage = ArrayBuffer` vive em `src/ipc/ptyFrame.ts`, e cast/grep/mocks não provam transporte.
 
 ---
 

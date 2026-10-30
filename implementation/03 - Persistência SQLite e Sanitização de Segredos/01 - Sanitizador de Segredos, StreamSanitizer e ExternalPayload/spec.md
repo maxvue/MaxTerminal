@@ -50,9 +50,9 @@ members = [".", "crates/mt-core", "crates/mt-db"]
 [workspace.dependencies]
 mt-core = { path = "crates/mt-core" }
 mt-db = { path = "crates/mt-db" }
-rusqlite = { version = "0.34", features = ["bundled", "backup", "functions", "serde_json"] }
+rusqlite = { version = "0.40", features = ["bundled", "backup", "functions", "serde_json"] }
 r2d2 = "0.8"
-r2d2_sqlite = "0.27"
+r2d2_sqlite = "0.35"
 crossbeam-channel = "0.5"
 tokio = { version = "1", features = ["sync", "rt", "time", "macros"] }
 regex = "1"
@@ -64,7 +64,7 @@ rstest = "0.25"
 criterion = "0.5"
 ```
 
-> **Invariante de lockfile:** Confirmar que `r2d2_sqlite` resolve exatamente a mesma versão de `rusqlite` e `libsqlite3-sys` no `Cargo.lock` (sem duplicar `libsqlite3-sys`). O SQLite bundled deve ter versão ≥ `3.51.3` (ou backport validado para WAL-reset).
+> **Invariante de lockfile:** Confirmar que `r2d2_sqlite` resolve exatamente a mesma versão de `rusqlite` e `libsqlite3-sys` no `Cargo.lock` (sem duplicar `libsqlite3-sys`). O SQLite bundled (empacotado pelo `rusqlite 0.40`, série 3.53.x) deve ter versão ≥ `3.51.3` (correção do WAL-reset; o piso **não** é rebaixado). `cargo tree -d` não pode listar `libsqlite3-sys` duplicado (decisão D-06: `rusqlite 0.40` + `r2d2_sqlite 0.35`, ambos via `[workspace.dependencies]`; crates consumidores usam `workspace = true`).
 
 ### 3.2. `src-tauri/crates/mt-db/Cargo.toml`
 

@@ -3,7 +3,7 @@
 ## 1. Contexto, Objetivo e Escopo
 
 Esta implementação integra o domínio e os motores das Implementações 01 e 02 ao runtime do aplicativo Tauri v2 (`maxterminal`), entregando:
-1. **`GroupSuggester` (`suggest.rs`):** Sugestão assistida de Grupos de Comandos via `AiService.structured.generate` (Fase 12) com schema fechado `command-group.suggestion`, sanitização da entrada/saída e revalidação completa pelo `validate_group_input`, além da consulta opcional à memória contextual de comandos recorrentes (`RecurringCommandsSource`, Fase 13).
+1. **`GroupSuggester` (`suggest.rs`):** Sugestão assistida de Grupos de Comandos via `AiService::generate_structured` (Fase 12) com schema fechado `command-group.suggestion.v1`, sanitização da entrada/saída e revalidação completa pelo `validate_group_input`, além da consulta opcional à memória contextual de comandos recorrentes (`RecurringCommandsSource`, Fase 13).
 2. **`CommandGroupService` (`service.rs`):** Fachada central de orquestração que serializa a aceitação por `request_id` idempotente, executa preflight completo, recupera execuções interrompidas no boot (`recover_interrupted()`), encerra execuções ativas antes da remoção de um projeto e coordena o shutdown explícito do aplicativo.
 3. **Adaptadores Nativos e Camada IPC Tauri (`adapters.rs`, `commands/command_groups.rs`, `events/command_groups.rs`, `capabilities/default.json`):** Implementação concreta de `GroupPtyPort`, `GroupShellPort`, `GroupTabPort`, `GroupAiPort`, `TauriGroupEventSink`, `ChannelRunObserver` e os **14 comandos Tauri** registrados no `tauri-specta`.
 
@@ -49,7 +49,7 @@ use mt_core::{MtResult, PaneId, ProjectId};
 use crate::groups::model::{CommandGroupInput, GroupScope};
 use crate::groups::ports::{GroupAiPort, GroupShellPort, GroupTabPort, RecurringCommandEntry, RecurringCommandsSource};
 
-pub const AI_SUGGEST_SCHEMA_ID: &str = "command-group.suggestion";
+pub const AI_SUGGEST_SCHEMA_ID: &str = "command-group.suggestion.v1";
 
 /// Requisição IPC para `command_group_suggest`.
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -98,7 +98,8 @@ impl GroupSuggester {
 
     /// Gera um rascunho validado via Fase 12:
     /// 1. Valida `goal` (1..=2000 caracteres após trim) e sanitiza `goal` e `draft` com `mt_db::sanitizer::sanitize`.
-    /// 2. Força `scope` e `project_id` a partir da requisição do editor (ignorando qualquer tentativa do modelo de alterar escopo/projeto).
+    /// 2. Força `scope` e `project_id` a partir da requisição do editor; preenche `SuggestPromptContext.project_id/pane_id`
+    ///    com IDs validados (ignorando qualquer tentativa do modelo de alterar escopo/projeto).
     /// 3. Submete ao `GroupAiPort::generate_group_suggestion`.
     /// 4. Passa o `CommandGroupInput` retornado por `validate_group_input(&suggestion, project_root.as_deref())`,
     ///    garantindo que limites de 1–50 itens, `cwd` relativo confinado, chaves POSIX de `env` e ausência de segredos sejam respeitados.
@@ -387,6 +388,30 @@ pub async fn command_group_recurring_commands(
 ```
 
 ---
+
+### 3.4. Adaptadores concretos (`src-tauri/src/command_groups/adapters.rs`)
+
+`TauriGroupAiAdapter` implementa `GroupAiPort` com `Arc<mt_ai::AiService>` injetado pelo composition root:
+
+1. Converte `ai_request_id` para `AiRequestId` validado e monta `StructuredRequest { request_id, schema_id: AI_SUGGEST_SCHEMA_ID.into(), schema, prompt, system: None, selection: None, pane_id: context.pane_id, project_id: context.project_id }`. IDs vêm da requisição validada; `prompt` é a serialização sanitizada de `SuggestPromptContext`, nunca texto bruto de histórico. `schema` é o schema fechado de `CommandGroupInput`, registrado como `command-group.suggestion.v1`.
+2. Chama **somente** `self.ai.generate_structured(request).await`. O registro/cancelamento pertence à Fase 12: usar o mesmo `AiRequestId`, sem registro duplicado e sem acessar o campo privado `structured`. Cancelamento do editor usa `ai_cancel` com esse ID.
+3. Confere `StructuredResponse.request_id`, desserializa `value` estritamente (`deny_unknown_fields`, inclusive structs aninhadas) e devolve `CommandGroupInput` ao `GroupSuggester`, que impõe escopo/projeto original e executa `validate_group_input`. Erro de schema, cancelamento ou resposta inválida retorna erro tipado sanitizado; nunca salvar/executar sugestão nem substituir por rascunho vazio.
+
+`TauriRecurringCommandsAdapter` implementa `RecurringCommandsSource` e recebe `Option<Arc<mt_agents::memory::CommandMemory>>` e relógio de epoch ms injetável:
+
+1. `is_available()` informa se a fonte foi registrada/habilitada. Ausente, `GroupSuggester::list_recurring` retorna `{ available: false, items: [] }`.
+2. `list_recurring(project_id, limit)` valida projeto e limite `1..=50` (teto da Fase 13), constrói `MemoryQuery { project_id, prefix: None, limit: limit as u16, include_hidden: false, cwd: None }` e chama `CommandMemory::suggestions(&query, now_ms)` da Fase 13/04, preservando a ordem por relevância da fonte. Limites fora dessa faixa são rejeitados antes da consulta, sem truncamento silencioso.
+3. Mapeia `MemoryEntry.command → command`, `last_cwd → cwd`, `use_count → frequency`, `last_used_at_ms → last_used_at`. Revalida sanitização antes de enviar à IA; não expõe entradas ocultas, segredos nem dados de outro projeto. Erro real da fonte disponível é propagado, distinguindo-o de ausência opcional.
+
+### 3.5. Estado por domínio (`src-tauri/src/command_groups/mod.rs`)
+
+```rust
+pub struct AppCommandGroupState {
+    pub service: std::sync::Arc<mt_commands::groups::service::CommandGroupService>,
+}
+```
+
+No `setup`, registrar `app.manage(AppCommandGroupState { service })` separadamente de `app.manage(QuickCommandsState { … })` da Fase 14. O `AppState` da Fase 01 não agrega esses serviços. O repositório recebe `mt_db::Db`, compartilhando writer/read pool da Fase 03. Preservar `edition.workspace = true` e dependências existentes de `mt-commands`; a Fase 15 apenas acrescenta dependências (D-09).
 
 ## 4. Regras de Negócio e Casos de Borda Desta Implementação
 

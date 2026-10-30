@@ -3,7 +3,7 @@
 ## 1. Contexto, Objetivo e Escopo
 
 Esta é a quinta unidade de implementação da **Fase 02 — Core PTY e Supervisão de Processos**. Seu objetivo é acoplar o crate `mt-pty` ao crate binário Tauri (`src-tauri/src/`), expondo os contratos IPC tipados para o frontend sem degradar a vazão binária nem bloquear o event loop do Tauri:
-1. O adaptador `BinaryPtyFrame` e `ChannelSink` (`src-tauri/src/events/pty.rs`), implementando `tauri::ipc::IpcResponse` com `InvokeResponseBody::Raw(Vec<u8>)` e tipo Specta mapeado como `ArrayBuffer`, de modo que o WebView receba `ArrayBuffer` puro sem serialização JSON ou base64.
+1. O adaptador `BinaryPtyFrame` e `ChannelSink` (`src-tauri/src/events/pty.rs`), implementando `tauri::ipc::IpcResponse` com `InvokeResponseBody::Raw(Vec<u8>)`, com integração Specta sujeita ao gate T-06 (§3.1) e alias manual TS `PtyChannelMessage = ArrayBuffer`, de modo que o WebView receba `ArrayBuffer` puro sem serialização JSON ou base64.
 2. O `TauriEventListener` (`src-tauri/src/events/pty.rs`), convertendo `PtyEvent` nos quatro eventos globais (`pty://spawned`, `pty://exit`, `pty://foreground-changed`, `pty://cleanup-failed`) registrados no builder único do `tauri-specta`.
 3. Os nove comandos Tauri (`src-tauri/src/commands/pty.rs`): `pty_spawn`, `pty_write`, `pty_resize`, `pty_kill`, `pty_list`, `pty_process_info`, `pty_ack`, `pty_attach` (com `tauri::ipc::Channel<BinaryPtyFrame>` como argumento direto) e `pty_detach`.
 4. A inicialização do `Arc<PtyManager>` em `src-tauri/src/lib.rs`, instalação de guards no startup, distinção entre `WindowEvent::CloseRequested` (que **não** mata PTYs) e `RunEvent::ExitRequested` / `RunEvent::Exit` (que coordena `PtyManager::shutdown(ExitReason::Shutdown)` em worker assíncrono antes de liberar o encerramento do processo).
@@ -24,7 +24,7 @@ Esta é a quinta unidade de implementação da **Fase 02 — Core PTY e Supervis
 - `src-tauri/capabilities/default.json` — adição das permissões dos comandos `pty_*` restritas a `"windows": ["main"]`.
 - `src-tauri/src/commands/mod.rs` — exposição de `pub mod pty;`.
 - `src-tauri/src/lib.rs` — registro dos 9 comandos e 4 eventos no builder `tauri_specta`, gerenciamento do estado `Arc<PtyManager>`, hooks `WindowEvent::CloseRequested`, `RunEvent::ExitRequested` e `RunEvent::Exit`, e testes de integração IPC (`mock_builder` + teste de transporte `BinaryPtyFrame`).
-- `src/types/bindings.ts` — regenerado automaticamente via `cargo run --bin export-bindings` (sem edição manual).
+- `src/types/bindings.ts` — regenerado automaticamente via `cargo run --bin export_bindings` (sem edição manual).
 
 ---
 
@@ -42,8 +42,8 @@ use mt_pty::{
 use tauri::{AppHandle, Emitter, Runtime};
 use tauri::ipc::{Channel, InvokeResponseBody, IpcResponse};
 
-/// Envelope binário enviado pelo `tauri::ipc::Channel` diretamente como `InvokeResponseBody::Raw`,
-/// entregue ao JavaScript como `ArrayBuffer` e tipado no Specta como `ArrayBuffer`.
+/// Envelope binário enviado pelo `tauri::ipc::Channel` diretamente como `InvokeResponseBody::Raw`
+/// e entregue ao JavaScript como `ArrayBuffer`. **Não** é um payload JSON: ver contrato abaixo.
 #[derive(Clone, Debug)]
 pub struct BinaryPtyFrame(pub Bytes);
 
@@ -53,8 +53,7 @@ impl IpcResponse for BinaryPtyFrame {
     }
 }
 
-// Implementação de `specta::Type` exportando `ArrayBuffer` (identificador nativo TS)
-// compatível com `specta = "=2.0.0-rc.27"` / `tauri-specta = "=2.0.0-rc.27"`.
+// Contrato Specta de `BinaryPtyFrame`: ver "Contrato de `BinaryPtyFrame` (T-06)" logo abaixo.
 
 pub struct ChannelSink {
     channel: Channel<BinaryPtyFrame>,
@@ -146,6 +145,52 @@ impl<R: Runtime> PtyEventListener for TauriEventListener<R> {
 }
 ```
 
+#### Contrato de `BinaryPtyFrame` (T-06)
+
+1. **Transporte:** `ChannelSink::send` entrega `BinaryPtyFrame(frame)` pelo `Channel`; `IpcResponse::body` produz
+   `InvokeResponseBody::Raw(Vec<u8>)`. Nunca `InvokeResponseBody::Json`, base64 nem array JSON de números.
+2. **Specta — gate T-06 pendente de execução:** `BinaryPtyFrame` **não é tipo Specta de payload JSON**.
+   `specta = "=2.0.0-rc.27"` não possui primitiva `ArrayBuffer`. Um *marcador opaco* para satisfazer os limites
+   de `Channel<T>` é uma estratégia proposta, **não uma implementação demonstrada por esta especificação**.
+   O bloco Rust acima está incompleto para registro no Specta até o gate abaixo; comentário ou alias TS não
+   implementam `specta::Type`. Não presumir que um derive sem campos, `#[specta(skip)]` em `Bytes` ou uma
+   representação vazia seja aceito pelo exportador. O eventual símbolo gerado representa somente metadados
+   do canal, nunca um DTO JSON a ser serializado como frame.
+3. **TypeScript (declaração manual):** o frontend recebe cada mensagem do canal como `ArrayBuffer`, por um tipo
+   declarado manualmente em `src/ipc/ptyFrame.ts` (`export type PtyChannelMessage = ArrayBuffer;`) com comentário
+   TSDoc explícito. Os wrappers usam `new Channel<PtyChannelMessage>()` e, no ponto único de chamada a
+   `commands.ptyAttach`, o canal é entregue ao parâmetro gerado por um único cast localizado (`as` documentado), pois
+   a representação estática do canal será confirmada no gate. Derivar o alvo do cast de
+   `Parameters<typeof commands.ptyAttach>[2]`, sem duplicar a assinatura gerada nem usar `any`; o cast não
+   converte o payload nem serve como evidência do transporte.
+4. **Exceção única à regra de bindings:** `PtyChannelMessage` é a **única** exceção à regra "tipos só via
+   `tauri-specta`" (`README.md` §2.2). Qualquer outro tipo de PTY (`PtySummary`, `AttachInfo`, `OutputCursor` etc.)
+   continua gerado em `src/types/bindings.ts`, sem espelho manual.
+5. **Verificação do alias:** `rg -n '^export type PtyChannelMessage = ArrayBuffer;' src/ipc/ptyFrame.ts` deve
+   localizar a declaração; `rg -n 'PtyChannelMessage|ArrayBuffer' src/ipc src/types` serve para inspecionar usos
+   e duplicações, não para provar ausência de espelhos. Ausência em `src/types/` é esperada para esse alias e
+   não verifica um arquivo que está em `src/ipc/`. Um teste de contrato deve contar exatamente uma declaração
+   manual de `PtyChannelMessage`, nesse caminho, além do teste de drift do arquivo gerado.
+
+**Gate em duas etapas (CA-03/CA-35): Rust/exportador antes de iniciar 02/06; TS/WebView antes do aceite conjunto de 02/05–02/06:**
+
+- Com o lockfile e os pins da Fase 01, inspecionar as fontes locais de `specta`, `specta-typescript`,
+  `tauri-specta` e Tauri para verificar os limites de `Channel<T>`, a assinatura real de `specta::Type` e a
+  representação aceita pelo exportador. Registrar versões, trechos relevantes e o tipo TS efetivamente emitido.
+- Implementar na futura aplicação uma prova mínima com o **mesmo** `BinaryPtyFrame(pub Bytes)`, seu `IpcResponse`
+  Raw e `pty_attach` no builder único; fornecer a implementação completa de `specta::Type` ou o mecanismo
+  suportado constatado nessas fontes. Executar `cargo check --locked` e `cargo run --locked --bin export_bindings`
+  em `src-tauri/`, verificar os nove comandos e `Result<AttachInfo, MtError>`, e comparar duas exportações
+  temporárias byte a byte. Nenhuma edição manual de `bindings.ts` ou conversão para JSON é permitida.
+- Na etapa frontend, executar `npm run typecheck` com o alias e o cast localizado; o aceite conjunto exige
+  teste em **WebView real** recebendo `ArrayBuffer` e preservando bytes/ordem (inclusive `0x00`, `0xff`, UTF-8 e
+  ANSI partidos), sem base64 ou array JSON. Testar também `IpcResponse::body()` como `Raw` e ACK apenas após
+  consumo; `mock_builder` ou teste de cast isolado não substituem a prova de transporte.
+- Se a implementação do marcador, a geração ou o transporte falhar, manter **T-06/CA-35 bloqueado**, registrar
+  o erro reproduzível e submeter o contrato à arquitetura antes de prosseguir. Não remover `pty_attach` do
+  builder nem tratar `unknown`, cast ou corpo JSON como solução. Nesta revisão documental nenhum desses
+  testes de compilação/runtime foi executado; o gate permanece aberto até existir evidência da aplicação.
+
 ### 3.2. Os 9 Comandos Tauri (`src-tauri/src/commands/pty.rs`)
 
 Todos os comandos são `async`, anotados com `#[tauri::command]` e `#[specta::specta]`, recebem `state: tauri::State<'_, Arc<PtyManager>>` e retornam `Result<T, MtError>`. Comandos que realizam I/O de sistema de arquivos ou spawn (`pty_spawn`, `pty_process_info`) executam em `tauri::async_runtime::spawn_blocking`.
@@ -153,11 +198,12 @@ Todos os comandos são `async`, anotados com `#[tauri::command]` e `#[specta::sp
 ```rust
 use std::sync::Arc;
 use bytes::Bytes;
-use mt_core::{MtError, PtyId};
+use mt_core::{ErrorCode, MtError, ids::PtyId};
 use mt_pty::{
     AttachInfo, AttachmentId, KillMode, OutputCursor, PtyError, PtyInput, PtyManager,
     PtyProcessReport, PtySize, PtySummary, SpawnSpec,
 };
+use serde_json::json;
 use tauri::State;
 use tauri::ipc::Channel;
 use crate::events::pty::{BinaryPtyFrame, ChannelSink};
@@ -171,7 +217,10 @@ pub async fn pty_spawn(
     let manager = Arc::clone(&*state);
     tauri::async_runtime::spawn_blocking(move || manager.spawn(spec, None).map_err(MtError::from))
         .await
-        .map_err(|e| MtError::new("pty.spawn_failed", format!("Falha na tarefa de spawn: {e}")))?
+        .map_err(|e| {
+            MtError::new(ErrorCode("pty.spawn_failed"), format!("Falha na tarefa de spawn: {e}"))
+                .with_details(json!({ "stage": "spawn_blocking_join" }))
+        })?
 }
 
 #[tauri::command]
@@ -198,7 +247,10 @@ pub async fn pty_resize(
     let manager = Arc::clone(&*state);
     tauri::async_runtime::spawn_blocking(move || manager.resize(pty_id, size).map_err(MtError::from))
         .await
-        .map_err(|e| MtError::new("pty.io", format!("Falha na tarefa de resize: {e}")))?
+        .map_err(|e| {
+            MtError::new(ErrorCode("pty.io"), format!("Falha na tarefa de resize: {e}"))
+                .with_details(json!({ "stage": "spawn_blocking_join" }))
+        })?
 }
 
 #[tauri::command]
@@ -232,7 +284,10 @@ pub async fn pty_process_info(
         manager.process_report(pty_id).map_err(MtError::from)
     })
     .await
-    .map_err(|e| MtError::new("pty.proc_unavailable", format!("Falha na tarefa de inspeção: {e}")))?
+    .map_err(|e| {
+        MtError::new(ErrorCode("pty.proc_unavailable"), format!("Falha na tarefa de inspeção: {e}"))
+            .with_details(json!({ "stage": "spawn_blocking_join" }))
+    })?
 }
 
 #[tauri::command]
@@ -307,13 +362,13 @@ pub async fn pty_detach(
 
 1. **`Channel` como Argumento Direto (CA-35)**: `on_output: Channel<BinaryPtyFrame>` é parâmetro direto de `pty_attach`, nunca aninhado dentro de `SpawnSpec` ou outro struct DTO.
 2. **ACK representa Consumo, não Envio no Transporte (CA-35)**: `ChannelSink::send` apenas invoca `channel.send(BinaryPtyFrame(frame))` e retorna `Ok(())`. Isso **não** decrementa `unacked` no `FlowControl`. Somente o comando `pty_ack` invocado pelo frontend após o término de `consumer.write()` libera crédito.
-3. **Sincronia de `src/types/bindings.ts` (CA-03)**: O exportador `export-bindings` da Fase 01 deve produzir `src/types/bindings.ts` contendo os 9 comandos, `SpawnSpec`, `PtySummary`, `PtyExitEvent`, `ProcessInfo`, `PtyProcessReport`, `AttachInfo`, `OutputCursor`, etc., com `git diff --exit-code src/types/bindings.ts` limpo.
+3. **Sincronia de `src/types/bindings.ts` (CA-03)**: O exportador `export_bindings` da Fase 01 deve produzir `src/types/bindings.ts` contendo os 9 comandos, `SpawnSpec`, `PtySummary`, `PtyExitEvent`, `ProcessInfo`, `PtyProcessReport`, `AttachInfo`, `OutputCursor`, etc., com `git diff --exit-code src/types/bindings.ts` limpo.
 
 ---
 
 ## 5. Critérios de Aceite Mapeados
 
-- **CA-03 (parte Rust/Specta)**: `cargo run --bin export-bindings` gera `src/types/bindings.ts` contendo `PtySummary`, `SpawnSpec`, `PtyExitEvent`, `ProcessInfo` e os nove comandos sem divergências no `git diff`.
+- **CA-03 (parte Rust/Specta)**: `cargo run --bin export_bindings` gera `src/types/bindings.ts` contendo `PtySummary`, `SpawnSpec`, `PtyExitEvent`, `ProcessInfo` e os nove comandos sem divergências no `git diff`.
 - **CA-24**: `CloseRequested` não encerra PTYs; `ExitRequested` bloqueia novos spawns, coordena `shutdown()` fora do event loop e só então conclui `Exit`.
 - **CA-29**: Teste de integração Tauri (`tauri::test::mock_builder`) exercita os nove comandos `pty_*` e comprova a serialização de `MtError` (`{ code, message, details? }`) em `pt-BR`.
 - **CA-35 (parte Rust)**: `pty_attach` recebe `Channel` como argumento direto, preserva `Result<AttachInfo, MtError>` no Specta RC27 e comprova que `ChannelSink::send(Ok)` sem `pty_ack` não libera crédito no `FlowControl`.

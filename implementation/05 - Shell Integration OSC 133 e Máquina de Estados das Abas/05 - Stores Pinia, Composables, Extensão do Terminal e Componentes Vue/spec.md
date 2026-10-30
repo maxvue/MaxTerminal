@@ -41,7 +41,7 @@ Esta implementação entrega toda a camada frontend da Fase 05 em Vue 3.6 + Type
 | Criar | `src/components/shell/TabStatusIndicator.vue` | Badge semântico de estado da aba (`running`, `continuous`, `finished`, `error`, `idle`) |
 | Criar | `src/components/shell/CommandBlockStatus.vue` | Indicador rico de status de bloco (código de saída, duração, contínuo, truncado, falha de persistência) |
 | Modificar | `src/components/terminal/CommandBlock.vue` | Integrar `CommandBlockStatus.vue` exibindo metadados da Fase 05 sem quebrar o contrato da Fase 04 |
-| Modificar | `src/views/dev/TerminalPlaygroundView.vue` | Demonstrar 2 abas lógicas com `TabStatusIndicator`, foco/ACK por geração, override contínuo e modal/painel de `ErrorContext` |
+| Modificar | `src/components/terminal/__dev__/TerminalPlayground.vue` | Demonstrar 2 abas lógicas com `TabStatusIndicator`, foco/ACK por geração, override contínuo e modal/painel de `ErrorContext` |
 | Criar | `tests/stores/tabStatusStore.spec.ts` | Testes unitários de hidratação, ordenação por revisão, tombstones, `countsFor` e `markSeen` |
 | Criar | `tests/stores/shellHistoryStore.spec.ts` | Testes unitários de paginação, limite de 500 blocos, busca e tratamento de `persistence: 'failed'` |
 | Criar | `tests/composables/useShellCommandBlocks.spec.ts` | Testes do adaptador para `useCommandBlocksStore().feed` e mapeamento de status/labels |

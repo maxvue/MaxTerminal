@@ -50,7 +50,7 @@ Esta primeira implementação estabelece a fundação do crate Rust `mt-github` 
 [package]
 name = "mt-github"
 version = "0.1.0"
-edition = "2024"
+edition.workspace = true
 rust-version = "1.85"
 
 [dependencies]
@@ -180,10 +180,10 @@ impl GithubError {
 
 impl From<GithubError> for MtError {
     fn from(err: GithubError) -> Self {
-        MtError {
-            code: ErrorCode::from(err.kind.code()),
-            message: err.message,
-            details: err.details,
+        let error = MtError::new(ErrorCode(err.kind.code()), err.message);
+        match err.details {
+            Some(details) => error.with_details(details),
+            None => error,
         }
     }
 }

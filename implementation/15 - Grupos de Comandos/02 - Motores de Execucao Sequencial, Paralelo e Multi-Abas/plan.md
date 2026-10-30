@@ -27,7 +27,7 @@
      - Persistir `Starting`, anexar tap de saída ao `pty_id` do painel para capturar a saída apenas durante a janela do item, compor submissão via `SequentialComposer` e escrever no PTY.
      - Aguardar no stream do lease: `BlockStarted` (gravar `command_block_id` e `Running`), depois `BlockFinished` (capturar `exit_code` e `signal`) e finalmente `PromptReady` da mesma `generation`.
      - Se ocorrer `GenerationInvalidated` (ex.: `exit` do shell, substituição de PTY, perda de tracking), marcar o item atual e os pendentes como `Interrupted` e liberar o lease sem escrever na nova geração.
-     - Aplicar política `SequentialSeparator::And` (marcar itens pendentes restantes como `Skipped` se `exit_code != 0`) ou `SequentialSeparator::Semicolon` (continuar para o próximo item).
+     - Aplicar política `SequentialSeparator::And` (restantes `Skipped` após falha) ou `SequentialSeparator::Semicolon` (continuar), apenas com tracking confiável. Testar ausência de OSC 133 → `tracking_unavailable`, sem fallback que atribua sucesso aos comandos intermediários de `cmd1 ; cmd2` (resultados internos `unknown`).
   3. Implementar `cancel(run_id, item_id)` enviando `\x03` (Ctrl+C) apenas se o item alvo estiver `Running` na geração atual do lease, ou removendo da fila se `Pending`.
 
 - [ ] **Passo 5: Implementar `MultiTabPlanner` e `MultiTabRunner` (`plan.rs` e `multi_tab.rs`)**
@@ -54,9 +54,10 @@
 
 ## 2. Comandos Exatos de Verificação
 
-Execute os comandos abaixo a partir de `/home/johnattas/GitHub/MaxTerminal/.max-code-worktrees/wt-6f18b3d0/src-tauri`:
+Execute os comandos abaixo a partir de a raiz da worktree ativa:
 
 ```bash
+cd "$(git rev-parse --show-toplevel)/src-tauri"
 cargo fmt --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test -p mt-commands --test groups_compose

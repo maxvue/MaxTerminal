@@ -40,7 +40,7 @@ Entregar o subsistema completo de **aparência** do MaxTerminal:
 | I-02 | Formatos de entrada | (1) `config.yaml` do Tabby: `terminal.colorScheme`, `terminal.lightColorScheme` (quando existir) e `terminal.customColorSchemes[]`; (2) esquema Tabby individual YAML/JSON (`name`, `foreground`, `background`, `cursor`, `colors[16]`, opcionais `cursorAccent`, `selection`, `selectionForeground`); (3) JSON no formato `ITheme` do xterm (`black`…`brightWhite`); (4) JSON de esquema no formato Windows Terminal (`purple`, `cursorColor`, `selectionBackground`) — "similares" compatíveis com as coleções tabby-*. |
 | I-03 | Validação/normalização de cores | Aceita `#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa`, `rgb()`, `rgba()` (inteiros ou percentuais, com ou sem espaços); normaliza para `#rrggbb` minúsculo (alfa preservado apenas na seleção); paleta de 8 cores expandida para 16 com aviso; avisos de contraste. |
 | I-04 | Importação | `theme_import_file` (um arquivo pode gerar N temas) e `theme_import_dir` (varredura com limites de profundidade, quantidade e tamanho), relatório `ImportReport` com importados, duplicados e falhas por arquivo. Deduplicação por hash de conteúdo normalizado. |
-| I-05 | Persistência | Migration `NNNN_10_themes.sql` em `mt-db/migrations/` com tabelas `themes`, `appearance_settings`, `project_themes` e índices; repositório `mt-db/src/repos/themes.rs`. |
+| I-05 | Persistência | Migration `0006_10_themes.sql` em `mt-db/migrations/` com tabelas `themes`, `appearance_settings`, `project_themes` e índices; repositório `mt-db/src/repos/themes.rs`. |
 | I-06 | Builtins | "Max Navy/Teal" (padrão, escuro), "Max Claro" (claro), "Dracula", "Nord", "Solarized Dark", "Solarized Light" — embutidos via `include_str!`, semeados/atualizados no startup por `slug` + `builtin_version`, imutáveis. |
 | I-07 | Mapeamento xterm | `ColorScheme` → `XtermTheme` (espelho dos campos usados de `ITheme`); `toTerminalTheme` adapta à estrutura da Fase 04. Reconversão preserva cores, não metadados como nome. |
 | I-08 | Mapeamento tokens | `ColorScheme` → `ThemeTokens`: superfícies e escala primary derivadas; success/warning/danger/info provenientes dos tokens Max canônicos para o modo claro/escuro, sem usar ANSI arbitrário. Rampa `--background-0…950` em passos de 25, escalas 50–950 e `-content`; `token_overrides` somente de builtins confiáveis. Exportação de tokens para paleta é aproximada. |
@@ -77,6 +77,7 @@ Entregar o subsistema completo de **aparência** do MaxTerminal:
 | 03 | `mt-db` (conexão WAL, executor de migrations versionadas, padrão de repositórios, convenção de timestamps). |
 | 04 | Interface TS estruturada `TerminalTheme`, provider, registry, extensões e `applyTheme/applyPreferences`; não é um espelho plano de `ITheme`. |
 | 06 | Tabela `projects` (FK de `project_themes`), `useProjectsStore` (lista e seleção), `project://changed` com `kind = deleted`. |
+| 07/09 (migrations) | `0004_07_workspace_templates_tabs_sessions.sql` e `0005_09_os_settings.sql` presentes no runner antes de `0006_10_themes.sql` (D-01). Essa dependência de persistência não exige acoplar a UI de temas aos serviços de workspace/SO. |
 
 Antes de iniciar, verificar nos `spec.md` das Fases 03, 04 e 06 os nomes exatos desses contratos e ajustar apenas
 os adaptadores (`terminalBridge.ts`, `repos/themes.rs`) — nunca o modelo desta fase.
@@ -102,7 +103,7 @@ os adaptadores (`terminalBridge.ts`, `repos/themes.rs`) — nunca o modelo desta
 - `src-tauri/crates/mt-themes/src/mapping/{mod.rs,xterm.rs,tokens.rs}`
 - `src-tauri/crates/mt-themes/src/builtin/{mod.rs,max-navy-teal.yaml,max-light.yaml,dracula.yaml,nord.yaml,solarized-dark.yaml,solarized-light.yaml}`
 - `src-tauri/crates/mt-themes/tests/{import_tabby.rs,mapping_roundtrip.rs,scale_snapshots.rs,service_db.rs}` + `tests/fixtures/**`
-- `src-tauri/crates/mt-db/migrations/NNNN_10_themes.sql` (NNNN = próximo número livre)
+- `src-tauri/crates/mt-db/migrations/0006_10_themes.sql` (número fixado pela decisão D-01: `0006`, após `0005_09_os_settings`)
 - `src-tauri/crates/mt-db/src/repos/themes.rs`
 - `src-tauri/src/commands/themes.rs` (+ registro em `commands/mod.rs` e no builder do `specta.rs`)
 - `src-tauri/src/events/themes.rs`
@@ -148,7 +149,7 @@ Todos os comandos na raiz da worktree devem retornar **exit 0**, salvo indicaç�
 - [ ] CA-16 O builtin "Max Navy/Teal" produz `--max-primary-500 = #00768e`, `--max-primary-950 = #00152a`, `--background-0 = #17293d` e os demais valores idênticos aos de `@maxvue/max-components-ui/src/themes/{tokens,colors}.scss` (modo escuro) — verificado por teste que compara com fixture extraída dessas fontes.
 
 ### 5.4. Persistência e IPC
-- [ ] CA-17 Runner aplica migrations anteriores e a nova em banco vazio, em banco até 06 e até 09 sem erro; `PRAGMA foreign_key_check` vazio. Fases 07–09 não são exigidas pela migration.
+- [ ] CA-17 Runner recebe a sequência completa `0001`–`0006` (D-01) e aplica sem erro em banco vazio, até Fase 06 (`0003`) e até Fase 09 (`0005`); `PRAGMA foreign_key_check` vazio. Banco em `0003` aplica `0004` e `0005` antes de `0006`; não pular versões nem usar placeholders.
 - [ ] CA-18 Após o primeiro startup existem os 6 builtins (`SELECT count(*) FROM themes WHERE builtin = 1` = 6); reiniciar não duplica; incrementar `builtin_version` de um YAML atualiza a linha no próximo startup.
 - [ ] CA-19 Importar o mesmo arquivo duas vezes: a segunda chamada retorna `imported = []` e `duplicates.len() = N`.
 - [ ] CA-20 `theme_delete` em builtin retorna `theme.builtin_readonly`; em tema ativo global, o ativo volta para "Max Navy/Teal" e é emitido `theme://changed`; projetos que usavam o tema perdem a sobreposição (cascade).
@@ -161,8 +162,9 @@ Todos os comandos na raiz da worktree devem retornar **exit 0**, salvo indicaç�
 - [ ] CA-25 Passar o mouse/foco por um tema na lista atualiza somente o `ThemePreview` (escopo local); sair da lista restaura o preview do tema ativo; nada global muda até "Aplicar".
 - [ ] CA-26 Escolher um tema claro (ex.: "Solarized Light") remove a classe `dark` de `<html>` (via `useDark`) e ajusta `color-scheme: light`; voltar a um escuro restaura.
 - [ ] CA-27 Definir tema do projeto A: ao selecionar A, UI e terminais de A usam o tema de A; ao selecionar B (sem sobreposição), volta ao global. Com `applyProjectThemeToUi = false`, apenas os terminais de A mudam.
+- [ ] CA-27 também cobre os cinco campos de `TerminalTheme.ui` e suas variáveis CSS locais em `.hybrid-terminal`: blocos/input de dois painéis com temas distintos permanecem isolados, inclusive após ocultar e remontar um painel.
 - [ ] CA-28 Alterar fonte/tamanho/altura de linha reflete nos terminais em ≤ 200 ms (debounce), dispara re-fit e o PTY recebe o novo tamanho (cols/rows) — verificável com `tput cols` antes/depois.
-- [ ] CA-29 Ligaduras: ativar com uma fonte com ligaduras (ex.: "JetBrains Mono") renderiza `=>` e `!=` ligados; se o addon falhar ao carregar, a opção é revertida e é exibida mensagem pt-BR "Não foi possível ativar as ligaduras nesta fonte".
+- [ ] CA-29 Ligaduras: ativar com uma fonte com ligaduras (ex.: "JetBrains Mono") renderiza `=>` e `!=` ligados; desligar ou encerrar instância/bridge descarta o addon mantido no `WeakMap<Terminal, IDisposable>`. Reativar não duplica addon; desativar durante importação pendente impede reativação tardia. Se o addon vigente falhar ao carregar, a opção é revertida e é exibida mensagem pt-BR "Não foi possível ativar as ligaduras nesta fonte".
 - [ ] CA-30 Reiniciar o app com um tema claro ativo não exibe flash do tema escuro (tokens do `localStorage` aplicados antes do `mount`).
 - [ ] CA-31 Importar via botão "Importar arquivo" / "Importar pasta" exibe `ThemeImportReport` com contagens e erros pt-BR por arquivo; temas com contraste fg/bg < 4.5:1 exibem badge "Contraste baixo". Em lote com mais de 500 detalhes, o resumo usa `totalFailures`/`totalWarnings` exatos e informa quantos detalhes foram omitidos.
 - [ ] CA-32 Todos os textos de UI, mensagens de `MtError` e comentários estão em pt-BR; nenhum `--max-*` é escrito com valores literais fora de `cssTokens.ts`/builtins.

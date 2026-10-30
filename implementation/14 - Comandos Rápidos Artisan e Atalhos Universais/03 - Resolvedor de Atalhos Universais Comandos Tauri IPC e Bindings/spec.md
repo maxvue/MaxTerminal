@@ -38,11 +38,11 @@ Esta terceira implementação entrega o módulo `mt-commands::shortcuts` para de
 - `src-tauri/src/commands/quick_commands.rs` (novo) — comandos IPC `artisan_*` e `shortcut_*` + `QuickCommandsState`.
 - `src-tauri/src/commands/mod.rs` — exposição de `pub mod quick_commands;`.
 - `src-tauri/src/events/quick_commands.rs` (ou em `src-tauri/src/events/mod.rs`) — implementação de `TauriCommandsEventSink`.
-- `src-tauri/src/state.rs` — adição de `pub quick_commands: Arc<QuickCommandsState>` em `AppState`.
+- `src-tauri/src/lib.rs` (`setup`) — `app.manage(QuickCommandsState { … })` (estado próprio do domínio; o `AppState` da Fase 01 não agrega serviços e **não** ganha campo `quick_commands`/`commands` — D-09). Os comandos recebem `tauri::State<'_, QuickCommandsState>`.
 - `src-tauri/src/specta.rs` e `src-tauri/src/lib.rs` — registro dos 10 comandos IPC e dos 3 eventos (`CatalogUpdatedPayload`, `DiscoveryFailedPayload`, `CommandCreatedPayload`).
 
 ### 2.4. Arquivos Frontend a Criar ou Atualizar (`src/`)
-- `src/types/bindings.ts` — regenerado via `npm run bindings`.
+- `src/types/bindings.ts` — regenerado na raiz da worktree via `cargo run --manifest-path src-tauri/Cargo.toml --bin export_bindings`.
 - `src/ipc/quickCommands.ts` (novo) — wrappers tipados sobre `commands.artisan*`, `commands.shortcut*` e listeners de eventos.
 
 ### 2.5. Testes e Fixtures a Criar
@@ -348,6 +348,8 @@ impl ShortcutService {
 
 ### 3.5. Comandos Tauri IPC (`src-tauri/src/commands/quick_commands.rs`)
 
+Cada domínio registra o próprio estado via `app.manage(...)` (D-09): `QuickCommandsState` (Fase 14) é gerenciado no `setup` e a Fase 15 registra, separadamente, `AppCommandGroupState`. Os dois estados não se referenciam e nenhum deles é campo de `AppState`.
+
 ```rust
 pub struct QuickCommandsState {
     pub roots: Arc<RootResolver>,
@@ -360,7 +362,7 @@ pub struct QuickCommandsState {
 #[tauri::command]
 #[specta::specta]
 pub async fn artisan_resolve_root(
-    state: tauri::State<'_, AppState>,
+    state: tauri::State<'_, QuickCommandsState>,
     cwd: String,
     project_id: Option<ProjectId>,
 ) -> Result<Option<ArtisanRoot>, MtError>;
@@ -368,27 +370,27 @@ pub async fn artisan_resolve_root(
 #[tauri::command]
 #[specta::specta]
 pub async fn artisan_catalog_get(
-    state: tauri::State<'_, AppState>,
+    state: tauri::State<'_, QuickCommandsState>,
     root: String,
 ) -> Result<ArtisanCatalog, MtError>;
 
 #[tauri::command]
 #[specta::specta]
 pub async fn artisan_catalog_refresh(
-    state: tauri::State<'_, AppState>,
+    state: tauri::State<'_, QuickCommandsState>,
     root: String,
 ) -> Result<ArtisanCatalog, MtError>;
 
 #[tauri::command]
 #[specta::specta]
 pub async fn artisan_form_schema(
-    state: tauri::State<'_, AppState>,
+    state: tauri::State<'_, QuickCommandsState>,
 ) -> Result<serde_json::Value, MtError>;
 
 #[tauri::command]
 #[specta::specta]
 pub async fn artisan_validate_form(
-    state: tauri::State<'_, AppState>,
+    state: tauri::State<'_, QuickCommandsState>,
     root: String,
     form: ArtisanCommandForm,
 ) -> Result<ValidationReport, MtError>;
@@ -396,7 +398,7 @@ pub async fn artisan_validate_form(
 #[tauri::command]
 #[specta::specta]
 pub async fn artisan_preview_command(
-    state: tauri::State<'_, AppState>,
+    state: tauri::State<'_, QuickCommandsState>,
     root: String,
     form: ArtisanCommandForm,
 ) -> Result<ArtisanPreview, MtError>;
@@ -404,7 +406,7 @@ pub async fn artisan_preview_command(
 #[tauri::command]
 #[specta::specta]
 pub async fn artisan_create_command(
-    state: tauri::State<'_, AppState>,
+    state: tauri::State<'_, QuickCommandsState>,
     root: String,
     form: ArtisanCommandForm,
     expected_revision: String,
@@ -413,7 +415,7 @@ pub async fn artisan_create_command(
 #[tauri::command]
 #[specta::specta]
 pub async fn artisan_format_maxcode_prompt(
-    state: tauri::State<'_, AppState>,
+    state: tauri::State<'_, QuickCommandsState>,
     root: String,
     form: ArtisanCommandForm,
 ) -> Result<String, MtError>;
@@ -421,14 +423,14 @@ pub async fn artisan_format_maxcode_prompt(
 #[tauri::command]
 #[specta::specta]
 pub async fn shortcut_list(
-    state: tauri::State<'_, AppState>,
+    state: tauri::State<'_, QuickCommandsState>,
     cwd: String,
 ) -> Result<ShortcutList, MtError>;
 
 #[tauri::command]
 #[specta::specta]
 pub async fn shortcut_resolve(
-    state: tauri::State<'_, AppState>,
+    state: tauri::State<'_, QuickCommandsState>,
     cwd: String,
     id: ShortcutId,
 ) -> Result<ResolvedShortcut, MtError>;

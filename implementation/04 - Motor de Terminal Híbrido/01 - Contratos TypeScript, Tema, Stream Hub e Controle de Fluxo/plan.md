@@ -44,8 +44,9 @@
 
 ### Passo 3: Implementar catálogo de atalhos (`src/terminal/keybindings.ts`) e Tema Padrão (`src/terminal/theme/`)
 1. Criar `src/terminal/keybindings.ts` com `TERMINAL_KEYBINDINGS` e os predicados puros `isCopyShortcut`, `isPasteShortcut`, `isSearchShortcut`, `isToggleInputModeShortcut` e `isInterruptShortcut`.
-2. Criar `src/terminal/theme/defaultTheme.ts` implementando `resolveCssToken` e `createMaxNavyTealTheme()`, mapeando os tokens CSS `--max-*` e `--background-*` para a estrutura `TerminalTheme` (paleta ANSI de 16 cores + cores de UI `blockBorder`, `blockHeaderBackground`, `richInputBackground`).
+2. Criar `src/terminal/theme/defaultTheme.ts` implementando `resolveCssToken` e `createMaxNavyTealTheme()`, mapeando os tokens CSS `--max-*` e `--background-*` para a estrutura `TerminalTheme` (paleta ANSI de 16 cores + cores de UI `blockBackground`, `blockBorder`, `blockHeaderBackground`, `richInputBackground`, `richInputBorder`).
 3. Criar `src/terminal/theme/themeService.ts` com `themeService` (`getActiveTheme`, `setThemeProvider`, `onChange`, `notifyThemeChanged`).
+4. Criar `src/terminal/theme/themeUiVars.ts` com `themeUiToCssVars(ui)` mapeando os 5 campos de `TerminalTheme['ui']` para as variáveis CSS `--mt-block-background`, `--mt-block-border`, `--mt-block-header-background`, `--mt-rich-input-background` e `--mt-rich-input-border`.
 
 ### Passo 4: Implementar o adaptador IPC fino (`src/terminal/stream/ptyClient.ts`)
 1. Criar `src/terminal/stream/ptyClient.ts` encapsulando todas as chamadas de `src/ipc/pty.ts` (`ptySpawn`, `ptyAttach`, `ptyDetach`, `ptyAck`, `ptyWrite`, `ptyResize`, `ptyKill`, `ptyList`, `onPtyExit`, `onPtyCleanupFailed`) e reexportando os helpers de frame de `src/ipc/ptyFrame.ts` (`PtyFrameKind`, `PtyFrameError`, `decodeFrame`, `decodeGap`, `decodeEnd`, `encodeBinary`).

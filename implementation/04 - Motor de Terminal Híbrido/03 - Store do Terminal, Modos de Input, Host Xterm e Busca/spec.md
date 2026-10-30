@@ -123,7 +123,7 @@ export const useTerminalStore = defineStore('terminal', {
   - `activeInstance: (state): TerminalInstanceState | null`
   - `webglCount: (state): number` (quantidade de instâncias em `state.instances` com `renderer === 'webgl' && visible === true`)
 - **Actions:**
-  - `register(paneId: PaneId, ptyId: PtyId): TerminalInstanceState` — cria o estado inicial se não existir (ou atualiza se mesmo `ptyId`), calculando `inputMode` inicial via `resolveInputMode`.
+  - `register(paneId: PaneId, ptyId: PtyId): TerminalInstanceState` — cria o estado inicial se não existir (ou atualiza se mesmo `ptyId`), calculando `inputMode` inicial via `resolveInputMode` e `themeUi` inicial a partir de `themeService.getActiveTheme().ui`.
   - `unregister(paneId: PaneId): void` — remove `instances[paneId]` e limpa `activePaneId` se era o painel removido.
   - `patch(paneId: PaneId, partial: Partial<TerminalInstanceState>): void` — mescla alterações parciais; se `modes` ou `inputModeOverride` mudarem, recalcula `inputMode` automaticamente via `resolveInputMode` (e limpa `inputModeOverride` se `shouldClearOverrideOnModesChange(prev.modes, nextModes)` for `true`).
   - `setInputModeOverride(paneId: PaneId, mode: InputMode | null): void` — se a instância estiver em `altScreen` ou `mouseTracking !== 'none'`, ignora a tentativa de forçar `'rich'` (permanece `'passthrough'`); caso contrário define `inputModeOverride = mode` e recalcula `inputMode`.
@@ -168,7 +168,7 @@ export function useTerminal(
     callbacks?: UseTerminalCallbacks
 ): UseTerminalReturn;
 ```
-- No `onMounted`: registra o painel em `useTerminalStore`, obtém ou cria a `TerminalInstance` no `terminalInstanceRegistry` usando `markRaw`, conecta callbacks que sincronizam `store.patch(paneId, ...)` e chama `await instance.attach(hostRef.value)`.
+- No `onMounted`: registra o painel em `useTerminalStore`, obtém ou cria a `TerminalInstance` no `terminalInstanceRegistry` usando `markRaw`, conecta callbacks que sincronizam `store.patch(paneId, ...)` (incluindo `onThemeChange` → `store.patch(paneId, { themeUi: theme.ui })`) e chama `await instance.attach(hostRef.value)`.
 - No `onBeforeUnmount`: chama `instance.detach()` (nunca `dispose()`, preservando a instância na troca de abas).
 - Observa `visibleRef` com `watch` e chama `instance.setVisible(visible)` + `store.patch(paneId, { visible })`.
 

@@ -8,7 +8,7 @@
 ## 1. Checklist Sequencial de Execução
 
 ### Passo 1 — Migration SQLite e Repositório em `mt-db`
-- [ ] Verificar o último arquivo em `src-tauri/crates/mt-db/migrations/` para determinar o prefixo `NNNN` e criar `src-tauri/crates/mt-db/migrations/NNNN_10_themes.sql` com as tabelas `themes`, `appearance_settings`, `project_themes`, índices e triggers.
+- [ ] Confirmar que `src-tauri/crates/mt-db/migrations/` contém `0005_09_os_settings.sql` (D-01) e criar `src-tauri/crates/mt-db/migrations/0006_10_themes.sql` com as tabelas `themes`, `appearance_settings`, `project_themes`, índices e triggers.
 - [ ] Criar `src-tauri/crates/mt-db/src/repos/themes.rs` (e registrar em `repos/mod.rs` e `lib.rs`) implementando `list`, `get`, `find_by_hashes`, `insert`, `upsert_builtin`, `ensure_appearance_row`, `delete`, `projects_using`, `appearance`, `save_appearance`, `project_overrides` e `set_project_theme`.
 
 ### Passo 2 — Cache LRU e `ThemeService` em `mt-themes`
@@ -18,7 +18,7 @@
 
 ### Passo 3 — Testes de Integração com Banco Real (`tests/service_db.rs`)
 - [ ] Criar `src-tauri/crates/mt-themes/tests/service_db.rs` cobrindo:
-  - Aplicação das migrations em banco vazio e verificação de `PRAGMA foreign_key_check` vazio (CA-17).
+   - Aplicação da sequência completa `0001`–`0006` em banco vazio, banco até `0003` (Fase 06) e banco até `0005` (Fase 09), verificando `PRAGMA foreign_key_check` vazio (CA-17). O runner aplica `0004`/`0005` quando pendentes antes de `0006`, sem renumerar ou preencher lacunas com placeholders.
   - `start()` semeando os 6 builtins sem duplicar no reinício e atualizando linha ao incrementar `builtin_version` (CA-18).
   - Reimportação do mesmo arquivo retornando `imported = []` e `duplicates.len() == N` (CA-19).
   - Exclusão de builtin retornando `theme.builtin_readonly`; exclusão do tema ativo voltando para `DEFAULT_THEME_ID` e limpando `project_themes` em cascata (CA-20).

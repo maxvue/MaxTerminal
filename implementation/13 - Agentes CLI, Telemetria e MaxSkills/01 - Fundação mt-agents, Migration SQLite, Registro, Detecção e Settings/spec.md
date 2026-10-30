@@ -9,7 +9,7 @@
 
 Esta primeira unidade estabelece a fundação de backend da Fase 13 no workspace Rust (`src-tauri/`):
 
-1. **Migration SQLite (`NNNN_13_agents_skills_memory.sql`)**: cria de forma atômica e com tabelas `STRICT` todas as 10 tabelas da Fase 13 (sementes e opções de templates de agentes, vínculos aba ↔ worktree, operações duráveis de lançamento, snapshots de telemetria, alvos e entradas de sincronização do MaxSkills, e tabelas de memória contextual de comandos com deduplicação at-least-once e tombstones).
+1. **Migration SQLite (`0008_13_agents_skills_memory.sql`)**: cria de forma atômica e com tabelas `STRICT` todas as 10 tabelas da Fase 13 (sementes e opções de templates de agentes, vínculos aba ↔ worktree, operações duráveis de lançamento, snapshots de telemetria, alvos e entradas de sincronização do MaxSkills, e tabelas de memória contextual de comandos com deduplicação at-least-once e tombstones).
 2. **Crate `mt-agents`**: estrutura modular, catálogo completo de códigos de erro (`error.rs`) e portas de desacoplamento (`ports.rs`) que isolam `mt-agents` de Tauri, `mt-pty`, `mt-shell` e `mt-os`.
 3. **Registro Declarativo dos 4 Agentes (`registry.rs`)**: descritores embutidos via `include_str!` para `claude-code` (binário `claude`), `codex`, `agy` e `opencode`, mesclados com overrides opcionais do usuário em `$XDG_CONFIG_HOME/maxterminal/agents.toml` (`#[serde(deny_unknown_fields)]`) sem derrubar o aplicativo caso o TOML seja inválido.
 4. **Detecção Paralela e Matriz de Capacidades (`detect.rs`)**: captura do `PATH` real do *login shell* (`$SHELL -lic`), acréscimo dos diretórios extras (`~/.local/bin`, `~/.bun/bin`, `~/.npm-global/bin`, `~/.opencode/bin`), resolução dos binários e execução paralela de `--version` com timeout individual de 3 s (`kill_on_drop(true)`), além da construção do `CapabilityReport` verificável por versão/evidências (`S-01`..`S-14`).
@@ -20,7 +20,7 @@ Esta primeira unidade estabelece a fundação de backend da Fase 13 no workspace
 ## 2. Arquivos a Criar ou Modificar
 
 ### 2.1. Arquivos Criados
-- `src-tauri/crates/mt-db/migrations/0009_13_agents_skills_memory.sql` *(usar o próximo número sequencial livre em `mt-db/migrations/` sem lacunas)*
+- `src-tauri/crates/mt-db/migrations/0008_13_agents_skills_memory.sql` *(número fixo `0008` pela decisão D-01 — sequência contígua de migrations do projeto)*
 - `src-tauri/crates/mt-agents/Cargo.toml`
 - `src-tauri/crates/mt-agents/src/lib.rs`
 - `src-tauri/crates/mt-agents/src/error.rs`
@@ -51,7 +51,7 @@ Esta primeira unidade estabelece a fundação de backend da Fase 13 no workspace
 [package]
 name = "mt-agents"
 version = "0.1.0"
-edition = "2024"
+edition.workspace = true
 rust-version = "1.85"
 
 [lib]
@@ -76,8 +76,8 @@ subtle = "2"
 rand = "0.8"
 base64 = "0.22"
 walkdir = "2"
-notify = "6"
-notify-debouncer-full = "0.3"
+notify = { workspace = true }
+notify-debouncer-full = { workspace = true }
 which = "6"
 shell-words = "1"
 dashmap = "6"
@@ -94,9 +94,13 @@ tokio = { workspace = true, features = ["full", "test-util"] }
 proptest = "1"
 ```
 
+Herdar `edition = "2024"` do workspace (D-09). `src-tauri/Cargo.toml` centraliza `notify = "8"` e
+`notify-debouncer-full = "0.5"` em `[workspace.dependencies]` (E-10); os watchers de telemetria e MaxSkills
+consomem as mesmas versões usadas pela Fase 06, sem manifestos locais conflitantes.
+
 ---
 
-### 3.2. Migration SQLite (`mt-db/migrations/NNNN_13_agents_skills_memory.sql`)
+### 3.2. Migration SQLite (`mt-db/migrations/0008_13_agents_skills_memory.sql`)
 
 ```sql
 -- Fase 13: agentes CLI, isolamento, telemetria, MaxSkills e memória contextual
@@ -336,7 +340,9 @@ use crate::registry::AgentKind;
 pub struct RunBinding {
     pub tab_id: TabId,
     pub pane_id: PaneId,
+    pub pty_id: PtyId,
     pub session_id: SessionId,
+    pub generation: i64,
     pub project_id: ProjectId,
     pub run_id: String,
     pub agent: AgentKind,
@@ -372,7 +378,7 @@ pub trait TabStatePort: Send + Sync {
     /// Aplica sobreposição `AttentionRequired` para `(run, episode)` e retorna `true` se o estado mudou.
     fn attention_required(&self, run: &RunBinding, episode: u64) -> bool;
     /// Remove apenas a sobreposição do episódio informado e recompõe o estado subjacente real do painel.
-    fn attention_resolved(&self, tab: TabId, pane: PaneId, session: SessionId, run_id: &str, episode: u64);
+    fn attention_resolved(&self, run: &RunBinding, episode: u64);
 }
 
 /// Porta para o `AttentionRegistry` e `Notifier` da Fase 09.
@@ -410,6 +416,16 @@ pub trait GitPort: Send + Sync {
 ```
 
 ---
+
+`RunBinding` só é publicado após `WorkspaceLifecycleSignal::PaneSpawned`, com `pty_id` real e
+`generation` copiada de `ExecutionOwner` da Fase 07. Antes disso há uma reserva `PendingRunBinding`
+(§02/3.3), nunca um PTY fictício. Os dois métodos de `TabStatePort` recebem a mesma identidade imutável;
+o adaptador do binário constrói o `RuntimeBinding` de **quatro campos** da Fase 05 (`tab_id`, `pane_id`,
+`pty_id`, `session_id`) e chama `TabStateRegistry::apply(pane_id, StateInput)`. A geração do owner da 07
+é validada separadamente contra o índice de runs da 13; não é campo de `RuntimeBinding` nem equivale
+a `ExecutionRef.generation` (geração de bloco, Fase 05). Não consultar a
+execução atual para reatribuir um evento antigo; atenção e limpeza de geração encerrada são descartadas.
+O crate `mt-agents` mantém esses campos primitivos para não depender de `mt-shell`.
 
 ### 3.5. Registro e Descritores (`crates/mt-agents/src/registry.rs` e `descriptors/*.toml`)
 
@@ -661,6 +677,28 @@ pub enum WorktreeLocationDto {
     MaxCode,
 }
 
+impl WorktreeLocationDto {
+    pub fn as_db_str(self) -> &'static str {
+        match self {
+            Self::Project => "project",
+            Self::MaxCode => "max_code",
+        }
+    }
+
+    pub fn from_db_str(value: &str) -> MtResult<Self> {
+        match value {
+            "project" => Ok(Self::Project),
+            "max_code" => Ok(Self::MaxCode),
+            _ => Err(mt_core::MtError::new(
+                mt_core::ErrorCode("agents.settings_invalid"),
+                "Localização de worktree inválida no banco de dados."
+            )),
+        }
+    }
+}
+
+// IPC/settings JSON usa "maxCode"; a coluna SQL `location` usa exclusivamente as conversões acima.
+// Todos os INSERT/UPDATE/SELECT de `agent_template_options` usam as_db_str/from_db_str, nunca serde_json.
 impl Default for WorktreeLocationDto {
     fn default() -> Self {
         Self::Project

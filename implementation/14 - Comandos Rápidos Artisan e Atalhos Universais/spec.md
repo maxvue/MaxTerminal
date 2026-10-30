@@ -18,7 +18,7 @@ flowchart LR
     subgraph Frontend
         RI["RichInput (Fase 04)"] -->|"triggerRegistry.match"| TR[TriggerRegistry]
         TR -->|"prefixo >"| AT[useArtisanTrigger]
-        TR -->|"prefixos php ./v ven sai"| AA["useArtisanTrigger (args)"]
+        TR -->|"invocador por tokens (php artisan, ./artisan, sail artisan, ./vendor/bin/sail artisan)"| AA["useArtisanTrigger (args)"]
         TR -->|"prefixo /"| ST[useShortcutTrigger]
         AT --> QS[(useQuickCommandsStore)]
         AA --> QS
@@ -84,11 +84,11 @@ src-tauri/crates/mt-commands/
 ```toml
 [package]
 name = "mt-commands"
-edition = "2021"
+edition.workspace = true   # 2024 (D-09)
 
 [dependencies]
 mt-core = { path = "../mt-core" }
-mt-db = { path = "../mt-db", default-features = false }   # apenas mt_db::sanitizer
+mt-db = { workspace = true }   # sanitizador (mt_db::sanitizer) e fachada mt_db::Db (D-09)
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 schemars = "1"                     # JSON Schema draft 2020-12 do formulário (Geração Assistida)
@@ -111,6 +111,10 @@ tokio = { workspace = true, features = ["test-util", "rt-multi-thread"] }
 ```
 
 > `indexmap` e `libc` são adições a I-01/§4.1 das instructions (necessárias para ordem de argumentos e kill de grupo).
+>
+> D-09: `mt-commands/Cargo.toml` **nasce nesta fase** com `edition.workspace = true` (edição 2024 herdada do workspace) e
+> `mt-db = { workspace = true }`. A Fase 15 apenas **acrescenta** dependências (ex.: `rusqlite = { workspace = true }`) e o módulo
+> `groups`, sem redefinir `edition`, `name` ou o crate. Esta fase não tem migration SQLite.
 
 ---
 
@@ -124,7 +128,7 @@ tokio = { workspace = true, features = ["test-util", "rt-multi-thread"] }
 | 06 | `Project.stack: StackKind` (`'laravel'`), `useProjectsStore().projectById(id)` | habilitar `>` | `adapters.ts` |
 | 07 | `TerminalContext.cwd` (preenchido via `registerContextProvider` das Fases 05/07); `PaneView.cwd` | raiz Laravel por aba/worktree | `adapters.ts` |
 | 11 | `maxcode_open_plan(prompt, project_path, source)` com `ConversationSource::ArtisanCreate` (`'artisan_create'`); `useMaxCodeBridgeStore().openPlan(prompt, projectPath, source)` | "Criar com MaxCode" | `adapters.ts` |
-| 12 | `useAiGenerate<T>(schemaId, schema)` → `{ loading, error, result, run(prompt, opts?), cancel() }`; `ai_generate_structured(StructuredRequest)` com `schemaId = 'artisan.command'` | "Preencher com IA" | `adapters.ts` |
+| 12 | `useAiGenerate<T>(schemaId, schema, decode: (value: unknown) => T)` → `{ loading, error, result, run(prompt, opts?: AiGenerateRunOptions): Promise<T \| null>, cancel() }` (`AiGenerateRunOptions.signal?: AbortSignal`; `null` = sem resultado utilizável/cancelado); `ai_generate_structured(StructuredRequest)` com `schemaId = 'artisan.command.v1'` (D-05) | "Preencher com IA" | `adapters.ts` |
 
 ### 2.1. Campos `passthrough` / `refreshAfter` do `CompletionResult` (contrato da Fase 04)
 
@@ -712,9 +716,12 @@ pub struct ArtisanCreateResult {
 }
 ```
 
-Estado no binário (`state.rs`): `quick_commands: Arc<QuickCommandsState>` com
+Estado no binário: `QuickCommandsState` com
 `{ artisan: Arc<ArtisanService>, roots: RootResolver, generator: CommandGenerator, shortcuts: ShortcutService }`,
-criado no `setup` após `ProjectService` (Fase 06). Registro no builder de `specta.rs` e no `invoke_handler`.
+criado no `setup` após `ProjectService` (Fase 06) e registrado com `app.manage(QuickCommandsState { … })` (D-09). O `AppState`
+da Fase 01 não agrega serviços de domínio: **não** há campo `quick_commands`/`commands` nele; os comandos IPC recebem
+`tauri::State<'_, QuickCommandsState>`. A Fase 15 registra seu próprio `AppCommandGroupState` separadamente (sem referência cruzada).
+Registro dos comandos no builder de `specta.rs` e no `invoke_handler`.
 
 ---
 
@@ -743,7 +750,7 @@ se perder); listeners não desencadeiam `refresh` recursivo. Reconexão invalida
 ### 7.1. Formulário (`form.rs`)
 
 ```rust
-/// Formulário do modal "Criar comando" — também é o schema da Geração Assistida (`artisan.command`).
+/// Formulário do modal "Criar comando" — também é o schema da Geração Assistida (`artisan.command.v1`).
 #[derive(Debug, Clone, Default, Serialize, Deserialize, specta::Type, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ArtisanCommandForm {
@@ -1018,11 +1025,20 @@ Confirmar `withRouting(commands: ...)` no bootstrap: `Application::configure` so
 `routes/console.php` será carregado. Layout legacy, registro alternativo, arquivo ambíguo ou PHP não reconhecido
 recebe snippet manual, sem alteração automática.
 
-**Publicação sem sobrescrita indevida:** se `routes/console.php` já existe, entregar o patch no preview e em
-`manual_steps`, mantendo seus bytes intactos. Hash+rename não é compare-and-swap contra um editor externo, e lock
-advisory só coordena escritores cooperativos. Nesta fase, escrever automaticamente apenas arquivo de routes ausente,
-referenciado pelo bootstrap e criado por `create_new`; colisão vira `preview_stale`. Essa restrição mantém o
-agendamento configurável sem prometer uma transação que o filesystem não oferece. Não instalar cron do sistema.
+**Inserção confirmada e idempotente (T-18):** `routes/console.php` existente e reconhecido também recebe
+agendamento automático. Inserir antes de `?>` (ou no fim do segmento PHP) um bloco delimitado por
+`// <maxterminal:schedule:Classe>` e `// </maxterminal:schedule:Classe>`, com FQCNs para evitar colisão de imports.
+Preservar todos os bytes fora desse bloco, inclusive comentários, newline e comandos existentes. Se registro
+equivalente já existir, produzir patch vazio; bloco divergente/duplicado, estrutura PHP ambígua ou agendamento
+customizado conflitante exige revisão manual, nunca duplicar registro. Arquivo ausente usa `create_new` e os mesmos delimitadores.
+
+O preview mostra o diff completo, marca `manual_only = false` nos casos suportados e inclui identidade/hash da
+base em `revision`. O clique explícito em **Criar**, após pré-visualização do agendamento, confirma exatamente
+essa revisão; IA nunca confirma. Revalidar base sob lock por raiz imediatamente antes da publicação: mudança
+detectada retorna `artisan.preview_stale`. Preparar temporário exclusivo no mesmo diretório, preservar permissões
+e backup dos bytes originais, sincronizar e publicar a atualização atomicamente. Hash+rename não é CAS contra
+editor externo e lock advisory só coordena escritores cooperativos: documentar a janela residual, não prometer
+atomicidade entre arquivos; em conflito observado, preservar arquivos e devolver diff/passos manuais. Não instalar cron do sistema.
 
 `LaravelLayout::Legacy`/`Unknown` → nada é escrito; `manual_steps` (CA-22):
 
@@ -1040,8 +1056,9 @@ $schedule->command(\App\Console\Commands\SendWeeklyReport::class)->weeklyOn(1, '
 3. Resolver destino ancorado na raiz antes de criar diretórios (§3.3). Arquivo existente ou symlink → erro sem alterações.
    Renderizar PHP e patch com a mesma função do preview. Preparar bytes completos em arquivo temporário exclusivo,
    sincronizar e publicar com operação no-replace (`renameat2(RENAME_NOREPLACE)` ou link exclusivo Linux).
-4. Schedule existente permanece intacto, com patch em `manual_steps`. Se ausente e suportado, publicar também de modo
-   exclusivo. Cada publicação registra inode/hash produzido para recuperação; nenhuma usa rename sobre destino existente.
+4. Schedule existente suportado recebe o bloco delimitado aprovado no preview, após revalidação de identidade/hash
+   (§7.7); preservar backup original e bytes externos ao bloco. Se ausente, publicar exclusivamente. Cada publicação
+   registra inode/hash produzido para recuperação; arquivos ambíguos/legacy retornam `manual_steps`.
 5. Em falha, remover apenas temporários próprios e artefatos cuja identidade/bytes continuam os gravados nesta operação.
    Se algum artefato mudou externamente ou a limpeza falhou, retornar `artisan.partial_write` com `createdPaths`,
    `preservedPaths`, `manualSteps` sanitizados; não anunciar "nada alterado" nem apagar edição externa.
@@ -1050,13 +1067,13 @@ $schedule->command(\App\Console\Commands\SendWeeklyReport::class)->weeklyOn(1, '
    sem tentar criar de novo. Duplo clique é bloqueado e O_EXCL protege chamadas IPC concorrentes.
 
 Não há atomicidade entre dois caminhos nem rollback garantido após queda de energia. Publicação de cada arquivo é
-atômica/exclusiva; reinício que encontra classe criada a mostra como existente, em vez de substituir o arquivo.
+atômica (exclusiva para arquivos novos); reinício que encontra classe criada a mostra como existente, em vez de substituir o arquivo.
 
 ### 7.9. Schema da Geração Assistida
 
 `artisan_form_schema` = `SchemaSettings::draft2020_12().into_generator().into_root_schema_for::<ArtisanCommandForm>()`
 serializado (≈ 4 KiB). A resposta de `ai_generate_structured` é desserializada estritamente
-(`deny_unknown_fields`) e passa por `artisan_validate_form`; qualquer issue `error` rejeita a sugestão (CA-25).
+(`deny_unknown_fields`; no frontend, a função `decode` passada a `useAiGenerate` valida o objeto antes de a store usá-lo) e passa por `artisan_validate_form`; qualquer issue `error` rejeita a sugestão (CA-25).
 
 ---
 
@@ -1304,7 +1321,7 @@ pendências. Cancelar o modal conserva o rascunho em memória daquela raiz e res
 
 Única ponte com Fases 04/06/11/12: `registerTrigger(def)`, `projectStack(projectId)`, `openMaxCodePlan(prompt, root)`
 (→ `useMaxCodeBridgeStore().openPlan(prompt, root, 'artisan_create')`), `aiGenerate<T>(schemaId, schema)`
-(→ `useAiGenerate`), `TRIGGER_PASSTHROUGH = { items: [], passthrough: true }`.
+(→ `useAiGenerate<T>(schemaId, schema, decode)`; o adaptador fornece o `decode`, repassa `{ signal }` e converte retorno `null` em "sem sugestão"), `TRIGGER_PASSTHROUGH = { items: [], passthrough: true }`.
 
 ### 10.4. Filtro fuzzy (`fuzzy.ts`)
 
@@ -1429,8 +1446,13 @@ revisão antes de usar resultado; o `!` no esboço não autoriza assumir context
 Hints desabilitados não capturam Enter como execução; Escape usa supressão da Fase 04. Todos os atalhos operam só
 no input rico, sem interceptar teclas do xterm/TUI ou eventos IME enquanto `isComposing`.
 
-Provedor de argumentos/flags (`artisanArgsTrigger`), registrado uma vez por prefixo de invocador
-`['php', './v', 'ven', 'sai']` (≤ 3 caracteres, regra da Fase 04 §8.1), com `id: 'artisan.args:<prefixo>'`:
+Provedor de argumentos/flags (`artisanArgsTrigger`). A ativação é **por tokens do invocador**, não por 4 prefixos fixos de
+poucos caracteres: o provedor é registrado uma vez por **primeiro token** de invocador reconhecido
+(`ARTISAN_INVOKER_HEADS = ['php', './artisan', 'sail', './vendor/bin/sail', 'vendor/bin/sail']`, com `id: 'artisan.args:<token>'`;
+a Fase 04 §8.1 aceita prefixos de até 32 caracteres) e, ao ser consultado, delega a `parseArtisanLine`, que compara os tokens
+completos digitados com `root.invokerTokens` e com os equivalentes canônicos `php artisan`, `./artisan`, `sail artisan` e
+`./vendor/bin/sail artisan` (inclusive caminhos relativos/quotados como `php '../Meu Projeto/artisan'`). Quando os tokens não
+formam `<invocador> artisan …` para a raiz ativa (ex.: `php -v`, `sail up`), o resultado é `TRIGGER_PASSTHROUGH`:
 
 | Situação (`parseArtisanLine`) | Resultado |
 |-------------------------------|-----------|
@@ -1456,8 +1478,13 @@ flag → `--force ` (`keepOpen: true`, para encadear a próxima opção).
 - `onSubmitWithoutSelection`: texto exatamente igual a um id → mesmo fluxo do `onSelect` (nunca envia `/install` cru
   ao shell); senão `{ kind: 'submit', text: q.input }`.
 
-`registerQuickCommandTriggers()` (chamado em `src/app/main.ts` após `useQuickCommandsStore().init()`) registra
-`artisan`, os 4 `artisan.args:*` e `shortcuts`, retornando um `Disposable` agregado.
+O **registro** acontece em `src/terminal/triggers/providers/index.ts` (D-09), arquivo **criado por esta fase**:
+`registerTriggerProviders()` chama `useQuickCommandsStore().init()` uma única vez e registra, via `triggerRegistry.register`,
+`artisan` (`>`), os `artisan.args:*` e `shortcuts` (`/`), retornando um `Disposable` agregado. A Fase 15 apenas **estende** esse
+arquivo com `registerCommandGroupsTrigger` (`>>`). Os módulos em `src/composables/quick-commands/` (`useArtisanTrigger.ts`,
+`useShortcutTrigger.ts`) continuam sendo a lógica dos provedores, mas **não** se registram sozinhos e `src/app/main.ts`
+não é alterado por esta fase (a chamada de `registerTriggerProviders()` pertence ao ponto único de inicialização dos gatilhos do terminal,
+compartilhado com a Fase 12).
 
 ### 10.8. Componentes (`src/components/quick-commands/`)
 
@@ -1568,12 +1595,12 @@ sequenceDiagram
     participant B as useMaxCodeBridgeStore (Fase 11)
     participant AI as useAiGenerate (Fase 12)
     M->>S: fillWithAi()
-    S->>AI: run(objetivo + contexto, schema artisan.command)
-    AI-->>S: value (JSON)
+    S->>AI: run(objetivo + contexto, schema artisan.command.v1)
+    AI-->>S: value (T já decodificado) ou null (sem resultado/cancelado)
     S->>S: artisan_validate_form(value)
     alt válido
         S->>S: guarda aiSnapshot e aplica value ao form
-    else inválido
+    else inválido ou null (sem resultado/cancelado)
         S-->>M: toast "Sugestão da IA inválida" (form intacto)
     end
     M->>S: createWithMaxCode()
@@ -1647,7 +1674,7 @@ Nenhuma reatividade profunda sobre o catálogo: `catalogs[root].catalog` é atri
 - **Sem shell na descoberta:** `tokio::process::Command` com argumentos fixos, `env_clear()` + allowlist, `stdin`
   nulo, grupo de processos próprio e `SIGKILL` no grupo ao estourar timeout/limite (CA-09, sem processos órfãos).
 - **Escopo de escrita:** raiz autorizada e resolução ancorada em descritores, sem symlinks; publicação exclusiva
-  de PHP novo; arquivo de schedule existente recebe patch manual (§7.8), sem prometer CAS baseado apenas em hash.
+  de PHP novo; schedule existente suportado recebe inserção delimitada confirmada (§7.7–§7.8), preservando bytes externos, sem prometer CAS baseado apenas em hash.
 - **PHP gerado:** campos validados por regex restritivas antes de interpolar; strings em aspas simples escapadas;
   `{`/`}` proibidos em descrições/defaults (impede quebra da signature); `*/` escapado no PHPDoc.
 - **IA não confiável:** desserialização estrita (`deny_unknown_fields`), mesmo validador, nada é gravado sem clique em

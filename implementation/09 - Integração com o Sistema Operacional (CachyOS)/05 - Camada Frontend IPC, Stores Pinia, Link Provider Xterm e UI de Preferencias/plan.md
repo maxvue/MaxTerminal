@@ -19,7 +19,7 @@
   - `src/ipc/os.ts`
 - **Ações**:
   1. Implementar `unwrap` convertendo `{ status: 'error', error }` em rejeição tipada com `MtError`.
-  2. Exportar `osIpc` com os 16 métodos mapeados para `commands.os*`.
+  2. Exportar `osIpc` com os 17 métodos mapeados para `commands.os*`.
   3. Exportar os 10 helpers `onFocusTab`, `onWindowVisibility`, `onSettingsChanged`, `onShortcutStatus`, `onCounters`, `onOpenPreferences`, `onShutdownStarted`, `onShutdownFailed`, `onEnvironmentChanged` e `onLinkContextChanged`.
 
 ### Etapa 2.2 — Stores Pinia (`window.ts` / `osWindow.ts` e `osSettings.ts`)
@@ -83,7 +83,7 @@
 - **Ações**:
   1. Em `parseLinkCandidates.spec.ts`: testar ≥ 40 casos reais (`php artisan`, `tsc`, `cargo`, `eslint`, `phpunit`, caminhos relativos/absolutos/`~`, espaços entre aspas, caracteres Unicode/acentos, URLs rejeitadas, versões e horários rejeitados, linha 0/overflow rejeitados, truncamento em 200 candidatos), atingindo ≥ 90% de cobertura de linhas.
   2. Em `useEditorLinks.spec.ts`: testar loteamento de 200 candidatos em 4 chamadas de ≤ 64 itens (CA-25), cache hit em 5 s (0 chamadas no segundo hover), invalidação ao mudar `cwdEpoch`, cálculo de coordenadas em caracteres largos (emojis/CJK) e linhas wrapped.
-  3. Em `window.spec.ts` e `osSettings.spec.ts`: testar ordenação por `revision`, preservação de `--minimized` em `os_ui_ready`, atualização otimista e rollback com erro `os.shortcut_conflict`.
+  3. Em `window.spec.ts` e `osSettings.spec.ts`: testar ordenação por `revision`, preservação de `--start-hidden` em `os_ui_ready`, atualização otimista e rollback com erro `os.shortcut_conflict`.
   4. Em `useShortcutRecorder.spec.ts` e `PreferencesSystemSection.spec.ts`: testar gravação de teclas, cancelamento com `Escape`, exibição do snippet Wayland (`cli_only`) e aviso de bandeja indisponível (`!trayAvailable`).
 
 ---
@@ -105,5 +105,5 @@
 npm run typecheck && npm run typecheck:vue && npm run lint
 
 # CA-05: Suíte de testes unitários e de componentes com cobertura de parseLinkCandidates.ts >= 90%
-npx vitest run tests/composables/editorLinks tests/stores/window.spec.ts tests/stores/osSettings.spec.ts tests/composables/useShortcutRecorder.spec.ts tests/components/preferences --coverage
+npx --no-install vitest run tests/composables/editorLinks tests/stores/window.spec.ts tests/stores/osSettings.spec.ts tests/composables/useShortcutRecorder.spec.ts tests/components/preferences --coverage
 ```

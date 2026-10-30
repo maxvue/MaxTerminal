@@ -9,11 +9,11 @@
 
 1. Editar `src-tauri/Cargo.toml`:
    - Adicionar `"crates/mt-db"` à lista `members` de `[workspace]`.
-   - Registrar em `[workspace.dependencies]` as dependências: `mt-db`, `rusqlite` (`features = ["bundled", "backup", "functions", "serde_json"]`), `r2d2`, `r2d2_sqlite`, `crossbeam-channel`, `tokio` (`features = ["sync", "rt", "time", "macros"]`), `regex`, `include_dir`, `sha2`, `tempfile`, `proptest`, `rstest`, `criterion`.
+   - Registrar em `[workspace.dependencies]` as dependências: `mt-db`, `rusqlite` `0.40` (`features = ["bundled", "backup", "functions", "serde_json"]`), `r2d2`, `r2d2_sqlite` `0.35`, `crossbeam-channel`, `tokio` (`features = ["sync", "rt", "time", "macros"]`), `regex`, `include_dir`, `sha2`, `tempfile`, `proptest`, `rstest`, `criterion`.
 2. Criar `src-tauri/crates/mt-db/Cargo.toml` herdando `version`, `edition`, `rust-version` e `[lints]` do workspace, declarando os targets `[[bench]]` para `sanitizer` (e reservando `batch`).
 3. Criar `src-tauri/crates/mt-db/src/time.rs` com `pub fn now_ms() -> i64`.
 4. Criar `src-tauri/crates/mt-db/src/error.rs` inicial e `src-tauri/crates/mt-db/src/lib.rs` expondo `pub mod error; pub mod sanitizer; pub mod time;`.
-5. Verificar no `Cargo.lock` que existe apenas uma versão de `rusqlite` e `libsqlite3-sys`.
+5. Verificar no `Cargo.lock` que existe apenas uma versão de `rusqlite` e `libsqlite3-sys` (`cargo tree -d` sem `libsqlite3-sys` duplicado; D-06).
 
 ---
 

@@ -12,7 +12,7 @@ Esta segunda implementação constrói o núcleo de persistência, validação d
 
 1. **Catálogo Canônico das 24 Labels do Workflow MaxCode (`labels.rs` + `fixtures/maxcode/*`):** Carregamento e gate de validação estrita do export versionado de `~/GitHub/MaxCode/src/core/labelsDeBugs.ts` (commit de referência `1054eb8a886de412de8912ad56f64b1367da8b09`), garantindo exatamente **24 labels** (**15 de estado**, **3 de encerramento** e **6 de categoria**), preservação byte a byte da grafia original (incluindo caixa e espaçamento), verificação de integridade SHA-256 (`sourceSha256` e `exportSha256`), preview puro de transições e sincronização seletiva (`ensure_labels`) que cria apenas labels faltantes no repositório sem sobrescrever cores ou descrições existentes.
 2. **Extração Estrutural de `## PLANO DE IMPLEMENTAÇÃO` (`plan.rs`):** Parser Markdown baseado em eventos AST (`pulldown-cmark`) que localiza a última seção H2 cujo texto exato é `PLANO DE IMPLEMENTAÇÃO` (ignorando blocos de código cercados/indentados, HTML e citações), compara corpo da issue e comentários pelo maior `(updated_at_ms, created_at_ms, source_id)` e sinaliza `provisional: true` quando nem todas as páginas de comentários foram carregadas.
-3. **Migration SQLite e Repositório de Cache (`NNNN_16_github.sql`, `cache.rs`):** Criação das 10 tabelas e índices em modo WAL com chaves estrangeiras, sanitização obrigatória (`mt_db::sanitizer::sanitize()`) de títulos, corpos, comentários e payloads JSON, cache HTTP por página com ETag e `sanitizer_version`, controle de mutações com digest HMAC efêmero (`github_mutations`) e política de retenção (`RetentionRegistry`).
+3. **Migration SQLite e Repositório de Cache (`0010_16_github.sql`, `cache.rs`):** Criação das 10 tabelas e índices em modo WAL com chaves estrangeiras, sanitização obrigatória (`mt_db::sanitizer::sanitize()`) de títulos, corpos, comentários e payloads JSON, cache HTTP por página com ETag e `sanitizer_version`, controle de mutações com digest HMAC efêmero (`github_mutations`) e política de retenção (`RetentionRegistry`).
 4. **Serviço de Sincronização e Reconciliação (`sync.rs`):** `IssueSyncService` com área de staging paginada (`state=all`), publicação atômica em transação única após todas as páginas, sync incremental com janela de sobreposição de 60s (`since`), reconciliação completa periódica (24h), coalescência de requisições concorrentes (N consumidores aguardam a mesma operação paginada), scheduler limitado a 2 sincronizações simultâneas com prioridade para o projeto ativo (TTL 120s lista, 300s detalhe, ≥ 10 min em background) e cálculo exato de `OpenIssueCount` excluindo Pull Requests.
 
 ---
@@ -21,7 +21,7 @@ Esta segunda implementação constrói o núcleo de persistência, validação d
 
 | Caminho | Ação | Descrição |
 |---------|------|-----------|
-| `src-tauri/crates/mt-db/migrations/NNNN_16_github.sql` | Criar | Migration SQLite com as 10 tabelas e índices do domínio GitHub Issues |
+| `src-tauri/crates/mt-db/migrations/0010_16_github.sql` | Criar | Migration SQLite com as 10 tabelas e índices do domínio GitHub Issues; versão 10 fixa (D-01) |
 | `src-tauri/crates/mt-github/fixtures/maxcode/labels.v1.json` | Criar | Export versionado das 24 labels canônicas (15 state, 3 closure, 6 category), transições e hashes SHA-256 de procedência |
 | `src-tauri/crates/mt-github/fixtures/maxcode/labels-cases.v1.json` | Criar | Vetores de teste de normalização, comparação byte a byte e transições válidas/inválidas exportados do MaxCode |
 | `src-tauri/crates/mt-github/src/labels.rs` | Criar | `LabelCatalog`, `CatalogStatus`, validador de gate 24/15/3/6, normalizador compatível, preview de transição e `ensure_labels` |
@@ -40,6 +40,18 @@ Esta segunda implementação constrói o núcleo de persistência, validação d
 ## 3. Assinaturas Exatas, Schema SQL e Regras de Negócio
 
 ### 3.1. Catálogo de Labels Canônicas (`src-tauri/crates/mt-github/src/labels.rs`)
+
+Catálogo literal D-02, obrigatório em `labels.v1.json` e nos testes de igualdade byte a byte:
+
+| Tipo | Quantidade | Nomes exatos |
+|------|------------|-------------|
+| `state` | 15 | `Waiting Plan`, `Waiting More Info`, `Planned`, `Waiting Execute`, `Executed`, `Waiting Check`, `Checked Approved`, `Checked Rejected`, `Waiting Re-plan`, `Fix Merged`, `Waiting Deploy`, `Deployed`, `Waiting user test`, `User Rejected`, `User Approved` |
+| `closure` | 3 | `Duplicated`, `Evidence not Found`, `Dismissed` |
+| `category` | 6 | `Regra de Negocio`, `Testes`, `Desempenho`, `Seguranca`, `Audit`, `Documentacao` |
+
+Preservar fixture versionada, transições e hashes de procedência. Teste adicional de paridade com
+`MaxCode/src/core/labelsDeBugs.ts` roda quando a fonte estiver disponível; sua ausência não bloqueia os testes
+locais da fixture nem exige checkout pessoal em CI. Cores/descrições/transições não são inferidas pelos nomes.
 
 ```rust
 use serde::{Deserialize, Serialize};
@@ -176,7 +188,7 @@ Regras estritas de parsing em `plan.rs`:
 5. Calcula `start_line` e `end_line` (1-indexed) contando quebras de linha `\n` até os offsets inicial e final da fatia extraída.
 6. Se `comments_complete == false`, o `IssuePlan` retornado recebe `provisional = true`.
 
-### 3.3. Migration SQLite (`src-tauri/crates/mt-db/migrations/NNNN_16_github.sql`)
+### 3.3. Migration SQLite (`src-tauri/crates/mt-db/migrations/0010_16_github.sql`)
 
 O arquivo SQL implementa integralmente o DDL especificado em [`../spec.md`](../spec.md) §7:
 - `github_repos` (`id`, `host CHECK (host = 'github.com')`, `owner COLLATE NOCASE`, `name COLLATE NOCASE`, `html_url`, `UNIQUE (host, owner, name)`).
@@ -194,12 +206,12 @@ O arquivo SQL implementa integralmente o DDL especificado em [`../spec.md`](../s
 
 ```rust
 pub struct GithubCacheRepo {
-    db: mt_db::DatabaseHandle,
+    db: mt_db::Db,
     session_hmac_key: [u8; 32],
 }
 
 impl GithubCacheRepo {
-    pub fn new(db: mt_db::DatabaseHandle) -> Self;
+    pub fn new(db: mt_db::Db) -> Self;
 
     pub async fn bind_project_repo(
         &self,

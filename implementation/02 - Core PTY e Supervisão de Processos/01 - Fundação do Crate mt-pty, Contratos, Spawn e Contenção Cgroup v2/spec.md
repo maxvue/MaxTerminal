@@ -153,7 +153,7 @@ impl Default for PtyConfig {
 ### 3.3. Erros (`src/error.rs`)
 
 ```rust
-use mt_core::{MtError, PtyId};
+use mt_core::{ErrorCode, MtError, ids::PtyId};
 use serde_json::json;
 
 #[derive(Debug, thiserror::Error)]
@@ -238,7 +238,9 @@ impl PtyError {
 
 impl From<PtyError> for MtError {
     fn from(err: PtyError) -> Self {
-        let code = err.code();
+        // D-07: `MtError::new` recebe `ErrorCode` (formato `^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$`) e `.with_details`
+        // é o método fluente de 1 argumento; `MtError::with_details(code, message, d)` não existe.
+        let code = ErrorCode(err.code());
         let message = err.to_string();
         let details = match &err {
             PtyError::NotFound(id) => Some(json!({ "ptyId": id })),
@@ -247,9 +249,10 @@ impl From<PtyError> for MtError {
             PtyError::PidNotOwned(pid) => Some(json!({ "pid": pid })),
             _ => None,
         };
+        let error = MtError::new(code, message);
         match details {
-            Some(d) => MtError::with_details(code, message, d),
-            None => MtError::new(code, message),
+            Some(d) => error.with_details(d),
+            None => error,
         }
     }
 }
@@ -265,7 +268,7 @@ Todos os contadores, cursores, timestamps e `start_time` de 64 bits expostos em 
 use std::collections::BTreeMap;
 use std::fmt;
 use std::str::FromStr;
-use mt_core::{PaneId, PtyId, TabId};
+use mt_core::ids::{PaneId, PtyId, TabId};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 /// Representação de inteiro de 64 bits sem sinal serializado como string decimal para IPC seguro com JS/TS.
@@ -594,7 +597,7 @@ impl OutputSink for VecSink {
 
 - **`src/events.rs`**:
 ```rust
-use mt_core::PtyId;
+use mt_core::ids::PtyId;
 use serde::{Deserialize, Serialize};
 use crate::types::{ExitInfo, ProcessIdentity, ProcessInfo, PtyOwner, PtySummary, U64Decimal};
 
@@ -715,8 +718,11 @@ pub trait PtyEventListener: Send + Sync + 'static {
 
 - **Descoberta e Validação do Subtree Cgroup v2 (`src/containment/cgroup.rs`)**:
   - Localiza o ponto de montagem cgroup2 (`/sys/fs/cgroup`) e lê `/proc/self/cgroup` (`0::/<caminho>`).
-  - Para não manter o processo principal no mesmo leaf cgroup das cargas (regra de *no internal processes* do cgroup v2), provisiona na inicialização:
-    - Move o próprio processo app e o watchdog para um subgrupo `<subtree>/app` (ou usa `cgroup_root_override` em testes) e habilita controladores necessários na raiz delegada, criando os cgroups de PTY sob `<subtree>/ptys/pty-<id>`.
+  - **Regra de alinhamento com `02/spec.md` §7.6 (C-08):** o processo do app (Tauri/UI) e o watchdog **nunca são movidos** para nenhum cgroup (nem para `<subtree>/app`, nem temporariamente para um cgroup de PTY): threads paralelas poderiam gerar filhos no grupo errado e mover o app inteiro viola a regra de *no internal processes* do cgroup v2 (`EBUSY`/`EACCES`). App e watchdog permanecem no cgroup em que o systemd os colocou.
+  - Provisionamento na inicialização, **apenas para as cargas**:
+    - Valida/cria um **escopo delegado dedicado às cargas PTY** (subtree `<subtree>/ptys/` com `cgroup.subtree_control` habilitado nele, ou `cgroup_root_override` em testes); cada PTY recebe seu filho `<subtree>/ptys/pty-<id>`. O cgroup corrente do app só é lido (`/proc/self/cgroup`) para localizar a delegação, nunca escrito.
+    - Se o cgroup atual do app tiver processos internos e não permitir habilitar `subtree_control` para criar o escopo delegado sem mover o app, o driver degrada para `CgroupDriver::Disabled` (ver abaixo), sem mover o processo principal.
+  - `CgroupDriver::{Systemd, Fake, Disabled}`: `Disabled` é o estado de degradação segura quando não há escopo delegado utilizável. Nesse estado `ContainmentProvider::create` retorna `PtyError::ContainmentUnavailable` — `pty_spawn` falha com `pty.containment_unavailable` **antes** de executar código do usuário (sem fallback silencioso, CA-32) — enquanto o restante do app (UI, SQLite, leitura de `/proc`) continua funcional e o diagnóstico é exposto na UI.
   - Verifica se a criação de subdiretório sob `<subtree>/ptys/`, a abertura de `cgroup.procs`, `cgroup.kill` e `cgroup.events`, bem como `rustix::process::pidfd_open(getpid(), ...)` funcionam. Se qualquer um falhar, retorna `PtyError::ContainmentUnavailable` **antes** de executar qualquer comando do usuário (CA-32).
   - `CgroupHandle` mantém `dir_fd: OwnedFd`, `procs_fd: OwnedFd`, `kill_fd: OwnedFd`, `events_fd: OwnedFd`, `cgroup_path: PathBuf` e `cgroup_id: u64` (inode do diretório cgroup via `fstat`). Isso impede ataques ou corridas de resolução de caminho no momento do kill.
 

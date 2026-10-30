@@ -2,7 +2,7 @@
 
 ## 1. Contexto, Objetivo e Escopo
 
-Esta implementação expõe os 22 comandos Tauri e 9 eventos tipados do workspace (`src-tauri/src/commands/`, `src-tauri/src/events/workspace.rs`, geração `tauri-specta` em `src/types/bindings.ts`), os clientes IPC e composables reativos do frontend (`src/ipc/`, `src/composables/workspace/`), as 3 stores Pinia (`useTemplatesStore`, `useTabsStore`, `useSessionsStore`) e todos os componentes Vue 3.6 da coluna direita do workspace (`ProjectWorkspace.vue` e subcomponentes em `src/components/workspace/`).
+Esta implementação expõe os 22 comandos Tauri e 10 eventos tipados do workspace (`src-tauri/src/commands/`, `src-tauri/src/events/workspace.rs`, geração `tauri-specta` em `src/types/bindings.ts`), os clientes IPC e composables reativos do frontend (`src/ipc/`, `src/composables/workspace/`), as 3 stores Pinia (`useTemplatesStore`, `useTabsStore`, `useSessionsStore`) e todos os componentes Vue 3.6 da coluna direita do workspace (`ProjectWorkspace.vue` e subcomponentes em `src/components/workspace/`).
 
 ### Escopo Exato
 1. **Comandos Tauri, Eventos e Bindings (`src-tauri/src/commands/`, `src-tauri/src/events/workspace.rs`):**
@@ -76,7 +76,7 @@ Esta implementação expõe os 22 comandos Tauri e 9 eventos tipados do workspac
 
 ```rust
 use mt_core::ids::{PaneId, ProjectId, PtyId, SessionId, TabId, TemplateId};
-use mt_core::pty::ExitInfo;
+use mt_pty::ExitInfo;
 use mt_core::workspace::session::{SessionSummary, WorkspaceRestoreReport};
 use mt_core::workspace::tab::TabView;
 use serde::{Deserialize, Serialize};
@@ -227,7 +227,7 @@ export type TabBarIndicatorSlotProps = { tab: TabView };
 - **Remoção e Limpeza (`applyTabClosed`):**
   - Registra `tombstones[tabId] = revision`.
   - Para cada painel da aba fechada, chama `TerminalInstanceRegistry.dispose(pane.id)` da Fase 04.
-  - Chama `useTabStatusStore().removeTab(tabId)` da Fase 05 e `useProjectsStore().detachTab(tabId, projectId)` da Fase 06.
+  - Chama `useTabStatusStore().removeTab(tabId)` da Fase 05 e `useProjectsStore().detachTab(tabId)` da Fase 06 (contrato de 1 argumento; o projeto dono é resolvido internamente por `tabOwner`).
   - Se a aba fechada era a ativa do projeto, seleciona a aba vizinha imediata na ordem `orderByProject[projectId]` (ou `null` se não restarem abas).
 
 #### Garantias de `usePaneLayout` (`src/composables/workspace/usePaneLayout.ts`)
