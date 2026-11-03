@@ -233,7 +233,7 @@
         width: 100%;
         height: 100%;
         overflow: hidden;
-        background: var(--background-950);
+        background: var(--mt-ui-surface, var(--background-0));
     }
 
     .hybrid-gap-banner {

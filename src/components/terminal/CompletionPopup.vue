@@ -196,8 +196,8 @@
         display: flex;
         flex-direction: column;
         max-height: 340px;
-        background: var(--background-900);
-        border: 1px solid var(--background-700);
+        background: var(--mt-ui-surface, var(--background-0));
+        border: 1px solid var(--mt-ui-border, var(--background-100));
         border-radius: 8px;
         box-shadow: 0 8px 24px rgb(0 0 0 / 45%);
         overflow: hidden;
@@ -209,22 +209,22 @@
         justify-content: space-between;
         gap: 8px;
         padding: 6px 10px;
-        background: var(--background-800);
-        border-bottom: 1px solid var(--background-700);
+        background: var(--mt-ui-surface-panel, var(--background-25));
+        border-bottom: 1px solid var(--mt-ui-border, var(--background-100));
         font-size: 11px;
     }
 
     .popup-title {
         font-weight: 600;
-        color: var(--background-100);
+        color: var(--mt-ui-text-strong, var(--background-950));
     }
 
     .popup-stage {
         padding: 1px 6px;
-        background: var(--background-900);
-        border: 1px solid var(--max-primary-600);
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        border: 1px solid var(--max-primary-500);
         border-radius: 4px;
-        color: var(--max-primary-300);
+        color: var(--max-primary-400);
         font-family: var(--mt-font-mono);
     }
 
@@ -232,7 +232,7 @@
         padding: 12px;
         font-size: 12px;
         text-align: center;
-        color: var(--background-300);
+        color: var(--mt-ui-text-muted, var(--background-400));
     }
 
     .popup-error {
@@ -247,7 +247,7 @@
 
     .popup-section-header {
         padding: 4px 8px 2px;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
         font-size: 10px;
         font-weight: 600;
         text-transform: uppercase;
@@ -256,8 +256,8 @@
 
     .popup-pinned-footer {
         padding: 4px;
-        background: var(--background-950);
-        border-top: 1px solid var(--background-700);
+        background: var(--mt-ui-surface-panel, var(--background-25));
+        border-top: 1px solid var(--mt-ui-border, var(--background-100));
     }
 
     .virtual-spacer {

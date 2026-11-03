@@ -95,9 +95,9 @@
         gap: 0.5rem;
         padding: 0.625rem 0.75rem;
         border-radius: 0.5rem;
-        border: 1px solid var(--background-750);
-        background: var(--background-925);
-        color: var(--background-100);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface, var(--background-0));
+        color: var(--mt-ui-text-strong, var(--background-950));
         font-size: 0.75rem;
     }
 
@@ -121,11 +121,11 @@
 
     .rag-results__title {
         font-weight: 600;
-        color: var(--background-50);
+        color: var(--mt-ui-text-strong, var(--background-950));
     }
 
     .rag-results__query {
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
         font-size: 0.6875rem;
     }
 
@@ -138,23 +138,24 @@
     .rag-results__slug-select {
         padding: 0.1875rem 0.375rem;
         border-radius: 0.25rem;
-        border: 1px solid var(--background-700);
-        background: var(--background-950);
-        color: var(--background-100);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-panel, var(--background-25));
+        color: var(--mt-ui-text, var(--background-800));
         font-size: 0.6875rem;
     }
 
     .rag-results__close {
-        color: var(--background-300);
+        color: var(--mt-ui-text-secondary, var(--background-300));
 
         &:hover {
-            color: var(--background-50);
+            background: var(--mt-ui-surface-hover, var(--background-75));
+            color: var(--mt-ui-text-strong, var(--background-50));
         }
     }
 
     .rag-results__empty {
         margin: 0;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
     }
 
     .rag-results__list {
@@ -174,8 +175,8 @@
         gap: 0.25rem;
         padding: 0.5rem;
         border-radius: 0.375rem;
-        border: 1px solid var(--background-800);
-        background: var(--background-950);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-panel, var(--background-25));
     }
 
     .rag-results__item-head {
@@ -187,7 +188,7 @@
 
     .rag-results__item-title {
         font-size: 0.75rem;
-        color: var(--background-50);
+        color: var(--mt-ui-text-strong, var(--background-950));
     }
 
     .rag-results__item-score {
@@ -199,7 +200,7 @@
         margin: 0;
         font-family: var(--mt-font-mono);
         font-size: 0.6875rem;
-        color: var(--background-200);
+        color: var(--mt-ui-text-secondary, var(--background-600));
         white-space: pre-wrap;
         max-height: 6rem;
         overflow-y: auto;
@@ -215,7 +216,7 @@
     .rag-results__item-source {
         font-family: var(--mt-font-mono);
         font-size: 0.625rem;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -225,5 +226,21 @@
         display: flex;
         align-items: center;
         gap: 0.25rem;
+    }
+    .rag-results__btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.125rem 0.375rem;
+        border-radius: 0.25rem;
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        color: var(--mt-ui-text, var(--background-800));
+        font-size: 0.6875rem;
+        cursor: pointer;
+
+        &:hover {
+            border-color: var(--max-primary-500);
+        }
     }
 </style>

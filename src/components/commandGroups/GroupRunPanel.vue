@@ -207,8 +207,8 @@
         flex-direction: column;
         gap: 0.625rem;
         padding: 0.75rem 0.875rem;
-        border-top: 1px solid var(--background-700);
-        background: var(--background-800);
+        border-top: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-panel, var(--background-25));
         max-height: 18rem;
         overflow-y: auto;
     }
@@ -269,21 +269,21 @@
         margin: 0;
         font-size: 0.875rem;
         font-weight: 700;
-        color: var(--background-100);
+        color: var(--mt-ui-text-strong, var(--background-950));
     }
 
     .group-run-panel__chip {
         padding: 0.125rem 0.4375rem;
         border-radius: 0.25rem;
-        background: var(--background-900);
-        border: 1px solid var(--background-600);
-        color: var(--background-300);
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        color: var(--mt-ui-text-secondary, var(--background-600));
         font-size: 0.6875rem;
         font-weight: 600;
     }
 
     .group-run-panel__chip.is-mode {
-        color: var(--max-info-300);
+        color: var(--max-info-400);
         border-color: var(--max-info-500);
     }
 
@@ -292,8 +292,8 @@
         border-radius: 999px;
         font-size: 0.6875rem;
         font-weight: 600;
-        background: var(--background-900);
-        color: var(--background-200);
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        color: var(--mt-ui-text-secondary, var(--background-600));
     }
 
     .group-run-panel__header-actions {
@@ -304,7 +304,7 @@
 
     .group-run-panel__counters {
         font-size: 0.75rem;
-        color: var(--background-300);
+        color: var(--mt-ui-text-secondary, var(--background-600));
     }
 
     .group-run-panel__restart-btn {
@@ -344,7 +344,7 @@
         border-radius: 0.25rem;
         border: 1px solid transparent;
         background: transparent;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
         cursor: pointer;
     }
 

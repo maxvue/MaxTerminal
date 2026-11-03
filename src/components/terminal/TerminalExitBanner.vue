@@ -43,9 +43,9 @@
         justify-content: space-between;
         gap: 12px;
         padding: 8px 12px;
-        background: var(--background-900);
-        border-top: 1px solid var(--background-700);
-        color: var(--background-100);
+        background: var(--mt-ui-surface-panel, var(--background-25));
+        border-top: 1px solid var(--mt-ui-border, var(--background-100));
+        color: var(--mt-ui-text-strong, var(--background-950));
         font-size: 12px;
     }
 
@@ -58,7 +58,7 @@
         background: var(--max-primary-600);
         border: 1px solid var(--max-primary-500);
         border-radius: 4px;
-        color: var(--background-50);
+        color: var(--max-primary-content, #fff);
         font-size: 12px;
         font-weight: 500;
         cursor: pointer;

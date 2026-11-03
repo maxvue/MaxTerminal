@@ -237,7 +237,7 @@
         flex-direction: column;
         gap: 1rem;
         padding: 1rem;
-        color: var(--background-100);
+        color: var(--mt-ui-text-strong, var(--background-950));
     }
 
     .skills-sync-panel__header {
@@ -256,7 +256,7 @@
     .skills-sync-panel__subtitle {
         margin: 0.25rem 0 0;
         font-size: 0.7813rem;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
     }
 
     .skills-sync-panel__error {
@@ -278,15 +278,15 @@
         gap: 0.625rem;
         padding: 0.75rem;
         border-radius: 0.5rem;
-        border: 1px solid var(--background-700);
-        background: var(--background-850);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-panel, var(--background-25));
     }
 
     .skills-sync-panel__section-title {
         margin: 0;
         font-size: 0.8125rem;
         font-weight: 600;
-        color: var(--background-200);
+        color: var(--mt-ui-text-strong, var(--background-950));
     }
 
     .skills-sync-panel__form-row {
@@ -300,9 +300,9 @@
     .skills-sync-panel__input {
         padding: 0.3125rem 0.5rem;
         border-radius: 0.25rem;
-        border: 1px solid var(--background-600);
-        background: var(--background-800);
-        color: var(--background-100);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface, var(--background-0));
+        color: var(--mt-ui-text, var(--background-800));
         font-size: 0.7813rem;
     }
 
@@ -312,9 +312,9 @@
         gap: 0.375rem;
         padding: 0.3125rem 0.625rem;
         border-radius: 0.25rem;
-        border: 1px solid var(--background-600);
-        background: var(--background-800);
-        color: var(--background-100);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        color: var(--mt-ui-text, var(--background-800));
         font-size: 0.7813rem;
         font-weight: 600;
         cursor: pointer;
@@ -356,14 +356,14 @@
     .skills-sync-panel__badge {
         padding: 0.125rem 0.375rem;
         border-radius: 0.25rem;
-        background: var(--background-700);
+        background: var(--mt-ui-surface-elevated, var(--background-50));
         font-size: 0.6875rem;
-        color: var(--background-200);
+        color: var(--mt-ui-text-secondary, var(--background-600));
     }
 
     .skills-sync-panel__dest {
         font-size: 0.75rem;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
     }
 
     .skills-sync-panel__target-actions {
@@ -376,7 +376,7 @@
         flex-direction: column;
         gap: 0.5rem;
         padding-top: 0.5rem;
-        border-top: 1px solid var(--background-700);
+        border-top: 1px solid var(--mt-ui-border, var(--background-100));
     }
 
     .skills-sync-panel__warnings {
@@ -394,7 +394,7 @@
     .skills-sync-panel__plan-summary {
         margin: 0;
         font-size: 0.7813rem;
-        color: var(--background-200);
+        color: var(--mt-ui-text-secondary, var(--background-600));
     }
 
     .skills-sync-panel__apply-row {

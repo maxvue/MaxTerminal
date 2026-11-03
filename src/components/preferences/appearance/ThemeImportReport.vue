@@ -46,8 +46,8 @@
         gap: 0.5rem;
         padding: 0.75rem;
         border-radius: 0.5rem;
-        border: 1px solid var(--background-700);
-        background: var(--background-950);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface, var(--background-0));
         font-size: 0.75rem;
     }
 
@@ -68,8 +68,8 @@
     .import-report__badge {
         padding: 0.125rem 0.5rem;
         border-radius: 0.25rem;
-        background: var(--background-800);
-        color: var(--background-200);
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        color: var(--mt-ui-text-secondary, var(--background-600));
         font-weight: 600;
 
         &--success {
@@ -97,12 +97,12 @@
         border: none;
         border-radius: 0.25rem;
         background: transparent;
-        color: var(--background-300);
+        color: var(--mt-ui-text-secondary, var(--background-600));
         cursor: pointer;
 
         &:hover {
-            background: var(--background-800);
-            color: var(--background-50);
+            background: var(--mt-ui-surface-hover, var(--background-75));
+            color: var(--mt-ui-text-strong, var(--background-950));
         }
     }
 

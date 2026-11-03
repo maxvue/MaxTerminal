@@ -73,13 +73,13 @@
 
     .issue-plan-section__meta {
         font-size: 0.6875rem;
-        color: var(--background-300);
+        color: var(--mt-ui-text-secondary, var(--background-600));
     }
 
     .issue-plan-section__body {
         padding: 0.875rem;
         font-size: 0.8125rem;
         line-height: 1.5;
-        color: var(--background-100);
+        color: var(--mt-ui-text, var(--background-800));
     }
 </style>

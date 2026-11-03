@@ -117,15 +117,17 @@
 </script>
 
 <style lang="scss" scoped>
-    :deep(.project-settings-dialog.max-modal) {
-        background-color: var(--background-900);
-        border-color: var(--background-700);
-        color: var(--background-100);
+    :deep(.project-settings-dialog.max-modal),
+    .project-settings-dialog :deep(.max-modal) {
+        background-color: var(--mt-ui-surface, var(--background-900, var(--background-0)));
+        border-color: var(--mt-ui-border, var(--background-700, var(--background-100)));
+        color: var(--mt-ui-text, var(--background-100, var(--background-800)));
         max-height: 85vh;
         display: flex;
         flex-direction: column;
 
-        .max-modal-content {
+        .max-modal-content,
+        :deep(.max-modal-content) {
             padding: 1.25rem;
             flex: 1;
             min-height: 0;
@@ -155,25 +157,25 @@
         margin: 0;
         font-size: 0.875rem;
         font-weight: 600;
-        color: var(--background-100);
+        color: var(--mt-ui-text-strong, var(--background-950));
     }
 
     .project-settings-dialog__section-desc {
         margin: 0;
         font-size: 0.75rem;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
     }
 
     .project-settings-dialog__divider {
         margin: 0.25rem 0;
         border: none;
-        border-top: 1px solid var(--background-750, var(--background-700));
+        border-top: 1px solid var(--mt-ui-border, var(--background-100));
     }
 
     .project-settings-dialog__theme-error {
         padding: 0.5rem 0.75rem;
         border-radius: 0.375rem;
-        background: color-mix(in srgb, var(--max-danger-500) 15%, var(--background-900));
+        background: color-mix(in srgb, var(--max-danger-500) 15%, var(--mt-ui-surface, var(--background-0)));
         border: 1px solid var(--max-danger-500);
         color: var(--max-danger-400);
         font-size: 0.75rem;

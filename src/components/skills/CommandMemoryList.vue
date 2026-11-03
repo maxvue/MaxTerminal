@@ -147,9 +147,9 @@
         gap: 0.625rem;
         padding: 0.75rem;
         border-radius: 0.5rem;
-        border: 1px solid var(--background-700);
-        background: var(--background-850);
-        color: var(--background-100);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-panel, var(--background-25));
+        color: var(--mt-ui-text-strong, var(--background-950));
     }
 
     .command-memory-list__header {
@@ -168,8 +168,8 @@
         gap: 0.375rem;
         padding: 0.25rem 0.5rem;
         border-radius: 0.25rem;
-        border: 1px solid var(--background-600);
-        background: var(--background-900);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface, var(--background-0));
     }
 
     .command-memory-list__input {
@@ -177,7 +177,7 @@
         border: none;
         outline: none;
         background: transparent;
-        color: var(--background-100);
+        color: var(--mt-ui-text-strong, var(--background-950));
         font-size: 0.7813rem;
     }
 
@@ -192,7 +192,7 @@
         align-items: center;
         gap: 0.375rem;
         font-size: 0.75rem;
-        color: var(--background-300);
+        color: var(--mt-ui-text-secondary, var(--background-600));
         cursor: pointer;
     }
 
@@ -202,9 +202,9 @@
         gap: 0.3125rem;
         padding: 0.25rem 0.5rem;
         border-radius: 0.25rem;
-        border: 1px solid var(--background-600);
-        background: var(--background-800);
-        color: var(--background-200);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        color: var(--mt-ui-text-secondary, var(--background-600));
         font-size: 0.75rem;
         font-weight: 600;
         cursor: pointer;
@@ -226,8 +226,8 @@
         gap: 0.5rem;
         padding: 0.375rem 0.5rem;
         border-radius: 0.25rem;
-        border: 1px solid var(--background-700);
-        background: var(--background-900);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface, var(--background-0));
     }
 
     .command-memory-list__select-btn {
@@ -239,7 +239,7 @@
         gap: 0.125rem;
         border: none;
         background: transparent;
-        color: var(--background-100);
+        color: var(--mt-ui-text, var(--background-800));
         text-align: left;
         cursor: pointer;
         padding: 0;
@@ -256,7 +256,7 @@
         align-items: center;
         gap: 0.5rem;
         font-size: 0.6875rem;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
     }
 
     .command-memory-list__cwd {
@@ -277,12 +277,12 @@
         border-radius: 0.25rem;
         border: 1px solid transparent;
         background: transparent;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
         cursor: pointer;
 
         &:hover {
-            color: var(--background-100);
-            background: var(--background-800);
+            color: var(--mt-ui-text-strong, var(--background-950));
+            background: var(--mt-ui-surface-hover, var(--background-75));
         }
     }
 

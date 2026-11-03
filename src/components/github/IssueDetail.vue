@@ -77,7 +77,7 @@
         min-width: 0;
         min-height: 0;
         overflow-y: auto;
-        background: var(--background-900);
+        background: var(--mt-ui-surface, var(--background-0));
     }
 
     .issue-detail__empty {
@@ -89,7 +89,7 @@
         height: 100%;
         padding: 2rem;
         text-align: center;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
     }
 
     .issue-detail__empty-text {
@@ -110,7 +110,7 @@
         flex-direction: column;
         gap: 0.625rem;
         padding-bottom: 0.875rem;
-        border-bottom: 1px solid var(--background-700);
+        border-bottom: 1px solid var(--mt-ui-border, var(--background-100));
     }
 
     .issue-detail__title-row {
@@ -132,7 +132,7 @@
         flex: 1;
         font-size: 1.0625rem;
         font-weight: 700;
-        color: var(--background-50);
+        color: var(--mt-ui-text-strong, var(--background-950));
     }
 
     .issue-detail__state {
@@ -159,7 +159,7 @@
         justify-content: space-between;
         gap: 0.5rem;
         font-size: 0.75rem;
-        color: var(--background-300);
+        color: var(--mt-ui-text-secondary, var(--background-600));
     }
 
     .issue-detail__chips {
@@ -174,20 +174,20 @@
         gap: 0.5rem;
         padding: 0.875rem;
         border-radius: 0.375rem;
-        border: 1px solid var(--background-700);
-        background: var(--background-850, var(--background-800));
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-panel, var(--background-25));
     }
 
     .issue-detail__section-title {
         margin: 0;
         font-size: 0.8125rem;
         font-weight: 700;
-        color: var(--background-200);
+        color: var(--mt-ui-text-secondary, var(--background-600));
     }
 
     .issue-detail__markdown {
         font-size: 0.8125rem;
         line-height: 1.5;
-        color: var(--background-100);
+        color: var(--mt-ui-text, var(--background-800));
     }
 </style>

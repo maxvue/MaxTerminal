@@ -94,8 +94,8 @@
         flex-wrap: wrap;
         padding: 0.5rem 0.625rem;
         border-radius: 0.25rem;
-        background: var(--background-900);
-        border: 1px solid var(--background-700);
+        background: var(--mt-ui-surface, var(--background-0));
+        border: 1px solid var(--mt-ui-border, var(--background-100));
     }
 
     .skill-conflict-list__info {
@@ -109,12 +109,12 @@
         align-items: center;
         gap: 0.375rem;
         font-size: 0.8125rem;
-        color: var(--background-100);
+        color: var(--mt-ui-text-strong, var(--background-950));
     }
 
     .skill-conflict-list__dest {
         font-size: 0.7188rem;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
         font-family: monospace;
     }
 
@@ -132,9 +132,9 @@
     .skill-conflict-list__btn {
         padding: 0.25rem 0.5rem;
         border-radius: 0.25rem;
-        border: 1px solid var(--background-600);
-        background: var(--background-800);
-        color: var(--background-200);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        color: var(--mt-ui-text-secondary, var(--background-600));
         font-size: 0.7188rem;
         font-weight: 600;
         cursor: pointer;

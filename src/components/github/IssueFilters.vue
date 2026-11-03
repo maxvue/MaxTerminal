@@ -112,8 +112,8 @@
 <style lang="scss" scoped>
     .issue-filters {
         padding: 0.5rem 0.875rem;
-        border-bottom: 1px solid var(--background-700);
-        background: var(--background-850, var(--background-800));
+        border-bottom: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-panel, var(--background-25));
     }
 
     .issue-filters__row {
@@ -126,7 +126,7 @@
     .issue-filters__states {
         display: inline-flex;
         border-radius: 0.3125rem;
-        border: 1px solid var(--background-600);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
         overflow: hidden;
     }
 
@@ -134,15 +134,15 @@
         height: 1.75rem;
         padding: 0 0.625rem;
         border: none;
-        background: var(--background-900);
-        color: var(--background-300);
+        background: var(--mt-ui-surface, var(--background-0));
+        color: var(--mt-ui-text-secondary, var(--background-600));
         font-size: 0.75rem;
         font-weight: 600;
         cursor: pointer;
 
         &--active {
             background: var(--max-primary-500);
-            color: var(--background-950, #090d16);
+            color: var(--max-primary-content, #fff);
         }
     }
 
@@ -155,16 +155,16 @@
         height: 1.75rem;
         padding: 0 0.5rem;
         border-radius: 0.3125rem;
-        border: 1px solid var(--background-600);
-        background: var(--background-900);
-        color: var(--background-300);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface, var(--background-0));
+        color: var(--mt-ui-text-muted, var(--background-400));
     }
 
     .issue-filters__search-input {
         flex: 1;
         border: none;
         background: transparent;
-        color: var(--background-100);
+        color: var(--mt-ui-text-strong, var(--background-950));
         font-size: 0.75rem;
         outline: none;
     }
@@ -173,9 +173,9 @@
         height: 1.75rem;
         padding: 0 0.5rem;
         border-radius: 0.3125rem;
-        border: 1px solid var(--background-600);
-        background: var(--background-900);
-        color: var(--background-100);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface, var(--background-0));
+        color: var(--mt-ui-text, var(--background-800));
         font-size: 0.75rem;
     }
 
@@ -186,9 +186,9 @@
         height: 1.75rem;
         padding: 0 0.5rem;
         border-radius: 0.3125rem;
-        border: 1px solid var(--background-600);
-        background: var(--background-900);
-        color: var(--background-200);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface, var(--background-0));
+        color: var(--mt-ui-text-secondary, var(--background-600));
         font-size: 0.75rem;
         font-weight: 600;
         cursor: pointer;

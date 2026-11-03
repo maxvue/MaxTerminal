@@ -100,6 +100,20 @@ export function buildCssVarsRecord(tokens: MaxUiTokens): Record<string, string> 
     out['--mt-term-block-border'] = tokens.terminal.blockBorder;
     out['--mt-term-block-error-bg'] = tokens.terminal.blockErrorBg;
 
+    // Aliases semânticos locais de UI derivados da rampa canônica
+    out['--mt-ui-surface'] = tokens.background.b0;
+    out['--mt-ui-surface-panel'] = tokens.background.b25;
+    out['--mt-ui-surface-elevated'] = tokens.background.b50;
+    out['--mt-ui-surface-hover'] = tokens.background.b75;
+    out['--mt-ui-surface-active'] = tokens.background.b100;
+    out['--mt-ui-border-subtle'] = tokens.background.b75;
+    out['--mt-ui-border'] = tokens.background.b100;
+    out['--mt-ui-border-strong'] = tokens.background.b150;
+    out['--mt-ui-text-muted'] = tokens.background.b400;
+    out['--mt-ui-text-secondary'] = tokens.background.b600;
+    out['--mt-ui-text'] = tokens.background.b800;
+    out['--mt-ui-text-strong'] = tokens.background.b950;
+
     return out;
 }
 

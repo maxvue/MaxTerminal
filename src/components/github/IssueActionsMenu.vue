@@ -40,9 +40,9 @@
         height: 1.875rem;
         padding: 0 0.6875rem;
         border-radius: 0.3125rem;
-        border: 1px solid var(--background-600);
-        background: var(--background-800);
-        color: var(--background-100);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        color: var(--mt-ui-text, var(--background-800));
         font-size: 0.75rem;
         font-weight: 600;
         cursor: pointer;

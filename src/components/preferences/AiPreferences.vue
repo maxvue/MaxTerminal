@@ -233,13 +233,13 @@
         margin: 0;
         font-size: 0.9375rem;
         font-weight: 600;
-        color: var(--background-50);
+        color: var(--mt-ui-text-strong, var(--background-950));
     }
 
     .ai-preferences__subtitle {
         margin: 0.25rem 0 0;
         font-size: 0.75rem;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
     }
 
     .ai-preferences__badge {
@@ -264,8 +264,8 @@
         }
 
         &.is-neutral {
-            background: var(--background-800);
-            color: var(--background-400);
+            background: var(--mt-ui-surface-elevated, var(--background-50));
+            color: var(--mt-ui-text-muted, var(--background-400));
         }
     }
 
@@ -282,8 +282,8 @@
         gap: 1rem;
         padding: 0.625rem 0.75rem;
         border-radius: 0.375rem;
-        border: 1px solid var(--background-800);
-        background: var(--background-900);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-panel, var(--background-25));
     }
 
     .ai-preferences__row-info {
@@ -295,21 +295,21 @@
     .ai-preferences__row-title {
         font-size: 0.8125rem;
         font-weight: 500;
-        color: var(--background-100);
+        color: var(--mt-ui-text-strong, var(--background-950));
     }
 
     .ai-preferences__row-desc {
         font-size: 0.75rem;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
     }
 
     .ai-preferences__input {
         width: 14rem;
         padding: 0.3125rem 0.5rem;
         border-radius: 0.25rem;
-        border: 1px solid var(--background-700);
-        background: var(--background-950);
-        color: var(--background-100);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface, var(--background-0));
+        color: var(--mt-ui-text, var(--background-800));
         font-size: 0.75rem;
 
         &.is-narrow {
@@ -323,8 +323,8 @@
         gap: 0.625rem;
         padding: 0.75rem;
         border-radius: 0.375rem;
-        border: 1px solid var(--background-800);
-        background: var(--background-900);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-panel, var(--background-25));
     }
 
     .ai-preferences__panel-head {
@@ -338,20 +338,20 @@
         margin: 0;
         font-size: 0.8125rem;
         font-weight: 600;
-        color: var(--background-100);
+        color: var(--mt-ui-text-strong, var(--background-950));
     }
 
     .ai-preferences__panel-desc {
         margin: 0.125rem 0 0;
         font-size: 0.75rem;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
     }
 
     .ai-preferences__current-sel {
         padding: 0.125rem 0.5rem;
         border-radius: 0.25rem;
-        background: var(--background-800);
-        color: var(--max-primary-300);
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        color: var(--max-primary-400);
         font-family: var(--mt-font-mono);
         font-size: 0.6875rem;
     }
@@ -389,19 +389,19 @@
         cursor: pointer;
 
         &.is-secondary {
-            border-color: var(--background-700);
-            background: var(--background-850);
-            color: var(--background-100);
+            border-color: var(--mt-ui-border, var(--background-100));
+            background: var(--mt-ui-surface-elevated, var(--background-50));
+            color: var(--mt-ui-text, var(--background-800));
 
             &:hover {
-                background: var(--background-800);
+                background: var(--mt-ui-surface-hover, var(--background-75));
             }
         }
 
         &.is-primary {
             border-color: var(--max-primary-500);
             background: var(--max-primary-600);
-            color: var(--background-50);
+            color: var(--max-primary-content, #fff);
 
             &:hover {
                 background: var(--max-primary-500);

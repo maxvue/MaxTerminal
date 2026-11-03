@@ -53,7 +53,7 @@
         max-width: 110px;
         padding: 1px 5px;
         font-size: 0.6875rem;
-        border: 1px solid var(--background-600);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
         border-radius: 4px;
 
         &--max-terminal {
@@ -69,8 +69,8 @@
         }
 
         &--external {
-            color: var(--background-200);
-            background: var(--background-800);
+            color: var(--mt-ui-text-secondary, var(--background-600));
+            background: var(--mt-ui-surface-elevated, var(--background-50));
         }
 
         &__icon,

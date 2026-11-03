@@ -96,9 +96,9 @@
         margin: 2rem auto;
         padding: 1.5rem;
         border-radius: 0.5rem;
-        background-color: var(--background-800);
+        background-color: var(--mt-ui-surface-panel, var(--background-25));
         border: 1px solid var(--max-warning-500);
-        color: var(--background-100);
+        color: var(--mt-ui-text-strong, var(--background-950));
 
         &__header {
             display: flex;
@@ -119,8 +119,8 @@
             font-size: 0.75rem;
             padding: 0.125rem 0.5rem;
             border-radius: 0.25rem;
-            background-color: var(--background-900);
-            color: var(--background-300);
+            background-color: var(--mt-ui-surface-elevated, var(--background-50));
+            color: var(--mt-ui-text-secondary, var(--background-600));
         }
 
         &__reason,
@@ -139,15 +139,15 @@
 
         &__label {
             font-size: 0.8125rem;
-            color: var(--background-200);
+            color: var(--mt-ui-text-secondary, var(--background-600));
         }
 
         &__select {
             padding: 0.5rem 0.625rem;
             border-radius: 0.375rem;
-            background-color: var(--background-900);
-            border: 1px solid var(--background-600);
-            color: var(--background-100);
+            background-color: var(--mt-ui-surface, var(--background-0));
+            border: 1px solid var(--mt-ui-border, var(--background-100));
+            color: var(--mt-ui-text, var(--background-800));
         }
 
         &__error {
@@ -182,18 +182,18 @@
 
             &--primary {
                 background-color: var(--max-primary-600);
-                color: var(--background-50);
+                color: var(--max-primary-content, #fff);
             }
 
             &--secondary {
-                background-color: var(--background-700);
-                border-color: var(--background-500);
-                color: var(--background-100);
+                background-color: var(--mt-ui-surface-elevated, var(--background-50));
+                border-color: var(--mt-ui-border, var(--background-100));
+                color: var(--mt-ui-text, var(--background-800));
             }
 
             &--danger {
                 background-color: var(--max-danger-600);
-                color: var(--background-50);
+                color: #fff;
             }
         }
     }

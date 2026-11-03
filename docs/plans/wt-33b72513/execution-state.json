@@ -1,0 +1,196 @@
+{
+  "version": 2,
+  "planRevision": "99c68f76651ab3760717285227e9e0e7929b60c49446990f05cc4e3b00902b03",
+  "tasks": [
+    {
+      "id": "T1",
+      "status": "completed",
+      "files": [
+        "src/types/theme.ts",
+        "src/theme/bootstrap.ts",
+        "src/styles/theme.scss",
+        "src/theme/cssTokens.ts",
+        "tests/theme/bootstrap.spec.ts",
+        "tests/theme/cssTokens.spec.ts",
+        "tests/stores/theme.spec.ts"
+      ],
+      "validations": [],
+      "revision": "63bb96bf6ff98181ea74e7dda2775322b8849eb5c1fefd28c1f8ec48c9fe64f8",
+      "nextAction": "Contrato, bootstrap v2 e tokens semânticos alinhados e validados."
+    },
+    {
+      "id": "T2",
+      "status": "completed",
+      "files": [
+        "src/app/App.vue",
+        "src/components/layout/AppLayout.vue",
+        "src/components/shell/AppShell.vue",
+        "src/components/shell/DbRecoveryPanel.vue",
+        "src/components/shell/TabStatusIndicator.vue",
+        "src/components/workspace/TabBar.vue",
+        "src/components/workspace/TabBarItem.vue",
+        "src/components/workspace/TabWorkspaceView.vue",
+        "src/components/workspace/TemplateLaunchPopover.vue",
+        "src/components/workspace/TemplateEditorModal.vue",
+        "src/components/workspace/PaneLayout.vue",
+        "src/components/workspace/PaneView.vue",
+        "src/components/workspace/SessionHistoryDrawer.vue",
+        "src/components/workspace/SessionReadonlyViewer.vue",
+        "src/components/projects/ProjectList.vue",
+        "src/components/projects/ProjectWorkspace.vue",
+        "src/components/projects/ProjectItem.vue",
+        "src/components/projects/ProjectStatusBadges.vue",
+        "src/components/projects/ProjectEmptyState.vue",
+        "src/components/projects/ProjectSettingsDialog.vue",
+        "src/components/projects/ProjectEditModal.vue",
+        "src/components/projects/ProjectAddModal.vue",
+        "src/components/projects/ProjectRootModal.vue",
+        "src/components/projects/ProjectIdentityForm.vue",
+        "src/components/projects/ProjectDiscoveryPanel.vue",
+        "src/components/preferences/appearance/AppearancePreferences.vue",
+        "src/components/preferences/AiPreferences.vue",
+        "src/components/preferences/system/PreferencesSystemSection.vue",
+        "src/components/preferences/appearance/ThemeSwatch.vue",
+        "src/components/preferences/appearance/ProjectThemeOverrides.vue",
+        "src/components/preferences/appearance/ThemeImportReport.vue",
+        "src/components/preferences/system/EditorSelector.vue",
+        "src/components/preferences/appearance/ThemePicker.vue",
+        "src/components/preferences/appearance/TerminalFontSettings.vue",
+        "src/components/commandGroups/CommandGroupModal.vue",
+        "src/components/commandGroups/CommandGroupItemRow.vue",
+        "src/components/commandGroups/GroupRunPanel.vue",
+        "src/components/commandGroups/GroupRunOutputView.vue",
+        "src/components/commandGroups/GroupRunItemRow.vue",
+        "src/components/commandGroups/GroupRunIndicator.vue",
+        "src/components/commandGroups/CommandGroupSuggestPanel.vue",
+        "src/components/github/IssuesTab.vue",
+        "src/components/github/IssueFilters.vue",
+        "src/components/github/IssueDetail.vue",
+        "src/components/github/IssueList.vue",
+        "src/components/github/IssueListItem.vue",
+        "src/components/github/IssuePlanSection.vue",
+        "src/components/github/IssueLabelEditor.vue",
+        "src/components/github/IssueCreateModal.vue",
+        "src/components/github/IssueOpenTabModal.vue",
+        "src/components/github/GithubAuthPanel.vue",
+        "src/components/github/IssueComments.vue",
+        "src/components/github/IssueActionsMenu.vue",
+        "src/components/github/BugCycleConfirmModal.vue",
+        "src/components/github/BugCycleProgress.vue",
+        "src/components/github/LabelSyncBanner.vue",
+        "src/components/indicators/WorktreeBadge.vue",
+        "src/components/indicators/GitIndicator.vue",
+        "src/components/indicators/PortBadge.vue",
+        "src/components/terminal/TerminalView.vue",
+        "src/components/terminal/HybridTerminal.vue",
+        "src/components/terminal/TerminalSearchBar.vue",
+        "src/components/terminal/CompletionPopup.vue",
+        "src/components/terminal/CompletionItem.vue",
+        "src/components/terminal/TerminalExitBanner.vue",
+        "src/components/terminal/RichInput.vue",
+        "src/components/terminal/CommandBlock.vue",
+        "src/components/terminal/InputModeToggle.vue",
+        "src/components/terminal/__dev__/TerminalPlayground.vue",
+        "src/components/ai/RagResults.vue",
+        "src/components/ai/InlineDiagnosis.vue",
+        "src/components/dev/PerfOverlay.vue",
+        "src/components/skills/SkillsSyncPanel.vue",
+        "src/components/skills/SkillConflictList.vue",
+        "src/components/skills/CommandMemoryList.vue"
+      ],
+      "validations": [],
+      "revision": "63bb96bf6ff98181ea74e7dda2775322b8849eb5c1fefd28c1f8ec48c9fe64f8",
+      "nextAction": "Consumidores hardcoded e invertidos substituídos por tokens semânticos --mt-ui-*."
+    },
+    {
+      "id": "T3",
+      "status": "completed",
+      "files": [
+        "src-tauri/capabilities/main.json",
+        "src/theme/nativeWindow.ts",
+        "src/composables/useThemeApplier.ts",
+        "tests/theme/nativeWindow.spec.ts",
+        "tests/composables/useThemeApplier.spec.ts"
+      ],
+      "validations": [],
+      "revision": "63bb96bf6ff98181ea74e7dda2775322b8849eb5c1fefd28c1f8ec48c9fe64f8",
+      "nextAction": "Sincronização de janela nativa e capability Tauri implementadas e validadas."
+    },
+    {
+      "id": "T4",
+      "status": "completed",
+      "files": [
+        "src/components/preferences/PreferencesDialog.vue",
+        "src/components/preferences/__tests__/PreferencesDialog.spec.ts"
+      ],
+      "validations": [],
+      "revision": "63bb96bf6ff98181ea74e7dda2775322b8849eb5c1fefd28c1f8ec48c9fe64f8",
+      "nextAction": "Modal PreferencesDialog dimensionado com calc(100vw - 50px) e navegação alinhada à esquerda."
+    },
+    {
+      "id": "T5",
+      "status": "completed",
+      "files": [
+        "docs/plans/wt-33b72513/execution-state.json"
+      ],
+      "validations": [],
+      "revision": "63bb96bf6ff98181ea74e7dda2775322b8849eb5c1fefd28c1f8ec48c9fe64f8",
+      "nextAction": "Bateria de 10 passos concluída com sucesso total."
+    }
+  ],
+  "verification": {
+    "revision": "63bb96bf6ff98181ea74e7dda2775322b8849eb5c1fefd28c1f8ec48c9fe64f8",
+    "checks": [
+      {
+        "command": "npx --no-install vitest run tests/theme/bootstrap.spec.ts tests/theme/cssTokens.spec.ts tests/theme/nativeWindow.spec.ts tests/composables/useThemeApplier.spec.ts src/components/preferences/__tests__/PreferencesDialog.spec.ts tests/stores/theme.spec.ts",
+        "revision": "63bb96bf6ff98181ea74e7dda2775322b8849eb5c1fefd28c1f8ec48c9fe64f8",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run typecheck",
+        "revision": "63bb96bf6ff98181ea74e7dda2775322b8849eb5c1fefd28c1f8ec48c9fe64f8",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run typecheck:vue",
+        "revision": "63bb96bf6ff98181ea74e7dda2775322b8849eb5c1fefd28c1f8ec48c9fe64f8",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run lint:style",
+        "revision": "63bb96bf6ff98181ea74e7dda2775322b8849eb5c1fefd28c1f8ec48c9fe64f8",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run lint",
+        "revision": "63bb96bf6ff98181ea74e7dda2775322b8849eb5c1fefd28c1f8ec48c9fe64f8",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run build",
+        "revision": "63bb96bf6ff98181ea74e7dda2775322b8849eb5c1fefd28c1f8ec48c9fe64f8",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm test",
+        "revision": "63bb96bf6ff98181ea74e7dda2775322b8849eb5c1fefd28c1f8ec48c9fe64f8",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run check",
+        "revision": "63bb96bf6ff98181ea74e7dda2775322b8849eb5c1fefd28c1f8ec48c9fe64f8",
+        "result": "passed",
+        "exitCode": 0
+      }
+    ]
+  },
+  "updatedAt": 1793739000000,
+  "nextAction": "Implementação e validações 100% concluídas com sucesso. Aguardando confirmação do usuário."
+}

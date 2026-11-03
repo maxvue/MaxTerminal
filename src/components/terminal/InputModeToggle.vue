@@ -59,10 +59,10 @@
         align-items: center;
         gap: 6px;
         padding: 3px 8px;
-        background: var(--background-800);
-        border: 1px solid var(--background-700);
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        border: 1px solid var(--mt-ui-border, var(--background-100));
         border-radius: 4px;
-        color: var(--background-200);
+        color: var(--mt-ui-text-secondary, var(--background-600));
         font-size: 11px;
         cursor: pointer;
 
@@ -72,8 +72,8 @@
         }
 
         &:hover:not(:disabled) {
-            background: var(--background-700);
-            color: var(--background-50);
+            background: var(--mt-ui-surface-hover, var(--background-75));
+            color: var(--mt-ui-text-strong, var(--background-950));
         }
 
         &.is-passthrough .mode-dot {

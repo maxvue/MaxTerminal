@@ -210,8 +210,8 @@
         flex-direction: column;
         gap: 8px;
         padding: 8px 12px;
-        background: var(--background-900);
-        border-bottom: 1px solid var(--background-700);
+        background: var(--mt-ui-surface-panel, var(--background-25));
+        border-bottom: 1px solid var(--mt-ui-border, var(--background-100));
     }
 
     .search-filter-bar__row {
@@ -226,20 +226,20 @@
         align-items: center;
         gap: 6px;
         font-size: 11px;
-        color: var(--background-300);
+        color: var(--mt-ui-text-secondary, var(--background-600));
     }
 
     .search-filter-bar__label {
         font-weight: 600;
-        color: var(--background-300);
+        color: var(--mt-ui-text-secondary, var(--background-600));
     }
 
     .search-filter-bar__select {
         padding: 3px 8px;
-        border: 1px solid var(--background-700);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
         border-radius: 4px;
-        background: var(--background-950);
-        color: var(--background-100);
+        background: var(--mt-ui-surface, var(--background-0));
+        color: var(--mt-ui-text, var(--background-800));
         font-size: 11px;
         outline: none;
 
@@ -251,16 +251,16 @@
     .search-filter-bar__clear {
         margin-left: auto;
         padding: 3px 8px;
-        border: 1px solid var(--background-700);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
         border-radius: 4px;
-        background: var(--background-800);
-        color: var(--background-200);
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        color: var(--mt-ui-text-secondary, var(--background-600));
         font-size: 11px;
         cursor: pointer;
 
         &:hover {
             border-color: var(--max-primary-500);
-            color: var(--background-50);
+            color: var(--mt-ui-text-strong, var(--background-950));
         }
     }
 
@@ -272,22 +272,22 @@
 
     .search-filter-bar__chip {
         padding: 2px 8px;
-        border: 1px solid var(--background-700);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
         border-radius: 999px;
-        background: var(--background-800);
-        color: var(--background-200);
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        color: var(--mt-ui-text-secondary, var(--background-600));
         font-size: 11px;
         cursor: pointer;
 
         &:hover {
             border-color: var(--max-primary-500);
-            color: var(--background-50);
+            color: var(--mt-ui-text-strong, var(--background-950));
         }
 
         &.is-active {
             background: var(--max-primary-600);
             border-color: var(--max-primary-500);
-            color: var(--background-50);
+            color: var(--max-primary-content, #fff);
         }
 
         &.is-incompatible {

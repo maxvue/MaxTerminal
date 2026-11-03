@@ -56,8 +56,8 @@
         left: 0;
         z-index: 45;
         width: 22rem;
-        background: var(--background-800);
-        border: 1px solid var(--background-600);
+        background: var(--mt-ui-surface-panel, var(--background-25));
+        border: 1px solid var(--mt-ui-border, var(--background-100));
         border-radius: 0.5rem;
         box-shadow: 0 10px 25px rgb(0 0 0 / 45%);
         padding: 0.5rem;
@@ -71,13 +71,13 @@
         align-items: center;
         justify-content: space-between;
         padding: 0.25rem 0.375rem;
-        border-bottom: 1px solid var(--background-700);
+        border-bottom: 1px solid var(--mt-ui-border, var(--background-100));
     }
 
     .template-popover__title {
         font-size: 0.75rem;
         font-weight: 600;
-        color: var(--background-200);
+        color: var(--mt-ui-text, var(--background-800));
     }
 
     .template-popover__new-btn {
@@ -101,7 +101,7 @@
     .template-popover__empty {
         padding: 0.75rem;
         font-size: 0.7813rem;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
         text-align: center;
     }
 
@@ -121,7 +121,7 @@
         align-items: center;
         gap: 0.25rem;
         border-radius: 0.375rem;
-        background: var(--background-850, var(--background-900));
+        background: var(--mt-ui-surface-elevated, var(--background-50));
         padding: 0.25rem;
     }
 
@@ -135,12 +135,12 @@
         border: none;
         border-radius: 0.25rem;
         background: transparent;
-        color: var(--background-100);
+        color: var(--mt-ui-text, var(--background-800));
         text-align: left;
         cursor: pointer;
 
         &:hover {
-            background: var(--background-700);
+            background: var(--mt-ui-surface-hover, var(--background-75));
         }
     }
 
@@ -168,7 +168,7 @@
     .template-popover__name {
         font-size: 0.8125rem;
         font-weight: 600;
-        color: var(--background-50);
+        color: var(--mt-ui-text-strong, var(--background-950));
     }
 
     .template-popover__badge {
@@ -188,15 +188,15 @@
         }
 
         &--workspace {
-            background: var(--background-700);
-            color: var(--background-200);
+            background: var(--mt-ui-surface-hover, var(--background-75));
+            color: var(--mt-ui-text-secondary, var(--background-600));
         }
     }
 
     .template-popover__cmd {
         font-size: 0.6875rem;
         font-family: var(--mt-font-mono);
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -218,12 +218,12 @@
         border: none;
         border-radius: 0.25rem;
         background: transparent;
-        color: var(--background-300);
+        color: var(--mt-ui-text-muted, var(--background-400));
         cursor: pointer;
 
         &:hover {
-            background: var(--background-700);
-            color: var(--background-50);
+            background: var(--mt-ui-surface-hover, var(--background-75));
+            color: var(--mt-ui-text-strong, var(--background-950));
         }
 
         &--danger:hover {

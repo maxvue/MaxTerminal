@@ -297,9 +297,9 @@
     @use '@/styles/params' as *;
 
     :deep(.project-add-modal.max-modal) {
-        background-color: var(--background-800);
-        border-color: var(--background-600);
-        color: var(--background-100);
+        background-color: var(--mt-ui-surface, var(--background-800, var(--background-0)));
+        border-color: var(--mt-ui-border, var(--background-600, var(--background-100)));
+        color: var(--mt-ui-text, var(--background-100, var(--background-800)));
 
         .max-modal-content {
             padding: 1.125rem;
@@ -321,7 +321,7 @@
     .project-add-modal__label {
         font-size: 0.75rem;
         font-weight: 600;
-        color: var(--background-200);
+        color: var(--mt-ui-text, var(--background-800));
     }
 
     .project-add-modal__path-row {
@@ -334,9 +334,9 @@
         min-width: 0;
         padding: 0.4375rem 0.625rem;
         border-radius: 0.375rem;
-        border: 1px solid var(--background-600);
-        background: var(--background-900);
-        color: var(--background-50);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-panel, var(--background-25));
+        color: var(--mt-ui-text-strong, var(--background-950));
         font-size: 0.8125rem;
 
         &:focus-visible {
@@ -344,6 +344,25 @@
         }
     }
 
+    .project-add-modal__pick-btn {
+        padding: 0.4375rem 0.75rem;
+        border-radius: 0.375rem;
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        color: var(--mt-ui-text, var(--background-800));
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+
+        &:hover {
+            background: var(--mt-ui-surface-hover, var(--background-75));
+        }
+
+        &:focus-visible {
+            @include mt-focus-ring;
+        }
+    }
     .project-add-modal__identity-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -387,6 +406,11 @@
     }
 
     .project-add-modal__error {
+        padding: 0.5rem 0.75rem;
+        border-radius: 0.375rem;
+        background: color-mix(in srgb, var(--max-danger-500) 15%, var(--mt-ui-surface, var(--background-0)));
+        border: 1px solid var(--max-danger-500);
+        color: var(--max-danger-400);
         font-size: 0.75rem;
     }
 
@@ -395,5 +419,42 @@
         justify-content: flex-end;
         gap: 0.5rem;
         padding-top: 0.375rem;
+    }
+
+    .project-add-modal__btn {
+        padding: 0.4375rem 0.875rem;
+        border-radius: 0.375rem;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        cursor: pointer;
+
+        &:focus-visible {
+            @include mt-focus-ring;
+        }
+
+        &:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+    }
+
+    .project-add-modal__btn--cancel {
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: transparent;
+        color: var(--mt-ui-text, var(--background-800));
+
+        &:hover {
+            background: var(--mt-ui-surface-hover, var(--background-75));
+        }
+    }
+
+    .project-add-modal__btn--submit {
+        border: 1px solid var(--max-primary-500);
+        background: var(--max-primary-600);
+        color: var(--max-primary-content);
+
+        &:hover:not(:disabled) {
+            background: var(--max-primary-500);
+        }
     }
 </style>

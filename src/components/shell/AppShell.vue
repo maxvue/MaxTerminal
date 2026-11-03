@@ -35,8 +35,8 @@
         width: 100vw;
         height: 100vh;
         overflow: hidden;
-        background: var(--background-900);
-        color: var(--background-100);
+        background: var(--mt-ui-surface, var(--background-0));
+        color: var(--mt-ui-text, var(--background-800));
     }
 
     .app-shell__body {
@@ -47,8 +47,8 @@
     }
 
     .app-shell__sidebar {
-        border-right: 1px solid var(--background-700);
-        background: var(--background-800);
+        border-right: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-panel, var(--background-25));
         min-height: 0;
         overflow: hidden;
     }
@@ -59,12 +59,12 @@
         min-width: 0;
         min-height: 0;
         overflow: hidden;
-        background: var(--background-900);
+        background: var(--mt-ui-surface, var(--background-0));
     }
 
     .app-shell__statusbar {
         height: var(--mt-statusbar-height);
-        border-top: 1px solid var(--background-700);
-        background: var(--background-800);
+        border-top: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-panel, var(--background-25));
     }
 </style>

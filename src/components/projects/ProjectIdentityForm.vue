@@ -259,9 +259,9 @@
         width: 1.75rem;
         height: 1.75rem;
         border-radius: 0.375rem;
-        border: 1px solid var(--background-600);
-        background: var(--background-900);
-        color: var(--background-100);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-panel, var(--background-25));
+        color: var(--mt-ui-text, var(--background-800));
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -273,7 +273,7 @@
         }
 
         &:hover:not(:disabled) {
-            background: var(--background-700);
+            background: var(--mt-ui-surface-hover, var(--background-75));
         }
     }
 
@@ -281,7 +281,7 @@
         width: 1.375rem;
         height: 1.375rem;
         border-radius: 9999px;
-        border: 1px solid var(--background-500);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
         cursor: pointer;
 
         &:disabled {
@@ -298,7 +298,7 @@
         width: 2.25rem;
         height: 2.25rem;
         padding: 0;
-        border: 1px solid var(--background-600);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
         border-radius: 0.375rem;
         background: transparent;
         cursor: pointer;
@@ -316,9 +316,9 @@
     }
 
     .project-identity-form__reset-btn {
-        border: 1px solid var(--background-600);
-        background: var(--background-700);
-        color: var(--background-100);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        color: var(--mt-ui-text, var(--background-800));
         border-radius: 0.375rem;
         padding: 0.375rem 0.625rem;
         font-size: 0.75rem;
@@ -330,14 +330,14 @@
         }
 
         &:hover:not(:disabled) {
-            background: var(--background-600);
+            background: var(--mt-ui-surface-hover, var(--background-75));
         }
     }
 
     .project-identity-form__error {
         padding: 0.5rem 0.75rem;
         border-radius: 0.375rem;
-        background: color-mix(in srgb, var(--max-danger-500) 15%, var(--background-900));
+        background: color-mix(in srgb, var(--max-danger-500) 15%, var(--mt-ui-surface, var(--background-0)));
         border: 1px solid var(--max-danger-500);
         color: var(--max-danger-400);
         font-size: 0.75rem;
@@ -346,7 +346,7 @@
     .project-identity-form__success {
         padding: 0.5rem 0.75rem;
         border-radius: 0.375rem;
-        background: color-mix(in srgb, var(--max-success-500) 15%, var(--background-900));
+        background: color-mix(in srgb, var(--max-success-500) 15%, var(--mt-ui-surface, var(--background-0)));
         border: 1px solid var(--max-success-500);
         color: var(--max-success-400);
         font-size: 0.75rem;
@@ -377,19 +377,19 @@
     }
 
     .project-identity-form__btn--cancel {
-        border: 1px solid var(--background-600);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
         background: transparent;
-        color: var(--background-200);
+        color: var(--mt-ui-text, var(--background-800));
 
         &:hover:not(:disabled) {
-            background: var(--background-700);
+            background: var(--mt-ui-surface-hover, var(--background-75));
         }
     }
 
     .project-identity-form__btn--submit {
         border: 1px solid var(--max-primary-500);
         background: var(--max-primary-600);
-        color: var(--background-50);
+        color: var(--max-primary-content);
 
         &:hover:not(:disabled) {
             background: var(--max-primary-500);

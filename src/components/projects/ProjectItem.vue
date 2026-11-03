@@ -15,6 +15,7 @@
         </button>
 
         <div class="project-item__actions">
+            <MaxButton class="project-item__visibility-btn" :label="props.hidden ? 'Mostrar' : 'Ocultar'" :loading="props.pending" :disabled="props.disabled || props.pending" size="small" slim variant="text" :title="props.hidden ? 'Mostrar projeto' : 'Ocultar projeto'" :aria-label="props.hidden ? 'Mostrar projeto' : 'Ocultar projeto'" @click.stop="handleVisibilityToggle" />
             <MaxPopoverMenu ref="popoverMenuRef" :items="menuItems" aria-label="Opções do projeto">
                 <template #trigger="slotProps">
                     <button type="button" class="project-item__menu-trigger" v-bind="slotProps" aria-label="Opções do projeto" title="Opções do projeto">
@@ -33,6 +34,7 @@
 </template>
 
 <script setup lang="ts">
+    import { MaxButton } from '@maxvue/max-components-ui';
     import { computed, ref } from 'vue';
     import MaxPopoverMenu from '@maxvue/max-components-ui/components/MaxPopoverMenu';
     import ProjectStatusBadges from '@/components/projects/ProjectStatusBadges.vue';
@@ -44,9 +46,16 @@
         project: Project_Serialize;
         counters: ProjectStatusCounters;
         selected: boolean;
+        hidden?: boolean;
+        disabled?: boolean;
+        pending?: boolean;
     }
 
-    const props = defineProps<ProjectItemProps>();
+    const props = withDefaults(defineProps<ProjectItemProps>(), {
+        hidden: false,
+        disabled: false,
+        pending: false
+    });
 
     const emit = defineEmits<{
         select: [id: ProjectId];
@@ -54,6 +63,8 @@
         configure: [id: ProjectId];
         remove: [id: ProjectId];
         redetect: [id: ProjectId];
+        hide: [id: ProjectId];
+        show: [id: ProjectId];
     }>();
 
     const popoverMenuRef = ref<InstanceType<typeof MaxPopoverMenu> | null>(null);
@@ -98,6 +109,18 @@
         popoverMenuRef.value?.toggle(event);
     }
 
+    function handleVisibilityToggle(event: MouseEvent): void {
+        event.stopPropagation();
+        if (props.disabled || props.pending) {
+            return;
+        }
+        if (props.hidden) {
+            emit('show', props.project.id);
+        } else {
+            emit('hide', props.project.id);
+        }
+    }
+
     function handleEdit(): void {
         popoverMenuRef.value?.hide();
         emit('edit', props.project.id);
@@ -133,12 +156,12 @@
         transition: background-color 120ms ease, border-color 120ms ease;
 
         &:hover {
-            background: var(--background-700);
+            background: var(--mt-ui-surface-hover, var(--background-75));
         }
     }
 
     .project-item--selected {
-        background: var(--background-700);
+        background: var(--mt-ui-surface-elevated, var(--background-50));
         border-color: var(--mt-project-color, var(--max-primary-500));
     }
 
@@ -156,7 +179,7 @@
         padding: 0.5rem 0.625rem;
         border: none;
         background: transparent;
-        color: var(--background-100);
+        color: var(--mt-ui-text, var(--background-800));
         text-align: left;
         cursor: pointer;
         border-radius: 0.5rem;
@@ -197,7 +220,7 @@
     .project-item__title {
         font-size: 0.875rem;
         font-weight: 600;
-        color: var(--background-50);
+        color: var(--mt-ui-text-strong, var(--background-950));
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -208,7 +231,7 @@
         font-weight: 500;
         padding: 0.0625rem 0.375rem;
         border-radius: 9999px;
-        background: var(--background-800);
+        background: var(--mt-ui-surface-elevated, var(--background-50));
         color: var(--max-warning-400);
         border: 1px solid var(--max-warning-500);
         white-space: nowrap;
@@ -216,7 +239,7 @@
 
     .project-item__path {
         font-size: 0.75rem;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
         font-family: var(--mt-font-mono);
         white-space: nowrap;
         overflow: hidden;
@@ -227,7 +250,30 @@
         position: relative;
         display: flex;
         align-items: center;
+        gap: 0.25rem;
         padding-right: 0.375rem;
+    }
+
+    :deep(.project-item__visibility-btn) {
+        padding: 0.1875rem 0.375rem !important;
+        min-height: 1.5rem;
+        font-size: 0.6875rem !important;
+        font-weight: 500;
+        color: var(--background-300) !important;
+        background: transparent !important;
+        border: 1px solid transparent !important;
+        border-radius: 0.375rem;
+        cursor: pointer;
+        white-space: nowrap;
+
+        &:hover:not(:disabled) {
+            background: var(--background-600) !important;
+            color: var(--background-50) !important;
+        }
+
+        &:focus-visible {
+            @include mt-focus-ring;
+        }
     }
 
     .project-item__menu-trigger {
@@ -236,15 +282,15 @@
         border-radius: 0.375rem;
         border: none;
         background: transparent;
-        color: var(--background-300);
+        color: var(--mt-ui-text-muted, var(--background-400));
         display: inline-flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
 
         &:hover {
-            background: var(--background-600);
-            color: var(--background-50);
+            background: var(--mt-ui-surface-hover, var(--background-75));
+            color: var(--mt-ui-text-strong, var(--background-950));
         }
 
         &:focus-visible {
@@ -260,8 +306,8 @@
         min-width: 13rem;
         padding: 0.25rem;
         border-radius: 0.5rem;
-        background: var(--background-800);
-        border: 1px solid var(--background-600);
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        border: 1px solid var(--mt-ui-border, var(--background-100));
         box-shadow: 0 8px 24px rgb(0 0 0 / 45%);
         display: flex;
         flex-direction: column;
@@ -277,13 +323,13 @@
         border: none;
         border-radius: 0.375rem;
         background: transparent;
-        color: var(--background-100);
+        color: var(--mt-ui-text, var(--background-800));
         font-size: 0.8125rem;
         text-align: left;
         cursor: pointer;
 
         &:hover {
-            background: var(--background-700);
+            background: var(--mt-ui-surface-hover, var(--background-75));
         }
 
         &:focus-visible {
@@ -295,7 +341,7 @@
         color: var(--max-danger-400);
 
         &:hover {
-            background: color-mix(in srgb, var(--max-danger-500) 15%, var(--background-700));
+            background: color-mix(in srgb, var(--max-danger-500) 15%, var(--mt-ui-surface-hover, var(--background-75)));
         }
     }
 </style>

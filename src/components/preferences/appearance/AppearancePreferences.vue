@@ -190,8 +190,8 @@
         gap: 0.75rem;
         padding: 0.875rem;
         border-radius: 0.5rem;
-        border: 1px solid var(--background-800);
-        background: var(--background-900);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-panel, var(--background-25));
     }
 
     .prefs-appearance__header {
@@ -206,7 +206,7 @@
         margin: 0;
         font-size: 0.875rem;
         font-weight: 600;
-        color: var(--background-50);
+        color: var(--mt-ui-text-strong, var(--background-950));
     }
 
     .prefs-appearance__checkbox {
@@ -214,7 +214,7 @@
         align-items: center;
         gap: 0.5rem;
         font-size: 0.75rem;
-        color: var(--background-200);
+        color: var(--mt-ui-text-secondary, var(--background-600));
         cursor: pointer;
 
         input {
@@ -234,9 +234,9 @@
         min-width: 15rem;
         padding: 0 0.625rem;
         border-radius: 0.375rem;
-        border: 1px solid var(--background-700);
-        background: var(--background-950);
-        color: var(--background-100);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface, var(--background-0));
+        color: var(--mt-ui-text, var(--background-800));
         font-size: 0.75rem;
     }
 
@@ -246,7 +246,7 @@
         border-radius: 0.375rem;
         border: 1px solid var(--max-primary-500);
         background: var(--max-primary-600);
-        color: var(--background-50);
+        color: var(--max-primary-content, #fff);
         font-size: 0.75rem;
         font-weight: 600;
         cursor: pointer;
@@ -257,9 +257,9 @@
         }
 
         &--secondary {
-            border-color: var(--background-700);
-            background: var(--background-800);
-            color: var(--background-100);
+            border-color: var(--mt-ui-border, var(--background-100));
+            background: var(--mt-ui-surface-elevated, var(--background-50));
+            color: var(--mt-ui-text, var(--background-800));
         }
     }
 
@@ -275,16 +275,16 @@
         justify-content: space-between;
         font-size: 0.75rem;
         font-weight: 600;
-        color: var(--background-200);
+        color: var(--mt-ui-text-secondary, var(--background-600));
     }
 
     .prefs-appearance__textarea {
         width: 100%;
         padding: 0.5rem;
         border-radius: 0.375rem;
-        border: 1px solid var(--background-700);
-        background: var(--background-950);
-        color: var(--background-100);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface, var(--background-0));
+        color: var(--mt-ui-text, var(--background-800));
         font-family: var(--mt-font-mono);
         font-size: 0.75rem;
         resize: vertical;

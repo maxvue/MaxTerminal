@@ -136,9 +136,9 @@
         line-height: 1.25;
         font-weight: 600;
         font-variant-numeric: tabular-nums;
-        background: var(--background-800);
-        color: var(--background-100);
-        border: 1px solid var(--mt-badge-color, var(--background-600));
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        color: var(--mt-ui-text, var(--background-800));
+        border: 1px solid var(--mt-badge-color, var(--mt-ui-border, var(--background-100)));
     }
 
     .project-status-badges--compact .project-status-badges__pill {
@@ -150,7 +150,7 @@
         width: 0.4375rem;
         height: 0.4375rem;
         border-radius: 9999px;
-        background: var(--mt-badge-color, var(--background-400));
+        background: var(--mt-badge-color, var(--mt-ui-text-muted, var(--background-400)));
         flex-shrink: 0;
     }
 

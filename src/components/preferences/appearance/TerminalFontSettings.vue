@@ -179,7 +179,7 @@
     .font-settings__label {
         font-size: 0.75rem;
         font-weight: 600;
-        color: var(--background-300);
+        color: var(--mt-ui-text-secondary, var(--background-600));
     }
 
     .font-settings__select,
@@ -187,9 +187,9 @@
         height: 2rem;
         padding: 0 0.625rem;
         border-radius: 0.375rem;
-        border: 1px solid var(--background-700);
-        background: var(--background-950);
-        color: var(--background-100);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface, var(--background-0));
+        color: var(--mt-ui-text, var(--background-800));
         font-size: 0.8125rem;
 
         &:disabled {
@@ -214,7 +214,7 @@
         align-items: center;
         gap: 0.5rem;
         font-size: 0.8125rem;
-        color: var(--background-200);
+        color: var(--mt-ui-text-secondary, var(--background-600));
         cursor: pointer;
 
         input {

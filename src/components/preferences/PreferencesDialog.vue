@@ -1,5 +1,5 @@
 <template>
-    <MaxModal :visible="windowStore.preferencesOpen" title="Configurações gerais" :no-button="true" max-width="56rem" class="prefs-dialog-modal" :dismissable="true" :close-on-escape="true" @update:visible="onVisibleUpdate">
+    <MaxModal :visible="windowStore.preferencesOpen" title="Configurações gerais" :no-button="true" width="calc(100vw - 50px)" max-width="1500px" class="prefs-dialog-modal" :dismissable="true" :close-on-escape="true" @update:visible="onVisibleUpdate">
         <div class="prefs-dialog__body">
             <nav class="prefs-dialog__nav" aria-label="Seções de preferências">
                 <MaxButton v-for="sec in sections" :key="sec.id" type="button" :class="activeSectionId === sec.id ? 'prefs-dialog__nav-btn is-active' : 'prefs-dialog__nav-btn'" variant="text" @click="selectSection(sec.id)">
@@ -101,6 +101,26 @@
 </script>
 
 <style lang="scss" scoped>
+    :deep(.max-modal.prefs-dialog-modal),
+    :deep(.prefs-dialog-modal.max-modal),
+    :deep(.prefs-dialog-modal) {
+        background-color: var(--mt-ui-surface, var(--background-950, var(--background-0)));
+        border-color: var(--mt-ui-border, var(--background-700, var(--background-100)));
+        color: var(--mt-ui-text, var(--background-100, var(--background-800)));
+        max-height: 85vh;
+        display: flex;
+        flex-direction: column;
+
+        .max-modal-content {
+            padding: 0;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+    }
+
     .prefs-dialog__body {
         display: grid;
         grid-template-columns: 13rem 1fr;
@@ -115,8 +135,8 @@
         flex-direction: column;
         gap: 0.25rem;
         padding: 0.75rem;
-        background: var(--background-900);
-        border-right: 1px solid var(--background-800);
+        background: var(--mt-ui-surface-panel, var(--background-25));
+        border-right: 1px solid var(--mt-ui-border, var(--background-100));
         overflow-y: auto;
     }
 
@@ -130,15 +150,24 @@
         border: none;
         border-radius: 0.375rem;
         background: transparent;
-        color: var(--background-300);
+        color: var(--mt-ui-text-muted, var(--background-400));
         font-size: 0.8125rem;
         font-weight: 500;
         text-align: left;
         cursor: pointer;
 
+        :deep(.max-button-label) {
+            display: inline-flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 0.5rem;
+            width: 100%;
+            text-align: left;
+        }
+
         &:hover {
-            background: var(--background-800);
-            color: var(--background-100);
+            background: var(--mt-ui-surface-hover, var(--background-75));
+            color: var(--mt-ui-text-strong, var(--background-950));
         }
 
         &.is-active {
@@ -152,23 +181,6 @@
     .prefs-dialog__content {
         padding: 1rem 1.25rem;
         overflow-y: auto;
-    }
-
-    :deep(.prefs-dialog-modal.max-modal) {
-        background-color: var(--background-950);
-        border-color: var(--background-700);
-        color: var(--background-100);
-        max-height: 85vh;
-        display: flex;
-        flex-direction: column;
-
-        .max-modal-content {
-            padding: 0;
-            flex: 1;
-            min-height: 0;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
+        min-width: 0;
     }
 </style>

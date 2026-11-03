@@ -44,9 +44,9 @@
         gap: 0.3125rem;
         padding: 0.25rem 0.5rem;
         border-radius: 0.3125rem;
-        border: 1px solid var(--background-600);
-        background: var(--background-800);
-        color: var(--background-200);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        color: var(--mt-ui-text-secondary, var(--background-600));
         font-size: 0.7188rem;
         font-weight: 600;
         cursor: pointer;
@@ -55,7 +55,7 @@
     .group-run-indicator.is-running {
         border-color: var(--max-info-500);
         background: rgb(14 165 233 / 15%);
-        color: var(--max-info-300);
+        color: var(--max-info-400);
     }
 
     .group-run-indicator.is-open {
@@ -65,7 +65,7 @@
     .group-run-indicator__badge {
         padding: 0.0625rem 0.375rem;
         border-radius: 999px;
-        background: var(--background-900);
+        background: var(--mt-ui-surface, var(--background-0));
         font-size: 0.6563rem;
     }
 </style>

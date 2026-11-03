@@ -1,0 +1,86 @@
+{
+  "version": 2,
+  "planRevision": "e80027bc64e0589a7b4a1fba3134be774e263ec46b57b4f23672a2bb86e6a8e4",
+  "tasks": [
+    {
+      "id": "T1",
+      "status": "completed",
+      "files": [
+        "src/types/projectSettings.ts",
+        "src/stores/projects.ts",
+        "tests/frontend/projects/projects.store.spec.ts"
+      ],
+      "validations": [],
+      "revision": "e80027bc64e0589a7b4a1fba3134be774e263ec46b57b4f23672a2bb86e6a8e4"
+    },
+    {
+      "id": "T2",
+      "status": "completed",
+      "files": [
+        "src/components/projects/ProjectItem.vue",
+        "tests/frontend/projects/ProjectItem.spec.ts"
+      ],
+      "validations": [],
+      "revision": "e80027bc64e0589a7b4a1fba3134be774e263ec46b57b4f23672a2bb86e6a8e4"
+    },
+    {
+      "id": "T3",
+      "status": "completed",
+      "files": [
+        "src/components/projects/ProjectList.vue",
+        "src/components/projects/projectOrder.ts",
+        "tests/frontend/projects/ProjectListVisibility.spec.ts"
+      ],
+      "validations": [],
+      "revision": "e80027bc64e0589a7b4a1fba3134be774e263ec46b57b4f23672a2bb86e6a8e4"
+    },
+    {
+      "id": "T4",
+      "status": "completed",
+      "files": [
+        "tests/frontend/projects/projectVisibility.persistence.spec.ts",
+        "tests/frontend/projects/ProjectSettingsNavigation.spec.ts",
+        "tests/lint/eslint-rules.spec.ts"
+      ],
+      "validations": [],
+      "revision": "e80027bc64e0589a7b4a1fba3134be774e263ec46b57b4f23672a2bb86e6a8e4"
+    }
+  ],
+  "verification": {
+    "revision": "e80027bc64e0589a7b4a1fba3134be774e263ec46b57b4f23672a2bb86e6a8e4",
+    "checks": [
+      {
+        "command": "npx --no-install vitest run tests/frontend/projects/",
+        "revision": "e80027bc64e0589a7b4a1fba3134be774e263ec46b57b4f23672a2bb86e6a8e4",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run lint",
+        "revision": "e80027bc64e0589a7b4a1fba3134be774e263ec46b57b4f23672a2bb86e6a8e4",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run typecheck",
+        "revision": "e80027bc64e0589a7b4a1fba3134be774e263ec46b57b4f23672a2bb86e6a8e4",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run build",
+        "revision": "e80027bc64e0589a7b4a1fba3134be774e263ec46b57b4f23672a2bb86e6a8e4",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run check",
+        "revision": "e80027bc64e0589a7b4a1fba3134be774e263ec46b57b4f23672a2bb86e6a8e4",
+        "result": "passed",
+        "exitCode": 0
+      }
+    ]
+  },
+  "updatedAt": 1793724800000,
+  "nextAction": "Implementação e validação completas. Aguardando confirmação explícita do usuário para integração Git."
+}

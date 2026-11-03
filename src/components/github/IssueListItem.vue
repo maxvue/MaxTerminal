@@ -48,14 +48,14 @@
         width: 100%;
         padding: 0.625rem 0.75rem;
         border: none;
-        border-bottom: 1px solid var(--background-700);
+        border-bottom: 1px solid var(--mt-ui-border, var(--background-100));
         background: transparent;
-        color: var(--background-100);
+        color: var(--mt-ui-text, var(--background-800));
         text-align: left;
         cursor: pointer;
 
         &:hover {
-            background: var(--background-800);
+            background: var(--mt-ui-surface-hover, var(--background-75));
         }
 
         &--selected {
@@ -83,7 +83,7 @@
         flex: 1;
         font-size: 0.8125rem;
         font-weight: 600;
-        color: var(--background-50);
+        color: var(--mt-ui-text-strong, var(--background-950));
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -110,7 +110,7 @@
         align-items: center;
         justify-content: space-between;
         font-size: 0.6875rem;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
     }
 
     .issue-list-item__comments {

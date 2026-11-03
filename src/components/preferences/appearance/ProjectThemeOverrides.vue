@@ -86,14 +86,14 @@
     .project-overrides__hint {
         margin: 0;
         font-size: 0.75rem;
-        color: var(--background-300);
+        color: var(--mt-ui-text-muted, var(--background-400));
     }
 
     .project-overrides__empty {
         padding: 0.75rem;
         border-radius: 0.375rem;
-        background: var(--background-950);
-        color: var(--background-400);
+        background: var(--mt-ui-surface, var(--background-0));
+        color: var(--mt-ui-text-muted, var(--background-400));
         font-size: 0.8125rem;
     }
 
@@ -110,8 +110,8 @@
         gap: 0.75rem;
         padding: 0.5rem 0.625rem;
         border-radius: 0.375rem;
-        background: var(--background-950);
-        border: 1px solid var(--background-800);
+        background: var(--mt-ui-surface, var(--background-0));
+        border: 1px solid var(--mt-ui-border, var(--background-100));
     }
 
     .project-overrides__project {
@@ -128,7 +128,7 @@
     .project-overrides__title {
         font-size: 0.8125rem;
         font-weight: 500;
-        color: var(--background-100);
+        color: var(--mt-ui-text-strong, var(--background-950));
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;

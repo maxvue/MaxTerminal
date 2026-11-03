@@ -562,7 +562,7 @@
         min-width: 0;
         min-height: 0;
         overflow: hidden;
-        background: var(--background-900);
+        background: var(--mt-ui-surface, var(--background-0));
     }
 
     .tab-workspace__error {
@@ -620,13 +620,13 @@
         margin: 0;
         font-size: 1rem;
         font-weight: 600;
-        color: var(--background-100);
+        color: var(--mt-ui-text-strong, var(--background-950));
     }
 
     .tab-workspace__empty-desc {
         margin: 0;
         font-size: 0.8125rem;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
         max-width: 28rem;
     }
 
@@ -656,9 +656,9 @@
         gap: 0.375rem;
         padding: 0.4375rem 0.875rem;
         border-radius: 0.375rem;
-        border: 1px solid var(--background-600);
-        background: var(--background-800);
-        color: var(--background-200);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        color: var(--mt-ui-text-secondary, var(--background-600));
         font-size: 0.8125rem;
         font-weight: 600;
         cursor: pointer;
@@ -671,10 +671,10 @@
         height: 2rem;
         padding: 0 0.75rem;
         border-radius: 0.375rem 0.375rem 0 0;
-        border: 1px solid var(--background-600);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
         border-bottom: none;
-        background: var(--background-850, var(--background-800));
-        color: var(--background-200);
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        color: var(--mt-ui-text-secondary, var(--background-600));
         font-size: 0.75rem;
         font-weight: 700;
         cursor: pointer;
@@ -682,12 +682,12 @@
         flex-shrink: 0;
 
         &:hover {
-            background: var(--background-750, var(--background-700));
-            color: var(--background-50);
+            background: var(--mt-ui-surface-hover, var(--background-75));
+            color: var(--mt-ui-text-strong, var(--background-950));
         }
 
         &--active {
-            background: var(--background-900);
+            background: var(--mt-ui-surface, var(--background-0));
             border-color: var(--max-purple-500, #a855f7);
             color: var(--max-purple-400, #c084fc);
         }

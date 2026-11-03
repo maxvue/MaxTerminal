@@ -106,6 +106,10 @@ export const useSettingsStore = defineStore('settings', () => {
         const expected = revisions.value[key] ?? null;
         const res = await dbIpc.setSetting(key, value as unknown as JsonValue, expected);
 
+        if (!res) {
+            return false;
+        }
+
         if (res.ok) {
             (values.value as Record<string, unknown>)[key] = res.data.value;
             revisions.value[key] = res.data.revision;

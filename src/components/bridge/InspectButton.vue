@@ -55,5 +55,19 @@
     .inspect-button {
         order: 10;
         cursor: pointer;
+
+        &:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+
+        &:hover:not(:disabled) {
+            background: color-mix(in srgb, var(--max-danger-500) 28%, transparent);
+            color: var(--max-danger-300);
+        }
+    }
+
+    .inspect-button__icon {
+        font-size: 0.8125rem;
     }
 </style>

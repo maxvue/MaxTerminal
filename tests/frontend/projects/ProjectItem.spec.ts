@@ -94,4 +94,100 @@ describe('ProjectItem.vue', () => {
         await wrapper.find('[data-action="remove"]').trigger('click');
         expect(wrapper.emitted('remove')?.[0]).toEqual(['proj-laravel']);
     });
+
+    it('renderiza botão Ocultar por padrão (hidden=false), emite hide com project.id e não emite select', async () => {
+        const project = makeSampleProject();
+
+        const wrapper = mount(ProjectItem, {
+            props: {
+                project,
+                counters: ZERO_PROJECT_COUNTERS,
+                selected: false,
+                hidden: false
+            },
+            global: {
+                stubs: {
+                    MaxIcon: MaxIconStub
+                }
+            }
+        });
+
+        const btn = wrapper.find('.project-item__visibility-btn');
+        expect(btn.exists()).toBe(true);
+        expect(btn.text()).toContain('Ocultar');
+
+        await btn.trigger('click');
+        expect(wrapper.emitted('hide')?.[0]).toEqual(['proj-laravel']);
+        expect(wrapper.emitted('show')).toBeUndefined();
+        expect(wrapper.emitted('select')).toBeUndefined();
+    });
+
+    it('renderiza botão Mostrar quando hidden=true, emite show com project.id e não emite select', async () => {
+        const project = makeSampleProject();
+
+        const wrapper = mount(ProjectItem, {
+            props: {
+                project,
+                counters: ZERO_PROJECT_COUNTERS,
+                selected: false,
+                hidden: true
+            },
+            global: {
+                stubs: {
+                    MaxIcon: MaxIconStub
+                }
+            }
+        });
+
+        const btn = wrapper.find('.project-item__visibility-btn');
+        expect(btn.exists()).toBe(true);
+        expect(btn.text()).toContain('Mostrar');
+
+        await btn.trigger('click');
+        expect(wrapper.emitted('show')?.[0]).toEqual(['proj-laravel']);
+        expect(wrapper.emitted('hide')).toBeUndefined();
+        expect(wrapper.emitted('select')).toBeUndefined();
+    });
+
+    it('desabilita o botão de visibilidade quando disabled=true ou pending=true e impede emissão de eventos', async () => {
+        const project = makeSampleProject();
+
+        const wrapperDisabled = mount(ProjectItem, {
+            props: {
+                project,
+                counters: ZERO_PROJECT_COUNTERS,
+                selected: false,
+                disabled: true
+            },
+            global: {
+                stubs: {
+                    MaxIcon: MaxIconStub
+                }
+            }
+        });
+
+        const btnDisabled = wrapperDisabled.find('.project-item__visibility-btn');
+        expect(btnDisabled.attributes('disabled')).toBeDefined();
+        await btnDisabled.trigger('click');
+        expect(wrapperDisabled.emitted('hide')).toBeUndefined();
+
+        const wrapperPending = mount(ProjectItem, {
+            props: {
+                project,
+                counters: ZERO_PROJECT_COUNTERS,
+                selected: false,
+                pending: true
+            },
+            global: {
+                stubs: {
+                    MaxIcon: MaxIconStub
+                }
+            }
+        });
+
+        const btnPending = wrapperPending.find('.project-item__visibility-btn');
+        expect(btnPending.attributes('disabled')).toBeDefined();
+        await btnPending.trigger('click');
+        expect(wrapperPending.emitted('hide')).toBeUndefined();
+    });
 });

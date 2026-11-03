@@ -244,10 +244,10 @@
         flex-direction: column;
         width: min(78rem, 96vw);
         max-height: 92vh;
-        border: 1px solid var(--background-700);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
         border-radius: 0.5rem;
-        background: var(--background-900);
-        color: var(--background-50);
+        background: var(--mt-ui-surface, var(--background-0));
+        color: var(--mt-ui-text-strong, var(--background-950));
         overflow: hidden;
 
         &__header {
@@ -255,8 +255,8 @@
             align-items: center;
             justify-content: space-between;
             padding: 0.75rem 1rem;
-            border-bottom: 1px solid var(--background-800);
-            background: var(--background-950);
+            border-bottom: 1px solid var(--mt-ui-border, var(--background-100));
+            background: var(--mt-ui-surface-panel, var(--background-25));
         }
 
         &__title-row {
@@ -274,8 +274,8 @@
         &__scope-pill {
             padding: 0.125rem 0.5rem;
             border-radius: 999px;
-            background: var(--background-800);
-            color: var(--max-primary-300);
+            background: var(--mt-ui-surface-elevated, var(--background-50));
+            color: var(--max-primary-400);
             font-size: 0.6875rem;
             font-weight: 600;
         }
@@ -291,10 +291,10 @@
             align-items: center;
             gap: 0.375rem;
             padding: 0.25rem 0.625rem;
-            border: 1px solid var(--background-700);
+            border: 1px solid var(--mt-ui-border, var(--background-100));
             border-radius: 0.25rem;
-            background: var(--background-800);
-            color: var(--background-200);
+            background: var(--mt-ui-surface-elevated, var(--background-50));
+            color: var(--mt-ui-text-secondary, var(--background-600));
             font-size: 0.75rem;
             cursor: pointer;
         }
@@ -302,7 +302,7 @@
         &__close-btn {
             border: none;
             background: transparent;
-            color: var(--background-300);
+            color: var(--mt-ui-text-secondary, var(--background-600));
             cursor: pointer;
             padding: 0.25rem;
         }
@@ -367,16 +367,16 @@
         &__label {
             font-size: 0.75rem;
             font-weight: 600;
-            color: var(--background-300);
+            color: var(--mt-ui-text-secondary, var(--background-600));
         }
 
         &__input {
             width: 100%;
             padding: 0.4375rem 0.625rem;
-            border: 1px solid var(--background-700);
+            border: 1px solid var(--mt-ui-border, var(--background-100));
             border-radius: 0.25rem;
-            background: var(--background-950);
-            color: var(--background-50);
+            background: var(--mt-ui-surface-panel, var(--background-25));
+            color: var(--mt-ui-text-strong, var(--background-950));
             font-size: 0.8125rem;
             outline: none;
 
@@ -393,17 +393,17 @@
         &__seg-btn {
             flex: 1;
             padding: 0.375rem 0.5rem;
-            border: 1px solid var(--background-700);
+            border: 1px solid var(--mt-ui-border, var(--background-100));
             border-radius: 0.25rem;
-            background: var(--background-950);
-            color: var(--background-300);
+            background: var(--mt-ui-surface-panel, var(--background-25));
+            color: var(--mt-ui-text-secondary, var(--background-600));
             font-size: 0.75rem;
             cursor: pointer;
 
             &.is-active {
                 border-color: var(--max-primary-500);
                 background: rgb(20 184 166 / 18%);
-                color: var(--max-primary-300);
+                color: var(--max-primary-400);
                 font-weight: 600;
             }
 
@@ -416,7 +416,7 @@
         &__isolation-note {
             margin: 0;
             font-size: 0.75rem;
-            color: var(--background-400);
+            color: var(--mt-ui-text-muted, var(--background-400));
         }
 
         &__labels-box {
@@ -425,9 +425,9 @@
             flex-wrap: wrap;
             gap: 0.375rem;
             padding: 0.25rem 0.5rem;
-            border: 1px solid var(--background-700);
+            border: 1px solid var(--mt-ui-border, var(--background-100));
             border-radius: 0.25rem;
-            background: var(--background-950);
+            background: var(--mt-ui-surface-panel, var(--background-25));
         }
 
         &__label-chip {
@@ -436,15 +436,15 @@
             gap: 0.25rem;
             padding: 0.125rem 0.4375rem;
             border-radius: 999px;
-            background: var(--background-800);
-            color: var(--max-primary-300);
+            background: var(--mt-ui-surface-elevated, var(--background-50));
+            color: var(--max-primary-400);
             font-size: 0.7188rem;
         }
 
         &__chip-remove {
             border: none;
             background: transparent;
-            color: var(--background-400);
+            color: var(--mt-ui-text-muted, var(--background-400));
             cursor: pointer;
             padding: 0;
         }
@@ -454,7 +454,7 @@
             min-width: 7rem;
             border: none;
             background: transparent;
-            color: var(--background-50);
+            color: var(--mt-ui-text-strong, var(--background-950));
             font-size: 0.7813rem;
             outline: none;
         }
@@ -500,8 +500,8 @@
             align-items: center;
             justify-content: space-between;
             padding: 0.75rem 1rem;
-            border-top: 1px solid var(--background-800);
-            background: var(--background-950);
+            border-top: 1px solid var(--mt-ui-border, var(--background-100));
+            background: var(--mt-ui-surface-panel, var(--background-25));
         }
 
         &__footer-left,
@@ -524,7 +524,7 @@
             &--primary {
                 border: 1px solid var(--max-primary-500);
                 background: rgb(20 184 166 / 18%);
-                color: var(--max-primary-300);
+                color: var(--max-primary-400);
             }
 
             &--warning {
@@ -540,9 +540,9 @@
             }
 
             &--ghost {
-                border: 1px solid var(--background-700);
-                background: var(--background-800);
-                color: var(--background-200);
+                border: 1px solid var(--mt-ui-border, var(--background-100));
+                background: var(--mt-ui-surface-elevated, var(--background-50));
+                color: var(--mt-ui-text-secondary, var(--background-600));
             }
 
             &:disabled {

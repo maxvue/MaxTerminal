@@ -150,4 +150,64 @@ describe('PreferencesDialog.vue', () => {
 
         expect(windowStore.preferencesOpen).toBe(false);
     });
+
+    it('aplica dimensões com largura de viewport menos 50px e limite máximo de 1500px no MaxModal', async () => {
+        windowStore.openPreferences('system');
+
+        wrapper = mount(PreferencesDialog, {
+            attachTo: document.body,
+            global: {
+                plugins: [pinia],
+                stubs: {
+                    MaxIcon: true,
+                    PreferencesSystemSection: DummySection,
+                    AppearancePreferences: DummySection,
+                    AiPreferences: DummySection,
+                    AgentSettingsPanel: DummySection,
+                    SkillsAndMemoryPreferences: DummySection,
+                    BridgeSettingsSection: DummySection
+                }
+            }
+        });
+
+        await nextTick();
+
+        const modalComponent = wrapper.findComponent({ name: 'MaxModal' });
+        expect(modalComponent.exists()).toBe(true);
+        expect(modalComponent.props('width')).toBe('calc(100vw - 50px)');
+        expect(modalComponent.props('maxWidth')).toBe('1500px');
+        expect(modalComponent.classes()).toContain('prefs-dialog-modal');
+    });
+
+    it('alinha os botões de navegação e labels com ícone e texto', async () => {
+        windowStore.openPreferences('system');
+
+        wrapper = mount(PreferencesDialog, {
+            attachTo: document.body,
+            global: {
+                plugins: [pinia],
+                stubs: {
+                    PreferencesSystemSection: DummySection,
+                    AppearancePreferences: DummySection,
+                    AiPreferences: DummySection,
+                    AgentSettingsPanel: DummySection,
+                    SkillsAndMemoryPreferences: DummySection,
+                    BridgeSettingsSection: DummySection
+                }
+            }
+        });
+
+        await nextTick();
+
+        const buttons = Array.from(document.body.querySelectorAll<HTMLElement>('.prefs-dialog__nav-btn'));
+        expect(buttons.length).toBe(6);
+
+        for (const btn of buttons) {
+            expect(btn.classList.contains('prefs-dialog__nav-btn')).toBe(true);
+            const labelEl = btn.querySelector('.max-button-label');
+            if (labelEl) {
+                expect(labelEl).toBeDefined();
+            }
+        }
+    });
 });

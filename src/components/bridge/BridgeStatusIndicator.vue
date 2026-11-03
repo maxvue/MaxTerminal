@@ -66,16 +66,16 @@
         height: 1.5rem;
         padding: 0 0.5rem;
         border-radius: 999px;
-        border: 1px solid var(--background-700);
-        background: var(--background-900);
-        color: var(--background-200);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface, var(--background-0));
+        color: var(--mt-ui-text-secondary, var(--background-600));
         font-size: 0.6875rem;
         font-weight: 500;
         cursor: pointer;
 
         &:hover {
             border-color: var(--max-primary-500);
-            color: var(--background-50);
+            color: var(--mt-ui-text-strong, var(--background-950));
         }
 
         &.is-compact {
@@ -95,7 +95,7 @@
         }
 
         &.is-neutral .bridge-status-indicator__dot {
-            background: var(--background-500);
+            background: var(--mt-ui-text-muted, var(--background-400));
         }
     }
 </style>

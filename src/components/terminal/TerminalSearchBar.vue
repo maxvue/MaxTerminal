@@ -128,10 +128,10 @@
         align-items: center;
         gap: 6px;
         padding: 6px 10px;
-        background: var(--background-900);
-        border: 1px solid var(--background-700);
+        background: var(--mt-ui-surface, var(--background-0));
+        border: 1px solid var(--mt-ui-border, var(--background-100));
         border-radius: 6px;
-        color: var(--background-100);
+        color: var(--mt-ui-text-strong, var(--background-950));
         font-size: 12px;
         box-shadow: 0 4px 12px rgb(0 0 0 / 35%);
     }
@@ -139,10 +139,10 @@
     .search-input {
         min-width: 180px;
         padding: 4px 8px;
-        background: var(--background-950);
-        border: 1px solid var(--background-700);
+        background: var(--mt-ui-surface-panel, var(--background-25));
+        border: 1px solid var(--mt-ui-border, var(--background-100));
         border-radius: 4px;
-        color: var(--background-50);
+        color: var(--mt-ui-text-strong, var(--background-950));
         font-size: 12px;
         outline: none;
 
@@ -161,29 +161,29 @@
     .toggle-btn,
     .nav-btn {
         padding: 3px 6px;
-        background: var(--background-800);
-        border: 1px solid var(--background-700);
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        border: 1px solid var(--mt-ui-border, var(--background-100));
         border-radius: 4px;
-        color: var(--background-200);
+        color: var(--mt-ui-text-secondary, var(--background-600));
         font-size: 11px;
         cursor: pointer;
 
         &:hover {
-            background: var(--background-700);
-            color: var(--background-50);
+            background: var(--mt-ui-surface-hover, var(--background-75));
+            color: var(--mt-ui-text-strong, var(--background-950));
         }
 
         &.is-active {
             background: var(--max-primary-600);
             border-color: var(--max-primary-500);
-            color: var(--background-50);
+            color: var(--max-primary-content, #fff);
         }
     }
 
     .search-counter {
         min-width: 90px;
         text-align: center;
-        color: var(--background-300);
+        color: var(--mt-ui-text-muted, var(--background-400));
 
         &.is-error {
             color: var(--max-danger-400);

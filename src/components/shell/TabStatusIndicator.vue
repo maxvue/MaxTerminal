@@ -117,9 +117,9 @@
         }
 
         &.bucket-idle {
-            background: var(--background-800);
-            color: var(--background-300);
-            border: 1px solid var(--background-700);
+            background: var(--mt-ui-surface-elevated, var(--background-50));
+            color: var(--mt-ui-text-muted, var(--background-400));
+            border: 1px solid var(--mt-ui-border, var(--background-100));
         }
 
         &.is-degraded {
@@ -137,7 +137,7 @@
 
     .indicator-unknown {
         padding-left: 4px;
-        border-left: 1px solid var(--background-600);
+        border-left: 1px solid var(--mt-ui-border, var(--background-100));
         color: var(--max-warning-400);
         font-weight: 500;
     }

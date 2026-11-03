@@ -1,19 +1,36 @@
 :root {
     color-scheme: dark;
 
-    // Tokens semânticos base do tema padrão Max Navy/Teal
-    --background-950: #060b14;
-    --background-900: #0b1322;
-    --background-800: #111c30;
-    --background-700: #1b2a44;
-    --background-600: #283b5c;
-    --background-500: #3d5278;
-    --background-400: #64799e;
-    --background-300: #94a6c4;
-    --background-200: #c5d1e6;
-    --background-100: #e8eef8;
-    --background-50: #f8fafc;
-    --background-0: #fff;
+    // Tokens semânticos base do tema padrão Max Navy/Teal (rampa canônica: 0=superfície, 950=contraste máximo)
+    --background-0: #17293d;
+    --background-25: #233549;
+    --background-50: #2f4155;
+    --background-75: #3b4d61;
+    --background-100: #47596d;
+    --background-150: #5e7084;
+    --background-200: #76889c;
+    --background-300: #a3b2c4;
+    --background-400: #c9d4e0;
+    --background-500: #dde4ec;
+    --background-600: #ebf0f5;
+    --background-700: #f4f7fa;
+    --background-800: #fbfcfd;
+    --background-900: #fff;
+    --background-950: #fff;
+
+    // Aliases semânticos locais de UI derivados da rampa canônica
+    --mt-ui-surface: var(--background-0);
+    --mt-ui-surface-panel: var(--background-25);
+    --mt-ui-surface-elevated: var(--background-50);
+    --mt-ui-surface-hover: var(--background-75);
+    --mt-ui-surface-active: var(--background-100);
+    --mt-ui-border-subtle: var(--background-75);
+    --mt-ui-border: var(--background-100);
+    --mt-ui-border-strong: var(--background-150);
+    --mt-ui-text-muted: var(--background-400);
+    --mt-ui-text-secondary: var(--background-600);
+    --mt-ui-text: var(--background-800);
+    --mt-ui-text-strong: var(--background-950);
     --max-primary-400: #2dd4bf;
     --max-primary-500: #14b8a6;
     --max-primary-600: #0d9488;
@@ -48,8 +65,8 @@ body,
     margin: 0;
     padding: 0;
     overflow: hidden;
-    background-color: var(--background-900);
-    color: var(--background-100);
+    background-color: var(--mt-ui-surface, var(--background-0));
+    color: var(--mt-ui-text, var(--background-800));
     font-family: var(--mt-font-sans);
     -webkit-font-smoothing: antialiased;
 }
@@ -64,11 +81,11 @@ body,
 }
 
 ::-webkit-scrollbar-track {
-    background: var(--background-900);
+    background: var(--mt-ui-surface, var(--background-0));
 }
 
 ::-webkit-scrollbar-thumb {
-    background: var(--background-700);
+    background: var(--mt-ui-border-strong, var(--background-150));
     border-radius: 3px;
 }
 

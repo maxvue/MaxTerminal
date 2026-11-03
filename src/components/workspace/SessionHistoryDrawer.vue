@@ -96,8 +96,8 @@
         width: 26rem;
         max-width: 100%;
         height: 100%;
-        background: var(--background-800);
-        border-left: 1px solid var(--background-700);
+        background: var(--mt-ui-surface-panel, var(--background-25));
+        border-left: 1px solid var(--mt-ui-border, var(--background-100));
         display: flex;
         flex-direction: column;
         min-height: 0;
@@ -109,7 +109,7 @@
         align-items: center;
         justify-content: space-between;
         padding: 0.625rem 0.875rem;
-        border-bottom: 1px solid var(--background-700);
+        border-bottom: 1px solid var(--mt-ui-border, var(--background-100));
     }
 
     .session-drawer__title-group {
@@ -127,7 +127,7 @@
         margin: 0;
         font-size: 0.875rem;
         font-weight: 600;
-        color: var(--background-50);
+        color: var(--mt-ui-text-strong, var(--background-950));
     }
 
     .session-drawer__header-actions {
@@ -153,7 +153,7 @@
     .session-drawer__close-btn {
         border: none;
         background: transparent;
-        color: var(--background-300);
+        color: var(--mt-ui-text-muted, var(--background-400));
         cursor: pointer;
         padding: 0.25rem;
         border-radius: 0.25rem;
@@ -163,25 +163,25 @@
         display: flex;
         gap: 0.375rem;
         padding: 0.5rem 0.875rem;
-        border-bottom: 1px solid var(--background-700);
+        border-bottom: 1px solid var(--mt-ui-border, var(--background-100));
     }
 
     .session-drawer__search-input {
         flex: 1;
         padding: 0.375rem 0.625rem;
         border-radius: 0.3125rem;
-        border: 1px solid var(--background-600);
-        background: var(--background-900);
-        color: var(--background-50);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface, var(--background-0));
+        color: var(--mt-ui-text-strong, var(--background-950));
         font-size: 0.7813rem;
     }
 
     .session-drawer__search-btn {
         padding: 0.375rem 0.625rem;
         border-radius: 0.3125rem;
-        border: 1px solid var(--background-600);
-        background: var(--background-700);
-        color: var(--background-100);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        color: var(--mt-ui-text, var(--background-800));
         font-size: 0.75rem;
         font-weight: 600;
         cursor: pointer;
@@ -189,7 +189,7 @@
 
     .session-drawer__hits {
         padding: 0.5rem 0.875rem;
-        border-bottom: 1px solid var(--background-700);
+        border-bottom: 1px solid var(--mt-ui-border, var(--background-100));
         max-height: 9rem;
         overflow-y: auto;
     }
@@ -198,7 +198,7 @@
         display: block;
         font-size: 0.6875rem;
         font-weight: 600;
-        color: var(--background-300);
+        color: var(--mt-ui-text-secondary, var(--background-600));
         margin-bottom: 0.25rem;
     }
 
@@ -216,9 +216,9 @@
         text-align: left;
         padding: 0.3125rem 0.5rem;
         border-radius: 0.25rem;
-        border: 1px solid var(--background-700);
-        background: var(--background-900);
-        color: var(--background-100);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface, var(--background-0));
+        color: var(--mt-ui-text, var(--background-800));
         font-family: var(--mt-font-mono);
         font-size: 0.7188rem;
         cursor: pointer;
@@ -244,7 +244,7 @@
 
     .session-drawer__empty {
         text-align: center;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
         font-size: 0.8125rem;
         padding: 1.5rem 0;
     }
@@ -260,8 +260,8 @@
 
     .session-drawer__item {
         border-radius: 0.375rem;
-        border: 1px solid var(--background-700);
-        background: var(--background-900);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-elevated, var(--background-50));
 
         &.is-selected {
             border-color: var(--max-primary-500);
@@ -290,13 +290,13 @@
     .session-drawer__seq {
         font-size: 0.8125rem;
         font-weight: 600;
-        color: var(--background-50);
+        color: var(--mt-ui-text-strong, var(--background-950));
     }
 
     .session-drawer__status {
         font-size: 0.6875rem;
         font-weight: 600;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
 
         &.is-active {
             color: var(--max-success-400);
@@ -307,7 +307,7 @@
         display: flex;
         gap: 0.5rem;
         font-size: 0.7188rem;
-        color: var(--background-300);
+        color: var(--mt-ui-text-secondary, var(--background-600));
     }
 
     .session-drawer__failed {

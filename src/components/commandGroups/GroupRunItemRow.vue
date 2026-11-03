@@ -197,8 +197,8 @@
         gap: 0.75rem;
         padding: 0.5rem 0.625rem;
         border-radius: 0.375rem;
-        border: 1px solid var(--background-700);
-        background: var(--background-800);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-panel, var(--background-25));
     }
 
     .group-run-item-row__main {
@@ -212,7 +212,7 @@
     .group-run-item-row__index {
         font-size: 0.6875rem;
         font-weight: 700;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
         padding-top: 0.125rem;
     }
 
@@ -234,14 +234,14 @@
     .group-run-item-row__label {
         font-size: 0.7813rem;
         font-weight: 600;
-        color: var(--background-100);
+        color: var(--mt-ui-text-strong, var(--background-950));
     }
 
     .group-run-item-row__cmd {
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
         font-size: 0.7188rem;
-        color: var(--background-300);
-        background: var(--background-900);
+        color: var(--mt-ui-text-secondary, var(--background-600));
+        background: var(--mt-ui-surface-elevated, var(--background-50));
         padding: 0.0625rem 0.375rem;
         border-radius: 0.25rem;
     }
@@ -252,7 +252,7 @@
         gap: 0.5rem;
         flex-wrap: wrap;
         font-size: 0.6875rem;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
     }
 
     .group-run-item-row__meta-chip {
@@ -316,9 +316,9 @@
     }
 
     .badge-neutral {
-        background: var(--background-900);
-        border-color: var(--background-600);
-        color: var(--background-300);
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        border-color: var(--mt-ui-border, var(--background-100));
+        color: var(--mt-ui-text-secondary, var(--background-600));
     }
 
     .group-run-item-row__actions {
@@ -333,9 +333,9 @@
         gap: 0.25rem;
         padding: 0.25rem 0.5rem;
         border-radius: 0.25rem;
-        border: 1px solid var(--background-600);
-        background: var(--background-900);
-        color: var(--background-200);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        color: var(--mt-ui-text-secondary, var(--background-600));
         font-size: 0.6875rem;
         font-weight: 600;
         cursor: pointer;

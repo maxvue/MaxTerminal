@@ -37,13 +37,13 @@
         margin: 0;
         font-size: 0.8125rem;
         font-weight: 700;
-        color: var(--background-200);
+        color: var(--mt-ui-text-strong, var(--background-950));
     }
 
     .issue-comments__empty {
         margin: 0;
         font-size: 0.7813rem;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
     }
 
     .issue-comments__list {
@@ -54,8 +54,8 @@
 
     .issue-comments__item {
         border-radius: 0.375rem;
-        border: 1px solid var(--background-700);
-        background: var(--background-850, var(--background-800));
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface, var(--background-0));
         overflow: hidden;
 
         &--plan {
@@ -68,14 +68,14 @@
         align-items: center;
         justify-content: space-between;
         padding: 0.375rem 0.75rem;
-        background: var(--background-800);
-        border-bottom: 1px solid var(--background-700);
+        background: var(--mt-ui-surface-panel, var(--background-25));
+        border-bottom: 1px solid var(--mt-ui-border, var(--background-100));
         font-size: 0.75rem;
     }
 
     .issue-comments__author {
         font-weight: 600;
-        color: var(--background-200);
+        color: var(--mt-ui-text-secondary, var(--background-600));
     }
 
     .issue-comments__plan-tag {
@@ -91,6 +91,6 @@
         padding: 0.75rem;
         font-size: 0.8125rem;
         line-height: 1.5;
-        color: var(--background-100);
+        color: var(--mt-ui-text, var(--background-800));
     }
 </style>

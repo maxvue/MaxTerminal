@@ -190,17 +190,41 @@
         margin: 0;
         font-size: 0.9375rem;
         font-weight: 600;
-        color: var(--background-50);
+        color: var(--mt-ui-text-strong, var(--background-950));
     }
 
     .bridge-settings__subtitle {
         margin: 0.25rem 0 0;
         font-size: 0.75rem;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
     }
 
     .bridge-settings__badge {
         white-space: nowrap;
+        padding: 0.1875rem 0.5rem;
+        border-radius: 999px;
+        font-size: 0.6875rem;
+        font-weight: 600;
+
+        &.is-success {
+            background: color-mix(in srgb, var(--max-success-500) 18%, transparent);
+            color: var(--max-success-400);
+        }
+
+        &.is-info {
+            background: color-mix(in srgb, var(--max-info-500) 18%, transparent);
+            color: var(--max-info-400);
+        }
+
+        &.is-danger {
+            background: color-mix(in srgb, var(--max-danger-500) 18%, transparent);
+            color: var(--max-danger-400);
+        }
+
+        &.is-neutral {
+            background: var(--mt-ui-surface-elevated, var(--background-50));
+            color: var(--mt-ui-text-muted, var(--background-400));
+        }
     }
 
     .bridge-settings__grid {
@@ -216,8 +240,8 @@
         gap: 1rem;
         padding: 0.625rem 0.75rem;
         border-radius: 0.375rem;
-        border: 1px solid var(--background-800);
-        background: var(--background-900);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-panel, var(--background-25));
     }
 
     .bridge-settings__row-info {
@@ -229,21 +253,21 @@
     .bridge-settings__row-title {
         font-size: 0.8125rem;
         font-weight: 500;
-        color: var(--background-100);
+        color: var(--mt-ui-text-strong, var(--background-950));
     }
 
     .bridge-settings__row-desc {
         font-size: 0.75rem;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
     }
 
     .bridge-settings__select,
     .bridge-settings__input {
         padding: 0.25rem 0.5rem;
         border-radius: 0.25rem;
-        border: 1px solid var(--background-700);
-        background: var(--background-950);
-        color: var(--background-100);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface, var(--background-0));
+        color: var(--mt-ui-text, var(--background-800));
         font-size: 0.75rem;
     }
 
@@ -259,24 +283,41 @@
         gap: 0.125rem;
         padding: 0.5rem 0.625rem;
         border-radius: 0.375rem;
-        border: 1px solid var(--background-800);
-        background: var(--background-900);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-panel, var(--background-25));
     }
 
     .bridge-settings__stat-label {
         font-size: 0.6875rem;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
     }
 
     .bridge-settings__stat-value {
         font-size: 0.75rem;
         font-family: var(--mt-font-mono);
-        color: var(--background-100);
+        color: var(--mt-ui-text-strong, var(--background-950));
     }
 
     .bridge-settings__actions {
         display: flex;
         justify-content: flex-end;
         gap: 0.5rem;
+    }
+    .bridge-settings__btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.375rem 0.75rem;
+        border-radius: 0.375rem;
+        border: 1px solid var(--max-primary-500);
+        background: var(--max-primary-600);
+        color: var(--max-primary-content, #fff);
+        font-size: 0.75rem;
+        font-weight: 500;
+        cursor: pointer;
+
+        &:hover {
+            background: var(--max-primary-500);
+        }
     }
 </style>

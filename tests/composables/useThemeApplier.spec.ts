@@ -1,67 +1,15 @@
-import { mount } from '@vue/test-utils';
-import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { defineComponent } from 'vue';
+import { createPinia, setActivePinia } from 'pinia';
+import { defineComponent, h, nextTick } from 'vue';
+import { mount } from '@vue/test-utils';
 import { useThemeApplier } from '@/composables/useThemeApplier';
-import { useTerminalAppearance } from '@/composables/useTerminalAppearance';
-import { useThemePreview } from '@/composables/useThemePreview';
-import { FALLBACK_MAX_NAVY_TEAL_TOKENS } from '@/theme/bootstrap';
+import { useThemeStore } from '@/stores/theme';
+import type { ResolvedTheme } from '@/types/theme';
+import * as nativeWindow from '@/theme/nativeWindow';
 
 vi.mock('@/ipc/themes', () => ({
     themeList: vi.fn(async () => []),
-    themeGet: vi.fn(async (id: string) => ({
-        scheme: {
-            id,
-            name: id,
-            origin: 'builtin',
-            polarity: 'dark',
-            foreground: '#e2e8f0',
-            background: '#0f1c2e',
-            cursor: '#2ea4bc',
-            cursorAccent: '#0f1c2e',
-            cursorStyle: 'block',
-            selectionBackground: '#00768e66',
-            selectionForeground: '#ffffff',
-            activeTabAccent: '#00768e',
-            ansi: new Array(16).fill('#000000'),
-            indexedColors: {},
-            metadata: {
-                author: null,
-                sourceFormat: null,
-                sourceFilename: null,
-                sha256: '0'.repeat(64),
-                createdAt: 0,
-                updatedAt: 0
-            }
-        },
-        xterm: {
-            foreground: '#e2e8f0',
-            background: '#0f1c2e',
-            cursor: '#2ea4bc',
-            cursorAccent: '#0f1c2e',
-            selectionBackground: '#00768e66',
-            selectionForeground: '#ffffff',
-            selectionInactiveBackground: '#00768e33',
-            black: '#000000',
-            red: '#000000',
-            green: '#000000',
-            yellow: '#000000',
-            blue: '#000000',
-            magenta: '#000000',
-            cyan: '#000000',
-            white: '#000000',
-            brightBlack: '#000000',
-            brightRed: '#000000',
-            brightGreen: '#000000',
-            brightYellow: '#000000',
-            brightBlue: '#000000',
-            brightMagenta: '#000000',
-            brightCyan: '#000000',
-            brightWhite: '#000000',
-            extendedAnsi: null
-        },
-        uiTokens: FALLBACK_MAX_NAVY_TEAL_TOKENS
-    })),
+    themeGet: vi.fn(async () => null),
     themeAppearanceGet: vi.fn(async () => ({
         activeThemeId: 'max-navy-teal',
         followSystem: false,
@@ -76,42 +24,61 @@ vi.mock('@/ipc/themes', () => ({
         minimumContrastRatio: 1,
         projectOverrides: {}
     })),
+    themeAppearanceUpdate: vi.fn(async () => ({})),
+    themeSetActive: vi.fn(async () => null),
+    themeImportFile: vi.fn(async () => ({})),
+    themeImportDir: vi.fn(async () => ({})),
+    themeDelete: vi.fn(async () => null),
+    themeExport: vi.fn(async () => ''),
     onThemeChanged: vi.fn(async () => () => {}),
     onThemeLibraryChanged: vi.fn(async () => () => {})
 }));
 
-describe('useThemeApplier', () => {
+const TestHost = defineComponent({
+    setup() {
+        const { themeStore } = useThemeApplier();
+        return { themeStore };
+    },
+    render() {
+        return h('div', 'host');
+    }
+});
+
+describe('useThemeApplier integration', () => {
+    let applyNativeWindowThemeSpy: ReturnType<typeof vi.spyOn>;
+
     beforeEach(() => {
         setActivePinia(createPinia());
+        vi.clearAllMocks();
+        document.documentElement.dataset.themePolarity = 'dark';
+        applyNativeWindowThemeSpy = vi.spyOn(nativeWindow, 'applyNativeWindowTheme').mockResolvedValue(true);
     });
 
-    it('inicializa a store de temas e expõe useTerminalAppearance e useThemePreview reativamente', () => {
-        vi.useFakeTimers();
-        const Host = defineComponent({
-            setup() {
-                const { themeStore } = useThemeApplier();
-                const { xtermTheme, fontOptions } = useTerminalAppearance();
-                const { previewingId, previewOnHover, stopPreview } = useThemePreview();
-                return {
-                    themeStore,
-                    xtermTheme,
-                    fontOptions,
-                    previewingId,
-                    previewOnHover,
-                    stopPreview
-                };
-            },
-            template: '<div>{{ fontOptions.fontSize }}</div>'
-        });
+    it('sincroniza janela nativa no boot com a polaridade inicial do DOM', () => {
+        mount(TestHost);
+        expect(applyNativeWindowThemeSpy).toHaveBeenCalledWith('dark');
+    });
 
-        const wrapper = mount(Host);
-        expect(wrapper.text()).toBe('13');
-        wrapper.vm.previewOnHover('dracula', 10);
-        vi.advanceTimersByTime(20);
-        expect(wrapper.vm.previewingId).toBe('dracula');
-        wrapper.vm.stopPreview();
-        expect(wrapper.vm.previewingId).toBeNull();
+    it('reage a mudanças na polaridade do tema resolvido', async () => {
+        const wrapper = mount(TestHost);
+        const themeStore = useThemeStore();
+
+        // Simula tema resolvido claro
+        themeStore.activeResolved = {
+            scheme: {
+                id: 'max-light',
+                name: 'Max Light',
+                origin: 'builtin',
+                polarity: 'light'
+            },
+            uiTokens: {
+                polarity: 'light'
+            }
+        } as unknown as ResolvedTheme;
+
+        await nextTick();
+        expect(applyNativeWindowThemeSpy).toHaveBeenCalledWith('light');
+
         wrapper.unmount();
-        vi.useRealTimers();
     });
 });
