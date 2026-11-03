@@ -1,0 +1,110 @@
+{
+  "version": 2,
+  "planRevision": "7dca460ec9546f71fb8911bf99de71e50c203efb36a094ec210c8331eb8c8de7",
+  "tasks": [
+    {
+      "id": "T1",
+      "status": "completed",
+      "files": [],
+      "validations": []
+    },
+    {
+      "id": "T2",
+      "status": "completed",
+      "files": [
+        "src/stores/window.ts",
+        "src/app/App.vue",
+        "src/components/projects/ProjectList.vue",
+        "src/components/projects/ProjectItem.vue",
+        "src/components/projects/ProjectWorkspace.vue"
+      ],
+      "validations": []
+    },
+    {
+      "id": "T3",
+      "status": "completed",
+      "files": [
+        "src/components/preferences/PreferencesDialog.vue"
+      ],
+      "validations": []
+    },
+    {
+      "id": "T4",
+      "status": "completed",
+      "files": [
+        "src/components/projects/ProjectIdentityForm.vue",
+        "src/components/projects/ProjectSettingsDialog.vue",
+        "src/components/projects/ProjectEditModal.vue",
+        "src/components/preferences/appearance/ProjectThemeOverrides.vue"
+      ],
+      "validations": []
+    },
+    {
+      "id": "T5",
+      "status": "completed",
+      "files": [
+        "tests/frontend/projects/ProjectItem.spec.ts",
+        "tests/frontend/projects/ProjectSettingsNavigation.spec.ts",
+        "tests/frontend/projects/ProjectSettingsDialog.spec.ts",
+        "tests/frontend/projects/ProjectIdentityForm.spec.ts",
+        "src/components/preferences/__tests__/PreferencesDialog.spec.ts"
+      ],
+      "validations": []
+    },
+    {
+      "id": "T6",
+      "status": "completed",
+      "files": [],
+      "validations": []
+    }
+  ],
+  "verification": {
+    "revision": "2da66dae47df18a38e4274b1f0cba3daff0206b97ffdada1989d36f8b1da50d5",
+    "checks": [
+      {
+        "command": "npx vitest run tests/frontend/projects/ProjectItem.spec.ts tests/frontend/projects/ProjectSettingsNavigation.spec.ts tests/frontend/projects/ProjectIdentityForm.spec.ts tests/frontend/projects/ProjectSettingsDialog.spec.ts src/components/preferences/__tests__/PreferencesDialog.spec.ts",
+        "revision": "2da66dae47df18a38e4274b1f0cba3daff0206b97ffdada1989d36f8b1da50d5",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm test",
+        "revision": "2da66dae47df18a38e4274b1f0cba3daff0206b97ffdada1989d36f8b1da50d5",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run typecheck",
+        "revision": "2da66dae47df18a38e4274b1f0cba3daff0206b97ffdada1989d36f8b1da50d5",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run typecheck:vue",
+        "revision": "2da66dae47df18a38e4274b1f0cba3daff0206b97ffdada1989d36f8b1da50d5",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run lint",
+        "revision": "2da66dae47df18a38e4274b1f0cba3daff0206b97ffdada1989d36f8b1da50d5",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run lint:style",
+        "revision": "2da66dae47df18a38e4274b1f0cba3daff0206b97ffdada1989d36f8b1da50d5",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run build",
+        "revision": "2da66dae47df18a38e4274b1f0cba3daff0206b97ffdada1989d36f8b1da50d5",
+        "result": "passed",
+        "exitCode": 0
+      }
+    ]
+  },
+  "updatedAt": 1793718677404,
+  "nextAction": "Implementação e validação de todas as tarefas do plano concluídas com sucesso. Pronto para revisão e integração."
+}

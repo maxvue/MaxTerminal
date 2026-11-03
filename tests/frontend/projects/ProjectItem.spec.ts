@@ -36,8 +36,8 @@ function makeSampleProject(overrides: Partial<Project_Serialize> = {}): Project_
     };
 }
 
-describe('ProjectItem.vue (Fase 06)', () => {
-    it('passa project.icon ao MaxIcon, aplica --project-color, exibe estado missing e emite eventos do menu de contexto', async () => {
+describe('ProjectItem.vue', () => {
+    it('passa project.icon ao MaxIcon, aplica --project-color, exibe estado missing e emite eventos do menu de contexto incluindo configure', async () => {
         const project = makeSampleProject({ missing: true });
 
         const wrapper = mount(ProjectItem, {
@@ -68,12 +68,22 @@ describe('ProjectItem.vue (Fase 06)', () => {
         await wrapper.find('.project-item__main').trigger('click');
         expect(wrapper.emitted('select')?.[0]).toEqual(['proj-laravel']);
 
-        // Abre menu de ações e testa os 3 emits: edit, redetect, remove
+        // Abre menu de ações e testa emits: edit, configure, redetect, remove
         await wrapper.find('.project-item__menu-trigger').trigger('click');
         expect(wrapper.find('.project-item__menu').exists()).toBe(true);
 
         await wrapper.find('[data-action="edit"]').trigger('click');
         expect(wrapper.emitted('edit')?.[0]).toEqual(['proj-laravel']);
+        expect(wrapper.find('.project-item__menu').exists()).toBe(false);
+
+        // Reabre menu e testa configure
+        await wrapper.find('.project-item__menu-trigger').trigger('click');
+        const selectCountBeforeConfigure = wrapper.emitted('select')?.length ?? 0;
+        await wrapper.find('[data-action="configure"]').trigger('click');
+        expect(wrapper.emitted('configure')?.[0]).toEqual(['proj-laravel']);
+        expect(wrapper.find('.project-item__menu').exists()).toBe(false);
+        // Garantir que configure não emite select acidental
+        expect(wrapper.emitted('select')?.length ?? 0).toBe(selectCountBeforeConfigure);
 
         await wrapper.find('.project-item__menu-trigger').trigger('click');
         await wrapper.find('[data-action="redetect"]').trigger('click');

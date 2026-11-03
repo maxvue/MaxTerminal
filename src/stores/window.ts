@@ -2,6 +2,7 @@ import type { UnlistenFn } from '@tauri-apps/api/event';
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import { osIpc } from '@/ipc';
+import { useProjectsStore } from '@/stores/projects';
 import type {
     FocusTabPayload_Serialize,
     LinkContext,
@@ -9,6 +10,7 @@ import type {
     OsEnvironment_Serialize,
     OsRuntimeSnapshot_Serialize,
     PaneId,
+    ProjectId,
     QuitOutcome,
     ShortcutStatus_Serialize,
     ShutdownPhase,
@@ -42,6 +44,7 @@ export const useWindowStore = defineStore('window', () => {
     const shutdownError = ref<MtError_Serialize | null>(null);
     const preferencesOpen = ref<boolean>(false);
     const preferencesSection = ref<string>('system');
+    const projectSettingsProjectId = ref<ProjectId | null>(null);
     const linkContexts = ref<Record<PaneId, LinkContext>>({});
     const pendingFocus = ref<FocusTabPayload_Serialize | null>(null);
     const lastRevision = ref<number>(0);
@@ -123,8 +126,7 @@ export const useWindowStore = defineStore('window', () => {
                 if (!acceptRevision(ev.revision)) {
                     return;
                 }
-                preferencesSection.value = ev.payload.section || 'system';
-                preferencesOpen.value = true;
+                openPreferences(ev.payload.section || 'system');
             }),
             osIpc.onShutdownStarted((ev) => {
                 if (!acceptRevision(ev.revision)) {
@@ -204,12 +206,27 @@ export const useWindowStore = defineStore('window', () => {
     }
 
     function openPreferences(section = 'system'): void {
+        projectSettingsProjectId.value = null;
         preferencesSection.value = section;
         preferencesOpen.value = true;
     }
 
     function closePreferences(): void {
         preferencesOpen.value = false;
+    }
+
+    function openProjectSettings(id: ProjectId): void {
+        const projectsStore = useProjectsStore();
+        if (!projectsStore.projectById(id)) {
+            return;
+        }
+        projectsStore.select(id);
+        preferencesOpen.value = false;
+        projectSettingsProjectId.value = id;
+    }
+
+    function closeProjectSettings(): void {
+        projectSettingsProjectId.value = null;
     }
 
     function linkContextForPane(paneId: PaneId): LinkContext | null {
@@ -244,6 +261,7 @@ export const useWindowStore = defineStore('window', () => {
         shutdownError.value = null;
         preferencesOpen.value = false;
         preferencesSection.value = 'system';
+        projectSettingsProjectId.value = null;
         linkContexts.value = {};
         pendingFocus.value = null;
         lastRevision.value = 0;
@@ -261,6 +279,7 @@ export const useWindowStore = defineStore('window', () => {
         shutdownError,
         preferencesOpen,
         preferencesSection,
+        projectSettingsProjectId,
         linkContexts,
         pendingFocus,
         lastRevision,
@@ -278,6 +297,8 @@ export const useWindowStore = defineStore('window', () => {
         quit,
         openPreferences,
         closePreferences,
+        openProjectSettings,
+        closeProjectSettings,
         linkContextForPane,
         consumePendingFocus,
         dispose,

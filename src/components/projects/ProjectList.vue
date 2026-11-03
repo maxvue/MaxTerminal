@@ -25,11 +25,18 @@
         <div class="project-list__scroll">
             <ul v-if="projectsStore.projects.length > 0" class="project-list__items" role="list">
                 <li v-for="(proj, idx) in projectsStore.projects" :key="proj.id" class="project-list__li" :draggable="!projectsStore.reordering" @dragstart="onDragStart(idx)" @dragover.prevent @drop="onDrop(idx)">
-                    <ProjectItem :project="proj" :counters="projectsStore.countersFor(proj.id)" :selected="projectsStore.selectedId === proj.id" @select="handleSelectProject" @edit="handleOpenEdit" @redetect="handleRedetect" @remove="handleRemoveProject" />
+                    <ProjectItem :project="proj" :counters="projectsStore.countersFor(proj.id)" :selected="projectsStore.selectedId === proj.id" @select="handleSelectProject" @edit="handleOpenEdit" @configure="handleConfigureProject" @redetect="handleRedetect" @remove="handleRemoveProject" />
                 </li>
             </ul>
             <ProjectEmptyState v-else-if="!projectsStore.loading" @add-project="showAddModal = true" @add-root="openNewRootModal" />
         </div>
+
+        <footer class="project-list__footer">
+            <button type="button" class="project-list__settings-btn" title="Configurações gerais" aria-label="Abrir configurações gerais" @click="handleOpenGeneralSettings">
+                <MaxIcon icon="lucide:settings" />
+                <span>Configurações</span>
+            </button>
+        </footer>
 
         <ProjectAddModal v-model:visible="showAddModal" />
         <ProjectRootModal v-model:visible="showRootModal" :root="editingRoot" />
@@ -46,9 +53,11 @@
     import ProjectItem from '@/components/projects/ProjectItem.vue';
     import ProjectRootModal from '@/components/projects/ProjectRootModal.vue';
     import { useProjectsStore } from '@/stores/projects';
+    import { useWindowStore } from '@/stores/window';
     import type { Project_Serialize, ProjectId, ProjectRoot } from '@/types/bindings';
 
     const projectsStore = useProjectsStore();
+    const windowStore = useWindowStore();
 
     const showAddModal = ref<boolean>(false);
     const showRootModal = ref<boolean>(false);
@@ -76,6 +85,14 @@
     function handleOpenEdit(id: ProjectId): void {
         editingProjectId.value = id;
         showEditModal.value = true;
+    }
+
+    function handleConfigureProject(id: ProjectId): void {
+        windowStore.openProjectSettings(id);
+    }
+
+    function handleOpenGeneralSettings(): void {
+        windowStore.openPreferences('system');
     }
 
     async function handleRedetect(id: ProjectId): Promise<void> {
@@ -147,6 +164,9 @@
     function isEditableElement(target: EventTarget | null): boolean {
         if (!target || !(target instanceof HTMLElement)) {
             return false;
+        }
+        if (target.closest('.project-list__footer')) {
+            return true;
         }
         const tag = target.tagName.toLowerCase();
         return tag === 'input' || tag === 'textarea' || tag === 'select' || target.isContentEditable;
@@ -312,5 +332,37 @@
 
     .project-list__li {
         list-style: none;
+    }
+
+    .project-list__footer {
+        display: flex;
+        align-items: center;
+        padding: 0.5rem 0.75rem;
+        border-top: 1px solid var(--background-700);
+        background: var(--background-800);
+    }
+
+    .project-list__settings-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        width: 100%;
+        padding: 0.375rem 0.5rem;
+        border-radius: 0.375rem;
+        border: 1px solid var(--background-600);
+        background: var(--background-700);
+        color: var(--background-100);
+        font-size: 0.8125rem;
+        font-weight: 500;
+        cursor: pointer;
+
+        &:hover {
+            background: var(--background-600);
+            color: var(--background-50);
+        }
+
+        &:focus-visible {
+            @include mt-focus-ring;
+        }
     }
 </style>

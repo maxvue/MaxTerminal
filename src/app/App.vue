@@ -25,6 +25,7 @@
             <component :is="DevTerminalPlaygroundComponent" v-else-if="showDevPlayground && DevTerminalPlaygroundComponent" />
             <AppLayout v-else />
             <PreferencesDialog />
+            <ProjectSettingsDialog />
             <QuickCommandsHost />
             <GlobalSearchPalette />
             <PerfOverlay />
@@ -41,6 +42,7 @@
     import AppLayout from '@/components/layout/AppLayout.vue';
     import ShortcutStatusBadge from '@/components/os/ShortcutStatusBadge.vue';
     import PreferencesDialog from '@/components/preferences/PreferencesDialog.vue';
+    import ProjectSettingsDialog from '@/components/projects/ProjectSettingsDialog.vue';
     import QuickCommandsHost from '@/components/quick-commands/QuickCommandsHost.vue';
     import GlobalSearchPalette from '@/components/search/GlobalSearchPalette.vue';
     import AppEmptyState from '@/components/shell/AppEmptyState.vue';

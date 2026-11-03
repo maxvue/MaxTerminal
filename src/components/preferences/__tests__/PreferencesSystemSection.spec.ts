@@ -1,5 +1,6 @@
 import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
+import { nextTick } from 'vue';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import PreferencesDialog from '@/components/preferences/PreferencesDialog.vue';
 import PreferencesSystemSection from '@/components/preferences/system/PreferencesSystemSection.vue';
@@ -129,6 +130,7 @@ describe('PreferencesSystemSection & PreferencesDialog (Fase 09)', () => {
         windowStore.openPreferences('system');
 
         const wrapper = mount(PreferencesDialog, {
+            attachTo: document.body,
             global: {
                 stubs: {
                     MaxIcon: true
@@ -136,10 +138,15 @@ describe('PreferencesSystemSection & PreferencesDialog (Fase 09)', () => {
             }
         });
 
-        expect(wrapper.find('[role="dialog"]').exists()).toBe(true);
-        expect(wrapper.text()).toContain('Preferências do MaxTerminal');
+        await nextTick();
 
-        await wrapper.find('.prefs-dialog__close').trigger('click');
+        expect(document.body.querySelector('[role="dialog"]')).not.toBeNull();
+        expect(document.body.textContent).toContain('Configurações gerais');
+
+        windowStore.closePreferences();
+        await nextTick();
         expect(windowStore.preferencesOpen).toBe(false);
+        wrapper.unmount();
+        document.body.innerHTML = '';
     });
 });

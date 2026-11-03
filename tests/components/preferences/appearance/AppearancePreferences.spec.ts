@@ -189,14 +189,14 @@ describe('AppearancePreferences e subcomponentes', () => {
             }
         });
 
-        const select = wrapper.find('select');
-        await select.setValue('max-navy-teal');
+        const select = wrapper.findComponent({ name: 'MaxInputSelect' });
+        select.vm.$emit('change', 'max-navy-teal');
         expect(wrapper.emitted('change')?.[0]).toEqual([
             'max-navy-teal',
             { kind: 'project', projectId: 'proj-1' }
         ]);
 
-        await select.setValue('');
+        select.vm.$emit('change', '');
         expect(wrapper.emitted('change')?.[1]).toEqual([
             'max-navy-teal',
             { kind: 'clear_project', projectId: 'proj-1' }

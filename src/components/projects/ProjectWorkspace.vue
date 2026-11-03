@@ -10,6 +10,7 @@
                         <h2 class="project-workspace__title">{{ props.project.title }}</h2>
                         <span class="project-workspace__stack">{{ stackLabel }}</span>
                         <span v-if="props.project.missing" class="project-workspace__missing" role="status">Pasta não encontrada no disco</span>
+                        <MaxIconButton icon="lucide:settings" aria-label="Configurações do projeto" title="Configurações do projeto" class="project-workspace__settings-btn" @click="handleOpenSettings" />
                     </div>
                     <span class="project-workspace__path">{{ props.project.path }}</span>
                 </div>
@@ -30,9 +31,11 @@
 
 <script setup lang="ts">
     import { computed } from 'vue';
+    import MaxIconButton from '@maxvue/max-components-ui/components/MaxIconButton';
     import AppEmptyState from '@/components/shell/AppEmptyState.vue';
     import TabWorkspaceView from '@/components/workspace/TabWorkspaceView.vue';
     import { STACK_LABELS_PT_BR } from '@/constants/projectIdentity';
+    import { useWindowStore } from '@/stores/window';
     import type { Project_Serialize } from '@/types/bindings';
 
     export interface ProjectWorkspaceProps {
@@ -41,12 +44,20 @@
 
     const props = defineProps<ProjectWorkspaceProps>();
 
+    const windowStore = useWindowStore();
+
     const stackLabel = computed<string>(() => {
         if (!props.project) {
             return '';
         }
         return STACK_LABELS_PT_BR[props.project.stack] ?? 'Genérico';
     });
+
+    function handleOpenSettings(): void {
+        if (props.project) {
+            windowStore.openProjectSettings(props.project.id);
+        }
+    }
 </script>
 
 <style lang="scss" scoped>
@@ -100,6 +111,16 @@
         align-items: center;
         gap: 0.5rem;
         min-width: 0;
+    }
+
+    .project-workspace__settings-btn {
+        margin-left: auto;
+        flex-shrink: 0;
+        color: var(--background-300);
+
+        &:hover {
+            color: var(--background-50);
+        }
     }
 
     .project-workspace__title {

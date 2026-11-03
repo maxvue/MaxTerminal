@@ -23,6 +23,10 @@
                     <MaxIcon icon="mdi:pencil-outline" />
                     <span>Editar</span>
                 </button>
+                <button type="button" class="project-item__menu-btn" data-action="configure" role="menuitem" @click.stop="handleConfigure">
+                    <MaxIcon icon="lucide:settings" />
+                    <span>Configurar</span>
+                </button>
                 <button type="button" class="project-item__menu-btn" data-action="redetect" role="menuitem" @click.stop="handleRedetect">
                     <MaxIcon icon="mdi:refresh" />
                     <span>Re-detectar identidade</span>
@@ -54,6 +58,7 @@
     const emit = defineEmits<{
         select: [id: ProjectId];
         edit: [id: ProjectId];
+        configure: [id: ProjectId];
         remove: [id: ProjectId];
         redetect: [id: ProjectId];
     }>();
@@ -75,6 +80,11 @@
     function handleEdit(): void {
         menuOpen.value = false;
         emit('edit', props.project.id);
+    }
+
+    function handleConfigure(): void {
+        menuOpen.value = false;
+        emit('configure', props.project.id);
     }
 
     function handleRedetect(): void {
