@@ -29,23 +29,20 @@ pub mod logging;
 pub mod search;
 pub mod security;
 pub mod specta;
+mod startup;
 pub mod state;
 pub mod updater;
 pub mod workspace;
 
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
 use std::time::Duration;
 
 use mt_ai::AiService;
 use mt_ai::repo::AiRepo;
 use mt_bridge::{BridgeEventSink, BridgeService};
 use mt_core::paths::{AppPaths, SystemEnv};
-use mt_db::{
-    COMMAND_BLOCKS_FTS_SPEC, COMMAND_BLOCKS_RETENTION_RULE, Db, DbConfig, DbOpenOptions,
-    FtsRegistry, MigrationRegistry, RetentionRegistry, SESSION_SCROLLBACK_FTS_SPEC,
-    SESSIONS_ARCHIVED_RETENTION_RULE, SettingsRegistry,
-};
+use mt_db::DbConfig;
 use mt_git::{CliGitRunner, CliWorktreeManager, GitService, WorktreeManager};
 use mt_os::{
     AutostartSync, CloseDecision, DbusNotificationTransport, DefaultShortcutBackendFactory, OsDeps,
@@ -179,38 +176,14 @@ pub fn run() {
                 "Etapa de inicialização iniciada"
             );
 
-            let db_cfg = DbConfig::from_paths(&paths_for_db, &SystemEnv)
-                .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
-            let migrations = MigrationRegistry::builtin()
-                .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
-            let settings = SettingsRegistry::with_phase03_defaults();
-            let mut retention = RetentionRegistry::new();
-            retention
-                .register(COMMAND_BLOCKS_RETENTION_RULE)
-                .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
-            retention
-                .register(SESSIONS_ARCHIVED_RETENTION_RULE)
-                .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
-            let mut fts = FtsRegistry::new();
-            fts.register(COMMAND_BLOCKS_FTS_SPEC)
-                .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
-            fts.register(SESSION_SCROLLBACK_FTS_SPEC)
-                .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
-            fts.register(mt_db::search::projection::SEARCH_METADATA_FTS_SPEC)
-                .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
-            let sink = Arc::new(TauriDbEventSink::new(app.handle().clone()));
-
-            let db = Db::open_with(
-                db_cfg,
-                DbOpenOptions {
-                    event_sink: sink,
-                    migrations: Some(migrations),
-                    settings,
-                    retention,
-                    fts,
-                },
-            )
-            .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
+            let Some(db) = startup::initialize_database(
+                DbConfig::from_paths(&paths_for_db, &SystemEnv),
+                Arc::new(TauriDbEventSink::new(app.handle().clone())),
+                |code| app.handle().exit(code),
+            ) else {
+                // Evita que o Tauri transforme o erro esperado em pânico no event loop.
+                return Ok(());
+            };
 
             let db_arc = Arc::new(db);
             app.manage(DbService::new(Arc::clone(&db_arc)));
@@ -616,8 +589,23 @@ pub fn run() {
         }
     };
 
-    app.run(move |app_handle, event| match event {
-        RunEvent::ExitRequested { api, .. } => {
+    // Os guards de sinais já protegem os PTYs; após construir o app também encerram
+    // o event loop, para que SIGTERM libere o lock do banco em vez de deixar a UI viva.
+    let signal_handle = app.handle().clone();
+    if let Err(err) = mt_pty::guard::install_signal_handler(move |signal| {
+        signal_handle.exit(128 + signal);
+    }) {
+        tracing::error!(target: "maxterminal", error = %err, "Falha ao instalar encerramento por sinal");
+    }
+
+    // O runtime Wry/Linux pode retornar 0 mesmo para RequestExit(1).
+    let requested_exit_code = Arc::new(AtomicI32::new(0));
+    let requested_exit_code_for_run = Arc::clone(&requested_exit_code);
+    let exit_code = app.run_return(move |app_handle, event| match event {
+        RunEvent::ExitRequested { api, code, .. } => {
+            if let Some(code) = code {
+                requested_exit_code_for_run.store(code, Ordering::Release);
+            }
             if shutdown_complete.load(Ordering::Acquire) {
                 return;
             }
@@ -668,7 +656,7 @@ pub fn run() {
 
                     if report.pending.is_empty() {
                         complete_flag.store(true, Ordering::Release);
-                        handle.exit(0);
+                        handle.exit(code.unwrap_or(0));
                     } else {
                         tracing::error!(
                             target: "mt_pty",
@@ -690,5 +678,13 @@ pub fn run() {
             }
         }
         _ => {}
+    });
+    // run_return permite drenar os logs inclusive quando a inicialização falha.
+    drop(_log_guard);
+    let requested_code = requested_exit_code.load(Ordering::Acquire);
+    std::process::exit(if requested_code == 0 {
+        exit_code
+    } else {
+        requested_code
     });
 }

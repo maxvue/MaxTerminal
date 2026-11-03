@@ -4,7 +4,7 @@
 # Inclui sincronização de bibliotecas locais (@maxvue/*), limpeza de cache
 # e controle de PID/lockfile para evitar instâncias duplicadas ou portas presas.
 set -u
-cd "$(dirname "$0")/.." || exit 1
+cd -P "$(dirname "$0")/.." || exit 1
 
 export NODE_OPTIONS="--max-old-space-size=8192"
 
@@ -28,41 +28,87 @@ export MAXTERMINAL_RUN_DEV_ACTIVE=1
 mkdir -p dist
 
 WORKSPACE_HASH=$(echo -n "$PWD" | md5sum | cut -d' ' -f1)
-LOCKFILE="/tmp/.maxterminal-run-dev-${WORKSPACE_HASH}.pid"
+LOCKFILE="${TMPDIR:-/tmp}/.maxterminal-run-dev-${WORKSPACE_HASH}.pid"
+
+process_start() {
+  local stat
+  local -a fields
+  stat=$(cat "/proc/$1/stat" 2>/dev/null) || return 1
+  read -r -a fields <<< "${stat##*) }"
+  [ "${fields[0]}" != "Z" ] || return 1
+  printf '%s\n' "${fields[19]}"
+}
+
+matches_project_process() {
+  local pid="$1" pattern="$2" cwd exe script
+  local -a args
+  [[ "$pid" =~ ^[0-9]+$ ]] || return 1
+  cwd=$(readlink "/proc/$pid/cwd" 2>/dev/null) || return 1
+  case "$cwd" in "$PWD"|"$PWD/src-tauri") ;; *) return 1 ;; esac
+  exe=$(readlink "/proc/$pid/exe" 2>/dev/null) || return 1
+  exe=${exe% (deleted)}
+  if [ "$pattern" = task-child ]; then
+    [ "$pid" = "${TASK_PID:-}" ] && [ "$(process_start "$pid")" = "${TASK_START:-}" ]
+    return
+  fi
+  if [ "$pattern" = 'target/debug/maxterminal' ]; then
+    local target_dir="${CARGO_TARGET_DIR:-target}"
+    case "$target_dir" in /*) ;; *) target_dir="$PWD/src-tauri/$target_dir" ;; esac
+    target_dir=$(realpath -m "$target_dir")
+    [ "$exe" = "$target_dir/debug/maxterminal" ]
+    return
+  fi
+  [ "$cwd" = "$PWD" ] || return 1
+  mapfile -d '' -t args 2>/dev/null < "/proc/$pid/cmdline" || return 1
+  script=${args[1]:-}
+  script=${script#./}
+  script=${script#"$PWD/"}
+  case "$pattern" in
+    run-dev.sh) [[ "${exe##*/}" = bash && "$script" = '.vscode/run-dev.sh' ]] ;;
+    node_modules/.bin/vite) [[ "${exe##*/}" = node && ( "$script" = 'node_modules/.bin/vite' || "$script" = 'node_modules/vite/bin/vite.js' ) ]] ;;
+    node_modules/.bin/tauri) [[ "${exe##*/}" = node && ( "$script" = 'node_modules/.bin/tauri' || "$script" = 'node_modules/@tauri-apps/cli/tauri.js' ) ]] ;;
+    *) return 1 ;;
+  esac
+}
+
+stop_project_process() {
+  local pid="$1" pattern="$2" start current attempt
+  start=$(process_start "$pid") || return 0
+  matches_project_process "$pid" "$pattern" || return 0
+  current=$(process_start "$pid") || return 0
+  [ "$start" = "$current" ] || return 0
+  kill -TERM "$pid" 2>/dev/null || return 0
+  for ((attempt = 0; attempt < 50; attempt++)); do
+    current=$(process_start "$pid") || return 0
+    [ "$start" = "$current" ] || return 0
+    sleep 0.1
+  done
+  echo "→ O processo $pid não encerrou; mantendo a supervisão e cancelando a reinicialização." >&2
+  return 1
+}
 
 take_over() {
   [ -f "$LOCKFILE" ] || return 0
-  local old_pid
-  old_pid=$(cat "$LOCKFILE" 2>/dev/null) || return 0
-  [ -n "$old_pid" ] || return 0
-  [ "$old_pid" = "$$" ] && return 0
-  kill -0 "$old_pid" 2>/dev/null || return 0
-
+  local old_pid old_start current
+  read -r old_pid old_start < "$LOCKFILE" || [ -n "${old_pid:-}" ] || return 0
+  [[ "$old_pid" =~ ^[0-9]+$ ]] || return 0
+  [ "$old_pid" != "$$" ] || return 0
+  matches_project_process "$old_pid" run-dev.sh || return 0
+  current=$(process_start "$old_pid") || return 0
+  [ -z "$old_start" ] || [ "$old_start" = "$current" ] || return 0
   echo "→ Instância anterior do RUN DEV (PID $old_pid) ainda ativa. Encerrando..."
-  kill -TERM "$old_pid" 2>/dev/null || true
-  for _ in 1 2 3 4 5; do
-    kill -0 "$old_pid" 2>/dev/null || break
-    sleep 0.5
-  done
-  kill -KILL "$old_pid" 2>/dev/null || true
+  stop_project_process "$old_pid" run-dev.sh
 }
 
-take_over
-echo $$ > "$LOCKFILE"
-
-# Mata apenas binários do Vite/Tauri cujo cwd é ESTE projeto/worktree,
-# ignorando estritamente processos do VS Code, MaxCode e Agentes.
+# Confere diretório, executável/argumento de entrada e identidade antes de sinalizar.
+# Nunca encerra um processo só porque ele menciona o caminho em outro argumento.
 kill_in_project() {
-  local pattern="$1"
-  local pid cmdline
-  for pid in $(pgrep -f "$pattern" 2>/dev/null); do
+  local pattern="$1" pid
+  # pgrep apenas reduz os candidatos; a autorização continua sendo a identidade exata.
+  for pid in $(pgrep -u "$UID" -f 'maxterminal|vite|tauri|run-dev.sh' 2>/dev/null); do
     [ "$pid" = "$$" ] || [ "$pid" = "$PPID" ] && continue
-    cmdline=$(tr '\0' ' ' <"/proc/$pid/cmdline" 2>/dev/null || true)
-    case "$cmdline" in
-      *supervisor.js*|*maxcode*|*run-dev.sh*|*agy*|*/usr/share/code/*) continue ;;
-    esac
-    if [ "$(readlink -f "/proc/$pid/cwd" 2>/dev/null)" = "$PWD" ]; then
-      kill "$pid" 2>/dev/null || true
+    if matches_project_process "$pid" "$pattern"; then
+      stop_project_process "$pid" "$pattern" || return 1
     fi
   done
   return 0
@@ -70,12 +116,33 @@ kill_in_project() {
 
 cleanup() {
   echo "→ Encerrando processos filhos do projeto..."
-  kill_in_project 'node_modules/.bin/vite'
-  kill_in_project 'node_modules/.bin/tauri'
-  kill_in_project 'target/debug/maxterminal'
+  # O backend precisa liberar o banco antes de encerrar seu supervisor Tauri.
+  kill_in_project 'target/debug/maxterminal' || return 1
+  kill_in_project 'node_modules/.bin/vite' || return 1
+  kill_in_project 'node_modules/.bin/tauri' || return 1
+  if [ -n "${TASK_PID:-}" ] && [ -n "${TASK_START:-}" ]; then
+    stop_project_process "$TASK_PID" task-child
+  fi
 }
 
-trap 'trap - SIGINT SIGTERM; cleanup; rm -f "$LOCKFILE"; exit 0' SIGINT SIGTERM
+finish() {
+  local status=$?
+  trap - EXIT SIGINT SIGTERM
+  cleanup || status=1
+  if [ "$(cat "$LOCKFILE" 2>/dev/null)" = "$TASK_IDENTITY" ]; then
+    rm -f "$LOCKFILE"
+  fi
+  exit "$status"
+}
+
+TASK_PID=''
+TASK_START=''
+take_over || exit 1
+TASK_IDENTITY="$$ $(process_start "$$")"
+echo "$TASK_IDENTITY" > "$LOCKFILE"
+trap finish EXIT
+trap 'exit 130' SIGINT
+trap 'exit 143' SIGTERM
 
 # Sincroniza bibliotecas locais (@maxvue/*) se o script existir
 if [ -f "scripts/sync-local-libs.mjs" ]; then
@@ -88,14 +155,14 @@ echo "→ Limpando cache de dependências do Vite (node_modules/.vite/deps)..."
 rm -rf node_modules/.vite/deps >/dev/null 2>&1 || true
 
 # Limpa instâncias antigas presas antes de subir
-cleanup
-sleep 0.5
+cleanup || exit 1
 
 echo "→ Iniciando MaxTerminal Desktop (npm run tauri dev)..."
-npm run tauri dev
+npm run tauri dev &
+TASK_PID=$!
+TASK_START=$(process_start "$TASK_PID") || TASK_START=''
+wait "$TASK_PID"
 EXIT_CODE=$?
 
 echo "→ MaxTerminal finalizado (código de saída: $EXIT_CODE)."
-cleanup
-rm -f "$LOCKFILE"
 exit "$EXIT_CODE"
