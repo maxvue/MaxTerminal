@@ -230,8 +230,6 @@
             color: var(--mt-ui-text-strong, var(--background-950));
         }
     }
-        }
-    }
 
     .inline-diagnosis__caution {
         display: flex;
