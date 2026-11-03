@@ -1,17 +1,5 @@
 <template>
     <AppShell :loading="appStore.status === 'loading'">
-        <template #titlebar>
-            <AppTitleBar :title="appTitle" :version="appStore.versionLabel" @open-global-search="searchStore.show(undefined, projectsStore.selectedId)">
-                <template #actions>
-                    <AiStatusIndicator />
-                    <BridgeStatusIndicator />
-                    <ShortcutStatusBadge />
-                    <button type="button" class="app-prefs-btn" title="Preferências do sistema" aria-label="Abrir preferências do sistema" @click="windowStore.openPreferences('system')">
-                        <MaxIcon icon="lucide:settings" />
-                    </button>
-                </template>
-            </AppTitleBar>
-        </template>
         <template #workspace>
             <AppEmptyState v-if="appStore.status === 'error'" icon="mdi:alert-circle-outline" title="Falha ao inicializar o MaxTerminal" :description="errorDescription">
                 <div flex flex-col items-center gap-2>
@@ -35,17 +23,13 @@
 <script setup lang="ts">
     import { computed, onBeforeUnmount, onMounted } from 'vue';
     import { DevTerminalPlaygroundComponent, isDevTerminalPlaygroundRoute } from '@/app/router';
-    import AiStatusIndicator from '@/components/ai/AiStatusIndicator.vue';
-    import BridgeStatusIndicator from '@/components/bridge/BridgeStatusIndicator.vue';
     import PerfOverlay from '@/components/dev/PerfOverlay.vue';
     import AppLayout from '@/components/layout/AppLayout.vue';
-    import ShortcutStatusBadge from '@/components/os/ShortcutStatusBadge.vue';
     import PreferencesDialog from '@/components/preferences/PreferencesDialog.vue';
     import QuickCommandsHost from '@/components/quick-commands/QuickCommandsHost.vue';
     import GlobalSearchPalette from '@/components/search/GlobalSearchPalette.vue';
     import AppEmptyState from '@/components/shell/AppEmptyState.vue';
     import AppShell from '@/components/shell/AppShell.vue';
-    import AppTitleBar from '@/components/shell/AppTitleBar.vue';
     import DbRecoveryPanel from '@/components/shell/DbRecoveryPanel.vue';
     import { useSearchShortcut } from '@/composables/search/useSearchShortcut';
     import { useActiveProjectSync } from '@/composables/useActiveProjectSync';
@@ -55,8 +39,6 @@
     import { useAiStore } from '@/stores/ai';
     import { useAppStore } from '@/stores/app';
     import { useMaxCodeBridgeStore } from '@/stores/maxCodeBridge';
-    import { useProjectsStore } from '@/stores/projects';
-    import { useSearchStore } from '@/stores/search';
     import { useSettingsStore } from '@/stores/settings';
     import { useShellHistoryStore } from '@/stores/shellHistory';
     import { useSkillsStore } from '@/stores/skills';
@@ -73,8 +55,6 @@
     const skillsStore = useSkillsStore();
     const tabStatusStore = useTabStatusStore();
     const shellHistoryStore = useShellHistoryStore();
-    const projectsStore = useProjectsStore();
-    const searchStore = useSearchStore();
     const ipcError = useIpcError();
     useThemeApplier();
     useActiveProjectSync();
@@ -85,7 +65,6 @@
         shellExtDisposable.dispose();
     });
 
-    const appTitle = computed<string>(() => appStore.info?.name ?? 'MaxTerminal');
     const errorDescription = computed<string>(() => ipcError.message(appStore.error));
     const errorCode = computed<string | null>(() => ipcError.code(appStore.error));
     const showDevPlayground = computed<boolean>(() => isDevTerminalPlaygroundRoute());
@@ -119,25 +98,6 @@
 
 <style lang="scss" scoped>
     @use '@/styles/params' as *;
-
-    .app-prefs-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 1.5rem;
-        height: 1.5rem;
-        padding: 0;
-        border: 1px solid var(--background-700);
-        border-radius: 0.25rem;
-        background: var(--background-900);
-        color: var(--background-300);
-        cursor: pointer;
-
-        &:hover {
-            border-color: var(--max-primary-500);
-            color: var(--background-50);
-        }
-    }
 
     .app-error-code {
         background: var(--background-800);

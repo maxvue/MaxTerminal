@@ -1,25 +1,51 @@
 <template>
     <section class="project-workspace" aria-label="Workspace do projeto">
-        <template v-if="props.project">
-            <header class="project-workspace__header" :style="{ '--project-color': props.project.color, '--mt-project-color': props.project.color }">
-                <span class="project-workspace__avatar" aria-hidden="true">
-                    <MaxIcon :icon="props.project.icon" class="project-workspace__icon" />
-                </span>
-                <div class="project-workspace__meta">
-                    <div class="project-workspace__title-row">
-                        <h2 class="project-workspace__title">{{ props.project.title }}</h2>
-                        <span class="project-workspace__stack">{{ stackLabel }}</span>
-                        <span v-if="props.project.missing" class="project-workspace__missing" role="status">Pasta não encontrada no disco</span>
-                    </div>
-                    <span class="project-workspace__path">{{ props.project.path }}</span>
+        <header v-if="props.project" class="project-workspace__header" :style="{ '--project-color': props.project.color, '--mt-project-color': props.project.color }">
+            <span class="project-workspace__avatar" aria-hidden="true">
+                <MaxIcon :icon="props.project.icon" class="project-workspace__icon" />
+            </span>
+            <div class="project-workspace__meta">
+                <div class="project-workspace__title-row">
+                    <h2 class="project-workspace__title">{{ props.project.title }}</h2>
+                    <span class="project-workspace__stack">{{ stackLabel }}</span>
+                    <span v-if="props.project.missing" class="project-workspace__missing" role="status">Pasta não encontrada no disco</span>
                 </div>
-            </header>
-            <div class="project-workspace__body">
-                <slot>
-                    <TabWorkspaceView :project="props.project" />
-                </slot>
+                <span class="project-workspace__path">{{ props.project.path }}</span>
             </div>
-        </template>
+            <div class="project-workspace__actions">
+                <button type="button" class="project-workspace__search-btn" title="Buscar em tudo… (Ctrl+K)" aria-label="Buscar em tudo… (Ctrl+K)" @click="searchStore.show(undefined, props.project.id)">
+                    <MaxIcon icon="lucide:search" />
+                    <span>Buscar em tudo…</span>
+                    <kbd class="project-workspace__kbd">Ctrl+K</kbd>
+                </button>
+                <AiStatusIndicator />
+                <BridgeStatusIndicator />
+                <ShortcutStatusBadge />
+                <button type="button" class="project-workspace__prefs-btn" title="Preferências do sistema" aria-label="Abrir preferências do sistema" @click="windowStore.openPreferences('system')">
+                    <MaxIcon icon="lucide:settings" />
+                </button>
+            </div>
+        </header>
+        <header v-else class="project-workspace__header project-workspace__header--empty">
+            <div class="project-workspace__actions ml-auto">
+                <button type="button" class="project-workspace__search-btn" title="Buscar em tudo… (Ctrl+K)" aria-label="Buscar em tudo… (Ctrl+K)" @click="searchStore.show()">
+                    <MaxIcon icon="lucide:search" />
+                    <span>Buscar em tudo…</span>
+                    <kbd class="project-workspace__kbd">Ctrl+K</kbd>
+                </button>
+                <AiStatusIndicator />
+                <BridgeStatusIndicator />
+                <ShortcutStatusBadge />
+                <button type="button" class="project-workspace__prefs-btn" title="Preferências do sistema" aria-label="Abrir preferências do sistema" @click="windowStore.openPreferences('system')">
+                    <MaxIcon icon="lucide:settings" />
+                </button>
+            </div>
+        </header>
+        <div v-if="props.project" class="project-workspace__body">
+            <slot>
+                <TabWorkspaceView :project="props.project" />
+            </slot>
+        </div>
         <div v-else class="project-workspace__empty">
             <slot>
                 <AppEmptyState title="Nenhum projeto selecionado" description="Selecione um projeto na coluna ao lado ou adicione um novo projeto para iniciar suas sessões de terminal." />
@@ -30,9 +56,14 @@
 
 <script setup lang="ts">
     import { computed } from 'vue';
+    import AiStatusIndicator from '@/components/ai/AiStatusIndicator.vue';
+    import BridgeStatusIndicator from '@/components/bridge/BridgeStatusIndicator.vue';
+    import ShortcutStatusBadge from '@/components/os/ShortcutStatusBadge.vue';
     import AppEmptyState from '@/components/shell/AppEmptyState.vue';
     import TabWorkspaceView from '@/components/workspace/TabWorkspaceView.vue';
     import { STACK_LABELS_PT_BR } from '@/constants/projectIdentity';
+    import { useSearchStore } from '@/stores/search';
+    import { useWindowStore } from '@/stores/window';
     import type { Project_Serialize } from '@/types/bindings';
 
     export interface ProjectWorkspaceProps {
@@ -40,6 +71,8 @@
     }
 
     const props = defineProps<ProjectWorkspaceProps>();
+    const searchStore = useSearchStore();
+    const windowStore = useWindowStore();
 
     const stackLabel = computed<string>(() => {
         if (!props.project) {
@@ -68,6 +101,65 @@
         padding: 0.625rem 1rem;
         border-bottom: 1px solid var(--background-700);
         background: var(--background-800);
+    }
+
+    .project-workspace__header--empty {
+        min-height: 2.75rem;
+        background: var(--background-800);
+    }
+
+    .project-workspace__actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-left: auto;
+        flex-shrink: 0;
+    }
+
+    .project-workspace__search-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.25rem 0.625rem;
+        border: 1px solid var(--background-700);
+        border-radius: 0.375rem;
+        background: var(--background-900);
+        color: var(--background-200);
+        font-size: 0.75rem;
+        cursor: pointer;
+
+        &:hover {
+            border-color: var(--max-primary-500);
+            color: var(--background-50);
+        }
+    }
+
+    .project-workspace__kbd {
+        padding: 0.0625rem 0.25rem;
+        border-radius: 0.25rem;
+        background: var(--background-800);
+        color: var(--background-300);
+        font-family: var(--mt-font-mono);
+        font-size: 0.625rem;
+    }
+
+    .project-workspace__prefs-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.5rem;
+        height: 1.5rem;
+        padding: 0;
+        border: 1px solid var(--background-700);
+        border-radius: 0.25rem;
+        background: var(--background-900);
+        color: var(--background-300);
+        cursor: pointer;
+
+        &:hover {
+            border-color: var(--max-primary-500);
+            color: var(--background-50);
+        }
     }
 
     .project-workspace__avatar {
