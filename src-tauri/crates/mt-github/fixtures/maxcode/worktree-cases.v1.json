@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "1.0.0",
+  "cases": [
+    {
+      "issueNumber": 42,
+      "issueTitle": "Corrigir vazamento de PTY ao fechar aba",
+      "expectedDefaultBranch": "fix/issue-42-corrigir-vazamento-de-pty-ao-fechar-aba",
+      "expectedDirSuffix": "issue-42",
+      "candidateBranches": [
+        "issue-42",
+        "issue/42",
+        "fix/issue-42-corrigir-vazamento",
+        "bugfix/42-vazamento",
+        "feat/42-pty"
+      ]
+    },
+    {
+      "issueNumber": 108,
+      "issueTitle": "Ação: Sincronização de Labels Canônicas (Padrão MaxCode)!",
+      "expectedDefaultBranch": "fix/issue-108-acao-sincronizacao-de-labels-canonicas-p",
+      "expectedDirSuffix": "issue-108",
+      "candidateBranches": [
+        "issue-108",
+        "fix/108-labels"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-command-group-run-item-detach"
+description = "Enables the command_group_run_item_detach command without any pre-configured scope."
+commands.allow = ["command_group_run_item_detach"]
+
+[[permission]]
+identifier = "deny-command-group-run-item-detach"
+description = "Denies the command_group_run_item_detach command without any pre-configured scope."
+commands.deny = ["command_group_run_item_detach"]

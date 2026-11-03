@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-bridge-inspect-command-error"
+description = "Enables the bridge_inspect_command_error command without any pre-configured scope."
+commands.allow = ["bridge_inspect_command_error"]
+
+[[permission]]
+identifier = "deny-bridge-inspect-command-error"
+description = "Denies the bridge_inspect_command_error command without any pre-configured scope."
+commands.deny = ["bridge_inspect_command_error"]

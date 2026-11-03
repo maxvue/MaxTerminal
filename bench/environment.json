@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "environmentId": "cachyos-linux-x86_64-reference",
+  "platform": "linux",
+  "arch": "x64",
+  "kernelFamily": "linux-cachyos",
+  "cpuModel": "pending_calibration",
+  "cpuLogicalCores": 16,
+  "cpuGovernor": "performance",
+  "displayServer": "wayland",
+  "webkitGtkMajor": "2.46"
+}

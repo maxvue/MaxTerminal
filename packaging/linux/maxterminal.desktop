@@ -1,0 +1,24 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=MaxTerminal
+GenericName=Emulador de Terminal
+Comment=Emulador de terminal acelerado por GPU e orquestrador de Agentes de IA
+Exec=maxterminal %u
+TryExec=maxterminal
+Icon=maxterminal
+Terminal=false
+Categories=System;TerminalEmulator;Development;
+MimeType=x-scheme-handler/maxterminal;
+Keywords=terminal;shell;pty;warp;tabby;ai;claude;codex;agy;opencode;maxcode;
+StartupNotify=true
+StartupWMClass=maxterminal
+Actions=NewWindow;QuakeToggle;
+
+[Desktop Action NewWindow]
+Name=Nova Janela do MaxTerminal
+Exec=maxterminal
+
+[Desktop Action QuakeToggle]
+Name=Alternar Quake Mode
+Exec=maxterminal --toggle

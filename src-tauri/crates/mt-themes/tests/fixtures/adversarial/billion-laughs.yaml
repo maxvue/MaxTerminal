@@ -1,0 +1,6 @@
+a: &base ["lol", "lol", "lol", "lol", "lol", "lol", "lol", "lol"]
+b: &lvl1 [*base, *base, *base, *base]
+name: Bomb
+foreground: '#ffffff'
+background: '#000000'
+colors: *base

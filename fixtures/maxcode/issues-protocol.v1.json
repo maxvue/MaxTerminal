@@ -1,0 +1,88 @@
+{
+    "issueCommand": {
+        "v": 1,
+        "requestId": "11111111-2222-4333-8444-555555555555",
+        "timestampMs": 1730000000000,
+        "type": "issue.command",
+        "payload": {
+            "kind": "plan",
+            "projectPath": "/home/dev/maxterminal",
+            "repoFullName": "johnattas/MaxTerminal",
+            "issueNumber": 42,
+            "issueTitle": "Corrigir vazamento de descritor no PTY",
+            "issueUrl": "https://github.com/johnattas/MaxTerminal/issues/42",
+            "labels": ["Bug", "Waiting Plan"],
+            "stage": "bug_plan",
+            "focusEditor": true
+        }
+    },
+    "issueCommandAck": {
+        "v": 1,
+        "requestId": "22222222-3333-4444-8555-666666666666",
+        "timestampMs": 1730000000100,
+        "type": "issue.command_ack",
+        "payload": {
+            "requestId": "11111111-2222-4333-8444-555555555555",
+            "status": "accepted",
+            "conversationId": "conv-42",
+            "worktreePath": "/home/dev/maxterminal/.max-code-worktrees/wt-issue-42",
+            "error": null
+        }
+    },
+    "bugsCycleStart": {
+        "v": 1,
+        "requestId": "33333333-4444-4555-8666-777777777777",
+        "timestampMs": 1730000000200,
+        "type": "bugs.cycle_start",
+        "payload": {
+            "cycleId": "44444444-5555-4666-8777-888888888888",
+            "projectPath": "/home/dev/maxterminal",
+            "repoFullName": "johnattas/MaxTerminal",
+            "issueNumbers": [42, 43, 44],
+            "filters": {
+                "includeLabels": ["Bug"],
+                "excludeLabels": ["Checked Approved"],
+                "explicitIssueNumbers": [42, 43, 44],
+                "maxIssues": 10
+            },
+            "dryRun": false
+        }
+    },
+    "bugsCycleAck": {
+        "v": 1,
+        "requestId": "55555555-6666-4777-8888-999999999999",
+        "timestampMs": 1730000000300,
+        "type": "bugs.cycle_ack",
+        "payload": {
+            "requestId": "33333333-4444-4555-8666-777777777777",
+            "cycleId": "44444444-5555-4666-8777-888888888888",
+            "accepted": true,
+            "queuedIssues": [42, 43],
+            "skippedIssues": [
+                {
+                    "issueNumber": 44,
+                    "reason": "Issue já possui label Checked Approved"
+                }
+            ],
+            "error": null
+        }
+    },
+    "bugCycleProgress": {
+        "v": 1,
+        "requestId": "66666666-7777-4888-8999-aaaaaaaaaaaa",
+        "timestampMs": 1730000000400,
+        "type": "bugs.cycle_progress",
+        "payload": {
+            "cycleId": "44444444-5555-4666-8777-888888888888",
+            "projectPath": "/home/dev/maxterminal",
+            "overallStatus": "running",
+            "currentIssueNumber": 42,
+            "stage": "planning",
+            "stepStatus": "in_progress",
+            "completedCount": 0,
+            "totalCount": 2,
+            "updatedLabel": "Waiting Plan",
+            "message": "Gerando plano de implementação para a issue #42"
+        }
+    }
+}

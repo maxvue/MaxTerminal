@@ -1,0 +1,1 @@
+{"version":"0.1.0","thread_id":"thread-codex-001","model":"gpt-5-codex","token_count":{"used_tokens":32000,"window_tokens":128000},"rate_limits":[{"window_minutes":300,"used_percent":12.5,"resets_at_ms":4102444800000},{"window_minutes":10080,"used_percent":44.0,"resets_at_ms":4102444800000}]}

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-ports-set-poll-mode"
+description = "Enables the ports_set_poll_mode command without any pre-configured scope."
+commands.allow = ["ports_set_poll_mode"]
+
+[[permission]]
+identifier = "deny-ports-set-poll-mode"
+description = "Denies the ports_set_poll_mode command without any pre-configured scope."
+commands.deny = ["ports_set_poll_mode"]

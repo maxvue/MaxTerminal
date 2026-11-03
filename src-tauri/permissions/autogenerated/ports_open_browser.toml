@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-ports-open-browser"
+description = "Enables the ports_open_browser command without any pre-configured scope."
+commands.allow = ["ports_open_browser"]
+
+[[permission]]
+identifier = "deny-ports-open-browser"
+description = "Denies the ports_open_browser command without any pre-configured scope."
+commands.deny = ["ports_open_browser"]

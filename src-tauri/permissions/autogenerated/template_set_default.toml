@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-template-set-default"
+description = "Enables the template_set_default command without any pre-configured scope."
+commands.allow = ["template_set_default"]
+
+[[permission]]
+identifier = "deny-template-set-default"
+description = "Denies the template_set_default command without any pre-configured scope."
+commands.deny = ["template_set_default"]

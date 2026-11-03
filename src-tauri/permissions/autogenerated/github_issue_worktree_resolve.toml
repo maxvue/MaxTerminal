@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-github-issue-worktree-resolve"
+description = "Enables the github_issue_worktree_resolve command without any pre-configured scope."
+commands.allow = ["github_issue_worktree_resolve"]
+
+[[permission]]
+identifier = "deny-github-issue-worktree-resolve"
+description = "Denies the github_issue_worktree_resolve command without any pre-configured scope."
+commands.deny = ["github_issue_worktree_resolve"]

@@ -1,0 +1,167 @@
+[workspace]
+resolver = "3"
+members = [
+    ".",
+    "crates/mt-core",
+    "crates/mt-pty",
+    "crates/mt-db",
+    "crates/mt-shell",
+    "crates/mt-projects",
+    "crates/mt-git",
+    "crates/mt-ports",
+    "crates/mt-os",
+    "crates/mt-themes",
+    "crates/mt-bridge",
+    "crates/mt-ai",
+    "crates/mt-agents",
+    "crates/mt-commands",
+    "crates/mt-github",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "UNLICENSED"
+authors = ["Johnattas Santana"]
+
+[workspace.dependencies]
+mt-core = { path = "crates/mt-core" }
+mt-pty = { path = "crates/mt-pty" }
+mt-db = { path = "crates/mt-db" }
+mt-shell = { path = "crates/mt-shell" }
+mt-projects = { path = "crates/mt-projects" }
+mt-git = { path = "crates/mt-git" }
+mt-ports = { path = "crates/mt-ports" }
+mt-os = { path = "crates/mt-os" }
+mt-themes = { path = "crates/mt-themes" }
+mt-bridge = { path = "crates/mt-bridge" }
+mt-ai = { path = "crates/mt-ai" }
+mt-agents = { path = "crates/mt-agents" }
+mt-commands = { path = "crates/mt-commands" }
+mt-github = { path = "crates/mt-github" }
+serde_yaml_ng = "0.10"
+yaml-rust2 = "0.10"
+walkdir = "2"
+lru = "0.12"
+insta = { version = "1", features = ["yaml", "json"] }
+dirs = "6"
+url = "2"
+percent-encoding = "2"
+futures-util = "0.3"
+async-trait = "0.1"
+tauri = { version = "2", features = ["test"] }
+tauri-build = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+uuid = { version = "1", features = ["v4", "v7", "serde"] }
+specta = { version = "=2.0.0-rc.27", features = ["derive", "function", "uuid", "serde_json"] }
+specta-typescript = "=0.0.14"
+tauri-specta = { git = "https://github.com/specta-rs/tauri-specta", features = ["derive", "typescript"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json"] }
+tracing-appender = "0.2"
+portable-pty = "0.9"
+rustix = { version = "0.38", features = ["process", "fs", "termios", "event", "net", "time", "param"] }
+nix = { version = "0.29", features = ["user", "process", "signal", "term", "poll", "fs", "socket"] }
+procfs = "0.17"
+crossbeam-channel = "0.5"
+parking_lot = "0.12"
+arc-swap = "1.7"
+bytes = "1"
+signal-hook = "0.3"
+rusqlite = { version = "0.40", features = ["bundled", "backup", "functions", "serde_json"] }
+r2d2 = "0.8"
+r2d2_sqlite = "0.35"
+tokio = { version = "1", features = ["sync", "rt", "time", "macros", "rt-multi-thread", "net", "io-util"] }
+regex = "1"
+include_dir = "0.7"
+tempfile = "3"
+criterion = "0.5"
+proptest = "1"
+rstest = "0.25"
+assert_matches = "1.5"
+sha2 = "0.10"
+base64 = "0.22"
+hex = "0.4"
+memchr = "2.7"
+rand = "0.9"
+# Watchers de filesystem (E-10): versão única no workspace; crates consumidores (Fases 06 e 13)
+# declaram `notify.workspace = true` e `notify-debouncer-full.workspace = true`.
+notify = "8"
+notify-debouncer-full = "0.5"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+unused_must_use = "deny"
+
+[workspace.lints.clippy]
+all = { level = "deny", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+module_name_repetitions = "allow"
+missing_errors_doc = "allow"
+unwrap_used = "deny"
+expect_used = "warn"
+
+[package]
+name = "maxterminal"
+default-run = "maxterminal"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[lib]
+name = "maxterminal_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
+tokio-console = []
+updater = ["custom-protocol"]
+
+[dependencies]
+mt-core.workspace = true
+mt-pty.workspace = true
+mt-db.workspace = true
+mt-shell.workspace = true
+mt-projects.workspace = true
+mt-git.workspace = true
+mt-ports.workspace = true
+mt-os.workspace = true
+mt-themes.workspace = true
+mt-bridge.workspace = true
+mt-ai.workspace = true
+mt-agents.workspace = true
+mt-commands.workspace = true
+mt-github.workspace = true
+nix.workspace = true
+async-trait.workspace = true
+uuid.workspace = true
+bytes.workspace = true
+parking_lot.workspace = true
+tokio.workspace = true
+tauri.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+specta.workspace = true
+specta-typescript.workspace = true
+tauri-specta.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+tracing-appender.workspace = true
+
+[build-dependencies]
+tauri-build.workspace = true
+
+[lints]
+workspace = true
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "symbols"

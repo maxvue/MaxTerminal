@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-bridge-bugs-cycle-preview"
+description = "Enables the bridge_bugs_cycle_preview command without any pre-configured scope."
+commands.allow = ["bridge_bugs_cycle_preview"]
+
+[[permission]]
+identifier = "deny-bridge-bugs-cycle-preview"
+description = "Denies the bridge_bugs_cycle_preview command without any pre-configured scope."
+commands.deny = ["bridge_bugs_cycle_preview"]

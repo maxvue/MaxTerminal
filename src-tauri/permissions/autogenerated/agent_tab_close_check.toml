@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-agent-tab-close-check"
+description = "Enables the agent_tab_close_check command without any pre-configured scope."
+commands.allow = ["agent_tab_close_check"]
+
+[[permission]]
+identifier = "deny-agent-tab-close-check"
+description = "Denies the agent_tab_close_check command without any pre-configured scope."
+commands.deny = ["agent_tab_close_check"]

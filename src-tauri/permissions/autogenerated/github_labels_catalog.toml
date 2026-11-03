@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-github-labels-catalog"
+description = "Enables the github_labels_catalog command without any pre-configured scope."
+commands.allow = ["github_labels_catalog"]
+
+[[permission]]
+identifier = "deny-github-labels-catalog"
+description = "Denies the github_labels_catalog command without any pre-configured scope."
+commands.deny = ["github_labels_catalog"]

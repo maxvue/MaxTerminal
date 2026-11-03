@@ -1,0 +1,26 @@
+name: Max Light
+author: MaxVue Ecosystem
+foreground: '#17293d'
+background: '#f8fafc'
+cursor: '#00768e'
+cursorAccent: '#ffffff'
+cursorStyle: block
+selection: '#00768e38'
+activeTabAccent: '#00768e'
+colors:
+  - '#17293d'
+  - '#dc2626'
+  - '#059669'
+  - '#d97706'
+  - '#0284c7'
+  - '#9333ea'
+  - '#00768e'
+  - '#e2e8f0'
+  - '#47596d'
+  - '#ef4444'
+  - '#10b981'
+  - '#f59e0b'
+  - '#0ea5e9'
+  - '#a855f7'
+  - '#178da5'
+  - '#ffffff'

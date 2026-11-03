@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-agent-template-options-get"
+description = "Enables the agent_template_options_get command without any pre-configured scope."
+commands.allow = ["agent_template_options_get"]
+
+[[permission]]
+identifier = "deny-agent-template-options-get"
+description = "Denies the agent_template_options_get command without any pre-configured scope."
+commands.deny = ["agent_template_options_get"]

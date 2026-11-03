@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "productName": "MaxTerminal",
+  "version": "0.1.0",
+  "identifier": "com.johnattas.maxterminal",
+  "localPackages": [
+    {
+      "name": "@maxvue/max-components-ui",
+      "sourceRepo": "MaxComponentsUi",
+      "tarballPath": "vendor/maxvue/maxvue-max-components-ui-0.1.0.tgz",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "@maxvue/max-use",
+      "sourceRepo": "MaxUse",
+      "tarballPath": "vendor/maxvue/maxvue-max-use-0.1.0.tgz",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "@maxvue/max-pinia",
+      "sourceRepo": "MaxPinia",
+      "tarballPath": "vendor/maxvue/maxvue-max-pinia-0.1.0.tgz",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "bundledResources": [
+    "src-tauri/resources/README.md"
+  ]
+}

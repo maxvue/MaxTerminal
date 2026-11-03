@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-agent-attention-ack"
+description = "Enables the agent_attention_ack command without any pre-configured scope."
+commands.allow = ["agent_attention_ack"]
+
+[[permission]]
+identifier = "deny-agent-attention-ack"
+description = "Denies the agent_attention_ack command without any pre-configured scope."
+commands.deny = ["agent_attention_ack"]

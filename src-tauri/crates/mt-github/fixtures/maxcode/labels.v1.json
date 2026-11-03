@@ -1,0 +1,173 @@
+{
+  "schemaVersion": "1.0.0",
+  "labels": [
+    {
+      "name": "Waiting Plan",
+      "group": "state",
+      "order": 1,
+      "colorHex": "0E8A16",
+      "description": "Issue aguardando elaboração de plano de implementação no MaxCode."
+    },
+    {
+      "name": "Waiting More Info",
+      "group": "state",
+      "order": 2,
+      "colorHex": "FBCA04",
+      "description": "Issue aguardando informações adicionais do autor."
+    },
+    {
+      "name": "Planned",
+      "group": "state",
+      "order": 3,
+      "colorHex": "1D76DB",
+      "description": "Plano de implementação concluído e anexado à issue."
+    },
+    {
+      "name": "Waiting Execute",
+      "group": "state",
+      "order": 4,
+      "colorHex": "0052CC",
+      "description": "Issue pronta e na fila para execução da correção."
+    },
+    {
+      "name": "Executed",
+      "group": "state",
+      "order": 5,
+      "colorHex": "5319E7",
+      "description": "Implementação concluída na branch/worktree da issue."
+    },
+    {
+      "name": "Waiting Check",
+      "group": "state",
+      "order": 6,
+      "colorHex": "D93F0B",
+      "description": "Implementação aguardando revisão e verificação automatizada."
+    },
+    {
+      "name": "Checked Approved",
+      "group": "state",
+      "order": 7,
+      "colorHex": "2EA44F",
+      "description": "Verificação técnica aprovada pelo agente revisor."
+    },
+    {
+      "name": "Checked Rejected",
+      "group": "state",
+      "order": 8,
+      "colorHex": "B60205",
+      "description": "Verificação técnica reprovada; requer ajustes."
+    },
+    {
+      "name": "Waiting Re-plan",
+      "group": "state",
+      "order": 9,
+      "colorHex": "E99695",
+      "description": "Issue requer replanejamento antes de nova execução."
+    },
+    {
+      "name": "Fix Merged",
+      "group": "state",
+      "order": 10,
+      "colorHex": "6F42C1",
+      "description": "Correção integrada na branch principal de desenvolvimento."
+    },
+    {
+      "name": "Waiting Deploy",
+      "group": "state",
+      "order": 11,
+      "colorHex": "006B75",
+      "description": "Correção aguardando publicação em ambiente."
+    },
+    {
+      "name": "Deployed",
+      "group": "state",
+      "order": 12,
+      "colorHex": "0E8A16",
+      "description": "Correção publicada no ambiente alvo."
+    },
+    {
+      "name": "Waiting user test",
+      "group": "state",
+      "order": 13,
+      "colorHex": "FEF2C0",
+      "description": "Aguardando validação funcional pelo usuário."
+    },
+    {
+      "name": "User Rejected",
+      "group": "state",
+      "order": 14,
+      "colorHex": "D73A4A",
+      "description": "Validação rejeitada pelo usuário."
+    },
+    {
+      "name": "User Approved",
+      "group": "state",
+      "order": 15,
+      "colorHex": "2CBE4E",
+      "description": "Validação aprovada pelo usuário."
+    },
+    {
+      "name": "Duplicated",
+      "group": "closure",
+      "order": 16,
+      "colorHex": "CFD3D7",
+      "description": "Issue duplicada de outra já registrada."
+    },
+    {
+      "name": "Evidence not Found",
+      "group": "closure",
+      "order": 17,
+      "colorHex": "E4E669",
+      "description": "Não foram encontradas evidências para reproduzir o relato."
+    },
+    {
+      "name": "Dismissed",
+      "group": "closure",
+      "order": 18,
+      "colorHex": "FFFFFF",
+      "description": "Issue descartada ou fora de escopo."
+    },
+    {
+      "name": "Regra de Negocio",
+      "group": "category",
+      "order": 19,
+      "colorHex": "C5DEF5",
+      "description": "Categoria: regra de negócio e domínio."
+    },
+    {
+      "name": "Testes",
+      "group": "category",
+      "order": 20,
+      "colorHex": "BFD4F2",
+      "description": "Categoria: testes automatizados e qualidade."
+    },
+    {
+      "name": "Desempenho",
+      "group": "category",
+      "order": 21,
+      "colorHex": "D4C5F9",
+      "description": "Categoria: performance e otimização."
+    },
+    {
+      "name": "Seguranca",
+      "group": "category",
+      "order": 22,
+      "colorHex": "F9D0C4",
+      "description": "Categoria: segurança e controle de acesso."
+    },
+    {
+      "name": "Audit",
+      "group": "category",
+      "order": 23,
+      "colorHex": "FEF2C0",
+      "description": "Categoria: auditoria e conformidade."
+    },
+    {
+      "name": "Documentacao",
+      "group": "category",
+      "order": 24,
+      "colorHex": "0075CA",
+      "description": "Categoria: documentação técnica e guias."
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-agent-worktree-pending-list"
+description = "Enables the agent_worktree_pending_list command without any pre-configured scope."
+commands.allow = ["agent_worktree_pending_list"]
+
+[[permission]]
+identifier = "deny-agent-worktree-pending-list"
+description = "Denies the agent_worktree_pending_list command without any pre-configured scope."
+commands.deny = ["agent_worktree_pending_list"]

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-github-labels-ensure"
+description = "Enables the github_labels_ensure command without any pre-configured scope."
+commands.allow = ["github_labels_ensure"]
+
+[[permission]]
+identifier = "deny-github-labels-ensure"
+description = "Denies the github_labels_ensure command without any pre-configured scope."
+commands.deny = ["github_labels_ensure"]

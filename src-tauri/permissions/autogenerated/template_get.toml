@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-template-get"
+description = "Enables the template_get command without any pre-configured scope."
+commands.allow = ["template_get"]
+
+[[permission]]
+identifier = "deny-template-get"
+description = "Denies the template_get command without any pre-configured scope."
+commands.deny = ["template_get"]

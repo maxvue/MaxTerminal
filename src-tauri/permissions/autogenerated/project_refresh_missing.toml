@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-project-refresh-missing"
+description = "Enables the project_refresh_missing command without any pre-configured scope."
+commands.allow = ["project_refresh_missing"]
+
+[[permission]]
+identifier = "deny-project-refresh-missing"
+description = "Denies the project_refresh_missing command without any pre-configured scope."
+commands.deny = ["project_refresh_missing"]

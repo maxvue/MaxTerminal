@@ -1,0 +1,42 @@
+[package]
+name = "mt-ai"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+mt-core.workspace = true
+mt-db.workspace = true
+async-trait.workspace = true
+bytes.workspace = true
+futures-util.workspace = true
+hex.workspace = true
+http = "1"
+lru.workspace = true
+once_cell = "1"
+parking_lot.workspace = true
+percent-encoding.workspace = true
+regex.workspace = true
+rusqlite.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+shell-words = "1"
+specta.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tokio-util = { version = "0.7", features = ["rt"] }
+tracing.workspace = true
+url.workspace = true
+uuid.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
+rstest.workspace = true
+tempfile.workspace = true
+tokio = { workspace = true, features = ["test-util"] }
+
+[lints]
+workspace = true

@@ -1,0 +1,314 @@
+{
+  "version": 1,
+  "project": "MaxTerminal",
+  "agents_spec": "AGENTS.md",
+  "phases": [
+    {
+      "phase": "01",
+      "title": "Fundação, Bootstrap Tauri v2 + Vue 3.6 + UnoCSS e Tooling",
+      "agents_sections": ["1", "2"],
+      "modules": [
+        "src-tauri/src/lib.rs",
+        "src-tauri/src/specta.rs",
+        "src/app/App.vue",
+        "scripts/check.mjs"
+      ],
+      "tests": [
+        {
+          "file": "src-tauri/tests/bindings.rs",
+          "symbol": "bindings_are_up_to_date_and_deterministic"
+        },
+        {
+          "file": "src-tauri/tests/capabilities.rs",
+          "symbol": "capabilities_restrict_to_main_window_and_allowed_commands"
+        }
+      ]
+    },
+    {
+      "phase": "02",
+      "title": "Motor Nativo de PTY (portable-pty), Árvore de Processos (/proc) e Cgroup v2",
+      "agents_sections": ["2", "3"],
+      "modules": [
+        "src-tauri/crates/mt-pty/src/manager.rs",
+        "src-tauri/crates/mt-pty/src/kill.rs",
+        "src-tauri/crates/mt-pty/src/proc/tree.rs",
+        "src-tauri/crates/mt-pty/src/containment/cgroup.rs"
+      ],
+      "tests": [
+        {
+          "file": "src-tauri/crates/mt-pty/tests/orphans.rs",
+          "symbol": "eliminates_background_nohup_setsid_and_double_fork_on_kill_and_spontaneous_exit"
+        },
+        {
+          "file": "src-tauri/tests/no_orphans.rs",
+          "symbol": "eliminates_all_descendant_trees_without_zombies_and_guards_pid_reuse"
+        }
+      ]
+    },
+    {
+      "phase": "03",
+      "title": "Persistência SQLite WAL, FTS5 e Sanitização de Segredos",
+      "agents_sections": ["2", "3"],
+      "modules": [
+        "src-tauri/crates/mt-db/src/lib.rs",
+        "src-tauri/crates/mt-db/src/sanitizer/rules.rs",
+        "src-tauri/crates/mt-db/src/sanitizer/stream.rs",
+        "src-tauri/crates/mt-db/src/fts.rs"
+      ],
+      "tests": [
+        {
+          "file": "src-tauri/crates/mt-db/tests/sanitizer_sinks.rs",
+          "symbol": "all_13_secret_families_are_redacted_across_sqlite_external_payload_and_logs"
+        },
+        {
+          "file": "src-tauri/tests/sanitizer_e2e.rs",
+          "symbol": "synthetic_secrets_never_leak_to_db_wal_fts5_backup_logs_or_inspect_prompt"
+        }
+      ]
+    },
+    {
+      "phase": "04",
+      "title": "Motor Híbrido de Terminal Frontend (@xterm/xterm + WebGL + Fit + Search + Links)",
+      "agents_sections": ["2", "3"],
+      "modules": [
+        "src/components/terminal/HybridTerminal.vue",
+        "src/composables/terminal/useTerminal.ts",
+        "src/stores/terminal.ts"
+      ],
+      "tests": [
+        {
+          "file": "tests/terminal/HybridTerminal.spec.ts",
+          "symbol": "HybridTerminal"
+        }
+      ]
+    },
+    {
+      "phase": "05",
+      "title": "Shell Integration (OSC 133), Camada de Blocos e Input Rico (Estilo Warp)",
+      "agents_sections": ["2", "6"],
+      "modules": [
+        "src-tauri/crates/mt-shell/src/lib.rs",
+        "src/components/terminal/CommandBlockLayer.vue",
+        "src/components/terminal/RichInput.vue"
+      ],
+      "tests": [
+        {
+          "file": "tests/terminal/CommandBlock.spec.ts",
+          "symbol": "CommandBlock"
+        },
+        {
+          "file": "tests/terminal/RichInput.spec.ts",
+          "symbol": "RichInput"
+        }
+      ]
+    },
+    {
+      "phase": "06",
+      "title": "Coluna da Esquerda: Gestão de Projetos, Auto-Descoberta (fs::watch), Detecção de Stack e Badges",
+      "agents_sections": ["4.1"],
+      "modules": [
+        "src-tauri/crates/mt-projects/src/lib.rs",
+        "src/components/projects/ProjectList.vue",
+        "src/stores/projects.ts"
+      ],
+      "tests": [
+        {
+          "file": "tests/frontend/projects/ProjectStatusBadges.spec.ts",
+          "symbol": "ProjectStatusBadges"
+        }
+      ]
+    },
+    {
+      "phase": "07",
+      "title": "Coluna da Direita: Workspace de Abas, Templates, Split Panes e Sessões",
+      "agents_sections": ["4.2"],
+      "modules": [
+        "src-tauri/src/workspace/manager.rs",
+        "src/components/workspace/TabWorkspaceView.vue",
+        "src/stores/tabs.ts"
+      ],
+      "tests": [
+        {
+          "file": "tests/frontend/workspace/workspace-components.spec.ts",
+          "symbol": "TabBar"
+        }
+      ]
+    },
+    {
+      "phase": "08",
+      "title": "Indicadores Contextuais na Aba: Git & Worktree e Detector de Portas Ativas",
+      "agents_sections": ["4.2"],
+      "modules": [
+        "src-tauri/crates/mt-git/src/lib.rs",
+        "src-tauri/crates/mt-ports/src/lib.rs",
+        "src/components/indicators/TabIndicators.vue"
+      ],
+      "tests": [
+        {
+          "file": "src/components/indicators/__tests__/TabIndicators.spec.ts",
+          "symbol": "TabIndicators"
+        }
+      ]
+    },
+    {
+      "phase": "09",
+      "title": "Experiência no Sistema Operacional (CachyOS / Linux): System Tray, Quake Mode e Links para Editor",
+      "agents_sections": ["3"],
+      "modules": [
+        "src-tauri/crates/mt-os/src/lib.rs",
+        "src-tauri/crates/mt-os/src/tray.rs",
+        "src-tauri/crates/mt-os/src/quake.rs",
+        "src-tauri/crates/mt-os/src/links.rs"
+      ],
+      "tests": [
+        {
+          "file": "src-tauri/crates/mt-os/tests/close_decision.rs",
+          "symbol": "decide_close_covers_all_24_combinations"
+        },
+        {
+          "file": "src-tauri/crates/mt-os/tests/links.rs",
+          "symbol": "links"
+        }
+      ]
+    },
+    {
+      "phase": "10",
+      "title": "Motor de Temas, Importador Tabby YAML/JSON e Tokens MaxComponentsUi",
+      "agents_sections": ["2"],
+      "modules": [
+        "src-tauri/crates/mt-themes/src/lib.rs",
+        "src/stores/theme.ts"
+      ],
+      "tests": [
+        {
+          "file": "tests/stores/theme.spec.ts",
+          "symbol": "theme"
+        }
+      ]
+    },
+    {
+      "phase": "11",
+      "title": "Integração Bidirecional com a Extensão MaxCode (Loopback HTTP/WS + URI Scheme)",
+      "agents_sections": ["6"],
+      "modules": [
+        "src-tauri/crates/mt-bridge/src/lib.rs",
+        "src-tauri/crates/mt-bridge/src/server.rs",
+        "src-tauri/crates/mt-bridge/src/uri.rs",
+        "src-tauri/src/bridge/deep_link.rs"
+      ],
+      "tests": [
+        {
+          "file": "src-tauri/tests/bridge_hardening.rs",
+          "symbol": "bridge_loopback_hardening_enforces_bind_bearer_host_origin_and_payload_limits"
+        },
+        {
+          "file": "src-tauri/tests/deep_link_allowlist.rs",
+          "symbol": "deep_link_layered_validation_and_single_pipeline_cold_and_warm_start"
+        }
+      ]
+    },
+    {
+      "phase": "12",
+      "title": "Integração com MaxAiManager (@, ?, Diagnóstico Inline e Consulta RAG)",
+      "agents_sections": ["5.1"],
+      "modules": [
+        "src-tauri/crates/mt-ai/src/lib.rs",
+        "src/stores/ai.ts"
+      ],
+      "tests": [
+        {
+          "file": "src/stores/__tests__/ai.spec.ts",
+          "symbol": "useAiStore"
+        }
+      ]
+    },
+    {
+      "phase": "13",
+      "title": "Orquestração de Agentes CLI (Claude Code, Codex, Antigravity agy, OpenCode), Telemetria e MaxSkills",
+      "agents_sections": ["5.2"],
+      "modules": [
+        "src-tauri/crates/mt-agents/src/lib.rs",
+        "src/stores/agents.ts"
+      ],
+      "tests": [
+        {
+          "file": "tests/stores/agents.spec.ts",
+          "symbol": "agents"
+        }
+      ]
+    },
+    {
+      "phase": "14",
+      "title": "Comandos PHP Artisan (>) e Construtor Visual de Comandos",
+      "agents_sections": ["8.1"],
+      "modules": [
+        "src-tauri/crates/mt-commands/src/artisan/mod.rs",
+        "src/components/quick-commands/ArtisanCommandModal.vue"
+      ],
+      "tests": [
+        {
+          "file": "src/components/quick-commands/__tests__/ArtisanCommandModal.spec.ts",
+          "symbol": "ArtisanCommandModal"
+        }
+      ]
+    },
+    {
+      "phase": "15",
+      "title": "Grupos de Comandos (>>) e Atalhos Universais de Projeto (/)",
+      "agents_sections": ["8.2", "8.3"],
+      "modules": [
+        "src-tauri/crates/mt-commands/src/groups/mod.rs",
+        "src-tauri/crates/mt-commands/src/shortcuts/mod.rs",
+        "src/components/commandGroups/CommandGroupModal.vue"
+      ],
+      "tests": [
+        {
+          "file": "tests/commandGroups/CommandGroupModal.spec.ts",
+          "symbol": "CommandGroupModal"
+        }
+      ]
+    },
+    {
+      "phase": "16",
+      "title": "Aba Fixa de Issues do GitHub (Padrão MaxCode) e Ciclo Automatizado de Bugs",
+      "agents_sections": ["7"],
+      "modules": [
+        "src-tauri/crates/mt-github/src/lib.rs",
+        "src/components/github/IssuesTab.vue",
+        "src/stores/githubIssues.ts"
+      ],
+      "tests": [
+        {
+          "file": "tests/frontend/github/badge-and-pinned-tab.spec.ts",
+          "symbol": "useGithubIssuesStore"
+        }
+      ]
+    },
+    {
+      "phase": "17",
+      "title": "Busca Global, Qualidade, Performance e Empacotamento",
+      "agents_sections": ["2", "3", "4.1", "4.2"],
+      "modules": [
+        "src-tauri/crates/mt-db/src/search/mod.rs",
+        "src/components/search/GlobalSearchPalette.vue",
+        "src/stores/search.ts",
+        "src-tauri/src/perf.rs",
+        "src-tauri/src/security.rs"
+      ],
+      "tests": [
+        {
+          "file": "src-tauri/crates/mt-db/tests/search_sources.rs",
+          "symbol": "setup_seeded_engine"
+        },
+        {
+          "file": "tests/unit/search/useSearchStore.spec.ts",
+          "symbol": "useSearchStore"
+        },
+        {
+          "file": "src-tauri/tests/capabilities_minimal.rs",
+          "symbol": "effective_capabilities_preserve_os_integration_and_deny_direct_js_plugins"
+        }
+      ]
+    }
+  ]
+}

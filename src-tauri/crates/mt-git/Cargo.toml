@@ -1,0 +1,28 @@
+[package]
+name = "mt-git"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+mt-core.workspace = true
+mt-db.workspace = true
+async-trait.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+specta.workspace = true
+thiserror.workspace = true
+tokio = { workspace = true, features = ["process", "sync", "time", "rt", "macros"] }
+parking_lot.workspace = true
+notify.workspace = true
+notify-debouncer-full.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+assert_matches.workspace = true
+
+[lints]
+workspace = true

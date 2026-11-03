@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-ai-diagnosis-dismiss"
+description = "Enables the ai_diagnosis_dismiss command without any pre-configured scope."
+commands.allow = ["ai_diagnosis_dismiss"]
+
+[[permission]]
+identifier = "deny-ai-diagnosis-dismiss"
+description = "Denies the ai_diagnosis_dismiss command without any pre-configured scope."
+commands.deny = ["ai_diagnosis_dismiss"]

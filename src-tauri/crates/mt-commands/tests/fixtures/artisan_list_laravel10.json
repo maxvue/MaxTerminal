@@ -1,0 +1,63 @@
+{
+  "application": {
+    "name": "Laravel Framework",
+    "version": "10.48.0"
+  },
+  "commands": [
+    {
+      "name": "cache:clear",
+      "description": "Flush the application cache",
+      "hidden": false,
+      "definition": {
+        "arguments": {
+          "store": {
+            "name": "store",
+            "is_required": false,
+            "is_array": false,
+            "description": "The name of the store you would like to clear",
+            "default": null
+          }
+        },
+        "options": {
+          "tags": {
+            "name": "tags",
+            "shortcut": "",
+            "accept_value": true,
+            "is_value_required": false,
+            "is_multiple": false,
+            "description": "The cache tags you would like to clear",
+            "default": null
+          },
+          "help": {
+            "name": "--help",
+            "shortcut": "-h",
+            "accept_value": false,
+            "is_value_required": false,
+            "is_multiple": false,
+            "description": "Display help",
+            "default": false
+          }
+        }
+      }
+    },
+    {
+      "name": "route:list",
+      "description": "List all registered routes",
+      "hidden": false,
+      "definition": {
+        "arguments": [],
+        "options": {
+          "help": {
+            "name": "--help",
+            "shortcut": "-h",
+            "accept_value": false,
+            "is_value_required": false,
+            "is_multiple": false,
+            "description": "Display help",
+            "default": false
+          }
+        }
+      }
+    }
+  ]
+}

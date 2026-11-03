@@ -1,0 +1,19 @@
+kind = "opencode"
+display_name = "OpenCode"
+icon = "mdi:code-braces"
+color_token = "--max-primary-500"
+binary = "opencode"
+process_names = ["opencode", "bun", "node"]
+version_args = ["--version"]
+version_regex = '(\d+\.\d+\.\d+)'
+default_args = []
+extra_args = []
+shortcut = "Ctrl+Alt+O"
+
+[env]
+
+[capabilities]
+statusline_hook = false
+native_attention_hooks = false
+session_files = false
+osc_notifications = false

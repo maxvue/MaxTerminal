@@ -1,0 +1,538 @@
+# Catálogo de casos de teste para as 13 famílias de `SecretKind` do `mt-db::sanitizer`.
+# Contém >= 3 casos positivos e >= 2 casos negativos por família.
+
+# =============================================================================
+# 1. PemBlock
+# =============================================================================
+[[case]]
+name = "pem_rsa_private_key"
+kind = "PemBlock"
+positive = true
+input = "-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA0Z3VS5JJcds3xfn/ygWyF8PbnGy0AHB7MhgHcTz6sE2I2yPB\n-----END RSA PRIVATE KEY-----"
+expected = "[REDACTED:PEM]"
+
+[[case]]
+name = "pem_openssh_private_key"
+kind = "PemBlock"
+positive = true
+input = "Chave SSH:\n-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW\n-----END OPENSSH PRIVATE KEY-----\nFim"
+expected = "Chave SSH:\n[REDACTED:PEM]\nFim"
+
+[[case]]
+name = "pem_ec_private_key"
+kind = "PemBlock"
+positive = true
+input = "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEII9b1fP5g2v3x4y5z6a7b8c9d0e1f2g3h4i5j6k7l8m9oAoGCCqGSM49\n-----END EC PRIVATE KEY-----"
+expected = "[REDACTED:PEM]"
+
+[[case]]
+name = "pem_public_key_preserved"
+kind = "PemBlock"
+positive = false
+input = "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0Z3VS5JJcds3xfn\n-----END PUBLIC KEY-----"
+expected = "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0Z3VS5JJcds3xfn\n-----END PUBLIC KEY-----"
+
+[[case]]
+name = "pem_certificate_preserved"
+kind = "PemBlock"
+positive = false
+input = "-----BEGIN CERTIFICATE-----\nMIIDXTCCAkWgAwIBAgIJALa8b9c0d1e2f3g4h5i6j7k8MA0GCSqGSIb3DQEBCwUA\n-----END CERTIFICATE-----"
+expected = "-----BEGIN CERTIFICATE-----\nMIIDXTCCAkWgAwIBAgIJALa8b9c0d1e2f3g4h5i6j7k8MA0GCSqGSIb3DQEBCwUA\n-----END CERTIFICATE-----"
+
+# =============================================================================
+# 2. JwtToken
+# =============================================================================
+[[case]]
+name = "jwt_standard_hs256"
+kind = "JwtToken"
+positive = true
+input = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvYW8ifQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+expected = "[REDACTED:JWT]"
+
+[[case]]
+name = "jwt_in_custom_header"
+kind = "JwtToken"
+positive = true
+input = "curl https://api.example.com -H 'X-Session-Jwt: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJhdXRoLm1heC5kZXYiLCJleHAiOjE5MDAwMDAwMDB9.signature_part_base64url_123456'"
+expected = "curl https://api.example.com -H 'X-Session-Jwt: [REDACTED:JWT]'"
+
+[[case]]
+name = "jwt_eddsa_url_safe"
+kind = "JwtToken"
+positive = true
+input = "eyJhbGciOiJFZERTQSIsImtpZCI6ImtleS0xIn0.eyJ1c2VyX2lkIjoiYWJjXzEyMy00NTYiLCJ0ZW5hbnQiOiJtYXgifQ.abCD1234_-efGH5678_-ijKL9012"
+expected = "[REDACTED:JWT]"
+
+[[case]]
+name = "jwt_two_segments_only"
+kind = "JwtToken"
+positive = false
+input = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0"
+expected = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0"
+
+[[case]]
+name = "jwt_dotted_module_path"
+kind = "JwtToken"
+positive = false
+input = "app.services.authentication.provider.v1"
+expected = "app.services.authentication.provider.v1"
+
+# =============================================================================
+# 3. GitHubToken
+# =============================================================================
+[[case]]
+name = "github_classic_pat_ghp"
+kind = "GitHubToken"
+positive = true
+input = "ghp\_1234567890abcdefghijklmnopqrstuvwxyzABCD"
+expected = "[REDACTED:GITHUB_TOKEN]"
+
+[[case]]
+name = "github_oauth_token_gho"
+kind = "GitHubToken"
+positive = true
+input = "Token OAuth: gho\_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcd"
+expected = "Token OAuth: [REDACTED:GITHUB_TOKEN]"
+
+[[case]]
+name = "github_fine_grained_pat"
+kind = "GitHubToken"
+positive = true
+input = "github_pat\_11AA22BB33CC_1234567890abcdefghijklmnopqrstuvwxyz"
+expected = "[REDACTED:GITHUB_TOKEN]"
+
+[[case]]
+name = "github_short_prefix_ignored"
+kind = "GitHubToken"
+positive = false
+input = "ghp_short12345"
+expected = "ghp_short12345"
+
+[[case]]
+name = "github_ssh_clone_url_preserved"
+kind = "GitHubToken"
+positive = false
+input = "git clone git@github.com:org/repo.git"
+expected = "git clone git@github.com:org/repo.git"
+
+# =============================================================================
+# 4. GitLabToken
+# =============================================================================
+[[case]]
+name = "gitlab_personal_access_token"
+kind = "GitLabToken"
+positive = true
+input = "glpat\-1234567890abcdefghij"
+expected = "[REDACTED:GITLAB_TOKEN]"
+
+[[case]]
+name = "gitlab_pipeline_trigger_token"
+kind = "GitLabToken"
+positive = true
+input = "Trigger: glptt\-1234567890abcdefghij12345"
+expected = "Trigger: [REDACTED:GITLAB_TOKEN]"
+
+[[case]]
+name = "gitlab_runner_registration_token"
+kind = "GitLabToken"
+positive = true
+input = "glrt\-1234567890_abcdefghij-12345"
+expected = "[REDACTED:GITLAB_TOKEN]"
+
+[[case]]
+name = "gitlab_short_token_ignored"
+kind = "GitLabToken"
+positive = false
+input = "glpat-short123"
+expected = "glpat-short123"
+
+[[case]]
+name = "gitlab_ci_filename_preserved"
+kind = "GitLabToken"
+positive = false
+input = "Validando arquivo .gitlab-ci.yml na branch principal"
+expected = "Validando arquivo .gitlab-ci.yml na branch principal"
+
+# =============================================================================
+# 5. SlackToken
+# =============================================================================
+[[case]]
+name = "slack_bot_token_xoxb"
+kind = "SlackToken"
+positive = true
+input = "xoxb\-123456789012-1234567890123-abcdefghijklmnopqrstuvwx"
+expected = "[REDACTED:SLACK_TOKEN]"
+
+[[case]]
+name = "slack_user_token_xoxp"
+kind = "SlackToken"
+positive = true
+input = "Slack user: xoxp\-987654321098-9876543210987-zyxwvutsrqponmlkjihgfedc"
+expected = "Slack user: [REDACTED:SLACK_TOKEN]"
+
+[[case]]
+name = "slack_app_level_token_xapp"
+kind = "SlackToken"
+positive = true
+input = "xapp\-1-A0123456789-1234567890123-abcdef1234567890abcdef1234567890"
+expected = "[REDACTED:SLACK_TOKEN]"
+
+[[case]]
+name = "slack_short_prefix_ignored"
+kind = "SlackToken"
+positive = false
+input = "xoxb-12345"
+expected = "xoxb-12345"
+
+[[case]]
+name = "slack_channel_reference_preserved"
+kind = "SlackToken"
+positive = false
+input = "Notificando canal #slack-alerts sobre deploy"
+expected = "Notificando canal #slack-alerts sobre deploy"
+
+# =============================================================================
+# 6. StripeKey
+# =============================================================================
+[[case]]
+name = "stripe_live_secret_key"
+kind = "StripeKey"
+positive = true
+input = "sk_live\_51Abcdefghijklmnopqrstuvwxyz123456"
+expected = "[REDACTED:STRIPE_KEY]"
+
+[[case]]
+name = "stripe_test_secret_key"
+kind = "StripeKey"
+positive = true
+input = "Stripe test: sk_test\_51Abcdefghijklmnopqrstuvwxyz123456"
+expected = "Stripe test: [REDACTED:STRIPE_KEY]"
+
+[[case]]
+name = "stripe_restricted_live_key"
+kind = "StripeKey"
+positive = true
+input = "rk_live\_51Abcdefghijklmnopqrstuvwxyz123456"
+expected = "[REDACTED:STRIPE_KEY]"
+
+[[case]]
+name = "stripe_publishable_key_preserved"
+kind = "StripeKey"
+positive = false
+input = "pk_live\_51Abcdefghijklmnopqrstuvwxyz123456"
+expected = "pk_live\_51Abcdefghijklmnopqrstuvwxyz123456"
+
+[[case]]
+name = "stripe_short_test_key_preserved"
+kind = "StripeKey"
+positive = false
+input = "sk_test_12345"
+expected = "sk_test_12345"
+
+# =============================================================================
+# 7. AnthropicKey
+# =============================================================================
+[[case]]
+name = "anthropic_api03_key"
+kind = "AnthropicKey"
+positive = true
+input = "sk-ant\-api03-1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+expected = "[REDACTED:ANTHROPIC_KEY]"
+
+[[case]]
+name = "anthropic_sid01_key"
+kind = "AnthropicKey"
+positive = true
+input = "Chave Claude: sk-ant\-sid01-1234567890abcdefghijklmnopqrstuvwxyz"
+expected = "Chave Claude: [REDACTED:ANTHROPIC_KEY]"
+
+[[case]]
+name = "anthropic_admin_key"
+kind = "AnthropicKey"
+positive = true
+input = "sk-ant\-admin01-9876543210zyxwvutsrqponmlkjihgfedcba"
+expected = "[REDACTED:ANTHROPIC_KEY]"
+
+[[case]]
+name = "anthropic_short_prefix_preserved"
+kind = "AnthropicKey"
+positive = false
+input = "sk-ant-short"
+expected = "sk-ant-short"
+
+[[case]]
+name = "anthropic_model_identifier_preserved"
+kind = "AnthropicKey"
+positive = false
+input = "Modelo ativo: claude-3-5-sonnet-20241022"
+expected = "Modelo ativo: claude-3-5-sonnet-20241022"
+
+# =============================================================================
+# 8. OpenAiKey
+# =============================================================================
+[[case]]
+name = "openai_proj_key"
+kind = "OpenAiKey"
+positive = true
+input = "sk-proj\-1234567890abcdefghijklmnopqrstuvwxyzABCD"
+expected = "[REDACTED:OPENAI_KEY]"
+
+[[case]]
+name = "openai_svcacct_key"
+kind = "OpenAiKey"
+positive = true
+input = "Service account: sk-svcacct\-1234567890abcdefghijklmnopqrstuvwxyzABCD"
+expected = "Service account: [REDACTED:OPENAI_KEY]"
+
+[[case]]
+name = "openai_classic_key"
+kind = "OpenAiKey"
+positive = true
+input = "sk\-1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKL"
+expected = "[REDACTED:OPENAI_KEY]"
+
+[[case]]
+name = "openai_short_key_preserved"
+kind = "OpenAiKey"
+positive = false
+input = "sk-short12345"
+expected = "sk-short12345"
+
+[[case]]
+name = "openai_uuid_v4_preserved"
+kind = "OpenAiKey"
+positive = false
+input = "550e8400-e29b-41d4-a716-446655440000"
+expected = "550e8400-e29b-41d4-a716-446655440000"
+
+# =============================================================================
+# 9. GoogleApiKey
+# =============================================================================
+[[case]]
+name = "google_cloud_api_key_1"
+kind = "GoogleApiKey"
+positive = true
+input = "AIzaSyDaGmWKa4JsXZ-HjGw7ISLn_3namBGewQe"
+expected = "[REDACTED:GOOGLE_API_KEY]"
+
+[[case]]
+name = "google_firebase_api_key_2"
+kind = "GoogleApiKey"
+positive = true
+input = "key=AIzaSyB1234567890abcdefghijklmnopqrstuv"
+expected = "key=[REDACTED:GOOGLE_API_KEY]"
+
+[[case]]
+name = "google_gemini_api_key_3"
+kind = "GoogleApiKey"
+positive = true
+input = "Gemini: AIzaSyC_9876543210ZYXWVUTSRQPONMLKJIHGF"
+expected = "Gemini: [REDACTED:GOOGLE_API_KEY]"
+
+[[case]]
+name = "google_short_aiza_preserved"
+kind = "GoogleApiKey"
+positive = false
+input = "AIzaSyShortKey123"
+expected = "AIzaSyShortKey123"
+
+[[case]]
+name = "google_sha256_hex_preserved"
+kind = "GoogleApiKey"
+positive = false
+input = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+expected = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+
+# =============================================================================
+# 10. AwsAccessKeyId
+# =============================================================================
+[[case]]
+name = "aws_akia_access_key_id"
+kind = "AwsAccessKeyId"
+positive = true
+input = "AKIAIOSFODNN7EXAMPLE"
+expected = "[REDACTED:AWS_ACCESS_KEY_ID]"
+
+[[case]]
+name = "aws_asia_sts_key_id"
+kind = "AwsAccessKeyId"
+positive = true
+input = "STS Key: ASIAIOSFODNN7EXAMPLE"
+expected = "STS Key: [REDACTED:AWS_ACCESS_KEY_ID]"
+
+[[case]]
+name = "aws_agpa_group_key_id"
+kind = "AwsAccessKeyId"
+positive = true
+input = "AGPA1234567890ABCDEF"
+expected = "[REDACTED:AWS_ACCESS_KEY_ID]"
+
+[[case]]
+name = "aws_short_akia_preserved"
+kind = "AwsAccessKeyId"
+positive = false
+input = "AKIA123456"
+expected = "AKIA123456"
+
+[[case]]
+name = "aws_lowercase_akia_preserved"
+kind = "AwsAccessKeyId"
+positive = false
+input = "akiaiosfodnn7example"
+expected = "akiaiosfodnn7example"
+
+# =============================================================================
+# 11. AuthHeader
+# =============================================================================
+[[case]]
+name = "auth_header_bearer_token"
+kind = "AuthHeader"
+positive = true
+input = "Authorization: Bearer my-super-secret-bearer-token-12345"
+expected = "Authorization: Bearer [REDACTED:AUTH_HEADER]"
+
+[[case]]
+name = "auth_header_basic_credentials"
+kind = "AuthHeader"
+positive = true
+input = "Authorization: Basic dXNlcjpwYXNzd29yZDEyMw=="
+expected = "Authorization: Basic [REDACTED:AUTH_HEADER]"
+
+[[case]]
+name = "auth_header_token_scheme"
+kind = "AuthHeader"
+positive = true
+input = "authorization: Token 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b"
+expected = "authorization: Token [REDACTED:AUTH_HEADER]"
+
+[[case]]
+name = "auth_header_english_word_bearer"
+kind = "AuthHeader"
+positive = false
+input = "Bearer of good news in terminal output"
+expected = "Bearer of good news in terminal output"
+
+[[case]]
+name = "auth_header_placeholder_preserved"
+kind = "AuthHeader"
+positive = false
+input = "Authorization: Bearer <your-token>"
+expected = "Authorization: Bearer <your-token>"
+
+# =============================================================================
+# 12. UrlUserinfo
+# =============================================================================
+[[case]]
+name = "url_https_git_credentials"
+kind = "UrlUserinfo"
+positive = true
+input = "git clone https://joao:s3nh4F0rte@github.com/org/repo.git"
+expected = "git clone https://joao:[REDACTED:URL_PASSWORD]@github.com/org/repo.git"
+
+[[case]]
+name = "url_postgres_connection"
+kind = "UrlUserinfo"
+positive = true
+input = "postgres://dbadmin:p4ssw0rd_prod@db.internal:5432/maxterminal"
+expected = "postgres://dbadmin:[REDACTED:URL_PASSWORD]@db.internal:5432/maxterminal"
+
+[[case]]
+name = "url_redis_auth"
+kind = "UrlUserinfo"
+positive = true
+input = "redis://default:r3d1s_s3cr3t_k3y@127.0.0.1:6379/0"
+expected = "redis://default:[REDACTED:URL_PASSWORD]@127.0.0.1:6379/0"
+
+[[case]]
+name = "url_localhost_port_preserved"
+kind = "UrlUserinfo"
+positive = false
+input = "Servidor iniciado em http://localhost:5177 e http://127.0.0.1:8000"
+expected = "Servidor iniciado em http://localhost:5177 e http://127.0.0.1:8000"
+
+[[case]]
+name = "url_user_without_password_preserved"
+kind = "UrlUserinfo"
+positive = false
+input = "https://joao@github.com/org/repo.git"
+expected = "https://joao@github.com/org/repo.git"
+
+# =============================================================================
+# 13. SensitiveKeyValue
+# =============================================================================
+[[case]]
+name = "kv_env_app_key_laravel"
+kind = "SensitiveKeyValue"
+positive = true
+input = "APP_KEY=base64:dGVzdGUtY2hhdmUtc2VjcmV0YS1sYXJhdmVsLTEyMzQ1Njc4OTA="
+expected = "APP_KEY=[REDACTED:SECRET]"
+
+[[case]]
+name = "kv_env_db_password_quoted"
+kind = "SensitiveKeyValue"
+positive = true
+input = "DB_PASSWORD=\"minha senha super secreta\""
+expected = "DB_PASSWORD=[REDACTED:SECRET]"
+
+[[case]]
+name = "kv_aws_secret_access_key"
+kind = "SensitiveKeyValue"
+positive = true
+input = "AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+expected = "AWS_SECRET_ACCESS_KEY=[REDACTED:SECRET]"
+
+[[case]]
+name = "kv_cli_flag_long_password"
+kind = "SensitiveKeyValue"
+positive = true
+input = "mysql -u root --password=my_secret_db_pass -h 127.0.0.1"
+expected = "mysql -u root --password=[REDACTED:SECRET] -h 127.0.0.1"
+
+[[case]]
+name = "kv_cli_flag_short_p"
+kind = "SensitiveKeyValue"
+positive = true
+input = "mysql -u root -p my_secret_db_pass"
+expected = "mysql -u root -p [REDACTED:SECRET]"
+
+[[case]]
+name = "kv_empty_quotes_preserved"
+kind = "SensitiveKeyValue"
+positive = false
+input = "PASSWORD=\"\""
+expected = "PASSWORD=\"\""
+
+[[case]]
+name = "kv_null_literal_preserved"
+kind = "SensitiveKeyValue"
+positive = false
+input = "SECRET=null"
+expected = "SECRET=null"
+
+[[case]]
+name = "kv_false_literal_preserved"
+kind = "SensitiveKeyValue"
+positive = false
+input = "TOKEN=false"
+expected = "TOKEN=false"
+
+[[case]]
+name = "kv_placeholder_preserved"
+kind = "SensitiveKeyValue"
+positive = false
+input = "API_KEY=<your-key>"
+expected = "API_KEY=<your-key>"
+
+[[case]]
+name = "kv_env_var_reference_preserved"
+kind = "SensitiveKeyValue"
+positive = false
+input = "export GITHUB_TOKEN=$TOKEN"
+expected = "export GITHUB_TOKEN=$TOKEN"
+
+[[case]]
+name = "kv_linux_path_and_mkdir_p_preserved"
+kind = "SensitiveKeyValue"
+positive = false
+input = "mkdir -p /home/johnattas/GitHub/MaxTerminal/src-tauri"
+expected = "mkdir -p /home/johnattas/GitHub/MaxTerminal/src-tauri"

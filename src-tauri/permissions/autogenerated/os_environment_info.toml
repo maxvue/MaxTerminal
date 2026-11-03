@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-os-environment-info"
+description = "Enables the os_environment_info command without any pre-configured scope."
+commands.allow = ["os_environment_info"]
+
+[[permission]]
+identifier = "deny-os-environment-info"
+description = "Denies the os_environment_info command without any pre-configured scope."
+commands.deny = ["os_environment_info"]

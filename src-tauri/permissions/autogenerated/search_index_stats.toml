@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-search-index-stats"
+description = "Enables the search_index_stats command without any pre-configured scope."
+commands.allow = ["search_index_stats"]
+
+[[permission]]
+identifier = "deny-search-index-stats"
+description = "Denies the search_index_stats command without any pre-configured scope."
+commands.deny = ["search_index_stats"]

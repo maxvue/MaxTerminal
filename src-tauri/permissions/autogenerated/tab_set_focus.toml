@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-tab-set-focus"
+description = "Enables the tab_set_focus command without any pre-configured scope."
+commands.allow = ["tab_set_focus"]
+
+[[permission]]
+identifier = "deny-tab-set-focus"
+description = "Denies the tab_set_focus command without any pre-configured scope."
+commands.deny = ["tab_set_focus"]

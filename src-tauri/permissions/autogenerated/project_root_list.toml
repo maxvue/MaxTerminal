@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-project-root-list"
+description = "Enables the project_root_list command without any pre-configured scope."
+commands.allow = ["project_root_list"]
+
+[[permission]]
+identifier = "deny-project-root-list"
+description = "Denies the project_root_list command without any pre-configured scope."
+commands.deny = ["project_root_list"]

@@ -1,0 +1,24 @@
+"$schema" = "../gen/schemas/schema.json"
+
+[[permission]]
+identifier = "allow-os-integration"
+description = "Permite invocar todos os 17 comandos de integração com o sistema operacional (Fase 09)."
+commands.allow = [
+  "os_settings_get",
+  "os_settings_update",
+  "os_environment_info",
+  "os_shortcut_status",
+  "os_shortcut_configure_portal",
+  "os_window_toggle",
+  "os_window_show",
+  "os_window_hide",
+  "os_quit_request",
+  "os_link_resolve",
+  "os_link_open",
+  "os_notify",
+  "os_attention_set",
+  "os_get_autostart",
+  "os_runtime_snapshot",
+  "os_ui_ready",
+  "os_set_autostart",
+]

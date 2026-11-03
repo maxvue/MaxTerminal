@@ -1,0 +1,430 @@
+<template>
+    <div v-if="open" ref="modalRootRef" class="artisan-modal-backdrop" role="dialog" aria-modal="true" aria-label="Criar comando Artisan" data-testid="artisan-command-modal" @keydown.esc.stop.prevent="handleClose">
+        <div class="artisan-modal">
+            <header class="artisan-modal__header">
+                <div class="artisan-modal__title-wrap">
+                    <MaxIcon icon="logos:laravel" />
+                    <h2 class="artisan-modal__title">Criar comando Artisan</h2>
+                    <span v-if="root" class="artisan-modal__root">{{ root }}</span>
+                </div>
+                <button type="button" class="artisan-modal__close-btn" title="Fechar (Esc)" aria-label="Fechar modal" data-testid="artisan-modal-close" @click="handleClose">
+                    <MaxIcon icon="mdi:close" />
+                </button>
+            </header>
+
+            <div v-if="store.modal.lastCreateResult" class="artisan-modal__created-banner" data-testid="artisan-created-banner">
+                <span>Comando criado em <strong>{{ store.modal.lastCreateResult.path }}</strong>. Conclua os passos manuais listados ao lado antes de fechar.</span>
+            </div>
+
+            <div class="artisan-modal__columns">
+                <div class="artisan-modal__form-col">
+                    <div class="artisan-modal__row">
+                        <label class="artisan-modal__field">
+                            <span class="artisan-modal__label">Nome da Classe</span>
+                            <input type="text" class="artisan-modal__input" data-field-path="className" data-testid="input-class-name" placeholder="SendWeeklyReport" :value="form.className" @input="onClassNameInput">
+                            <span v-if="firstErrorMessageFor('className')" class="artisan-modal__error" data-testid="error-class-name">{{ firstErrorMessageFor('className') }}</span>
+                        </label>
+
+                        <label class="artisan-modal__field">
+                            <span class="artisan-modal__label">Signature</span>
+                            <input type="text" class="artisan-modal__input" data-field-path="signatureName" data-testid="input-signature-name" placeholder="reports:send-weekly" :value="form.signatureName" @input="onSignatureNameInput">
+                            <span v-if="firstErrorMessageFor('signatureName')" class="artisan-modal__error" data-testid="error-signature-name">{{ firstErrorMessageFor('signatureName') }}</span>
+                        </label>
+                    </div>
+
+                    <label class="artisan-modal__field">
+                        <span class="artisan-modal__label">Descrição</span>
+                        <input type="text" class="artisan-modal__input" data-field-path="description" data-testid="input-description" placeholder="Envia o relatório semanal por e-mail" :value="form.description" @input="onDescriptionInput">
+                        <span v-if="firstErrorMessageFor('description')" class="artisan-modal__error" data-testid="error-description">{{ firstErrorMessageFor('description') }}</span>
+                    </label>
+
+                    <ArtisanParamsBuilder :model-value="form.params ?? []" :issues="allIssues" @update:model-value="setParams" />
+
+                    <div class="artisan-modal__interfaces">
+                        <label class="artisan-modal__checkbox">
+                            <input type="checkbox" data-testid="checkbox-isolatable" :checked="form.isolatable" @change="onIsolatableChange">
+                            <span>Isolatable (--isolated)</span>
+                        </label>
+                        <label class="artisan-modal__checkbox">
+                            <input type="checkbox" data-testid="checkbox-prompts" :checked="form.promptsForMissingInput" @change="onPromptsChange">
+                            <span>PromptsForMissingInput</span>
+                        </label>
+                    </div>
+                    <p v-if="promptsWarning" class="artisan-modal__warning" data-testid="warning-prompts">{{ promptsWarning }}</p>
+
+                    <ArtisanSchedulePicker :model-value="form.schedule ?? null" :params="form.params ?? []" :issues="allIssues" @update:model-value="setSchedule" />
+
+                    <label class="artisan-modal__field">
+                        <span class="artisan-modal__label">Objetivo / Regras do Comando</span>
+                        <textarea rows="6" class="artisan-modal__textarea" data-field-path="objective" data-testid="textarea-objective" placeholder="Descreva o objetivo e as regras de negócio do comando para gerar o PHPDoc, preencher com IA ou enviar ao MaxCode…" :value="form.objective" @input="onObjectiveInput" />
+                        <span v-if="firstErrorMessageFor('objective')" class="artisan-modal__error">{{ firstErrorMessageFor('objective') }}</span>
+                    </label>
+
+                    <div v-if="generalIssues.length > 0" class="artisan-modal__general-errors">
+                        <p v-for="(iss, idx) in generalIssues" :key="idx" class="artisan-modal__error">{{ iss.message }}</p>
+                    </div>
+                </div>
+
+                <div class="artisan-modal__preview-col">
+                    <ArtisanPhpPreview :preview="store.modal.preview" :loading="store.modal.previewLoading" />
+                </div>
+            </div>
+
+            <footer class="artisan-modal__footer">
+                <div class="artisan-modal__footer-left">
+                    <button type="button" class="artisan-modal__btn artisan-modal__btn--secondary" data-testid="btn-fill-ai" :disabled="store.modal.aiLoading || !canFillWithAi" @click="handleFillWithAi">
+                        <MaxIcon icon="mdi:sparkles" />
+                        <span>{{ store.modal.aiLoading ? 'Gerando sugestão…' : 'Preencher com IA' }}</span>
+                    </button>
+                    <button v-if="hasAiSnapshot" type="button" class="artisan-modal__btn artisan-modal__btn--ghost" data-testid="btn-undo-ai" @click="store.undoAiSuggestion()">
+                        <MaxIcon icon="mdi:undo" />
+                        <span>Desfazer sugestão</span>
+                    </button>
+                </div>
+
+                <div class="artisan-modal__footer-right">
+                    <button type="button" class="artisan-modal__btn artisan-modal__btn--ghost" data-testid="btn-cancel-modal" @click="handleClose">
+                        <span>Cancelar</span>
+                    </button>
+                    <button type="button" class="artisan-modal__btn artisan-modal__btn--secondary" data-testid="btn-create-maxcode" @click="handleCreateWithMaxCode">
+                        <MaxIcon icon="mdi:code-braces" />
+                        <span>Criar com MaxCode</span>
+                    </button>
+                    <button type="button" class="artisan-modal__btn artisan-modal__btn--primary" data-testid="btn-create-artisan" :disabled="!canCreate" @click="handleCreate">
+                        <MaxIcon icon="mdi:check" />
+                        <span>{{ store.modal.creating ? 'Criando…' : 'Criar' }}</span>
+                    </button>
+                </div>
+            </footer>
+        </div>
+    </div>
+</template>
+
+<script setup lang="ts">
+    import { computed, ref } from 'vue';
+    import ArtisanParamsBuilder from '@/components/quick-commands/ArtisanParamsBuilder.vue';
+    import ArtisanPhpPreview from '@/components/quick-commands/ArtisanPhpPreview.vue';
+    import ArtisanSchedulePicker from '@/components/quick-commands/ArtisanSchedulePicker.vue';
+    import { useArtisanForm } from '@/composables/quick-commands/useArtisanForm';
+    import { useQuickCommandsStore } from '@/stores/quickCommands';
+    import type { FieldIssue } from '@/types/bindings';
+
+    export interface ArtisanCommandModalProps {
+        root: string;
+        open: boolean;
+    }
+
+    export interface ArtisanCommandModalEmits {
+        (e: 'close'): void;
+    }
+
+    defineProps<ArtisanCommandModalProps>();
+    const emit = defineEmits<ArtisanCommandModalEmits>();
+
+    const store = useQuickCommandsStore();
+    const modalRootRef = ref<HTMLElement | null>(null);
+
+    const {
+        form,
+        generalIssues,
+        canCreate,
+        hasAiSnapshot,
+        setClassName,
+        setSignatureName,
+        setDescription,
+        setParams,
+        setIsolatable,
+        setPromptsForMissingInput,
+        setSchedule,
+        setObjective,
+        issuesFor,
+        firstErrorMessageFor,
+        focusFirstInvalidField
+    } = useArtisanForm();
+
+    const allIssues = computed<FieldIssue[]>(() => store.modal.report?.issues ?? []);
+
+    const promptsWarning = computed<string | null>(() => {
+        const list = issuesFor('promptsForMissingInput');
+        const warn = list.find((i) => i.severity === 'warning');
+        return warn ? warn.message : null;
+    });
+
+    const canFillWithAi = computed<boolean>(() => {
+        return Boolean(
+            (form.value.objective ?? '').trim() ||
+                form.value.description.trim() ||
+                form.value.signatureName.trim()
+        );
+    });
+
+    function onClassNameInput(ev: Event): void {
+        setClassName((ev.target as HTMLInputElement).value);
+    }
+
+    function onSignatureNameInput(ev: Event): void {
+        setSignatureName((ev.target as HTMLInputElement).value);
+    }
+
+    function onDescriptionInput(ev: Event): void {
+        setDescription((ev.target as HTMLInputElement).value);
+    }
+
+    function onIsolatableChange(ev: Event): void {
+        setIsolatable((ev.target as HTMLInputElement).checked);
+    }
+
+    function onPromptsChange(ev: Event): void {
+        setPromptsForMissingInput((ev.target as HTMLInputElement).checked);
+    }
+
+    function onObjectiveInput(ev: Event): void {
+        setObjective((ev.target as HTMLTextAreaElement).value);
+    }
+
+    function handleClose(): void {
+        emit('close');
+    }
+
+    async function handleFillWithAi(): Promise<void> {
+        await store.fillWithAi();
+    }
+
+    async function handleCreateWithMaxCode(): Promise<void> {
+        await store.createWithMaxCode();
+    }
+
+    async function handleCreate(): Promise<void> {
+        if (!canCreate.value) {
+            focusFirstInvalidField(modalRootRef.value);
+            return;
+        }
+        await store.create();
+    }
+</script>
+
+<style lang="scss" scoped>
+    .artisan-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 1200;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1.25rem;
+        background: rgb(0 0 0 / 65%);
+    }
+
+    .artisan-modal {
+        display: flex;
+        flex-direction: column;
+        width: min(76rem, 96vw);
+        max-height: 92vh;
+        border: 1px solid var(--background-700);
+        border-radius: 0.5rem;
+        background: var(--background-900);
+        color: var(--background-50);
+        overflow: hidden;
+
+        &__header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--background-800);
+            background: var(--background-950);
+        }
+
+        &__title-wrap {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            min-width: 0;
+        }
+
+        &__title {
+            margin: 0;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            color: var(--background-50);
+        }
+
+        &__root {
+            font-family: var(--mt-font-mono);
+            font-size: 0.75rem;
+            color: var(--background-400);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        &__close-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.75rem;
+            height: 1.75rem;
+            border: 1px solid var(--background-700);
+            border-radius: 0.25rem;
+            background: var(--background-800);
+            color: var(--background-200);
+            cursor: pointer;
+
+            &:hover {
+                border-color: var(--max-primary-500);
+                color: var(--background-50);
+            }
+        }
+
+        &__created-banner {
+            padding: 0.5rem 1rem;
+            background: var(--background-800);
+            border-bottom: 1px solid var(--max-info-500);
+            color: var(--max-info-400);
+            font-size: 0.8125rem;
+        }
+
+        &__columns {
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 1rem;
+            padding: 1rem;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        &__form-col {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            overflow-y: auto;
+            padding-right: 0.25rem;
+        }
+
+        &__preview-col {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        &__row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+
+        &__field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        &__label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--background-200);
+        }
+
+        &__textarea {
+            font-family: inherit;
+            resize: vertical;
+        }
+
+        &__input,
+        &__textarea {
+            padding: 0.4375rem 0.625rem;
+            border: 1px solid var(--background-700);
+            border-radius: 0.375rem;
+            background: var(--background-950);
+            color: var(--background-50);
+            font-size: 0.8125rem;
+            font-family: var(--mt-font-mono);
+
+            &:focus {
+                outline: none;
+                border-color: var(--max-primary-500);
+            }
+        }
+
+        &__error {
+            margin: 0;
+            font-size: 0.6875rem;
+            color: var(--max-danger-400);
+        }
+
+        &__warning {
+            margin: 0;
+            font-size: 0.6875rem;
+            color: var(--max-warning-400);
+        }
+
+        &__interfaces {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        &__checkbox {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            font-size: 0.8125rem;
+            color: var(--background-100);
+            cursor: pointer;
+        }
+
+        &__footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            border-top: 1px solid var(--background-800);
+            background: var(--background-950);
+        }
+
+        &__footer-left,
+        &__footer-right {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        &__btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            padding: 0.4375rem 0.75rem;
+            border-radius: 0.375rem;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            cursor: pointer;
+
+            &:disabled {
+                opacity: 0.45;
+                cursor: not-allowed;
+            }
+
+            &--primary {
+                border: 1px solid var(--max-primary-500);
+                background: var(--max-primary-600);
+                color: var(--background-50);
+            }
+
+            &--secondary {
+                border: 1px solid var(--background-700);
+                background: var(--background-800);
+                color: var(--background-100);
+            }
+
+            &--ghost {
+                border: 1px solid transparent;
+                background: transparent;
+                color: var(--background-300);
+            }
+        }
+    }
+</style>

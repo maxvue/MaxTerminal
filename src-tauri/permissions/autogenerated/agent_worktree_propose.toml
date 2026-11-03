@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-agent-worktree-propose"
+description = "Enables the agent_worktree_propose command without any pre-configured scope."
+commands.allow = ["agent_worktree_propose"]
+
+[[permission]]
+identifier = "deny-agent-worktree-propose"
+description = "Denies the agent_worktree_propose command without any pre-configured scope."
+commands.deny = ["agent_worktree_propose"]

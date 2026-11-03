@@ -1,0 +1,13 @@
+# Configuração estrita do cargo-audit para o MaxTerminal (CA-32)
+
+[advisories]
+informational_warnings = ["unmaintained", "unsound", "notice"]
+severity_threshold = "low"
+
+[output]
+deny = ["warnings"]
+quiet = false
+
+[yanked]
+enabled = true
+update_index = true

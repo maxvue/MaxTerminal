@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "1.0.0",
+  "cases": [
+    {
+      "action": "open",
+      "repoKey": "github.com/johnattas/maxterminal",
+      "issueNumber": 42,
+      "expectedCommandKind": "issue.open",
+      "expectedStage": "open",
+      "expectedUriAction": "issue"
+    },
+    {
+      "action": "bug_plan",
+      "repoKey": "github.com/johnattas/maxterminal",
+      "issueNumber": 42,
+      "expectedCommandKind": "issue.plan",
+      "expectedStage": "plan",
+      "expectedUriAction": "issue"
+    },
+    {
+      "action": "bug_fix",
+      "repoKey": "github.com/johnattas/maxterminal",
+      "issueNumber": 42,
+      "expectedCommandKind": "issue.fix",
+      "expectedStage": "fix",
+      "expectedUriAction": "issue"
+    }
+  ]
+}

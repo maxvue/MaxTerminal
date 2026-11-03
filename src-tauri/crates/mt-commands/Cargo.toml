@@ -1,0 +1,40 @@
+[package]
+name = "mt-commands"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+mt-core = { path = "../mt-core" }
+mt-db = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+schemars = "1"
+specta = { workspace = true }
+tokio = { workspace = true, features = ["process", "time", "sync", "fs", "io-util", "macros", "rt"] }
+async-trait = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+walkdir = { workspace = true }
+dashmap = "6"
+indexmap = { version = "2", features = ["serde"] }
+libc = "0.2"
+nix = { workspace = true }
+uuid = { workspace = true }
+rand = { workspace = true }
+rusqlite = { workspace = true }
+parking_lot = { workspace = true }
+unicode-normalization = "0.1"
+
+[dev-dependencies]
+tempfile = { workspace = true }
+insta = { workspace = true }
+pretty_assertions = "1"
+tokio = { workspace = true, features = ["test-util", "rt-multi-thread"] }
+
+[lints]
+workspace = true

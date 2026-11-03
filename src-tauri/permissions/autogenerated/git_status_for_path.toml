@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-git-status-for-path"
+description = "Enables the git_status_for_path command without any pre-configured scope."
+commands.allow = ["git_status_for_path"]
+
+[[permission]]
+identifier = "deny-git-status-for-path"
+description = "Denies the git_status_for_path command without any pre-configured scope."
+commands.deny = ["git_status_for_path"]

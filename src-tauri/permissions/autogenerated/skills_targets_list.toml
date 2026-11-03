@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-skills-targets-list"
+description = "Enables the skills_targets_list command without any pre-configured scope."
+commands.allow = ["skills_targets_list"]
+
+[[permission]]
+identifier = "deny-skills-targets-list"
+description = "Denies the skills_targets_list command without any pre-configured scope."
+commands.deny = ["skills_targets_list"]

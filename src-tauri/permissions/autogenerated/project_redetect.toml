@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-project-redetect"
+description = "Enables the project_redetect command without any pre-configured scope."
+commands.allow = ["project_redetect"]
+
+[[permission]]
+identifier = "deny-project-redetect"
+description = "Denies the project_redetect command without any pre-configured scope."
+commands.deny = ["project_redetect"]

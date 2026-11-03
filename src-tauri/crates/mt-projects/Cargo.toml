@@ -1,0 +1,31 @@
+[package]
+name = "mt-projects"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+mt-core.workspace = true
+mt-db.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+specta.workspace = true
+tokio = { workspace = true, features = ["rt", "sync", "time", "macros"] }
+tracing.workspace = true
+notify.workspace = true
+notify-debouncer-full.workspace = true
+dirs.workspace = true
+async-trait.workspace = true
+uuid = { workspace = true, features = ["v4", "v7", "serde"] }
+parking_lot.workspace = true
+regex.workspace = true
+nix.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+tokio = { workspace = true, features = ["test-util", "rt-multi-thread"] }
+
+[lints]
+workspace = true

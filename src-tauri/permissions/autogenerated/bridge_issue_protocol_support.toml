@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-bridge-issue-protocol-support"
+description = "Enables the bridge_issue_protocol_support command without any pre-configured scope."
+commands.allow = ["bridge_issue_protocol_support"]
+
+[[permission]]
+identifier = "deny-bridge-issue-protocol-support"
+description = "Denies the bridge_issue_protocol_support command without any pre-configured scope."
+commands.deny = ["bridge_issue_protocol_support"]

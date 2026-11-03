@@ -1,0 +1,92 @@
+# Maintainer: Johnattas Santana <johnattas@users.noreply.github.com>
+pkgname=maxterminal
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Emulador de terminal acelerado por GPU e orquestrador de Agentes de IA integrado ao ecossistema Max"
+arch=('x86_64')
+url="https://github.com/johnattas/MaxTerminal"
+license=('custom:UNLICENSED')
+depends=(
+  'webkit2gtk-4.1'
+  'gtk3'
+  'glib2'
+  'cairo'
+  'pango'
+  'gdk-pixbuf2'
+  'libsoup3'
+  'libayatana-appindicator'
+  'libnotify'
+  'librsvg'
+  'hicolor-icon-theme'
+  'desktop-file-utils'
+  'xdg-utils'
+)
+makedepends=(
+  'rust'
+  'cargo'
+  'nodejs>=22'
+  'npm'
+  'pkgconf'
+  'patchelf'
+)
+optdepends=(
+  'github-cli: integração nativa com a aba fixa de Issues do GitHub'
+  'git: indicadores de branch e isolamento de Agentes CLI em worktrees'
+)
+provides=('maxterminal')
+conflicts=('maxterminal-bin')
+options=('!lto')
+install=maxterminal.install
+source=("${pkgname}-${pkgver}.tar.gz")
+sha256sums=('SKIP')
+
+prepare() {
+  cd "${srcdir}/${pkgname}-${pkgver}"
+  export CARGO_HOME="${srcdir}/cargo-home"
+  cargo fetch --locked --manifest-path src-tauri/Cargo.toml
+}
+
+build() {
+  cd "${srcdir}/${pkgname}-${pkgver}"
+  export CARGO_HOME="${srcdir}/cargo-home"
+  export CARGO_TARGET_DIR="target"
+  npm ci --offline || npm ci
+  npm run sync:local-libs || true
+  npm run build
+  # Compila sem a feature 'updater' para que atualizações sejam gerenciadas pelo pacman/paru (CA-40)
+  cargo build --frozen --release --no-default-features --features custom-protocol --manifest-path src-tauri/Cargo.toml \
+    --bin maxterminal -p mt-pty --bin mt-pty-helper -p mt-agents --bin mt-agent-relay
+}
+
+check() {
+  cd "${srcdir}/${pkgname}-${pkgver}"
+  export CARGO_HOME="${srcdir}/cargo-home"
+  export CARGO_TARGET_DIR="target"
+  cargo test --frozen --release --no-default-features --manifest-path src-tauri/Cargo.toml --lib
+}
+
+package() {
+  cd "${srcdir}/${pkgname}-${pkgver}"
+  local rel_dir="target/release"
+  if [[ ! -d "${rel_dir}" ]]; then
+    rel_dir="src-tauri/target/release"
+  fi
+
+  install -Dm755 "${rel_dir}/maxterminal" "${pkgdir}/usr/bin/maxterminal"
+  install -Dm755 "${rel_dir}/mt-pty-helper" "${pkgdir}/usr/lib/maxterminal/mt-pty-helper"
+  install -Dm755 "${rel_dir}/mt-pty-helper" "${pkgdir}/usr/bin/mt-pty-helper"
+  if [[ -f "${rel_dir}/mt-agent-relay" ]]; then
+    install -Dm755 "${rel_dir}/mt-agent-relay" "${pkgdir}/usr/lib/maxterminal/mt-agent-relay"
+    install -Dm755 "${rel_dir}/mt-agent-relay" "${pkgdir}/usr/bin/mt-agent-relay"
+  fi
+  install -Dm644 "packaging/linux/maxterminal.desktop" "${pkgdir}/usr/share/applications/maxterminal.desktop"
+  install -Dm644 "packaging/linux/icons/hicolor/scalable/apps/maxterminal.svg" \
+    "${pkgdir}/usr/share/icons/hicolor/scalable/apps/maxterminal.svg"
+
+  for sz in 16x16 32x32 48x48 64x64 128x128 256x256 512x512; do
+    if [[ -f "packaging/linux/icons/hicolor/${sz}/apps/maxterminal.png" ]]; then
+      install -Dm644 "packaging/linux/icons/hicolor/${sz}/apps/maxterminal.png" \
+        "${pkgdir}/usr/share/icons/hicolor/${sz}/apps/maxterminal.png"
+    fi
+  done
+}

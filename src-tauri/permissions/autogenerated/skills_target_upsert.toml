@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-skills-target-upsert"
+description = "Enables the skills_target_upsert command without any pre-configured scope."
+commands.allow = ["skills_target_upsert"]
+
+[[permission]]
+identifier = "deny-skills-target-upsert"
+description = "Denies the skills_target_upsert command without any pre-configured scope."
+commands.deny = ["skills_target_upsert"]

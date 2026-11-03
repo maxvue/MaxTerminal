@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-os-window-toggle"
+description = "Enables the os_window_toggle command without any pre-configured scope."
+commands.allow = ["os_window_toggle"]
+
+[[permission]]
+identifier = "deny-os-window-toggle"
+description = "Denies the os_window_toggle command without any pre-configured scope."
+commands.deny = ["os_window_toggle"]

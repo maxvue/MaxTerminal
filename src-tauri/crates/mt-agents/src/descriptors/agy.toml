@@ -1,0 +1,19 @@
+kind = "agy"
+display_name = "Antigravity (agy)"
+icon = "simple-icons:google"
+color_token = "--max-info-500"
+binary = "agy"
+process_names = ["agy", "antigravity", "node"]
+version_args = ["--version"]
+version_regex = '(\d+\.\d+\.\d+)'
+default_args = []
+extra_args = []
+shortcut = "Ctrl+Alt+A"
+
+[env]
+
+[capabilities]
+statusline_hook = false
+native_attention_hooks = false
+session_files = false
+osc_notifications = false

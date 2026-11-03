@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-command-block-list"
+description = "Enables the command_block_list command without any pre-configured scope."
+commands.allow = ["command_block_list"]
+
+[[permission]]
+identifier = "deny-command-block-list"
+description = "Denies the command_block_list command without any pre-configured scope."
+commands.deny = ["command_block_list"]

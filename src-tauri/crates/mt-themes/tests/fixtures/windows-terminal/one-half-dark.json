@@ -1,0 +1,23 @@
+{
+  "name": "One Half Dark",
+  "foreground": "#dcdfe4",
+  "background": "#282c34",
+  "cursorColor": "#a3b3cc",
+  "selectionBackground": "#474e5d",
+  "black": "#282c34",
+  "red": "#e06c75",
+  "green": "#98c379",
+  "yellow": "#e5c07b",
+  "blue": "#61afef",
+  "purple": "#c678dd",
+  "cyan": "#56b6c2",
+  "white": "#dcdfe4",
+  "brightBlack": "#5a6374",
+  "brightRed": "#e06c75",
+  "brightGreen": "#98c379",
+  "brightYellow": "#e5c07b",
+  "brightBlue": "#61afef",
+  "brightPurple": "#c678dd",
+  "brightCyan": "#56b6c2",
+  "brightWhite": "#dcdfe4"
+}

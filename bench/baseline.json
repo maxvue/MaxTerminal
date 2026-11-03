@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "status": "pending_measurement",
+  "environmentId": "cachyos-linux-x86_64-reference",
+  "minimumRuns": 5,
+  "corpus": {
+    "seedHex": "0x4d41585430303137",
+    "totalRows": 1000000
+  },
+  "bundleBudget": {
+    "entryJsRawMaxBytes": 1800000,
+    "entryJsGzipMaxBytes": 550000,
+    "asyncJsRawMaxBytes": 2500000,
+    "asyncJsGzipMaxBytes": 750000,
+    "cssRawMaxBytes": 900000,
+    "cssGzipMaxBytes": 120000,
+    "totalRawMaxBytes": 6500000,
+    "totalGzipMaxBytes": 1800000
+  },
+  "searchTargetsMs": {
+    "warmP50Ms": 15,
+    "warmP95Ms": 45,
+    "coldP95Ms": 120,
+    "keyToPaintP95Ms": 180
+  }
+}

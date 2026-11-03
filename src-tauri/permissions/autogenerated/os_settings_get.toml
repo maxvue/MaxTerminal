@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-os-settings-get"
+description = "Enables the os_settings_get command without any pre-configured scope."
+commands.allow = ["os_settings_get"]
+
+[[permission]]
+identifier = "deny-os-settings-get"
+description = "Denies the os_settings_get command without any pre-configured scope."
+commands.deny = ["os_settings_get"]

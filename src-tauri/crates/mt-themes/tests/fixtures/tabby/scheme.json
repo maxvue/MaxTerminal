@@ -1,0 +1,26 @@
+{
+  "name": "Monokai Pro JSON",
+  "author": "Monokai",
+  "foreground": "#fcfcfa",
+  "background": "#2d2a2e",
+  "cursor": "#fcfcfa",
+  "selection": "#5b595c80",
+  "colors": [
+    "#403e41",
+    "#ff6188",
+    "#a9dc76",
+    "#ffd866",
+    "#fc9867",
+    "#ab9df2",
+    "#78dce8",
+    "#fcfcfa",
+    "#727072",
+    "#ff6188",
+    "#a9dc76",
+    "#ffd866",
+    "#fc9867",
+    "#ab9df2",
+    "#78dce8",
+    "#fcfcfa"
+  ]
+}

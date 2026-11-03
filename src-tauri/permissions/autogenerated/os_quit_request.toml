@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-os-quit-request"
+description = "Enables the os_quit_request command without any pre-configured scope."
+commands.allow = ["os_quit_request"]
+
+[[permission]]
+identifier = "deny-os-quit-request"
+description = "Denies the os_quit_request command without any pre-configured scope."
+commands.deny = ["os_quit_request"]

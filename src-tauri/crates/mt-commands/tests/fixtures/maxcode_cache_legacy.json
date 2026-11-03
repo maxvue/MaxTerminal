@@ -1,0 +1,21 @@
+[
+  {
+    "name": "migrate",
+    "description": "Run the database migrations",
+    "options": [
+      {
+        "name": "--database",
+        "description": "The database connection to use"
+      },
+      {
+        "name": "--force",
+        "description": "Force the operation to run when in production"
+      }
+    ]
+  },
+  {
+    "name": "optimize:clear",
+    "description": "Remove the cached bootstrap files",
+    "options": []
+  }
+]

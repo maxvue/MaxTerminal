@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-ports-list-for-tab"
+description = "Enables the ports_list_for_tab command without any pre-configured scope."
+commands.allow = ["ports_list_for_tab"]
+
+[[permission]]
+identifier = "deny-ports-list-for-tab"
+description = "Denies the ports_list_for_tab command without any pre-configured scope."
+commands.deny = ["ports_list_for_tab"]

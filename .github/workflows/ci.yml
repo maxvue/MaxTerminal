@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+
+jobs:
+  check-and-test:
+    name: Qualidade, Testes e Orçamento de Bundle
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Instalar dependências nativas WebKitGTK / Tauri
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xvfb
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Configurar Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Instalar pacotes npm
+        run: npm ci
+
+      - name: Verificar rastreabilidade (Fases 01–17 e AGENTS.md)
+        run: node scripts/check-traceability.mjs
+
+      - name: Gate unificado (lint, typecheck, bindings, vitest, cargo test, build)
+        run: npm run check
+
+      - name: Verificar orçamento de bundle e smoke report
+        run: |
+          node scripts/check-bundle-budget.mjs --smoke
+          node scripts/bench/report.mjs

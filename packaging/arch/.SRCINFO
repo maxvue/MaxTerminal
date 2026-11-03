@@ -1,0 +1,36 @@
+pkgbase = maxterminal
+	pkgdesc = Emulador de terminal acelerado por GPU e orquestrador de Agentes de IA integrado ao ecossistema Max
+	pkgver = 0.1.0
+	pkgrel = 1
+	url = https://github.com/johnattas/MaxTerminal
+	install = maxterminal.install
+	arch = x86_64
+	license = custom:UNLICENSED
+	makedepends = rust
+	makedepends = cargo
+	makedepends = nodejs>=22
+	makedepends = npm
+	makedepends = pkgconf
+	makedepends = patchelf
+	depends = webkit2gtk-4.1
+	depends = gtk3
+	depends = glib2
+	depends = cairo
+	depends = pango
+	depends = gdk-pixbuf2
+	depends = libsoup3
+	depends = libayatana-appindicator
+	depends = libnotify
+	depends = librsvg
+	depends = hicolor-icon-theme
+	depends = desktop-file-utils
+	depends = xdg-utils
+	optdepends = github-cli: integração nativa com a aba fixa de Issues do GitHub
+	optdepends = git: indicadores de branch e isolamento de Agentes CLI em worktrees
+	provides = maxterminal
+	conflicts = maxterminal-bin
+	options = !lto
+	source = maxterminal-0.1.0.tar.gz
+	sha256sums = SKIP
+
+pkgname = maxterminal

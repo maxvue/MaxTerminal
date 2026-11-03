@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-command-group-get"
+description = "Enables the command_group_get command without any pre-configured scope."
+commands.allow = ["command_group_get"]
+
+[[permission]]
+identifier = "deny-command-group-get"
+description = "Denies the command_group_get command without any pre-configured scope."
+commands.deny = ["command_group_get"]

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-theme-set-active"
+description = "Enables the theme_set_active command without any pre-configured scope."
+commands.allow = ["theme_set_active"]
+
+[[permission]]
+identifier = "deny-theme-set-active"
+description = "Denies the theme_set_active command without any pre-configured scope."
+commands.deny = ["theme_set_active"]

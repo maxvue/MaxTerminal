@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-ai-generate-structured"
+description = "Enables the ai_generate_structured command without any pre-configured scope."
+commands.allow = ["ai_generate_structured"]
+
+[[permission]]
+identifier = "deny-ai-generate-structured"
+description = "Denies the ai_generate_structured command without any pre-configured scope."
+commands.deny = ["ai_generate_structured"]

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-artisan-preview-command"
+description = "Enables the artisan_preview_command command without any pre-configured scope."
+commands.allow = ["artisan_preview_command"]
+
+[[permission]]
+identifier = "deny-artisan-preview-command"
+description = "Denies the artisan_preview_command command without any pre-configured scope."
+commands.deny = ["artisan_preview_command"]

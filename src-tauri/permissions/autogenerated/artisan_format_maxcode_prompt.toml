@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-artisan-format-maxcode-prompt"
+description = "Enables the artisan_format_maxcode_prompt command without any pre-configured scope."
+commands.allow = ["artisan_format_maxcode_prompt"]
+
+[[permission]]
+identifier = "deny-artisan-format-maxcode-prompt"
+description = "Denies the artisan_format_maxcode_prompt command without any pre-configured scope."
+commands.deny = ["artisan_format_maxcode_prompt"]

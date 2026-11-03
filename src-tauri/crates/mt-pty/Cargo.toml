@@ -1,0 +1,43 @@
+[package]
+name = "mt-pty"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "mt-pty-helper"
+path = "src/bin/mt-pty-helper.rs"
+
+[[bench]]
+name = "throughput"
+harness = false
+
+[dependencies]
+mt-core.workspace = true
+portable-pty.workspace = true
+rustix.workspace = true
+nix.workspace = true
+procfs.workspace = true
+crossbeam-channel.workspace = true
+parking_lot.workspace = true
+arc-swap.workspace = true
+bytes.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+specta.workspace = true
+tracing.workspace = true
+signal-hook.workspace = true
+uuid.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+criterion.workspace = true
+proptest.workspace = true
+assert_matches.workspace = true
+sha2.workspace = true

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-skills-apply"
+description = "Enables the skills_apply command without any pre-configured scope."
+commands.allow = ["skills_apply"]
+
+[[permission]]
+identifier = "deny-skills-apply"
+description = "Denies the skills_apply command without any pre-configured scope."
+commands.deny = ["skills_apply"]

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-tab-focus"
+description = "Enables the tab_focus command without any pre-configured scope."
+commands.allow = ["tab_focus"]
+
+[[permission]]
+identifier = "deny-tab-focus"
+description = "Denies the tab_focus command without any pre-configured scope."
+commands.deny = ["tab_focus"]

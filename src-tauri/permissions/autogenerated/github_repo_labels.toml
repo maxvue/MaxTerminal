@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-github-repo-labels"
+description = "Enables the github_repo_labels command without any pre-configured scope."
+commands.allow = ["github_repo_labels"]
+
+[[permission]]
+identifier = "deny-github-repo-labels"
+description = "Denies the github_repo_labels command without any pre-configured scope."
+commands.deny = ["github_repo_labels"]

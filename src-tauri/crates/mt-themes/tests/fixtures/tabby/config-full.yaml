@@ -1,0 +1,73 @@
+version: 7
+profiles:
+  - type: ssh
+    name: Servidor Producao
+    options:
+      host: 10.0.0.10
+      user: deploy
+      password: super-secret-ssh-password
+hotkeys:
+  toggle-window:
+    - Ctrl-Space
+terminal:
+  shell: /bin/zsh
+  font: JetBrains Mono
+  fontSize: 13
+  colorScheme:
+    name: Tabby Active Teal
+    fg: '#e2e8f0'
+    bg: '#0f1c2e'
+    cursor: '#2ea4bc'
+    selection: '#00768e66'
+    colors:
+      - '#17293d'
+      - '#ef4444'
+      - '#10b981'
+      - '#f59e0b'
+      - '#0ea5e9'
+      - '#a855f7'
+      - '#00768e'
+      - '#cbd5e1'
+      - '#526478'
+      - '#f87171'
+      - '#34d399'
+      - '#fbbf24'
+      - '#38bdf8'
+      - '#c084fc'
+      - '#2ea4bc'
+      - '#f8fafc'
+  customColorSchemes:
+    - name: Custom Gruvbox Dark
+      author: morhetz
+      fg: '#ebdbb2'
+      bg: '#282828'
+      cursor: '#ebdbb2'
+      colors:
+        - '#282828'
+        - '#cc241d'
+        - '#98971a'
+        - '#d79921'
+        - '#458588'
+        - '#b16286'
+        - '#689d6a'
+        - '#a89984'
+        - '#928374'
+        - '#fb4934'
+        - '#b8bb26'
+        - '#fabd2f'
+        - '#83a598'
+        - '#d3869b'
+        - '#8ec07c'
+        - '#ebdbb2'
+    - name: Eight Colors Legacy
+      fg: '#f8fafc'
+      bg: '#1e293b'
+      colors:
+        - '#0f172a'
+        - '#ef4444'
+        - '#22c55e'
+        - '#eab308'
+        - '#3b82f6'
+        - '#a855f7'
+        - '#06b6d4'
+        - '#f1f5f9'

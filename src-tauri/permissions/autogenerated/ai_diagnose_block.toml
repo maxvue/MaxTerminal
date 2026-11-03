@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-ai-diagnose-block"
+description = "Enables the ai_diagnose_block command without any pre-configured scope."
+commands.allow = ["ai_diagnose_block"]
+
+[[permission]]
+identifier = "deny-ai-diagnose-block"
+description = "Denies the ai_diagnose_block command without any pre-configured scope."
+commands.deny = ["ai_diagnose_block"]

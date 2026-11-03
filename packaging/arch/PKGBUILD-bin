@@ -1,0 +1,47 @@
+# Maintainer: Johnattas Santana <johnattas@users.noreply.github.com>
+pkgname=maxterminal-bin
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Emulador de terminal acelerado por GPU e orquestrador de Agentes de IA (binário pré-compilado)"
+arch=('x86_64')
+url="https://github.com/johnattas/MaxTerminal"
+license=('custom:UNLICENSED')
+depends=(
+  'webkit2gtk-4.1'
+  'gtk3'
+  'glib2'
+  'cairo'
+  'pango'
+  'gdk-pixbuf2'
+  'libsoup3'
+  'libayatana-appindicator'
+  'libnotify'
+  'librsvg'
+  'hicolor-icon-theme'
+  'desktop-file-utils'
+  'xdg-utils'
+)
+optdepends=(
+  'github-cli: integração nativa com a aba fixa de Issues do GitHub'
+  'git: indicadores de branch e isolamento de Agentes CLI em worktrees'
+)
+provides=('maxterminal')
+conflicts=('maxterminal')
+install=maxterminal.install
+source=("maxterminal-${pkgver}-x86_64.tar.gz")
+sha256sums=('SKIP')
+
+package() {
+  cd "${srcdir}"
+  install -Dm755 "usr/bin/maxterminal" "${pkgdir}/usr/bin/maxterminal"
+  if [[ -f "usr/lib/maxterminal/mt-pty-helper" ]]; then
+    install -Dm755 "usr/lib/maxterminal/mt-pty-helper" "${pkgdir}/usr/lib/maxterminal/mt-pty-helper"
+  fi
+  if [[ -f "usr/lib/maxterminal/mt-agent-relay" ]]; then
+    install -Dm755 "usr/lib/maxterminal/mt-agent-relay" "${pkgdir}/usr/lib/maxterminal/mt-agent-relay"
+  fi
+  install -Dm644 "usr/share/applications/maxterminal.desktop" \
+    "${pkgdir}/usr/share/applications/maxterminal.desktop"
+  install -Dm644 "usr/share/icons/hicolor/scalable/apps/maxterminal.svg" \
+    "${pkgdir}/usr/share/icons/hicolor/scalable/apps/maxterminal.svg"
+}

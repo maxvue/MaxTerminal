@@ -1,0 +1,9 @@
+--- CLAUDE PERMISSION ---
+│ Do you want to run this bash command?
+│ ❯ 1. Yes
+│   2. No
+
+--- CODEX APPROVAL ---
+Would you like to run the following command?
+Yes, proceed
+No, cancel

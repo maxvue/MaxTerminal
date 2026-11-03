@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-github-refresh"
+description = "Enables the github_refresh command without any pre-configured scope."
+commands.allow = ["github_refresh"]
+
+[[permission]]
+identifier = "deny-github-refresh"
+description = "Denies the github_refresh command without any pre-configured scope."
+commands.deny = ["github_refresh"]

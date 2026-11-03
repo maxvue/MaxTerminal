@@ -1,0 +1,39 @@
+name: Security Audit
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+  schedule:
+    - cron: '0 6 * * 1'
+
+jobs:
+  audit:
+    name: Auditoria de Dependências (cargo-audit, cargo-deny, npm audit)
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Configurar Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Instalar cargo-audit e cargo-deny
+        run: cargo install --locked cargo-audit cargo-deny
+
+      - name: Executar cargo audit
+        working-directory: src-tauri
+        run: cargo audit --deny warnings
+
+      - name: Executar cargo deny
+        working-directory: src-tauri
+        run: cargo deny check advisories bans licenses sources
+
+      - name: Executar npm audit (produção)
+        run: npm audit --omit=dev --audit-level=high

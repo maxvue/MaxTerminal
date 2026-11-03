@@ -1,0 +1,11 @@
+┌──────────────────┬──────────────────────────────┬────────────┐
+│ Categoria        │ Amostra Unicode 11           │ Alinhado   │
+├──────────────────┼──────────────────────────────┼────────────┤
+│ ASCII Padrão     │ MaxTerminal v0.1.0           │ OK         │
+│ Acentos PT-BR    │ ação coração café construção │ OK         │
+│ Combinantes NFD  │ ã é î õ ü ç                  │ OK         │
+│ Ideogramas CJK   │ 日本語テスト 中文寬度對齊    │ OK         │
+│ Emojis Simples   │ 🚀 ✅ 🦀 🔥 ⚡ 🛡️            │ OK         │
+│ Emoji ZWJ        │ 👨‍👩‍👧‍👦 👩‍💻 🧑‍🔬 🏳️‍🌈                │ OK         │
+│ Box Drawing      │ ╔══╦══╗ ╟──╫──╢ ╚══╩══╝      │ OK         │
+└──────────────────┴──────────────────────────────┴────────────┘

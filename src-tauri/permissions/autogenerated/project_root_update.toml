@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-project-root-update"
+description = "Enables the project_root_update command without any pre-configured scope."
+commands.allow = ["project_root_update"]
+
+[[permission]]
+identifier = "deny-project-root-update"
+description = "Denies the project_root_update command without any pre-configured scope."
+commands.deny = ["project_root_update"]

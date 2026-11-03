@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-git-status-refresh"
+description = "Enables the git_status_refresh command without any pre-configured scope."
+commands.allow = ["git_status_refresh"]
+
+[[permission]]
+identifier = "deny-git-status-refresh"
+description = "Denies the git_status_refresh command without any pre-configured scope."
+commands.deny = ["git_status_refresh"]

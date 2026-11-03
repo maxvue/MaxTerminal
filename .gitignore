@@ -1,3 +1,25 @@
+# Worktrees isoladas (obrigatório conforme AGENTS.md)
 .worktrees/
 .max-code-worktrees/
 .agents/
+
+# Dependências e artefatos frontend
+node_modules
+node_modules/
+dist/
+coverage/
+
+# Artefatos Rust / Tauri
+src-tauri/target
+src-tauri/target/
+src-tauri/gen/*
+!src-tauri/gen/schemas/
+
+# Logs e temporários
+*.log
+*.log.*
+.DS_Store
+.env
+.env.*
+!.env.example
+.tmp/

@@ -1,0 +1,34 @@
+# Padrões versionados de detecção heurística de espera por permissão/input (duas âncoras).
+# Produzem exclusivamente `AttentionState::Suspected`, nunca `Awaiting` confirmado.
+
+[[pattern]]
+id = "claude.permission"
+agent = "claude-code"
+kind = "awaitingApproval"
+regex = '(?m)^\s*[│ ]*Do you want to (proceed|make this edit to|create|run)\b.*\?\s*$'
+confirm = '(?m)^\s*[│ ]*[❯>]?\s*1\.\s+Yes\b'
+verified = true
+
+[[pattern]]
+id = "codex.approval"
+agent = "codex"
+kind = "awaitingApproval"
+regex = '(?m)(Allow command\?|Would you like to run the following command\?|Would you like to make the following edits\?)'
+confirm = '(?m)Yes, proceed|Yes, and don.t ask again'
+verified = true
+
+[[pattern]]
+id = "opencode.permission"
+agent = "opencode"
+kind = "awaitingApproval"
+regex = '(?mi)^\s*[┃│ ]*Permission required'
+confirm = '(?mi)Allow (once|always)'
+verified = false
+
+[[pattern]]
+id = "agy.approval"
+agent = "agy"
+kind = "awaitingApproval"
+regex = '(?mi)^\s*[│ ]*(Allow|Approve) (this )?(command|execution|tool|edit)\b.*\?'
+confirm = '(?mi)\b(Yes|Allow once|Approve)\b'
+verified = false

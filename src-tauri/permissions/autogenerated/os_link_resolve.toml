@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-os-link-resolve"
+description = "Enables the os_link_resolve command without any pre-configured scope."
+commands.allow = ["os_link_resolve"]
+
+[[permission]]
+identifier = "deny-os-link-resolve"
+description = "Denies the os_link_resolve command without any pre-configured scope."
+commands.deny = ["os_link_resolve"]

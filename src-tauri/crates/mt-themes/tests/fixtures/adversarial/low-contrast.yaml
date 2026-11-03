@@ -1,0 +1,12 @@
+name: Unreadable Dark On Dark
+foreground: '#1e293b'
+background: '#0f172a'
+colors:
+  - '#000000'
+  - '#ff0000'
+  - '#00ff00'
+  - '#ffff00'
+  - '#0000ff'
+  - '#ff00ff'
+  - '#00ffff'
+  - '#ffffff'

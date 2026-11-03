@@ -1,0 +1,6 @@
+defaults:
+  foreground: '#ffffff'
+  background: '#000000'
+scheme:
+  <<: *defaults
+  name: Merge Key Exploit

@@ -1,0 +1,60 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+jobs:
+  release-linux:
+    name: Build Reproduzível Linux (Arch / AppImage + SHA256SUMS)
+    runs-on: ubuntu-24.04
+    env:
+      SOURCE_DATE_EPOCH: '1735689600'
+      TZ: 'UTC'
+      LC_ALL: 'C.UTF-8'
+      CARGO_INCREMENTAL: '0'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Instalar dependências nativas
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf desktop-file-utils
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Configurar Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Instalar dependências e validar manifesto de release
+        run: |
+          npm ci
+          node scripts/prepare-release-vendors.mjs --verify
+          desktop-file-validate packaging/linux/maxterminal.desktop
+
+      - name: Buildar frontend e verificar orçamento de bundle
+        run: |
+          npm run build
+          node scripts/check-bundle-budget.mjs --smoke
+
+      - name: Buildar binário Tauri release (modo gerenciador de pacotes sem updater)
+        run: |
+          cargo build --manifest-path src-tauri/Cargo.toml --locked --release --no-default-features --features custom-protocol \
+            --bin maxterminal -p mt-pty --bin mt-pty-helper -p mt-agents --bin mt-agent-relay
+
+      - name: Buildar binário Tauri release (modo AppImage com updater)
+        run: |
+          cargo build --manifest-path src-tauri/Cargo.toml --locked --release --features updater \
+            --bin maxterminal -p mt-pty --bin mt-pty-helper -p mt-agents --bin mt-agent-relay
+
+      - name: Gerar SHA256SUMS
+        run: |
+          sha256sum src-tauri/target/release/maxterminal > SHA256SUMS
+          cat SHA256SUMS

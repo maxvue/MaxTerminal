@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-tab-mark-seen"
+description = "Enables the tab_mark_seen command without any pre-configured scope."
+commands.allow = ["tab_mark_seen"]
+
+[[permission]]
+identifier = "deny-tab-mark-seen"
+description = "Denies the tab_mark_seen command without any pre-configured scope."
+commands.deny = ["tab_mark_seen"]

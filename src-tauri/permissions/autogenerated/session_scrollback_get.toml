@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-session-scrollback-get"
+description = "Enables the session_scrollback_get command without any pre-configured scope."
+commands.allow = ["session_scrollback_get"]
+
+[[permission]]
+identifier = "deny-session-scrollback-get"
+description = "Denies the session_scrollback_get command without any pre-configured scope."
+commands.deny = ["session_scrollback_get"]

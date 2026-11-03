@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-bridge-notify-project-selected"
+description = "Enables the bridge_notify_project_selected command without any pre-configured scope."
+commands.allow = ["bridge_notify_project_selected"]
+
+[[permission]]
+identifier = "deny-bridge-notify-project-selected"
+description = "Denies the bridge_notify_project_selected command without any pre-configured scope."
+commands.deny = ["bridge_notify_project_selected"]

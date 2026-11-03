@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-agent-descriptors-reload"
+description = "Enables the agent_descriptors_reload command without any pre-configured scope."
+commands.allow = ["agent_descriptors_reload"]
+
+[[permission]]
+identifier = "deny-agent-descriptors-reload"
+description = "Denies the agent_descriptors_reload command without any pre-configured scope."
+commands.deny = ["agent_descriptors_reload"]

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-ai-rag-list-slugs"
+description = "Enables the ai_rag_list_slugs command without any pre-configured scope."
+commands.allow = ["ai_rag_list_slugs"]
+
+[[permission]]
+identifier = "deny-ai-rag-list-slugs"
+description = "Denies the ai_rag_list_slugs command without any pre-configured scope."
+commands.deny = ["ai_rag_list_slugs"]

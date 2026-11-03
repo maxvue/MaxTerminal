@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-project-snapshot"
+description = "Enables the project_snapshot command without any pre-configured scope."
+commands.allow = ["project_snapshot"]
+
+[[permission]]
+identifier = "deny-project-snapshot"
+description = "Denies the project_snapshot command without any pre-configured scope."
+commands.deny = ["project_snapshot"]

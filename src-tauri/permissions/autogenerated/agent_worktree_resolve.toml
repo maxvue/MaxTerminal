@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-agent-worktree-resolve"
+description = "Enables the agent_worktree_resolve command without any pre-configured scope."
+commands.allow = ["agent_worktree_resolve"]
+
+[[permission]]
+identifier = "deny-agent-worktree-resolve"
+description = "Denies the agent_worktree_resolve command without any pre-configured scope."
+commands.deny = ["agent_worktree_resolve"]

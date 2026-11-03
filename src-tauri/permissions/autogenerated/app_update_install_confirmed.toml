@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-app-update-install-confirmed"
+description = "Enables the app_update_install_confirmed command without any pre-configured scope."
+commands.allow = ["app_update_install_confirmed"]
+
+[[permission]]
+identifier = "deny-app-update-install-confirmed"
+description = "Denies the app_update_install_confirmed command without any pre-configured scope."
+commands.deny = ["app_update_install_confirmed"]

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-os-window-show"
+description = "Enables the os_window_show command without any pre-configured scope."
+commands.allow = ["os_window_show"]
+
+[[permission]]
+identifier = "deny-os-window-show"
+description = "Denies the os_window_show command without any pre-configured scope."
+commands.deny = ["os_window_show"]

@@ -1,0 +1,20 @@
+kind = "codex"
+display_name = "Codex"
+icon = "simple-icons:openai"
+color_token = "--max-success-500"
+binary = "codex"
+process_names = ["codex", "node"]
+version_args = ["--version"]
+version_regex = '(\d+\.\d+\.\d+)'
+default_args = []
+extra_args = []
+model_flag = "--model"
+shortcut = "Ctrl+Alt+X"
+
+[env]
+
+[capabilities]
+statusline_hook = false
+native_attention_hooks = false
+session_files = false
+osc_notifications = true

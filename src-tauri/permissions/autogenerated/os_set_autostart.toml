@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-os-set-autostart"
+description = "Enables the os_set_autostart command without any pre-configured scope."
+commands.allow = ["os_set_autostart"]
+
+[[permission]]
+identifier = "deny-os-set-autostart"
+description = "Denies the os_set_autostart command without any pre-configured scope."
+commands.deny = ["os_set_autostart"]

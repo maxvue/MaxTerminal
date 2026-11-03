@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-command-block-search"
+description = "Enables the command_block_search command without any pre-configured scope."
+commands.allow = ["command_block_search"]
+
+[[permission]]
+identifier = "deny-command-block-search"
+description = "Denies the command_block_search command without any pre-configured scope."
+commands.deny = ["command_block_search"]

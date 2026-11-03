@@ -1,0 +1,45 @@
+name: Benchmarks
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 4 * * 0'
+
+jobs:
+  bench:
+    name: Benchmarks Criterion e Sistema
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Instalar dependências nativas
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Configurar Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Instalar pacotes npm e buildar frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Compilar benchmarks Criterion
+        run: cargo bench --manifest-path src-tauri/Cargo.toml --no-run
+
+      - name: Gerar relatório consolidado (bench/latest.json)
+        run: node scripts/bench/report.mjs
+
+      - name: Publicar artefato bench/latest.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-latest
+          path: bench/latest.json

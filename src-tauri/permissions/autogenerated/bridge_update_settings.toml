@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-bridge-update-settings"
+description = "Enables the bridge_update_settings command without any pre-configured scope."
+commands.allow = ["bridge_update_settings"]
+
+[[permission]]
+identifier = "deny-bridge-update-settings"
+description = "Denies the bridge_update_settings command without any pre-configured scope."
+commands.deny = ["bridge_update_settings"]

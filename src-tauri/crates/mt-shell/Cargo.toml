@@ -1,0 +1,44 @@
+[package]
+name = "mt-shell"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Shell Integration OSC 133/633, captura sanitizada de blocos de comando e máquina de estados de abas do MaxTerminal"
+
+[lints]
+workspace = true
+
+[dependencies]
+mt-core = { workspace = true }
+mt-pty = { workspace = true }
+mt-db = { workspace = true }
+base64 = { workspace = true }
+bytes = { workspace = true }
+crossbeam-channel = { workspace = true }
+hex = { workspace = true }
+memchr = { workspace = true }
+nix = { workspace = true }
+parking_lot = { workspace = true }
+rand = { workspace = true }
+regex = { workspace = true }
+rustix = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+specta = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+
+[dev-dependencies]
+criterion = { workspace = true }
+proptest = { workspace = true }
+rstest = { workspace = true }
+tempfile = { workspace = true }
+
+[[bench]]
+name = "osc_scan"
+harness = false

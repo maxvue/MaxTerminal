@@ -1,0 +1,110 @@
+<template>
+    <div class="project-empty-state">
+        <div class="project-empty-state__icon-box" aria-hidden="true">
+            <MaxIcon icon="mdi:folder-plus-outline" class="project-empty-state__icon" />
+        </div>
+        <h3 class="project-empty-state__title">Nenhum projeto cadastrado</h3>
+        <p class="project-empty-state__desc">Adicione um projeto individual ou cadastre uma pasta de projetos para descobrir subpastas automaticamente.</p>
+        <div class="project-empty-state__actions">
+            <button type="button" class="project-empty-state__btn project-empty-state__btn--primary" @click="emit('add-project')">
+                Adicionar projeto
+            </button>
+            <button type="button" class="project-empty-state__btn project-empty-state__btn--secondary" @click="emit('add-root')">
+                Adicionar pasta de projetos
+            </button>
+        </div>
+    </div>
+</template>
+
+<script setup lang="ts">
+    const emit = defineEmits<{
+        'add-project': [];
+        'add-root': [];
+    }>();
+</script>
+
+<style lang="scss" scoped>
+    @use '@/styles/params' as *;
+
+    .project-empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 1.5rem 1rem;
+        gap: 0.625rem;
+        color: var(--background-300);
+    }
+
+    .project-empty-state__icon-box {
+        width: 2.75rem;
+        height: 2.75rem;
+        border-radius: 0.75rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--background-800);
+        color: var(--max-primary-400);
+        border: 1px solid var(--background-700);
+    }
+
+    .project-empty-state__icon {
+        font-size: 1.5rem;
+    }
+
+    .project-empty-state__title {
+        margin: 0;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--background-100);
+    }
+
+    .project-empty-state__desc {
+        margin: 0;
+        font-size: 0.75rem;
+        line-height: 1.4;
+        color: var(--background-400);
+    }
+
+    .project-empty-state__actions {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        gap: 0.375rem;
+        margin-top: 0.25rem;
+    }
+
+    .project-empty-state__btn {
+        width: 100%;
+        padding: 0.4375rem 0.75rem;
+        border-radius: 0.375rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+
+        &:focus-visible {
+            @include mt-focus-ring;
+        }
+    }
+
+    .project-empty-state__btn--primary {
+        background: var(--max-primary-600);
+        color: var(--background-50);
+        border: 1px solid var(--max-primary-500);
+
+        &:hover {
+            background: var(--max-primary-500);
+        }
+    }
+
+    .project-empty-state__btn--secondary {
+        background: var(--background-800);
+        color: var(--background-100);
+        border: 1px solid var(--background-600);
+
+        &:hover {
+            background: var(--background-700);
+        }
+    }
+</style>

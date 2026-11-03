@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-command-block-error-context"
+description = "Enables the command_block_error_context command without any pre-configured scope."
+commands.allow = ["command_block_error_context"]
+
+[[permission]]
+identifier = "deny-command-block-error-context"
+description = "Denies the command_block_error_context command without any pre-configured scope."
+commands.deny = ["command_block_error_context"]

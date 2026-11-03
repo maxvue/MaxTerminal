@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-ai-cache-clear"
+description = "Enables the ai_cache_clear command without any pre-configured scope."
+commands.allow = ["ai_cache_clear"]
+
+[[permission]]
+identifier = "deny-ai-cache-clear"
+description = "Denies the ai_cache_clear command without any pre-configured scope."
+commands.deny = ["ai_cache_clear"]

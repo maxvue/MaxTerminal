@@ -1,0 +1,20 @@
+kind = "claude-code"
+display_name = "Claude Code"
+icon = "simple-icons:claude"
+color_token = "--max-warning-500"
+binary = "claude"
+process_names = ["claude", "node"]
+version_args = ["--version"]
+version_regex = '(\d+\.\d+\.\d+)'
+default_args = []
+extra_args = []
+model_flag = "--model"
+shortcut = "Ctrl+Alt+C"
+
+[env]
+
+[capabilities]
+statusline_hook = true
+native_attention_hooks = true
+session_files = true
+osc_notifications = false

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-project-reorder"
+description = "Enables the project_reorder command without any pre-configured scope."
+commands.allow = ["project_reorder"]
+
+[[permission]]
+identifier = "deny-project-reorder"
+description = "Denies the project_reorder command without any pre-configured scope."
+commands.deny = ["project_reorder"]

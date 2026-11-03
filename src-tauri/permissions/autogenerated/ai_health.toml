@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-ai-health"
+description = "Enables the ai_health command without any pre-configured scope."
+commands.allow = ["ai_health"]
+
+[[permission]]
+identifier = "deny-ai-health"
+description = "Denies the ai_health command without any pre-configured scope."
+commands.deny = ["ai_health"]

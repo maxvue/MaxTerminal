@@ -1,0 +1,28 @@
+{
+  "harnesses": [
+    {
+      "id": "claude-code",
+      "label": "Claude Code",
+      "icon": "simple-icons:claude",
+      "models": []
+    },
+    {
+      "id": "codex",
+      "label": "Codex",
+      "icon": "simple-icons:openai",
+      "models": []
+    },
+    {
+      "id": "agy",
+      "label": "Antigravity (agy)",
+      "icon": "simple-icons:google",
+      "models": []
+    },
+    {
+      "id": "opencode",
+      "label": "OpenCode",
+      "icon": "mdi:code-braces",
+      "models": []
+    }
+  ]
+}

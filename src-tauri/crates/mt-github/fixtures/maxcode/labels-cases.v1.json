@@ -1,0 +1,38 @@
+{
+  "schemaVersion": "1.0.0",
+  "cases": [
+    {
+      "name": "Troca de Waiting Plan por Planned preserva categorias e custom",
+      "currentLabels": ["Waiting Plan", "Regra de Negocio", "priority:high"],
+      "setState": "Planned",
+      "setClosure": null,
+      "addCategories": ["Testes"],
+      "removeCategories": [],
+      "addCustom": [],
+      "removeCustom": [],
+      "expectedFinal": ["Planned", "Regra de Negocio", "Testes", "priority:high"]
+    },
+    {
+      "name": "Aplicar label de encerramento preserva custom e categorias",
+      "currentLabels": ["Planned", "Seguranca", "triage"],
+      "setState": " Clear ",
+      "setClosure": "Duplicated",
+      "addCategories": [],
+      "removeCategories": [],
+      "addCustom": [],
+      "removeCustom": [],
+      "expectedFinal": ["Duplicated", "Seguranca", "triage"]
+    },
+    {
+      "name": "Case-insensitive deduplicado para grafia canonica",
+      "currentLabels": ["waiting plan", "regra de negocio", "custom-tag"],
+      "setState": "Waiting Execute",
+      "setClosure": "Clear",
+      "addCategories": ["SEGURANCA"],
+      "removeCategories": ["regra de negocio"],
+      "addCustom": ["needs-review"],
+      "removeCustom": ["CUSTOM-TAG"],
+      "expectedFinal": ["Waiting Execute", "Seguranca", "needs-review"]
+    }
+  ]
+}

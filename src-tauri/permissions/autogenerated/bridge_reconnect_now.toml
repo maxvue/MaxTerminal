@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-bridge-reconnect-now"
+description = "Enables the bridge_reconnect_now command without any pre-configured scope."
+commands.allow = ["bridge_reconnect_now"]
+
+[[permission]]
+identifier = "deny-bridge-reconnect-now"
+description = "Denies the bridge_reconnect_now command without any pre-configured scope."
+commands.deny = ["bridge_reconnect_now"]

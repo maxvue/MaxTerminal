@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-agent-telemetry-get"
+description = "Enables the agent_telemetry_get command without any pre-configured scope."
+commands.allow = ["agent_telemetry_get"]
+
+[[permission]]
+identifier = "deny-agent-telemetry-get"
+description = "Denies the agent_telemetry_get command without any pre-configured scope."
+commands.deny = ["agent_telemetry_get"]

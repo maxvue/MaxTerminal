@@ -1,0 +1,51 @@
+[package]
+name = "mt-agents"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[lib]
+name = "mt_agents"
+path = "src/lib.rs"
+
+[[bin]]
+name = "mt-agent-relay"
+path = "src/bin/mt-agent-relay.rs"
+
+[dependencies]
+mt-core.workspace = true
+mt-db.workspace = true
+mt-git.workspace = true
+tokio = { workspace = true, features = ["rt", "macros", "time", "sync", "net", "process", "fs", "io-util"] }
+tokio-util = { version = "0.7", features = ["rt"] }
+futures-util.workspace = true
+async-trait.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+toml = "0.8"
+specta.workspace = true
+regex.workspace = true
+sha2.workspace = true
+rand.workspace = true
+base64.workspace = true
+walkdir.workspace = true
+notify.workspace = true
+notify-debouncer-full.workspace = true
+shell-words = "1"
+parking_lot.workspace = true
+nix.workspace = true
+rusqlite.workspace = true
+time = { version = "0.3", features = ["formatting", "macros"] }
+uuid.workspace = true
+tracing.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time", "test-util"] }
+proptest.workspace = true
+
+[lints]
+workspace = true

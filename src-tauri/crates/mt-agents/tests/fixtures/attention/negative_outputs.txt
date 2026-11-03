@@ -1,0 +1,11 @@
+--- MARKDOWN CODE BLOCK ---
+```text
+│ Do you want to proceed with the migration?
+│ ❯ 1. Yes
+```
+
+--- QUOTED DIFF ---
++ Do you want to run this command?
++ 1. Yes
+> Would you like to run the following command?
+> Yes, proceed

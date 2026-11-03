@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-github-auth-clear-token"
+description = "Enables the github_auth_clear_token command without any pre-configured scope."
+commands.allow = ["github_auth_clear_token"]
+
+[[permission]]
+identifier = "deny-github-auth-clear-token"
+description = "Denies the github_auth_clear_token command without any pre-configured scope."
+commands.deny = ["github_auth_clear_token"]
