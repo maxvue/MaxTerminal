@@ -1,8 +1,10 @@
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import * as dbIpc from '@/ipc/db';
 import { MtIpcError } from '@/ipc/core';
 import * as projectsIpc from '@/ipc/projects';
 import { useProjectsStore, ZERO_PROJECT_COUNTERS } from '@/stores/projects';
+import { useSettingsStore } from '@/stores/settings';
 import { useTabStatusStore, type TabBadgeBucket } from '@/stores/tabStatus';
 import type {
     Project_Serialize,
@@ -10,6 +12,17 @@ import type {
     TabStateSnapshot_Serialize,
     TabStatus
 } from '@/types/bindings';
+
+vi.mock('@/ipc/db', () => ({
+    getSettings: vi.fn().mockResolvedValue({ ok: true, data: {} }),
+    setSetting: vi.fn().mockImplementation((key, value, rev) =>
+        Promise.resolve({ ok: true, data: { key, value, revision: (rev ?? 0) + 1 } })
+    ),
+    getSettingSnapshot: vi.fn().mockResolvedValue({ ok: true, data: { revision: 1, value: [] } }),
+    getStatus: vi.fn().mockResolvedValue({ ok: true, data: { health: { state: 'ready' } } }),
+    onSettingsChanged: vi.fn().mockResolvedValue(vi.fn()),
+    onDbRecovered: vi.fn().mockResolvedValue(vi.fn())
+}));
 
 vi.mock('@/ipc/projects', () => ({
     projectSnapshot: vi.fn(),
@@ -280,5 +293,223 @@ describe('useProjectsStore (Fase 06)', () => {
         // Destacar aba remove imediatamente da contagem
         projectsStore.detachTab('t1');
         expect(projectsStore.countersFor('p1').running).toBe(0);
+    });
+
+    describe('Visibilidade de Projetos (Ocultar/Mostrar)', () => {
+        it('possui default vazio para hiddenProjectIds e todos os projetos em visibleProjects', () => {
+            const projectsStore = useProjectsStore();
+            const p1 = makeProject('p1', 0);
+            const p2 = makeProject('p2', 1);
+            projectsStore.applySnapshot({
+                epoch: 'epoch-1',
+                revision: 1,
+                projects: [p1, p2],
+                roots: [],
+                discovered: []
+            });
+
+            expect(projectsStore.hiddenProjectIds).toEqual([]);
+            expect(projectsStore.hiddenProjects).toEqual([]);
+            expect(projectsStore.visibleProjects.map((p) => p.id)).toEqual(['p1', 'p2']);
+            expect(projectsStore.isHidden('p1')).toBe(false);
+            expect(projectsStore.isHidden('p2')).toBe(false);
+        });
+
+        it('normaliza dados inválidos, vazios e duplicados na chave ui.projects.hidden_ids', () => {
+            const projectsStore = useProjectsStore();
+            const settingsStore = useSettingsStore();
+            const p1 = makeProject('p1', 0);
+            const p2 = makeProject('p2', 1);
+            projectsStore.applySnapshot({
+                epoch: 'epoch-1',
+                revision: 1,
+                projects: [p1, p2],
+                roots: [],
+                discovered: []
+            });
+
+            // Valor inválido (não array) equivale a []
+            (settingsStore.values as Record<string, unknown>)['ui.projects.hidden_ids'] = 'invalido';
+            expect(projectsStore.hiddenProjectIds).toEqual([]);
+
+            // Array com duplicados, vazios e espaços em branco
+            (settingsStore.values as Record<string, unknown>)['ui.projects.hidden_ids'] = [
+                'p1',
+                'p1',
+                '   ',
+                '',
+                123,
+                null,
+                'p2'
+            ];
+            expect(projectsStore.hiddenProjectIds).toEqual(['p1', 'p2']);
+            expect(projectsStore.isHidden('p1')).toBe(true);
+            expect(projectsStore.isHidden('p2')).toBe(true);
+            expect(projectsStore.visibleProjects).toEqual([]);
+            expect(projectsStore.hiddenProjects.map((p) => p.id)).toEqual(['p1', 'p2']);
+        });
+
+        it('ignora IDs ausentes do catálogo em hiddenProjectIds e hiddenProjects mas preserva na preferência', () => {
+            const projectsStore = useProjectsStore();
+            const settingsStore = useSettingsStore();
+            const p1 = makeProject('p1', 0);
+            projectsStore.applySnapshot({
+                epoch: 'epoch-1',
+                revision: 1,
+                projects: [p1],
+                roots: [],
+                discovered: []
+            });
+
+            (settingsStore.values as Record<string, unknown>)['ui.projects.hidden_ids'] = ['p1', 'p-inexistente'];
+
+            // IDs ausentes do catálogo não geram contagem nem linhas
+            expect(projectsStore.hiddenProjectIds).toEqual(['p1']);
+            expect(projectsStore.hiddenProjects.map((p) => p.id)).toEqual(['p1']);
+            expect(projectsStore.isHidden('p-inexistente')).toBe(false);
+        });
+
+        it('setProjectHidden é idempotente e rejeita IDs não cadastrados com false', async () => {
+            const projectsStore = useProjectsStore();
+            const p1 = makeProject('p1', 0);
+            projectsStore.applySnapshot({
+                epoch: 'epoch-1',
+                revision: 1,
+                projects: [p1],
+                roots: [],
+                discovered: []
+            });
+
+            // ID desconhecido
+            const resUnknown = await projectsStore.setProjectHidden('p-desconhecido', true);
+            expect(resUnknown).toBe(false);
+            expect(dbIpc.setSetting).not.toHaveBeenCalled();
+
+            // Idempotência: p1 já está visível, pedir false não aciona escrita
+            const resIdempotentShow = await projectsStore.setProjectHidden('p1', false);
+            expect(resIdempotentShow).toBe(true);
+            expect(dbIpc.setSetting).not.toHaveBeenCalled();
+        });
+
+        it('setProjectHidden oculta e restaura projetos persistindo via settingsStore', async () => {
+            const projectsStore = useProjectsStore();
+            const p1 = makeProject('p1', 0);
+            const p2 = makeProject('p2', 1);
+            projectsStore.applySnapshot({
+                epoch: 'epoch-1',
+                revision: 1,
+                projects: [p1, p2],
+                roots: [],
+                discovered: []
+            });
+
+            // Oculta p1
+            const resHide = await projectsStore.setProjectHidden('p1', true);
+            expect(resHide).toBe(true);
+            expect(dbIpc.setSetting).toHaveBeenCalledWith('ui.projects.hidden_ids', ['p1'], null);
+            expect(projectsStore.isHidden('p1')).toBe(true);
+            expect(projectsStore.visibleProjects.map((p) => p.id)).toEqual(['p2']);
+            expect(projectsStore.hiddenProjects.map((p) => p.id)).toEqual(['p1']);
+
+            // Idempotência ao ocultar já oculto
+            vi.mocked(dbIpc.setSetting).mockClear();
+            const resHideAgain = await projectsStore.setProjectHidden('p1', true);
+            expect(resHideAgain).toBe(true);
+            expect(dbIpc.setSetting).not.toHaveBeenCalled();
+
+            // Restaura p1
+            const resShow = await projectsStore.setProjectHidden('p1', false);
+            expect(resShow).toBe(true);
+            expect(dbIpc.setSetting).toHaveBeenCalledWith('ui.projects.hidden_ids', [], 1);
+            expect(projectsStore.isHidden('p1')).toBe(false);
+            expect(projectsStore.visibleProjects.map((p) => p.id)).toEqual(['p1', 'p2']);
+            expect(projectsStore.hiddenProjects).toEqual([]);
+        });
+
+        it('setProjectHidden trata falha e rejeição de persistência de forma recuperável', async () => {
+            const projectsStore = useProjectsStore();
+            const p1 = makeProject('p1', 0);
+            projectsStore.applySnapshot({
+                epoch: 'epoch-1',
+                revision: 1,
+                projects: [p1],
+                roots: [],
+                discovered: []
+            });
+
+            // Falha com DbCallResult falso
+            vi.mocked(dbIpc.setSetting).mockResolvedValueOnce({
+                ok: false,
+                error: new MtIpcError({ code: 'db.io_error', message: 'Falha de disco' }, 'db_settings_set')
+            });
+            const resFailed = await projectsStore.setProjectHidden('p1', true);
+            expect(resFailed).toBe(false);
+            expect(projectsStore.savingHidden).toBe(false);
+            expect(projectsStore.isHidden('p1')).toBe(false);
+
+            // Rejeição direta da Promise
+            vi.mocked(dbIpc.setSetting).mockRejectedValueOnce(new Error('Erro de conexão IPC'));
+            await expect(projectsStore.setProjectHidden('p1', true)).rejects.toThrow('Erro de conexão IPC');
+            expect(projectsStore.savingHidden).toBe(false);
+            expect(projectsStore.isHidden('p1')).toBe(false);
+        });
+
+        it('serializa cliques concorrentes sem perda de IDs ou conflito de escrita', async () => {
+            const projectsStore = useProjectsStore();
+            const p1 = makeProject('p1', 0);
+            const p2 = makeProject('p2', 1);
+            projectsStore.applySnapshot({
+                epoch: 'epoch-1',
+                revision: 1,
+                projects: [p1, p2],
+                roots: [],
+                discovered: []
+            });
+
+            // Dispara duas escritas simultâneas
+            const [r1, r2] = await Promise.all([
+                projectsStore.setProjectHidden('p1', true),
+                projectsStore.setProjectHidden('p2', true)
+            ]);
+
+            expect(r1).toBe(true);
+            expect(r2).toBe(true);
+            expect(projectsStore.savingHidden).toBe(false);
+            expect(projectsStore.isHidden('p1')).toBe(true);
+            expect(projectsStore.isHidden('p2')).toBe(true);
+            expect(projectsStore.hiddenProjectIds).toEqual(['p1', 'p2']);
+        });
+
+        it('preserva selectedId, tabOwner, activeTab e contadores ao ocultar o projeto selecionado', async () => {
+            const projectsStore = useProjectsStore();
+            const tabStatusStore = useTabStatusStore();
+            const p1 = makeProject('p1', 0);
+            const p2 = makeProject('p2', 1);
+            projectsStore.applySnapshot({
+                epoch: 'epoch-1',
+                revision: 1,
+                projects: [p1, p2],
+                roots: [],
+                discovered: []
+            });
+
+            projectsStore.select('p1');
+            expect(projectsStore.selectedId).toBe('p1');
+
+            projectsStore.attachTab('t1', 'p1');
+            tabStatusStore.applySnapshot(makeTabSnapshot('t1', 'running'));
+            const c1Before = projectsStore.countersFor('p1');
+            expect(c1Before.running).toBe(1);
+
+            // Oculta o projeto selecionado
+            await projectsStore.setProjectHidden('p1', true);
+
+            // Ocultar não altera selectedId, abas ou contadores
+            expect(projectsStore.selectedId).toBe('p1');
+            expect(projectsStore.selectedProject?.id).toBe('p1');
+            expect(projectsStore.tabOwner['t1']).toBe('p1');
+            expect(projectsStore.countersFor('p1').running).toBe(1);
+            expect(projectsStore.countersFor('p1')).toBe(c1Before);
+        });
     });
 });

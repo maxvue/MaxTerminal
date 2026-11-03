@@ -4,12 +4,15 @@ export interface ProjectSettingsSchema {
     'projects.selected_id': string | null;
     /** Largura percentual da coluna esquerda de projetos (`15..=45`, padrão `22`). */
     'layout.columns.left_size': number;
+    /** Lista de identificadores de projetos ocultos da lista principal na coluna esquerda. */
+    'ui.projects.hidden_ids': string[];
 }
 
 /** Valores padrão imutáveis das configurações da Fase 06. */
 export const PROJECT_SETTINGS_DEFAULTS: Readonly<ProjectSettingsSchema> = Object.freeze({
     'projects.selected_id': null,
-    'layout.columns.left_size': 22
+    'layout.columns.left_size': 22,
+    'ui.projects.hidden_ids': []
 });
 
 /** Limite mínimo permitido para a coluna esquerda (%). */

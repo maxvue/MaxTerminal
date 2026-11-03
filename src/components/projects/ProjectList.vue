@@ -22,13 +22,36 @@
             </button>
         </div>
 
+        <div v-if="visibilityError" class="project-list__error" role="alert">
+            <span>{{ visibilityError }}</span>
+            <button type="button" class="project-list__retry-btn" @click="visibilityError = null">
+                Fechar
+            </button>
+        </div>
+
         <div class="project-list__scroll">
-            <ul v-if="projectsStore.projects.length > 0" class="project-list__items" role="list">
-                <li v-for="(proj, idx) in projectsStore.projects" :key="proj.id" class="project-list__li" :draggable="!projectsStore.reordering" @dragstart="onDragStart(idx)" @dragover.prevent @drop="onDrop(idx)">
-                    <ProjectItem :project="proj" :counters="projectsStore.countersFor(proj.id)" :selected="projectsStore.selectedId === proj.id" @select="handleSelectProject" @edit="handleOpenEdit" @configure="handleConfigureProject" @redetect="handleRedetect" @remove="handleRemoveProject" />
+            <ul v-if="projectsStore.visibleProjects.length > 0" class="project-list__items" role="list">
+                <li v-for="proj in projectsStore.visibleProjects" :key="proj.id" class="project-list__li" :draggable="!projectsStore.reordering" @dragstart="onDragStart(proj.id)" @dragover.prevent @drop="onDrop(proj.id)">
+                    <ProjectItem :project="proj" :counters="projectsStore.countersFor(proj.id)" :selected="projectsStore.selectedId === proj.id" :hidden="false" :disabled="isItemSaving(proj.id)" :pending="isItemSaving(proj.id)" @select="handleSelectProject" @edit="handleOpenEdit" @configure="handleConfigureProject" @redetect="handleRedetect" @remove="handleRemoveProject" @hide="handleHideProject" />
                 </li>
             </ul>
+            <div v-else-if="projectsStore.projects.length > 0" class="project-list__all-hidden">
+                <MaxIcon icon="lucide:eye-off" class="project-list__all-hidden-icon" />
+                <span>Todos os projetos estão ocultos</span>
+            </div>
             <ProjectEmptyState v-else-if="!projectsStore.loading" @add-project="showAddModal = true" @add-root="openNewRootModal" />
+        </div>
+
+        <div v-if="projectsStore.hiddenProjects.length > 0" class="project-list__accordion-wrapper">
+            <MaxAccordion v-model:value="hiddenAccordionValue" class="project-list__accordion">
+                <MaxAccordionItem value="hidden-projects" :title="`Ocultos (${projectsStore.hiddenProjects.length})`" :header-aria-level="3">
+                    <ul class="project-list__items project-list__items--hidden" role="list">
+                        <li v-for="proj in projectsStore.hiddenProjects" :key="proj.id" class="project-list__li">
+                            <ProjectItem :project="proj" :counters="projectsStore.countersFor(proj.id)" :selected="projectsStore.selectedId === proj.id" :hidden="true" :disabled="isItemSaving(proj.id)" :pending="isItemSaving(proj.id)" @select="handleSelectProject" @edit="handleOpenEdit" @configure="handleConfigureProject" @redetect="handleRedetect" @remove="handleRemoveProject" @show="handleShowProject" />
+                        </li>
+                    </ul>
+                </MaxAccordionItem>
+            </MaxAccordion>
         </div>
 
         <footer class="project-list__footer">
@@ -45,12 +68,14 @@
 </template>
 
 <script setup lang="ts">
-    import { computed, ref } from 'vue';
+    import { MaxAccordion, MaxAccordionItem } from '@maxvue/max-components-ui';
+    import { computed, nextTick, ref } from 'vue';
     import ProjectAddModal from '@/components/projects/ProjectAddModal.vue';
     import ProjectDiscoveryPanel from '@/components/projects/ProjectDiscoveryPanel.vue';
     import ProjectEditModal from '@/components/projects/ProjectEditModal.vue';
     import ProjectEmptyState from '@/components/projects/ProjectEmptyState.vue';
     import ProjectItem from '@/components/projects/ProjectItem.vue';
+    import { computeReorderedProjectIds } from '@/components/projects/projectOrder';
     import ProjectRootModal from '@/components/projects/ProjectRootModal.vue';
     import { useProjectsStore } from '@/stores/projects';
     import { useWindowStore } from '@/stores/window';
@@ -64,7 +89,10 @@
     const showEditModal = ref<boolean>(false);
     const editingRoot = ref<ProjectRoot | null>(null);
     const editingProjectId = ref<ProjectId | null>(null);
-    const draggedIndex = ref<number | null>(null);
+    const draggedVisibleId = ref<ProjectId | null>(null);
+    const hiddenAccordionValue = ref<string | undefined>(undefined);
+    const savingProjectId = ref<ProjectId | null>(null);
+    const visibilityError = ref<string | null>(null);
 
     const editingProject = computed<Project_Serialize | null>(() => {
         if (!editingProjectId.value) {
@@ -72,6 +100,10 @@
         }
         return projectsStore.projectById(editingProjectId.value) ?? null;
     });
+
+    function isItemSaving(id: ProjectId): boolean {
+        return savingProjectId.value === id;
+    }
 
     function openNewRootModal(): void {
         editingRoot.value = null;
@@ -111,6 +143,76 @@
         }
     }
 
+    async function handleHideProject(id: ProjectId): Promise<void> {
+        if (savingProjectId.value !== null) {
+            return;
+        }
+        const visibleList = projectsStore.visibleProjects;
+        const currentIdx = visibleList.findIndex((p) => p.id === id);
+        let neighborId: ProjectId | null = null;
+        if (currentIdx !== -1 && visibleList.length > 1) {
+            const candidate = visibleList[currentIdx + 1] ?? visibleList[currentIdx - 1];
+            neighborId = candidate?.id ?? null;
+        }
+
+        savingProjectId.value = id;
+        visibilityError.value = null;
+        try {
+            const ok = await projectsStore.setProjectHidden(id, true);
+            if (!ok) {
+                visibilityError.value = 'Falha ao ocultar o projeto. Tente novamente.';
+                return;
+            }
+            await nextTick();
+            if (neighborId) {
+                const el = document.querySelector<HTMLElement>(`[data-project-id="${neighborId}"] .project-item__main`);
+                el?.focus();
+            } else {
+                const headerEl = document.querySelector<HTMLElement>('.project-list__accordion-wrapper [role="button"]');
+                headerEl?.focus();
+            }
+        } catch {
+            visibilityError.value = 'Erro ao ocultar o projeto. Tente novamente.';
+        } finally {
+            savingProjectId.value = null;
+        }
+    }
+
+    async function handleShowProject(id: ProjectId): Promise<void> {
+        if (savingProjectId.value !== null) {
+            return;
+        }
+        const hiddenList = projectsStore.hiddenProjects;
+        const currentIdx = hiddenList.findIndex((p) => p.id === id);
+        let neighborId: ProjectId | null = null;
+        if (currentIdx !== -1 && hiddenList.length > 1) {
+            const candidate = hiddenList[currentIdx + 1] ?? hiddenList[currentIdx - 1];
+            neighborId = candidate?.id ?? null;
+        }
+
+        savingProjectId.value = id;
+        visibilityError.value = null;
+        try {
+            const ok = await projectsStore.setProjectHidden(id, false);
+            if (!ok) {
+                visibilityError.value = 'Falha ao restaurar o projeto. Tente novamente.';
+                return;
+            }
+            await nextTick();
+            if (neighborId && projectsStore.hiddenProjects.length > 0) {
+                const el = document.querySelector<HTMLElement>(`[data-project-id="${neighborId}"] .project-item__main`);
+                el?.focus();
+            } else {
+                const settingsBtn = document.querySelector<HTMLElement>('.project-list__settings-btn');
+                settingsBtn?.focus();
+            }
+        } catch {
+            visibilityError.value = 'Erro ao restaurar o projeto. Tente novamente.';
+        } finally {
+            savingProjectId.value = null;
+        }
+    }
+
     async function handleAcceptDiscovered(paths: string[]): Promise<void> {
         try {
             await projectsStore.acceptDiscovered(paths);
@@ -135,27 +237,31 @@
         }
     }
 
-    function onDragStart(idx: number): void {
+    function onDragStart(id: ProjectId): void {
         if (projectsStore.reordering) {
             return;
         }
-        draggedIndex.value = idx;
+        draggedVisibleId.value = id;
     }
 
-    async function onDrop(targetIdx: number): Promise<void> {
-        const fromIdx = draggedIndex.value;
-        draggedIndex.value = null;
-        if (fromIdx === null || fromIdx === targetIdx || projectsStore.reordering) {
+    async function onDrop(targetId: ProjectId): Promise<void> {
+        const fromId = draggedVisibleId.value;
+        draggedVisibleId.value = null;
+        if (!fromId || fromId === targetId || projectsStore.reordering) {
             return;
         }
-        const ids = projectsStore.projects.map((p) => p.id);
-        const [moved] = ids.splice(fromIdx, 1);
-        if (!moved) {
+        const hiddenSet = new Set(projectsStore.hiddenProjectIds);
+        const reorderedIds = computeReorderedProjectIds(
+            projectsStore.projects,
+            hiddenSet,
+            fromId,
+            targetId
+        );
+        if (!reorderedIds) {
             return;
         }
-        ids.splice(targetIdx, 0, moved);
         try {
-            await projectsStore.reorder(ids);
+            await projectsStore.reorder(reorderedIds);
         } catch {
             // Recarregado pela store em caso de mismatch.
         }
@@ -168,6 +274,12 @@
         if (target.closest('.project-list__footer')) {
             return true;
         }
+        if (target.closest('.project-item__actions') || target.closest('.project-list__toolbar')) {
+            return true;
+        }
+        if (target.closest('.max-accordion-item-header') || target.closest('[role="heading"]')) {
+            return true;
+        }
         const tag = target.tagName.toLowerCase();
         return tag === 'input' || tag === 'textarea' || tag === 'select' || target.isContentEditable;
     }
@@ -176,7 +288,11 @@
         if (isEditableElement(e.target)) {
             return;
         }
-        const list = projectsStore.projects;
+
+        const targetEl = e.target instanceof HTMLElement ? e.target : null;
+        const isFromHidden = Boolean(targetEl?.closest('.project-list__items--hidden'));
+        const list = isFromHidden ? projectsStore.hiddenProjects : projectsStore.visibleProjects;
+
         if (list.length === 0) {
             return;
         }
@@ -186,7 +302,7 @@
             : -1;
 
         if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
-            if (currentIdx === -1 || projectsStore.reordering) {
+            if (isFromHidden || currentIdx === -1 || projectsStore.reordering) {
                 return;
             }
             const targetIdx = e.key === 'ArrowUp' ? currentIdx - 1 : currentIdx + 1;
@@ -194,14 +310,24 @@
                 return;
             }
             e.preventDefault();
-            const ids = list.map((p) => p.id);
-            const [moved] = ids.splice(currentIdx, 1);
-            if (!moved) {
+
+            const hiddenSet = new Set(projectsStore.hiddenProjectIds);
+            const fromProj = list[currentIdx];
+            const targetProj = list[targetIdx];
+            if (!fromProj || !targetProj) {
                 return;
             }
-            ids.splice(targetIdx, 0, moved);
+            const reorderedIds = computeReorderedProjectIds(
+                projectsStore.projects,
+                hiddenSet,
+                fromProj.id,
+                targetProj.id
+            );
+            if (!reorderedIds) {
+                return;
+            }
             try {
-                await projectsStore.reorder(ids);
+                await projectsStore.reorder(reorderedIds);
             } catch {
                 // Ignora.
             }
@@ -332,6 +458,61 @@
 
     .project-list__li {
         list-style: none;
+    }
+
+    .project-list__all-hidden {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.625rem;
+        padding: 2.5rem 1rem;
+        color: var(--background-400);
+        font-size: 0.8125rem;
+        text-align: center;
+    }
+
+    .project-list__all-hidden-icon {
+        font-size: 1.5rem;
+        color: var(--background-500);
+    }
+
+    .project-list__accordion-wrapper {
+        border-top: 1px solid var(--background-700);
+        background: var(--background-800);
+        max-height: 14rem;
+        overflow-y: auto;
+    }
+
+    :deep(.project-list__accordion) {
+        border: none !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+    }
+
+    :deep(.project-list__accordion .max-accordion-item) {
+        border-bottom: none !important;
+    }
+
+    :deep(.project-list__accordion .max-accordion-item-header) {
+        padding: 0.4375rem 0.75rem !important;
+        color: var(--background-300) !important;
+        font-size: 0.75rem !important;
+        font-weight: 600 !important;
+        border-radius: 0 !important;
+
+        &:hover {
+            background: var(--background-700) !important;
+            color: var(--background-100) !important;
+        }
+
+        &:focus-visible {
+            @include mt-focus-ring;
+        }
+    }
+
+    :deep(.project-list__accordion .max-accordion-item-content-inner) {
+        padding: 0.25rem 0.375rem 0.375rem !important;
     }
 
     .project-list__footer {

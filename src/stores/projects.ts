@@ -72,6 +72,7 @@ export const useProjectsStore = defineStore('projects', () => {
     const activeTabByProject = ref<Record<ProjectId, TabId | null>>({});
     const loading = ref<boolean>(false);
     const reordering = ref<boolean>(false);
+    const savingHidden = ref<boolean>(false);
     const error = ref<string | null>(null);
     const epoch = ref<string | null>(null);
     const revision = ref<number>(0);
@@ -80,6 +81,7 @@ export const useProjectsStore = defineStore('projects', () => {
     let lifecycleToken = 0;
     let initPromise: Promise<void> | null = null;
     let resyncPromise: Promise<void> | null = null;
+    let hiddenSavePromise: Promise<boolean> | null = null;
     let dirtyResync = false;
     let targetRevision = 0;
     let targetEpoch: string | null = null;
@@ -117,6 +119,55 @@ export const useProjectsStore = defineStore('projects', () => {
         }
         return map;
     });
+
+    function normalizeHiddenIds(raw: unknown): string[] {
+        if (!Array.isArray(raw)) {
+            return [];
+        }
+        const seen = new Set<string>();
+        const result: string[] = [];
+        for (const item of raw) {
+            if (typeof item === 'string') {
+                const trimmed = item.trim();
+                if (trimmed.length > 0 && !seen.has(trimmed)) {
+                    seen.add(trimmed);
+                    result.push(trimmed);
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Identificadores de projetos ocultos normalizados e validados contra o catálogo atual.
+     * IDs ausentes do catálogo são omitidos desta lista (não geram contagem nem linhas).
+     */
+    const hiddenProjectIds = computed<ProjectId[]>(() => {
+        const raw = settingsStore.values['ui.projects.hidden_ids'];
+        const validRaw = normalizeHiddenIds(raw);
+        const known = projectsByIdMap.value;
+        return validRaw.filter((id) => known.has(id));
+    });
+
+    const hiddenIdsSet = computed<Set<ProjectId>>(() => {
+        return new Set(hiddenProjectIds.value);
+    });
+
+    /** Projeção reativa dos projetos visíveis, preservando a ordenação original do catálogo. */
+    const visibleProjects = computed<Project_Serialize[]>(() => {
+        const hiddenSet = hiddenIdsSet.value;
+        return projects.value.filter((p) => !hiddenSet.has(p.id));
+    });
+
+    /** Projeção reativa dos projetos ocultos, preservando a ordenação original do catálogo. */
+    const hiddenProjects = computed<Project_Serialize[]>(() => {
+        const hiddenSet = hiddenIdsSet.value;
+        return projects.value.filter((p) => hiddenSet.has(p.id));
+    });
+
+    function isHidden(id: ProjectId): boolean {
+        return hiddenIdsSet.value.has(id);
+    }
 
     /**
      * Agregação O(abas) de contadores por projeto com estabilidade referencial por projeto:
@@ -390,6 +441,65 @@ export const useProjectsStore = defineStore('projects', () => {
         }
     }
 
+    /**
+     * Oculta ou restaura um projeto cadastrado no catálogo.
+     * Operação idempotente e com persistência exclusiva via `settingsStore.set`.
+     */
+    async function setProjectHidden(id: ProjectId, hidden: boolean): Promise<boolean> {
+        if (!projectsByIdMap.value.has(id)) {
+            return false;
+        }
+
+        // Idempotência imediata caso nenhuma escrita esteja ocorrendo
+        if (hiddenSavePromise === null && isHidden(id) === hidden) {
+            return true;
+        }
+
+        // Serialização de cliques concorrentes: aguarda conclusão da escrita anterior
+        while (hiddenSavePromise !== null) {
+            try {
+                await hiddenSavePromise;
+            } catch {
+                // Permite que a próxima alteração continue mesmo após rejeição anterior
+            }
+        }
+
+        // Reavalia o catálogo e a idempotência após aguardar a escrita anterior
+        if (!projectsByIdMap.value.has(id)) {
+            return false;
+        }
+        if (isHidden(id) === hidden) {
+            return true;
+        }
+
+        savingHidden.value = true;
+        const execute = async (): Promise<boolean> => {
+            try {
+                const currentRaw = normalizeHiddenIds(settingsStore.values['ui.projects.hidden_ids']);
+                let nextIds: string[];
+                if (hidden) {
+                    if (currentRaw.includes(id)) {
+                        nextIds = currentRaw;
+                    } else {
+                        nextIds = [...currentRaw, id];
+                    }
+                } else {
+                    nextIds = currentRaw.filter((existingId) => existingId !== id);
+                }
+
+                return await settingsStore.set('ui.projects.hidden_ids', nextIds);
+            } finally {
+                savingHidden.value = false;
+            }
+        };
+
+        hiddenSavePromise = execute().finally(() => {
+            hiddenSavePromise = null;
+        });
+
+        return hiddenSavePromise;
+    }
+
     async function reorder(ids: ProjectId[]): Promise<void> {
         if (reordering.value) {
             return;
@@ -513,12 +623,14 @@ export const useProjectsStore = defineStore('projects', () => {
         lifecycleToken += 1;
         initPromise = null;
         resyncPromise = null;
+        hiddenSavePromise = null;
         dirtyResync = false;
         if (selectPersistTimer !== null) {
             clearTimeout(selectPersistTimer);
             selectPersistTimer = null;
         }
         initialized.value = false;
+        savingHidden.value = false;
     }
 
     function resetForTests(): void {
@@ -531,6 +643,7 @@ export const useProjectsStore = defineStore('projects', () => {
         activeTabByProject.value = {};
         loading.value = false;
         reordering.value = false;
+        savingHidden.value = false;
         error.value = null;
         epoch.value = null;
         revision.value = 0;
@@ -549,6 +662,7 @@ export const useProjectsStore = defineStore('projects', () => {
         activeTabByProject,
         loading,
         reordering,
+        savingHidden,
         error,
         epoch,
         revision,
@@ -559,6 +673,10 @@ export const useProjectsStore = defineStore('projects', () => {
         discoveredByRoot,
         countersByProject,
         countersFor,
+        hiddenProjectIds,
+        visibleProjects,
+        hiddenProjects,
+        isHidden,
         // actions
         init,
         resync,
@@ -566,6 +684,7 @@ export const useProjectsStore = defineStore('projects', () => {
         addProject,
         updateProject,
         removeProject,
+        setProjectHidden,
         reorder,
         redetect,
         refreshMissing,

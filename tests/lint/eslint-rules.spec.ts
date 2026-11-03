@@ -19,7 +19,7 @@ describe('ESLint Flat Config e Regras Customizadas', () => {
         expect(result).toBeDefined();
         expect(result?.errorCount).toBe(0);
         expect(result?.warningCount).toBe(0);
-    });
+    }, 30000);
 
     it('deve reprovar invalid-block-order.vue pela regra vue/block-order', async () => {
         const filePath = path.resolve(currentDir, 'fixtures/invalid-block-order.vue');

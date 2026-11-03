@@ -59,9 +59,14 @@ vi.mock('@/ipc/projects', () => ({
 }));
 
 vi.mock('@/ipc/db', () => ({
-    getSettings: vi.fn().mockResolvedValue({}),
-    setSetting: vi.fn().mockResolvedValue({ ok: true, data: { revision: 1, value: null } }),
-    getSettingSnapshot: vi.fn().mockResolvedValue({ revision: 1, values: {} })
+    getSettings: vi.fn().mockResolvedValue({ ok: true, data: {} }),
+    setSetting: vi.fn().mockImplementation((key, value, rev) =>
+        Promise.resolve({ ok: true, data: { key, value, revision: (rev ?? 0) + 1 } })
+    ),
+    getSettingSnapshot: vi.fn().mockResolvedValue({ ok: true, data: { revision: 1, value: null } }),
+    getStatus: vi.fn().mockResolvedValue({ ok: true, data: { health: { state: 'ready' } } }),
+    onSettingsChanged: vi.fn().mockResolvedValue(vi.fn()),
+    onDbRecovered: vi.fn().mockResolvedValue(vi.fn())
 }));
 
 function makeProject(id: string, title = `Projeto ${id}`): Project_Serialize {
