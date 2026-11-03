@@ -404,7 +404,7 @@ fn pty_ipc_commands_and_mt_error_serialization_via_mock_runtime() {
                 cmd: cmd.into(),
                 callback: CallbackFn(0),
                 error: CallbackFn(1),
-                url: "http://127.0.0.1:5177".parse().unwrap(),
+                url: "tauri://localhost".parse().unwrap(),
                 body: InvokeBody::Json(payload),
                 headers: Default::default(),
                 invoke_key: INVOKE_KEY.to_string(),

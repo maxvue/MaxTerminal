@@ -77,6 +77,10 @@ impl FoundationRedactor {
         "Rejeição de Promise não tratada no frontend",
         "Falha durante o bootstrap inicial do frontend",
         "Falha ao executar comando IPC",
+        "Etapa de inicialização iniciada",
+        "Etapa de inicialização concluída",
+        "Falha na etapa de inicialização",
+        "Falha crítica ao construir o runtime Tauri",
     ];
 
     /// Identificadores de evento permitidos no catálogo da fundação.
@@ -89,6 +93,8 @@ impl FoundationRedactor {
         "unhandled_rejection",
         "bootstrap_failed",
         "ipc_command_error",
+        "startup_stage",
+        "startup_failed",
     ];
 }
 
@@ -496,6 +502,24 @@ pub mod tests {
             "Erro capturado no runtime de componentes Vue"
         );
         assert_eq!(redactor.redact("vue_error"), "vue_error");
+        assert_eq!(
+            redactor.redact("Etapa de inicialização iniciada"),
+            "Etapa de inicialização iniciada"
+        );
+        assert_eq!(
+            redactor.redact("Etapa de inicialização concluída"),
+            "Etapa de inicialização concluída"
+        );
+        assert_eq!(
+            redactor.redact("Falha na etapa de inicialização"),
+            "Falha na etapa de inicialização"
+        );
+        assert_eq!(
+            redactor.redact("Falha crítica ao construir o runtime Tauri"),
+            "Falha crítica ao construir o runtime Tauri"
+        );
+        assert_eq!(redactor.redact("startup_stage"), "startup_stage");
+        assert_eq!(redactor.redact("startup_failed"), "startup_failed");
 
         // Identificadores curtos alfanuméricos com . _ - permitidos
         assert_eq!(redactor.redact("0.1.0"), "0.1.0");
@@ -582,6 +606,14 @@ pub mod tests {
                 "MaxTerminal iniciado"
             );
 
+            // Evento válido de etapa de inicialização
+            tracing::info!(
+                target: "maxterminal",
+                event = "startup_stage",
+                code = "startup.db.ok",
+                "Etapa de inicialização concluída"
+            );
+
             // Evento debug quando MAXTERMINAL_LOG=debug
             tracing::debug!(
                 target: "maxterminal",
@@ -607,11 +639,11 @@ pub mod tests {
         let output = String::from_utf8(buffer.lock().unwrap().clone())
             .unwrap_or_else(|e| panic!("Saída UTF-8 inválida: {e}"));
         let lines: Vec<&str> = output.lines().collect();
-        // 3 eventos gravados: o target "malicious_target" é bloqueado pelo EnvFilter
+        // 4 eventos gravados: o target "malicious_target" é bloqueado pelo EnvFilter
         assert_eq!(
             lines.len(),
-            3,
-            "Esperadas 3 linhas de log, obtidas: {output}"
+            4,
+            "Esperadas 4 linhas de log, obtidas: {output}"
         );
 
         // Linha 1: startup
@@ -623,20 +655,29 @@ pub mod tests {
         assert_eq!(json1["version"], "0.1.0");
         assert_eq!(json1["message"], "MaxTerminal iniciado");
 
-        // Linha 2: debug
+        // Linha 2: etapa de inicialização
         let json2: serde_json::Value = serde_json::from_str(lines[1])
             .unwrap_or_else(|e| panic!("JSON inválido na linha 2: {e}"));
-        assert_eq!(json2["level"], "DEBUG");
-        assert_eq!(json2["command"], "app_info");
-        assert_eq!(json2["code"], "core.internal");
+        assert_eq!(json2["level"], "INFO");
+        assert_eq!(json2["target"], "maxterminal");
+        assert_eq!(json2["event"], "startup_stage");
+        assert_eq!(json2["code"], "startup.db.ok");
+        assert_eq!(json2["message"], "Etapa de inicialização concluída");
 
-        // Linha 3: segredo redactado em message e event (T-05)
+        // Linha 3: debug
         let json3: serde_json::Value = serde_json::from_str(lines[2])
             .unwrap_or_else(|e| panic!("JSON inválido na linha 3: {e}"));
-        assert_eq!(json3["message"], REDACTED_MARKER);
-        assert_eq!(json3["event"], REDACTED_MARKER);
-        assert!(!lines[2].contains("SECRET_TOKEN_12345"));
-        assert!(!lines[2].contains("SHORT_SENTINEL_123"));
+        assert_eq!(json3["level"], "DEBUG");
+        assert_eq!(json3["command"], "app_info");
+        assert_eq!(json3["code"], "core.internal");
+
+        // Linha 4: segredo redactado em message e event (T-05)
+        let json4: serde_json::Value = serde_json::from_str(lines[3])
+            .unwrap_or_else(|e| panic!("JSON inválido na linha 4: {e}"));
+        assert_eq!(json4["message"], REDACTED_MARKER);
+        assert_eq!(json4["event"], REDACTED_MARKER);
+        assert!(!lines[3].contains("SECRET_TOKEN_12345"));
+        assert!(!lines[3].contains("SHORT_SENTINEL_123"));
 
         // Defesa em profundidade: se um target não autorizado atingir o formatter diretamente, vira "filtered"
         let fallback_writer = BufferWriter::default();

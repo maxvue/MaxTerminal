@@ -27,16 +27,28 @@ fn sample_secret_for_kind(kind: SecretKind) -> (&'static str, &'static str) {
             concat!("glpat", "-1234567890abcdefghij"),
         ),
         SecretKind::SlackToken => (
-            concat!("xoxb", "-123456789012-1234567890123-abcdefghijklmnopqrstuvwx"),
-            concat!("xoxb", "-123456789012-1234567890123-abcdefghijklmnopqrstuvwx"),
+            concat!(
+                "xoxb",
+                "-123456789012-1234567890123-abcdefghijklmnopqrstuvwx"
+            ),
+            concat!(
+                "xoxb",
+                "-123456789012-1234567890123-abcdefghijklmnopqrstuvwx"
+            ),
         ),
         SecretKind::StripeKey => (
             concat!("sk_live", "_51Abcdefghijklmnopqrstuvwxyz123456"),
             concat!("sk_live", "_51Abcdefghijklmnopqrstuvwxyz123456"),
         ),
         SecretKind::AnthropicKey => (
-            concat!("sk-ant", "-api03-1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"),
-            concat!("sk-ant", "-api03-1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"),
+            concat!(
+                "sk-ant",
+                "-api03-1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+            ),
+            concat!(
+                "sk-ant",
+                "-api03-1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+            ),
         ),
         SecretKind::OpenAiKey => (
             concat!("sk-proj", "-1234567890abcdefghijklmnopqrstuvwxyzABCD"),

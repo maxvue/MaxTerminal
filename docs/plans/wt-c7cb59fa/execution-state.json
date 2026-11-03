@@ -1,0 +1,72 @@
+{
+  "version": 2,
+  "planRevision": "edde3fe54274c0e8e08cfbec49274ffb4f57292b7b2f644737ccdda5a4d58b47",
+  "tasks": [
+    {
+      "id": "T1",
+      "status": "completed",
+      "files": [],
+      "validations": [],
+      "revision": "dd77a8e222602575e9fd7c668b27ce0e000ecda0a5c1aea1968ebd68d019b394"
+    },
+    {
+      "id": "T2",
+      "status": "completed",
+      "files": [
+        "src/app/plugins.ts",
+        "tests/app/plugins.spec.ts",
+        "tests/app/bootstrap.spec.ts"
+      ],
+      "validations": [],
+      "revision": "dd77a8e222602575e9fd7c668b27ce0e000ecda0a5c1aea1968ebd68d019b394"
+    },
+    {
+      "id": "T3",
+      "status": "completed",
+      "files": [
+        "src-tauri/src/lib.rs",
+        "src-tauri/src/logging.rs"
+      ],
+      "validations": [],
+      "revision": "dd77a8e222602575e9fd7c668b27ce0e000ecda0a5c1aea1968ebd68d019b394"
+    },
+    {
+      "id": "T4",
+      "status": "completed",
+      "files": [
+        "src-tauri/tests/bindings.rs",
+        "src/components/agents/AgentSettingsPanel.vue"
+      ],
+      "validations": [],
+      "revision": "dd77a8e222602575e9fd7c668b27ce0e000ecda0a5c1aea1968ebd68d019b394"
+    },
+    {
+      "id": "T5",
+      "status": "completed",
+      "files": [
+        "docs/plans/wt-c7cb59fa/execution-state.json"
+      ],
+      "validations": [],
+      "revision": "dd77a8e222602575e9fd7c668b27ce0e000ecda0a5c1aea1968ebd68d019b394"
+    }
+  ],
+  "verification": {
+    "revision": "dd77a8e222602575e9fd7c668b27ce0e000ecda0a5c1aea1968ebd68d019b394",
+    "checks": [
+      {
+        "command": "npm run check",
+        "revision": "dd77a8e222602575e9fd7c668b27ce0e000ecda0a5c1aea1968ebd68d019b394",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run tauri -- build --no-bundle",
+        "revision": "dd77a8e222602575e9fd7c668b27ce0e000ecda0a5c1aea1968ebd68d019b394",
+        "result": "passed",
+        "exitCode": 0
+      }
+    ]
+  },
+  "updatedAt": 1762175700000,
+  "nextAction": "Implementação e validações em lote concluídas; aguardar autorização do usuário no painel para eventual integração Git e atualização do executável instalado."
+}

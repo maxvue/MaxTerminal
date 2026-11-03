@@ -13,5 +13,6 @@ import '@maxvue/max-components-ui/style.css';
 export function registerAppPlugins(app: App): void {
     const pinia = createPinia();
     pinia.use(createMaxPinia() as unknown as PiniaPlugin);
+    app.use(pinia);
     app.component('MaxIcon', MaxIcon);
 }

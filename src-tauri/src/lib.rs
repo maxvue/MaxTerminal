@@ -154,6 +154,13 @@ pub fn run() {
     let shutdown_complete_for_setup = Arc::clone(&shutdown_complete);
     let shutdown_in_progress = Arc::new(AtomicBool::new(false));
 
+    tracing::info!(
+        target: "maxterminal",
+        event = "startup_stage",
+        code = "startup.runtime.build_start",
+        "Etapa de inicialização iniciada"
+    );
+
     let app = match tauri::Builder::default()
         .manage(app_state)
         .manage(perf_collector)
@@ -164,6 +171,13 @@ pub fn run() {
             specta_builder.mount_events(app);
             let listener = Arc::new(TauriEventListener::new(app.handle().clone()));
             pty_for_setup.add_listener(listener);
+
+            tracing::info!(
+                target: "maxterminal",
+                event = "startup_stage",
+                code = "startup.db.start",
+                "Etapa de inicialização iniciada"
+            );
 
             let db_cfg = DbConfig::from_paths(&paths_for_db, &SystemEnv)
                 .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
@@ -204,6 +218,20 @@ pub fn run() {
                 (*db_arc).clone(),
                 Some(app.handle().clone()),
             ));
+
+            tracing::info!(
+                target: "maxterminal",
+                event = "startup_stage",
+                code = "startup.db.ok",
+                "Etapa de inicialização concluída"
+            );
+
+            tracing::info!(
+                target: "maxterminal",
+                event = "startup_stage",
+                code = "startup.workspace.start",
+                "Etapa de inicialização iniciada"
+            );
 
             // Subsistema de Temas e Importador Tabby (Fase 10)
             let theme_sink: Arc<dyn ThemeEventSink> =
@@ -286,6 +314,20 @@ pub fn run() {
             workspace_manager.register_observer(indicators_observer.clone());
             tauri_shell_sink.add_listener(indicators_observer);
 
+            tracing::info!(
+                target: "maxterminal",
+                event = "startup_stage",
+                code = "startup.workspace.ok",
+                "Etapa de inicialização concluída"
+            );
+
+            tracing::info!(
+                target: "maxterminal",
+                event = "startup_stage",
+                code = "startup.os.start",
+                "Etapa de inicialização iniciada"
+            );
+
             // Subsistema de Integração com o SO (Fase 09)
             let os_event_sink = TauriOsEventSink::new(app.handle().clone());
             let pane_cwd_tracker = PaneCwdTracker::new();
@@ -357,6 +399,20 @@ pub fn run() {
 
             let os_bg = Arc::clone(&os_integration);
             app.manage(Arc::clone(&os_integration));
+
+            tracing::info!(
+                target: "maxterminal",
+                event = "startup_stage",
+                code = "startup.os.ok",
+                "Etapa de inicialização concluída"
+            );
+
+            tracing::info!(
+                target: "maxterminal",
+                event = "startup_stage",
+                code = "startup.agents.start",
+                "Etapa de inicialização iniciada"
+            );
 
             // Subsistema de Integração Bidirecional com MaxCode (Fase 11)
             let bridge_settings_store = DbBridgeSettingsStore::new(Arc::clone(&db_arc));
@@ -430,6 +486,20 @@ pub fn run() {
             let agent_state_for_github = agent_state.clone();
             app.manage(agent_state);
 
+            tracing::info!(
+                target: "maxterminal",
+                event = "startup_stage",
+                code = "startup.agents.ok",
+                "Etapa de inicialização concluída"
+            );
+
+            tracing::info!(
+                target: "maxterminal",
+                event = "startup_stage",
+                code = "startup.services.start",
+                "Etapa de inicialização iniciada"
+            );
+
             // Subsistema de Comandos Rápidos Artisan e Atalhos Universais (Fase 14)
             let qc_sink = TauriCommandsEventSink::new(app.handle().clone());
             app.manage(QuickCommandsState::new((*db_arc).clone(), qc_sink));
@@ -466,6 +536,13 @@ pub fn run() {
 
             let workspace_manager_bg = workspace_manager.clone();
             app.manage(workspace_manager);
+
+            tracing::info!(
+                target: "maxterminal",
+                event = "startup_stage",
+                code = "startup.services.ok",
+                "Etapa de inicialização concluída"
+            );
 
             tauri::async_runtime::spawn(async move {
                 let probed_env = probe(&|k| std::env::var(k).ok()).await;
@@ -518,8 +595,22 @@ pub fn run() {
         .invoke_handler(invoke_handler)
         .build(tauri::generate_context!())
     {
-        Ok(app) => app,
+        Ok(app) => {
+            tracing::info!(
+                target: "maxterminal",
+                event = "startup_stage",
+                code = "startup.runtime.build_ok",
+                "Etapa de inicialização concluída"
+            );
+            app
+        }
         Err(_err) => {
+            tracing::error!(
+                target: "maxterminal",
+                event = "startup_failed",
+                code = "startup.runtime.build_err",
+                "Falha crítica ao construir o runtime Tauri"
+            );
             eprintln!("Falha crítica ao construir o runtime Tauri do MaxTerminal.");
             std::process::exit(1);
         }

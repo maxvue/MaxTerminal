@@ -34,7 +34,10 @@ fn representative_cases() -> Vec<RepresentativeCase> {
     let jwt_secret = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4ifQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
     let gh_secret = concat!("ghp", "_1234567890abcdefghijklmnopqrstuvwxyzABCD");
     let gl_secret = concat!("glpat", "-1234567890abcdefghij1234");
-    let slack_secret = concat!("xoxb", "-123456789012-123456789012-abcdefghijklmnopqrstuvwx");
+    let slack_secret = concat!(
+        "xoxb",
+        "-123456789012-123456789012-abcdefghijklmnopqrstuvwx"
+    );
     let stripe_secret = concat!("sk_live", "_1234567890abcdefghijklmnop");
     let anthropic_secret = concat!("sk-ant", "-api03-1234567890abcdefghijklmnopqrstuvwxyz");
     let openai_secret = concat!("sk-proj", "-1234567890abcdefghijklmnopqrstuvwxyz");

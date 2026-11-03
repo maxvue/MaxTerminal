@@ -17,9 +17,9 @@
             </div>
         </header>
 
-        <div v-if="localError || agentsStore.error" class="agent-settings-panel__error" role="alert" data-testid="agent-settings-error">
+        <div v-if="activeError" class="agent-settings-panel__error" role="alert" data-testid="agent-settings-error">
             <MaxIcon icon="lucide:alert-circle" />
-            <span>{{ localError || agentsStore.error?.message }}</span>
+            <span>{{ activeError }}</span>
         </div>
 
         <template v-if="draftSettings">
@@ -116,7 +116,7 @@
 </template>
 
 <script setup lang="ts">
-    import { onMounted, ref, watch } from 'vue';
+    import { computed, onMounted, ref, watch } from 'vue';
     import { normalizeAccelerator as normalizeShortcutCombo } from '@/composables/useAgentShortcuts';
     import { useAgentsStore } from '@/stores/agents';
     import type { AgentKind, AgentsSettings_Serialize, CapabilitySupport } from '@/types/bindings';
@@ -126,6 +126,7 @@
     const draftSettings = ref<AgentsSettings_Serialize | null>(null);
     const saving = ref<boolean>(false);
     const localError = ref<string | null>(null);
+    const activeError = computed<string | null>(() => localError.value || agentsStore.error?.message || null);
 
     function cloneSettings(src: AgentsSettings_Serialize): AgentsSettings_Serialize {
         return {
