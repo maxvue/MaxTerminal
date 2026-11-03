@@ -135,3 +135,32 @@ async fn detects_installed_missing_and_hanging_binaries_in_parallel() {
         CapabilitySupport::Unverified
     );
 }
+
+#[tokio::test]
+async fn isolates_probe_working_directory_from_process_cwd() {
+    let tmp = TempDir::new().unwrap();
+    let bin_dir = tmp.path().join("bin");
+    let fake_src_tauri = tmp.path().join("src-tauri");
+    fs::create_dir_all(&bin_dir).unwrap();
+    fs::create_dir_all(&fake_src_tauri).unwrap();
+
+    // Simula um binário/shell cujo startup cria um arquivo relativo no diretório atual (ex.: `-l`).
+    write_executable_script(
+        &bin_dir,
+        "claude",
+        "#!/bin/sh\n: > ./-l\necho '2.1.76'\nexit 0\n",
+    );
+
+    let prev_cwd = std::env::current_dir().unwrap();
+    std::env::set_current_dir(&fake_src_tauri).unwrap();
+    let reg = AgentRegistry::with_builtins();
+    let detector = Detector::with_search_paths(vec![bin_dir]);
+    let results = detector.detect_all(&reg).await;
+    std::env::set_current_dir(prev_cwd).unwrap();
+
+    assert!(results[0].installed);
+    assert!(
+        !fake_src_tauri.join("-l").exists(),
+        "A detecção de agentes não deve criar arquivos em src-tauri/ (evita loop de rebuild no tauri dev)"
+    );
+}

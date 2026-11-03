@@ -467,6 +467,7 @@ impl Detector {
 
         let mut cmd = Command::new(&shell_bin);
         cmd.args(["-lic", "printf %s \"$PATH\""])
+            .current_dir(std::env::temp_dir())
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
@@ -521,6 +522,7 @@ impl Detector {
         let path_str = bin_path.to_string_lossy().to_string();
         let mut cmd = Command::new(&bin_path);
         cmd.args(&desc.version_args)
+            .current_dir(std::env::temp_dir())
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
