@@ -461,6 +461,16 @@ export const commands = {
 	appUpdateCheck: () => typedError<UpdateCheckResultDto_Serialize, MtError_Serialize>(__TAURI_INVOKE("app_update_check")),
 	/**  Aplica uma atualização após confirmação explícita do usuário (`CA-40`). */
 	appUpdateInstallConfirmed: (expectedVersion: string) => typedError<UpdateCapabilityDto_Serialize, MtError_Serialize>(__TAURI_INVOKE("app_update_install_confirmed", { expectedVersion })),
+	/**  Obtém o snapshot das métricas, configuração e status do Laravel Horizon para o projeto. */
+	horizonSnapshot: (projectId: ProjectId) => typedError<HorizonSnapshot_Serialize, MtError_Serialize>(__TAURI_INVOKE("horizon_snapshot", { projectId })),
+	/**  Inicia o daemon do Laravel Horizon em um PTY supervisionado e exclusivo. */
+	horizonStart: (projectId: ProjectId, expectedContextRevision: string, requestId: string) => typedError<HorizonSnapshot_Serialize, MtError_Serialize>(__TAURI_INVOKE("horizon_start", { projectId, expectedContextRevision, requestId })),
+	/**  Encerra graciosamente o processo master do Horizon supervisionado pelo MaxTerminal. */
+	horizonStop: (projectId: ProjectId, expectedGeneration: number, requestId: string) => typedError<HorizonSnapshot_Serialize, MtError_Serialize>(__TAURI_INVOKE("horizon_stop", { projectId, expectedGeneration, requestId })),
+	/**  Solicita a prévia e o token temporário de confirmação para limpeza de tarefas pendentes. */
+	horizonClearPendingPreview: (projectId: ProjectId) => typedError<HorizonClearPreview, MtError_Serialize>(__TAURI_INVOKE("horizon_clear_pending_preview", { projectId })),
+	/**  Executa a limpeza confirmada de tarefas pendentes (ready + delayed), preservando tarefas reservadas. */
+	horizonClearPending: (projectId: ProjectId, token: string, requestId: string) => typedError<HorizonClearResult_Serialize, MtError_Serialize>(__TAURI_INVOKE("horizon_clear_pending", { projectId, token, requestId })),
 	/**  Comando compilado e exposto SOMENTE em builds de desenvolvimento/debug. */
 	perfSnapshot: () => typedError<PerfSnapshotDto, MtError_Serialize>(__TAURI_INVOKE("perf_snapshot")),
 };
@@ -6544,6 +6554,172 @@ export type HighlightSegment = {
 	matched: boolean,
 };
 
+/**  Estado de disponibilidade do pacote Laravel Horizon no projeto. */
+export type HorizonAvailability = 
+/**  Verificação em andamento. */
+"checking" | 
+/**  Horizon não instalado ou não configurado na raiz Laravel. */
+"unavailable" | 
+/**  Horizon disponível e pronto para monitoramento. */
+"available" | 
+/**  Erro ao inspecionar a instalação ou ambiente. */
+"error";
+
+/**  Estimativa e token de confirmação para limpeza exclusiva de pendentes. */
+export type HorizonClearPreview = {
+	/**  Token opaco temporário de confirmação de uso único. */
+	token: string,
+	/**  Revisão do contexto esperada na confirmação. */
+	contextRevision: string,
+	/**  Impressão digital opaca do destino. */
+	scopeId: string,
+	/**  Filas que serão limpas. */
+	queues: QueueScope[],
+	/**  Estimativa de tarefas pendentes (ready + delayed) a serem removidas. */
+	estimatedPending: number,
+	/**  Timestamp Unix em milissegundos de expiração da confirmação (máx 30 s). */
+	expiresAtMs: number,
+};
+
+/**  Resultado consolidado da limpeza exclusiva de tarefas pendentes. */
+export type HorizonClearResult = HorizonClearResult_Serialize | HorizonClearResult_Deserialize;
+
+/**  Resultado consolidado da limpeza exclusiva de tarefas pendentes. */
+export type HorizonClearResult_Deserialize = {
+	/**  Detalhamento das remoções por fila. */
+	clearedPerQueue: QueueClearCount[],
+	/**  Quantidade total de tarefas retiradas. */
+	totalCleared: number,
+	/**  Indica se a operação foi parcial devido ao orçamento de tempo/quantidade. */
+	isPartial: boolean,
+	/**  Aviso sanitizado se ocorreu inconsistência de metadados em conexão secundária. */
+	warning?: string | null,
+};
+
+/**  Resultado consolidado da limpeza exclusiva de tarefas pendentes. */
+export type HorizonClearResult_Serialize = {
+	/**  Detalhamento das remoções por fila. */
+	clearedPerQueue: QueueClearCount[],
+	/**  Quantidade total de tarefas retiradas. */
+	totalCleared: number,
+	/**  Indica se a operação foi parcial devido ao orçamento de tempo/quantidade. */
+	isPartial: boolean,
+	/**  Aviso sanitizado se ocorreu inconsistência de metadados em conexão secundária. */
+	warning: string | null,
+};
+
+/**  Contexto de execução e escopo do Horizon para um projeto. */
+export type HorizonContext = {
+	/**  Identificador do projeto cadastrado no MaxTerminal. */
+	projectId: ProjectId,
+	/**  Raiz canônica do projeto no disco. */
+	root: string,
+	/**  Revisão monotônica do contexto gerada a partir dos parâmetros de configuração. */
+	contextRevision: string,
+	/**  Impressão digital opaca do destino efetivo (Redis/conexões/ambiente). */
+	scopeId: string,
+};
+
+/**  Identificação da sessão de PTY e painel do daemon Horizon. */
+export type HorizonSessionDto = {
+	/**  Identificador único do PTY no PtyManager. */
+	ptyId: PtyId,
+	/**  Identificador do painel reservado para a geração do terminal. */
+	paneId: PaneId,
+	/**  Número sequencial da geração de runtime. */
+	generation: number,
+};
+
+/**  Snapshot consolidado das métricas e estado do Laravel Horizon. */
+export type HorizonSnapshot = HorizonSnapshot_Serialize | HorizonSnapshot_Deserialize;
+
+/**  Snapshot consolidado das métricas e estado do Laravel Horizon. */
+export type HorizonSnapshot_Deserialize = {
+	/**  Contexto autorizado do projeto. */
+	context: HorizonContext,
+	/**  Disponibilidade do Horizon no projeto. */
+	availability: HorizonAvailability,
+	/**  Versão detectada do pacote `laravel/horizon`, se presente. */
+	horizonVersion?: string | null,
+	/**  Lista de pares únicos (conexão, fila) resolvidos dos supervisores ativos. */
+	queues: QueueScope[],
+	/**  Ambiente resolvido do Laravel (ex: "local", "production"). */
+	environment?: string | null,
+	/**  Estado atual do runtime. */
+	status: HorizonStatus,
+	/**  Total de tarefas pendentes (prontas + agendadas nas filas monitoradas). */
+	pending?: number | null,
+	/**  Total de tarefas reservadas/em execução nas filas monitoradas. */
+	running?: number | null,
+	/**  Total de falhas no namespace Horizon respeitando a retenção. */
+	failed?: number | null,
+	/**  Timestamp Unix em milissegundos da última medição. */
+	sampledAtMs: number,
+	/**  Número de revisão incremental do snapshot. */
+	revision: number,
+	/**  Diagnóstico sanitizado em caso de advertência ou falha parcial. */
+	diagnostic?: string | null,
+	/**  Indica se o comando de iniciar está habilitado. */
+	canStart: boolean,
+	/**  Indica se o comando de parar está habilitado. */
+	canStop: boolean,
+	/**  Indica se o comando de limpeza de pendentes está habilitado. */
+	canClearPending: boolean,
+	/**  Sessão de PTY supervisionada associada à geração atual, se houver. */
+	session?: HorizonSessionDto | null,
+};
+
+/**  Snapshot consolidado das métricas e estado do Laravel Horizon. */
+export type HorizonSnapshot_Serialize = {
+	/**  Contexto autorizado do projeto. */
+	context: HorizonContext,
+	/**  Disponibilidade do Horizon no projeto. */
+	availability: HorizonAvailability,
+	/**  Versão detectada do pacote `laravel/horizon`, se presente. */
+	horizonVersion: string | null,
+	/**  Lista de pares únicos (conexão, fila) resolvidos dos supervisores ativos. */
+	queues: QueueScope[],
+	/**  Ambiente resolvido do Laravel (ex: "local", "production"). */
+	environment: string | null,
+	/**  Estado atual do runtime. */
+	status: HorizonStatus,
+	/**  Total de tarefas pendentes (prontas + agendadas nas filas monitoradas). */
+	pending: number | null,
+	/**  Total de tarefas reservadas/em execução nas filas monitoradas. */
+	running: number | null,
+	/**  Total de falhas no namespace Horizon respeitando a retenção. */
+	failed: number | null,
+	/**  Timestamp Unix em milissegundos da última medição. */
+	sampledAtMs: number,
+	/**  Número de revisão incremental do snapshot. */
+	revision: number,
+	/**  Diagnóstico sanitizado em caso de advertência ou falha parcial. */
+	diagnostic: string | null,
+	/**  Indica se o comando de iniciar está habilitado. */
+	canStart: boolean,
+	/**  Indica se o comando de parar está habilitado. */
+	canStop: boolean,
+	/**  Indica se o comando de limpeza de pendentes está habilitado. */
+	canClearPending: boolean,
+	/**  Sessão de PTY supervisionada associada à geração atual, se houver. */
+	session: HorizonSessionDto | null,
+};
+
+/**  Estado do runtime do Horizon (supervisionado ou externo). */
+export type HorizonStatus = 
+/**  Daemon Horizon parado. */
+"stopped" | 
+/**  Daemon Horizon iniciando no PTY supervisionado. */
+"starting" | 
+/**  Daemon Horizon ativo e saudável. */
+"running" | 
+/**  Daemon Horizon em processo de encerramento supervisionado. */
+"stopping" | 
+/**  Horizon ativo via processo externo (iniciado fora do MaxTerminal). */
+"external" | 
+/**  Falha no daemon ou erro na sondagem. */
+"error";
+
 /**  Origem da identidade visual (`icon` e `color`) de um projeto. */
 export type IdentitySource = 
 /**  Definida automaticamente pela detecção de stack ou fallback determinístico. */
@@ -10048,6 +10224,24 @@ export type QuakeSettings_Serialize = {
 	hideOnBlur: boolean,
 	/**  Preferência de backend para registro do atalho global. */
 	preferredBackend: ShortcutBackendPreference,
+};
+
+/**  Contagem de tarefas removidas por fila. */
+export type QueueClearCount = {
+	/**  Conexão de fila. */
+	connection: string,
+	/**  Nome da fila. */
+	queue: string,
+	/**  Quantidade de tarefas retiradas. */
+	cleared: number,
+};
+
+/**  Identificação de conexão e fila monitorada pelo Horizon. */
+export type QueueScope = {
+	/**  Nome da conexão de fila (ex: "redis"). */
+	connection: string,
+	/**  Nome da fila (ex: "default"). */
+	queue: string,
 };
 
 /**  Desfecho retornado por `request_quit`. */

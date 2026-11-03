@@ -91,6 +91,10 @@ use mt_commands::{
         ports::RecurringCommandEntry,
         suggest::{GroupSuggestRequest, GroupSuggestResponse, RecurringCommandsResponse},
     },
+    horizon::{
+        HorizonAvailability, HorizonClearPreview, HorizonClearResult, HorizonContext,
+        HorizonSessionDto, HorizonSnapshot, HorizonStatus, QueueClearCount, QueueScope,
+    },
     shortcuts::model::{
         DetectedManager, ManagerEvidence, PackageManager, PartSource, ResolvedShortcut, ShortcutId,
         ShortcutList, ShortcutPart,
@@ -237,6 +241,10 @@ use crate::commands::github::{
     github_issue_send_maxcode, github_issue_worktree_create, github_issue_worktree_resolve,
     github_issues_list, github_labels_catalog, github_labels_ensure, github_refresh,
     github_repo_labels, github_repo_resolve,
+};
+use crate::commands::horizon::{
+    horizon_clear_pending, horizon_clear_pending_preview, horizon_snapshot, horizon_start,
+    horizon_stop,
 };
 use crate::commands::memory::{
     memory_forget, memory_hide, memory_list, memory_pin, memory_rebuild, memory_suggestions,
@@ -566,7 +574,12 @@ macro_rules! register_all_commands {
             backup_list,
             backup_restore_schedule,
             app_update_check,
-            app_update_install_confirmed
+            app_update_install_confirmed,
+            horizon_snapshot,
+            horizon_start,
+            horizon_stop,
+            horizon_clear_pending_preview,
+            horizon_clear_pending
             $(, $extra)*
         ])
     };
@@ -1182,6 +1195,15 @@ pub fn builder_for<R: tauri::Runtime>() -> Builder<R> {
         .typ::<PerfSnapshotDto>()
         .typ::<UpdateCapabilityDto>()
         .typ::<UpdateCheckResultDto>()
+        .typ::<HorizonContext>()
+        .typ::<HorizonAvailability>()
+        .typ::<HorizonStatus>()
+        .typ::<QueueScope>()
+        .typ::<HorizonSessionDto>()
+        .typ::<HorizonSnapshot>()
+        .typ::<HorizonClearPreview>()
+        .typ::<QueueClearCount>()
+        .typ::<HorizonClearResult>()
 }
 
 /// Constrói o `tauri_specta::Builder<tauri::Wry>` padrão da aplicação.

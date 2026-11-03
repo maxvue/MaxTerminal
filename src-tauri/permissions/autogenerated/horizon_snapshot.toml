@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-horizon-snapshot"
+description = "Enables the horizon_snapshot command without any pre-configured scope."
+commands.allow = ["horizon_snapshot"]
+
+[[permission]]
+identifier = "deny-horizon-snapshot"
+description = "Denies the horizon_snapshot command without any pre-configured scope."
+commands.deny = ["horizon_snapshot"]

@@ -1,0 +1,137 @@
+{
+  "version": 2,
+  "planRevision": "ce4b001d85987de72e685e327df3c39a7fd294a0b14caa468b471289a370f672",
+  "tasks": [
+    {
+      "id": "T1",
+      "status": "completed",
+      "files": [
+        "docs/plans/wt-1b4b2671/plan.md",
+        "docs/plans/wt-1b4b2671/spec.md"
+      ],
+      "validations": []
+    },
+    {
+      "id": "T2",
+      "status": "completed",
+      "files": [
+        "src-tauri/crates/mt-commands/src/horizon/mod.rs",
+        "src-tauri/crates/mt-commands/src/horizon/model.rs",
+        "src-tauri/crates/mt-commands/src/horizon/probe.rs",
+        "src-tauri/crates/mt-commands/src/horizon/cleaner.rs",
+        "src-tauri/crates/mt-commands/src/horizon/service.rs",
+        "src-tauri/crates/mt-commands/src/lib.rs",
+        "src-tauri/crates/mt-commands/tests/horizon_tests.rs"
+      ],
+      "validations": []
+    },
+    {
+      "id": "T3",
+      "status": "completed",
+      "files": [
+        "src-tauri/src/horizon/mod.rs",
+        "src-tauri/src/commands/horizon.rs",
+        "src-tauri/src/commands/mod.rs",
+        "src-tauri/src/lib.rs",
+        "src-tauri/src/adapters/os.rs",
+        "src-tauri/tests/horizon_runtime.rs"
+      ],
+      "validations": []
+    },
+    {
+      "id": "T4",
+      "status": "completed",
+      "files": [
+        "src-tauri/src/specta.rs",
+        "src-tauri/build.rs",
+        "src-tauri/permissions/default.toml",
+        "src-tauri/capabilities/default.json",
+        "src-tauri/tests/capabilities.rs",
+        "src/types/bindings.ts",
+        "src/ipc/horizon.ts",
+        "src/ipc/horizonMaxPiniaAdapter.ts",
+        "src/app/plugins.ts",
+        "src/stores/horizon.ts",
+        "tests/ipc/horizonMaxPiniaAdapter.spec.ts",
+        "src/stores/__tests__/horizon.spec.ts"
+      ],
+      "validations": []
+    },
+    {
+      "id": "T5",
+      "status": "completed",
+      "files": [
+        "src/components/horizon/HorizonBadgeButton.vue",
+        "src/components/horizon/HorizonModal.vue",
+        "src/components/projects/ProjectWorkspace.vue",
+        "tests/components/horizon/HorizonBadgeButton.spec.ts",
+        "tests/components/horizon/HorizonModal.spec.ts"
+      ],
+      "validations": []
+    },
+    {
+      "id": "T6",
+      "status": "manualPending",
+      "files": [
+        "scripts/check.mjs"
+      ],
+      "validations": [],
+      "nextAction": "Aguardando disponibilizacao de fixture Laravel Horizon com Redis isolado para aceite nativo da limpeza exclusiva e ciclo PTY."
+    }
+  ],
+  "verification": {
+    "revision": "ce4b001d85987de72e685e327df3c39a7fd294a0b14caa468b471289a370f672",
+    "checks": [
+      {
+        "command": "cargo fmt --manifest-path src-tauri/Cargo.toml --all --check",
+        "revision": "ce4b001d85987de72e685e327df3c39a7fd294a0b14caa468b471289a370f672",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "cargo clippy --manifest-path src-tauri/Cargo.toml --locked --workspace --all-targets -- -D warnings",
+        "revision": "ce4b001d85987de72e685e327df3c39a7fd294a0b14caa468b471289a370f672",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "cargo test --manifest-path src-tauri/Cargo.toml -p mt-commands -p maxterminal --test horizon_tests --test horizon_runtime --test capabilities",
+        "revision": "ce4b001d85987de72e685e327df3c39a7fd294a0b14caa468b471289a370f672",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run lint",
+        "revision": "ce4b001d85987de72e685e327df3c39a7fd294a0b14caa468b471289a370f672",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run lint:style",
+        "revision": "ce4b001d85987de72e685e327df3c39a7fd294a0b14caa468b471289a370f672",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run typecheck",
+        "revision": "ce4b001d85987de72e685e327df3c39a7fd294a0b14caa468b471289a370f672",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npx --no-install vitest run tests/ipc/horizonMaxPiniaAdapter.spec.ts tests/components/horizon/HorizonBadgeButton.spec.ts tests/components/horizon/HorizonModal.spec.ts src/stores/__tests__/horizon.spec.ts",
+        "revision": "ce4b001d85987de72e685e327df3c39a7fd294a0b14caa468b471289a370f672",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run build",
+        "revision": "ce4b001d85987de72e685e327df3c39a7fd294a0b14caa468b471289a370f672",
+        "result": "passed",
+        "exitCode": 0
+      }
+    ]
+  },
+  "updatedAt": 1793744600000,
+  "nextAction": "Implementacao completa concluida com sucesso. Aguardando autorizacao do usuario para commit e fixture de aceite."
+}

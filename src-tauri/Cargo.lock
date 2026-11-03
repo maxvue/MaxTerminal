@@ -2262,6 +2262,7 @@ dependencies = [
  "tauri",
  "tauri-build",
  "tauri-specta",
+ "tempfile",
  "tokio",
  "tracing",
  "tracing-appender",

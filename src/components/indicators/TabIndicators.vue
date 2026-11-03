@@ -11,7 +11,7 @@
 <script setup lang="ts">
     import { computed } from 'vue';
     import AgentAttentionIndicator from '@/components/agents/AgentAttentionIndicator.vue';
-    import AgentStatusLine from '@/components/agents/AgentStatusLine.vue';
+    import _AgentStatusLine from '@/components/agents/AgentStatusLine.vue';
     import { useGitStore } from '@/stores/git';
     import { usePortsStore } from '@/stores/ports';
     import type {

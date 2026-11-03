@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-horizon-clear-pending-preview"
+description = "Enables the horizon_clear_pending_preview command without any pre-configured scope."
+commands.allow = ["horizon_clear_pending_preview"]
+
+[[permission]]
+identifier = "deny-horizon-clear-pending-preview"
+description = "Denies the horizon_clear_pending_preview command without any pre-configured scope."
+commands.deny = ["horizon_clear_pending_preview"]
