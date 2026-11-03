@@ -15,6 +15,7 @@
         </button>
 
         <div class="project-item__actions">
+            <MaxButton class="project-item__visibility-btn" :label="props.hidden ? 'Mostrar' : 'Ocultar'" :loading="props.pending" :disabled="props.disabled || props.pending" size="small" slim variant="text" :title="props.hidden ? 'Mostrar projeto' : 'Ocultar projeto'" :aria-label="props.hidden ? 'Mostrar projeto' : 'Ocultar projeto'" @click.stop="handleVisibilityToggle" />
             <button type="button" class="project-item__menu-trigger" :aria-expanded="menuOpen ? 'true' : 'false'" aria-label="Opções do projeto" title="Opções do projeto" @click.stop="toggleMenu">
                 <MaxIcon icon="mdi:dots-vertical" />
             </button>
@@ -41,6 +42,7 @@
 </template>
 
 <script setup lang="ts">
+    import { MaxButton } from '@maxvue/max-components-ui';
     import { computed, ref } from 'vue';
     import ProjectStatusBadges from '@/components/projects/ProjectStatusBadges.vue';
     import { isValidProjectColor, isValidProjectIcon } from '@/constants/projectIdentity';
@@ -51,9 +53,16 @@
         project: Project_Serialize;
         counters: ProjectStatusCounters;
         selected: boolean;
+        hidden?: boolean;
+        disabled?: boolean;
+        pending?: boolean;
     }
 
-    const props = defineProps<ProjectItemProps>();
+    const props = withDefaults(defineProps<ProjectItemProps>(), {
+        hidden: false,
+        disabled: false,
+        pending: false
+    });
 
     const emit = defineEmits<{
         select: [id: ProjectId];
@@ -61,6 +70,8 @@
         configure: [id: ProjectId];
         remove: [id: ProjectId];
         redetect: [id: ProjectId];
+        hide: [id: ProjectId];
+        show: [id: ProjectId];
     }>();
 
     const menuOpen = ref<boolean>(false);
@@ -75,6 +86,18 @@
 
     function toggleMenu(): void {
         menuOpen.value = !menuOpen.value;
+    }
+
+    function handleVisibilityToggle(event: MouseEvent): void {
+        event.stopPropagation();
+        if (props.disabled || props.pending) {
+            return;
+        }
+        if (props.hidden) {
+            emit('show', props.project.id);
+        } else {
+            emit('hide', props.project.id);
+        }
     }
 
     function handleEdit(): void {
@@ -210,7 +233,30 @@
         position: relative;
         display: flex;
         align-items: center;
+        gap: 0.25rem;
         padding-right: 0.375rem;
+    }
+
+    :deep(.project-item__visibility-btn) {
+        padding: 0.1875rem 0.375rem !important;
+        min-height: 1.5rem;
+        font-size: 0.6875rem !important;
+        font-weight: 500;
+        color: var(--background-300) !important;
+        background: transparent !important;
+        border: 1px solid transparent !important;
+        border-radius: 0.375rem;
+        cursor: pointer;
+        white-space: nowrap;
+
+        &:hover:not(:disabled) {
+            background: var(--background-600) !important;
+            color: var(--background-50) !important;
+        }
+
+        &:focus-visible {
+            @include mt-focus-ring;
+        }
     }
 
     .project-item__menu-trigger {
