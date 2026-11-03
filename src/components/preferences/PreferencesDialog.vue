@@ -1,5 +1,5 @@
 <template>
-    <MaxModal :visible="windowStore.preferencesOpen" title="Configurações gerais" :no-button="true" width="calc(100vw - 50px)" max-width="1500px" class="prefs-dialog-modal" :dismissable="true" :close-on-escape="true" @update:visible="onVisibleUpdate">
+    <MaxModal :visible="windowStore.preferencesOpen" title="Configurações gerais" :no-button="true" width="100vw" max-width="100vw" max-height="100vh" height="100vh" class="prefs-dialog-modal" :dismissable="true" :close-on-escape="true" @update:visible="onVisibleUpdate">
         <div class="prefs-dialog__body">
             <nav class="prefs-dialog__nav" aria-label="Seções de preferências">
                 <MaxButton v-for="sec in sections" :key="sec.id" type="button" :class="activeSectionId === sec.id ? 'prefs-dialog__nav-btn is-active' : 'prefs-dialog__nav-btn'" variant="text" @click="selectSection(sec.id)">
