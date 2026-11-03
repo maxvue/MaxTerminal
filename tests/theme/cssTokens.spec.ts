@@ -15,8 +15,8 @@ describe('cssTokens', () => {
         expect(vars['--max-warning-500']).toBe('#f59e0b');
         expect(vars['--max-danger-500']).toBe('#ef4444');
         expect(vars['--max-info-500']).toBe('#0ea5e9');
-        expect(vars['--background-0']).toBe('#17293d');
-        expect(vars['--background-950']).toBe('#ffffff');
+        expect(vars['--background-0']).toBe('#ffffff');
+        expect(vars['--background-950']).toBe('#060b14');
         expect(vars['--mt-term-bg']).toBe('#0f1c2e');
         expect(vars['--mt-term-cursor']).toBe('#2ea4bc');
     });

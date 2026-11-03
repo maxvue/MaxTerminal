@@ -116,7 +116,7 @@ describe('Shell Visual - AppShell, AppTitleBar, AppEmptyState e App.vue', () => 
     });
 
     describe('App.vue integrado com ciclo de bootstrap e recuperação', () => {
-        it('renderiza no estado pronto o título MaxTerminal, v0.1.0 e Nenhum projeto selecionado', async () => {
+        it('renderiza no estado pronto sem a titlebar redundante e com o workspace pronto', async () => {
             mockIPC((cmd) => {
                 if (cmd === 'app_info') {
                     return mockAppInfo;
@@ -135,8 +135,8 @@ describe('Shell Visual - AppShell, AppTitleBar, AppEmptyState e App.vue', () => 
             await new Promise((resolve) => setTimeout(resolve, 30));
             await nextTick();
 
-            expect(wrapper.text()).toContain('MaxTerminal');
-            expect(wrapper.text()).toContain('v0.1.0');
+            expect(wrapper.find('.app-title-bar').exists()).toBe(false);
+            expect(wrapper.text()).not.toContain('MaxTerminal v0.1.0');
             expect(wrapper.text()).toContain('Nenhum projeto selecionado');
             expect(wrapper.find('.app-retry-btn').exists()).toBe(false);
         });
@@ -189,7 +189,7 @@ describe('Shell Visual - AppShell, AppTitleBar, AppEmptyState e App.vue', () => 
 
             // Após retry bem-sucedido, transita para o estado pronto
             expect(wrapper.text()).toContain('Nenhum projeto selecionado');
-            expect(wrapper.text()).toContain('v0.1.0');
+            expect(wrapper.find('.app-title-bar').exists()).toBe(false);
             expect(wrapper.find('.app-retry-btn').exists()).toBe(false);
         });
     });

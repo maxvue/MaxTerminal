@@ -1,0 +1,29 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "RUN DEV",
+            "options": {
+                "statusbar": {
+                    "label": "$(beaker) DEV",
+                    "color": "#d68222",
+                    "activeColor": "#00ff00",
+                    "activeBackgroundColor": "#1e1e1e",
+                    "hide": false
+                }
+            },
+            "type": "process",
+            "command": "bash",
+            "args": [
+                "${workspaceFolder}/.vscode/run-dev.sh"
+            ],
+            "isBackground": true,
+            "presentation": {
+                "reveal": "silent",
+                "panel": "new",
+                "focus": false,
+                "clear": true
+            }
+        }
+    ]
+}

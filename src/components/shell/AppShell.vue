@@ -1,6 +1,6 @@
 <template>
     <div class="app-shell" :data-loading="props.loading ? 'true' : 'false'">
-        <div class="app-shell__titlebar">
+        <div v-if="slots.titlebar" class="app-shell__titlebar">
             <slot name="titlebar" />
         </div>
         <div class="app-shell__body">
@@ -31,7 +31,7 @@
 <style lang="scss" scoped>
     .app-shell {
         display: grid;
-        grid-template-rows: var(--mt-titlebar-height) 1fr auto;
+        grid-template-rows: auto 1fr auto;
         width: 100vw;
         height: 100vh;
         overflow: hidden;
