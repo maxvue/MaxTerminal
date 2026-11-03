@@ -257,3 +257,67 @@ async fn dry_run_plan_does_not_write_and_apply_handles_symlink_copy_conflicts_an
     assert_eq!(res3.backups.len(), 1);
     assert!(Path::new(&res3.backups[0]).exists());
 }
+
+#[tokio::test]
+async fn skills_watcher_ignores_symlinks_worktrees_and_projects_dir_without_blocking() {
+    use mt_agents::skills::SyncResult;
+    use mt_agents::skills::watch::{SkillsChangedPayload, SkillsEventSink, SkillsWatcher};
+    use std::os::unix::fs::symlink;
+    use std::time::{Duration, Instant};
+
+    struct TestSkillsSink {
+        tx: tokio::sync::mpsc::UnboundedSender<SkillsChangedPayload>,
+    }
+
+    impl SkillsEventSink for TestSkillsSink {
+        fn emit_changed(&self, payload: SkillsChangedPayload) {
+            let _ = self.tx.send(payload);
+        }
+        fn emit_sync_completed(&self, _result: SyncResult) {}
+    }
+
+    let (dir, _db, _proj, source_dir, svc) = setup_test_env().await;
+
+    // Cria diretórios pesados/worktrees e symlinks externos/cíclicos dentro de MaxSkills
+    let external_repo = dir.path().join("external-huge-repo");
+    std::fs::create_dir_all(external_repo.join("node_modules/pkg")).unwrap();
+    symlink(&external_repo, external_repo.join("self_cycle")).unwrap();
+
+    let projects_dir = source_dir.join("projects");
+    std::fs::create_dir_all(&projects_dir).unwrap();
+    symlink(&external_repo, projects_dir.join("engeapp")).unwrap();
+
+    let worktree_dir = source_dir.join(".max-code-worktrees/wt-test");
+    std::fs::create_dir_all(&worktree_dir).unwrap();
+    symlink(&external_repo, worktree_dir.join("linked")).unwrap();
+
+    let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+    let sink: Arc<dyn SkillsEventSink> = Arc::new(TestSkillsSink { tx });
+
+    let started = Instant::now();
+    let watcher = SkillsWatcher::start(Arc::clone(&svc), sink);
+    assert!(
+        watcher.is_some(),
+        "SkillsWatcher deve iniciar na fonte válida"
+    );
+    assert!(
+        started.elapsed() < Duration::from_millis(500),
+        "SkillsWatcher::start não deve bloquear seguindo symlinks ou worktrees"
+    );
+
+    // Modifica uma skill real e verifica que o evento é emitido normalmente
+    std::fs::write(
+        source_dir.join("vue-best-practices/SKILL.md"),
+        "---\nname: vue-best-practices\ndescription: Atualizado\nstacks: [vue]\n---\n# Vue 3\n",
+    )
+    .unwrap();
+
+    let ev = tokio::time::timeout(Duration::from_secs(3), rx.recv())
+        .await
+        .expect("Evento skills://changed deve chegar dentro do timeout")
+        .expect("Canal de eventos não deve fechar");
+    assert!(
+        ev.changed_skills
+            .contains(&"vue-best-practices".to_string())
+    );
+}

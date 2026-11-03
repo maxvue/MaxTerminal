@@ -1,18 +1,38 @@
 //! Watcher com debounce de 500 ms (`notify-debouncer-full` 0.5) sobre o repositório `MaxSkills` (`CA-30`).
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 
-use notify::{RecommendedWatcher, RecursiveMode};
-use notify_debouncer_full::{DebounceEventResult, Debouncer, RecommendedCache, new_debouncer};
+use notify::{Config as NotifyConfig, RecommendedWatcher, RecursiveMode};
+use notify_debouncer_full::{DebounceEventResult, Debouncer, RecommendedCache, new_debouncer_opt};
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc;
 
 use crate::skills::SyncResult;
 use crate::skills::sync::SkillsService;
+
+fn is_ignored_watch_dir_name(name: &str) -> bool {
+    name.starts_with('.')
+        || matches!(
+            name,
+            "node_modules" | "target" | "vendor" | "projects" | "docs"
+        )
+}
+
+fn is_watchable_top_dir(path: &Path) -> bool {
+    let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
+        return false;
+    };
+    if is_ignored_watch_dir_name(name) {
+        return false;
+    }
+    std::fs::symlink_metadata(path)
+        .map(|m| m.file_type().is_dir())
+        .unwrap_or(false)
+}
 
 /// Payload do evento `skills://changed` emitido quando a fonte `MaxSkills` sofre alterações.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
@@ -35,11 +55,12 @@ pub trait SkillsEventSink: Send + Sync {
 /// Monitor em tempo real do diretório fonte de `MaxSkills`.
 pub struct SkillsWatcher {
     _stop_tx: mpsc::Sender<()>,
-    _debouncer: Mutex<Debouncer<RecommendedWatcher, RecommendedCache>>,
+    _debouncer: Arc<Mutex<Debouncer<RecommendedWatcher, RecommendedCache>>>,
 }
 
 impl SkillsWatcher {
-    /// Inicia o monitoramento recursivo com debounce de 500 ms sobre o diretório fonte configurado.
+    /// Inicia o monitoramento com debounce de 500 ms sobre o diretório fonte configurado,
+    /// sem seguir symlinks e ignorando diretórios ocultos, worktrees e pastas de projetos vinculados.
     pub fn start(service: Arc<SkillsService>, sink: Arc<dyn SkillsEventSink>) -> Option<Self> {
         let source_dir = service.resolved_source_dir();
         if !source_dir.is_dir() {
@@ -50,7 +71,7 @@ impl SkillsWatcher {
         let (evt_tx, mut evt_rx) = mpsc::unbounded_channel::<Vec<PathBuf>>();
 
         let watch_root = canonical_source.clone();
-        let mut debouncer = new_debouncer(
+        let mut debouncer = new_debouncer_opt::<_, RecommendedWatcher, RecommendedCache>(
             Duration::from_millis(500),
             None,
             move |result: DebounceEventResult| {
@@ -66,19 +87,58 @@ impl SkillsWatcher {
                     }
                 }
             },
+            RecommendedCache::new(),
+            NotifyConfig::default().with_follow_symlinks(false),
         )
         .ok()?;
 
         debouncer
-            .watch(&watch_root, RecursiveMode::Recursive)
+            .watch(&watch_root, RecursiveMode::NonRecursive)
             .ok()?;
+
+        let mut watched_top_dirs = HashSet::new();
+        if let Ok(rd) = std::fs::read_dir(&watch_root) {
+            for entry in rd.flatten() {
+                let path = entry.path();
+                if is_watchable_top_dir(&path)
+                    && debouncer.watch(&path, RecursiveMode::Recursive).is_ok()
+                {
+                    watched_top_dirs.insert(path);
+                }
+            }
+        }
+
+        let debouncer = Arc::new(Mutex::new(debouncer));
+        let debouncer_for_loop = Arc::clone(&debouncer);
 
         tokio::spawn(async move {
             loop {
                 tokio::select! {
                     _ = stop_rx.recv() => break,
                     Some(paths) = evt_rx.recv() => {
+                        for p in &paths {
+                            if let Ok(rel) = p.strip_prefix(&canonical_source)
+                                && let Some(first) = rel.components().next()
+                            {
+                                let top_dir = canonical_source.join(first.as_os_str());
+                                if !watched_top_dirs.contains(&top_dir)
+                                    && is_watchable_top_dir(&top_dir)
+                                    && debouncer_for_loop
+                                        .lock()
+                                        .watch(&top_dir, RecursiveMode::Recursive)
+                                        .is_ok()
+                                {
+                                    watched_top_dirs.insert(top_dir);
+                                }
+                            }
+                        }
+
                         let changed_skills = extract_changed_skill_names(&canonical_source, &paths);
+                        if changed_skills.is_empty()
+                            && !paths.iter().any(|p| p.file_name().and_then(|n| n.to_str()) == Some("index.json"))
+                        {
+                            continue;
+                        }
                         service.invalidate_plans();
                         sink.emit_changed(SkillsChangedPayload {
                             source_dir: canonical_source.to_string_lossy().to_string(),
@@ -95,7 +155,7 @@ impl SkillsWatcher {
 
         Some(Self {
             _stop_tx: stop_tx,
-            _debouncer: Mutex::new(debouncer),
+            _debouncer: debouncer,
         })
     }
 }
@@ -107,7 +167,7 @@ fn extract_changed_skill_names(source_root: &Path, paths: &[PathBuf]) -> Vec<Str
             && let Some(first) = rel.components().next()
         {
             let name = first.as_os_str().to_string_lossy().to_string();
-            if !name.starts_with('.') && name != "index.json" {
+            if !is_ignored_watch_dir_name(&name) && name != "index.json" {
                 names.insert(name);
             }
         }
