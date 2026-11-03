@@ -13,7 +13,8 @@
             <div v-else class="pane-view__exited" role="status">
                 <p class="pane-view__exited-title">{{ exitDescription }}</p>
                 <div class="pane-view__exited-actions">
-                    <MaxButton label="Reiniciar Painel" variant="primary" size="small" class="pane-view__restart-btn" @click="emit('restart', props.pane.id)" />
+                    <MaxButton v-if="isVaultLockedError" label="Desbloquear Cofre" variant="primary" size="small" class="pane-view__restart-btn" @click="handleUnlockVault" />
+                    <MaxButton v-else label="Reiniciar Painel" variant="primary" size="small" class="pane-view__restart-btn" @click="emit('restart', props.pane.id)" />
                     <MaxButton label="Fechar Painel" variant="secondary" size="small" class="pane-view__close-btn" @click="emit('close', props.pane.id)" />
                 </div>
             </div>
@@ -25,6 +26,7 @@
     import { computed, onMounted, watch } from 'vue';
     import { MaxButton, MaxIconButton } from '@maxvue/max-components-ui';
     import HybridTerminal from '@/components/terminal/HybridTerminal.vue';
+    import { useVaultStore } from '@/stores/vault';
     import type { PaneId, PaneView_Serialize, SplitDirection, TabId } from '@/types/bindings';
 
     export interface PaneViewProps {
@@ -47,6 +49,19 @@
         restart: [paneId: PaneId];
         'ready-for-initial-command': [tabId: TabId, paneId: PaneId, generation: number];
     }>();
+
+    const vaultStore = useVaultStore();
+
+    const isVaultLockedError = computed<boolean>(() => {
+        const code = props.pane.error?.code;
+        return code === 'VAULT_LOCKED' || code === 'CREDENTIAL_LOCKED';
+    });
+
+    function handleUnlockVault(): void {
+        vaultStore.openUnlockModal(() => {
+            emit('restart', props.pane.id);
+        });
+    }
 
     const shortCwd = computed<string>(() => {
         const raw = props.pane.cwd || '';

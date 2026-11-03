@@ -119,11 +119,13 @@ impl TemplatesRepo {
             "INSERT INTO tab_templates (
                 id, project_id, name, icon, cwd, initial_command,
                 add_to_workspace, continuous, environment_kind, agent_id,
-                env_json, is_default, position, revision, created_at, updated_at
+                env_json, is_default, position, revision, created_at, updated_at,
+                connection_json
              ) VALUES (
                 ?1, ?2, 'Terminal', 'mdi:console', NULL, NULL,
                 0, 0, 'shell', NULL,
-                '{}', 1, 0, 1, ?3, ?3
+                '{}', 1, 0, 1, ?3, ?3,
+                '{\"kind\":\"local\"}'
              );",
             params![new_id_str, proj_str, now_ms],
         )
@@ -366,16 +368,24 @@ fn create_template_tx(
             key: String::from("tab_templates.env_json"),
             reason: format!("env_vars: {e}"),
         })?;
+    let connection_json = serde_json::to_string(&config.connection).map_err(|e| {
+        DbError::SettingInvalidValue {
+            key: String::from("tab_templates.connection_json"),
+            reason: format!("connection: {e}"),
+        }
+    })?;
 
     tx.execute(
         "INSERT INTO tab_templates (
             id, project_id, name, icon, cwd, initial_command,
             add_to_workspace, continuous, environment_kind, agent_id,
-            env_json, is_default, position, revision, created_at, updated_at
+            env_json, is_default, position, revision, created_at, updated_at,
+            connection_json
          ) VALUES (
             ?1, ?2, ?3, ?4, ?5, ?6,
             ?7, ?8, ?9, ?10,
-            ?11, ?12, ?13, 1, ?14, ?14
+            ?11, ?12, ?13, 1, ?14, ?14,
+            ?15
          );",
         params![
             id_str,
@@ -392,6 +402,7 @@ fn create_template_tx(
             i64::from(effective_default),
             next_pos,
             now_ms,
+            connection_json,
         ],
     )
     .map_err(|e| DbError::from_rusqlite(e, "templates_insert"))?;
@@ -442,6 +453,12 @@ fn update_template_tx(
             key: String::from("tab_templates.env_json"),
             reason: format!("env_vars: {e}"),
         })?;
+    let connection_json = serde_json::to_string(&config.connection).map_err(|e| {
+        DbError::SettingInvalidValue {
+            key: String::from("tab_templates.connection_json"),
+            reason: format!("connection: {e}"),
+        }
+    })?;
 
     let updated = tx
         .execute(
@@ -456,9 +473,10 @@ fn update_template_tx(
                  agent_id = ?9,
                  env_json = ?10,
                  is_default = ?11,
+                 connection_json = ?12,
                  revision = revision + 1,
-                 updated_at = ?12
-             WHERE id = ?1 AND revision = ?13;",
+                 updated_at = ?13
+             WHERE id = ?1 AND revision = ?14;",
             params![
                 id_str,
                 config.name,
@@ -471,6 +489,7 @@ fn update_template_tx(
                 config.environment.agent_id,
                 env_json,
                 i64::from(effective_default),
+                connection_json,
                 now_ms,
                 expected_revision,
             ],
@@ -631,7 +650,8 @@ pub(crate) fn get_default_template_conn(
         .prepare_cached(
             "SELECT id, project_id, name, icon, cwd, initial_command,
                     add_to_workspace, continuous, environment_kind, agent_id,
-                    env_json, is_default, position, revision, created_at, updated_at
+                    env_json, is_default, position, revision, created_at, updated_at,
+                    connection_json
              FROM tab_templates
              WHERE project_id = ?1 AND is_default = 1
              LIMIT 1;",
@@ -650,7 +670,8 @@ pub(crate) fn get_template_by_id_conn(
         .prepare_cached(
             "SELECT id, project_id, name, icon, cwd, initial_command,
                     add_to_workspace, continuous, environment_kind, agent_id,
-                    env_json, is_default, position, revision, created_at, updated_at
+                    env_json, is_default, position, revision, created_at, updated_at,
+                    connection_json
              FROM tab_templates
              WHERE id = ?1;",
         )
@@ -665,7 +686,8 @@ fn list_by_project_conn(conn: &Connection, project_id: &str) -> DbResult<Vec<Tab
         .prepare_cached(
             "SELECT id, project_id, name, icon, cwd, initial_command,
                     add_to_workspace, continuous, environment_kind, agent_id,
-                    env_json, is_default, position, revision, created_at, updated_at
+                    env_json, is_default, position, revision, created_at, updated_at,
+                    connection_json
              FROM tab_templates
              WHERE project_id = ?1
              ORDER BY is_default DESC, position ASC, name COLLATE NOCASE ASC, id ASC;",
@@ -683,7 +705,8 @@ fn list_workspace_templates_conn(conn: &Connection) -> DbResult<Vec<TabTemplate>
         .prepare_cached(
             "SELECT t.id, t.project_id, t.name, t.icon, t.cwd, t.initial_command,
                     t.add_to_workspace, t.continuous, t.environment_kind, t.agent_id,
-                    t.env_json, t.is_default, t.position, t.revision, t.created_at, t.updated_at
+                    t.env_json, t.is_default, t.position, t.revision, t.created_at, t.updated_at,
+                    t.connection_json
              FROM tab_templates t
              INNER JOIN projects p ON p.id = t.project_id
              WHERE t.add_to_workspace = 1
@@ -740,6 +763,11 @@ fn map_template_row(row: &Row<'_>) -> rusqlite::Result<TabTemplate> {
     let revision: i64 = row.get(13)?;
     let created_at: i64 = row.get(14)?;
     let updated_at: i64 = row.get(15)?;
+    let connection_json: Option<String> = row.get(16).ok();
+    let connection = match connection_json {
+        Some(ref s) if !s.trim().is_empty() => serde_json::from_str(s).unwrap_or_default(),
+        _ => mt_core::workspace::TemplateConnection::Local,
+    };
 
     Ok(TabTemplate {
         id,
@@ -753,6 +781,7 @@ fn map_template_row(row: &Row<'_>) -> rusqlite::Result<TabTemplate> {
             continuous,
             environment: TemplateEnvironment { kind, agent_id },
             env_vars,
+            connection,
         },
         is_default,
         position,

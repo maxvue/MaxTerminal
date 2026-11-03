@@ -190,6 +190,7 @@ pub fn run_backfill_tx(tx: &Transaction<'_>) -> DbResult<BackfillReport> {
                     agent_id: None,
                 },
                 env_vars: BTreeMap::new(),
+                connection: mt_core::workspace::TemplateConnection::Local,
             };
             let launch_json =
                 serde_json::to_string(&launch_snap).unwrap_or_else(|_| String::from("{}"));

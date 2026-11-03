@@ -87,6 +87,9 @@ base64 = "0.22"
 hex = "0.4"
 memchr = "2.7"
 rand = "0.9"
+argon2 = "0.5"
+chacha20poly1305 = "0.10"
+zeroize = { version = "1.8", features = ["derive"] }
 # Watchers de filesystem (E-10): versão única no workspace; crates consumidores (Fases 06 e 13)
 # declaram `notify.workspace = true` e `notify-debouncer-full.workspace = true`.
 notify = "8"
@@ -154,6 +157,10 @@ tauri-specta.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
 tracing-appender.workspace = true
+argon2.workspace = true
+chacha20poly1305.workspace = true
+zeroize.workspace = true
+rand.workspace = true
 
 [build-dependencies]
 tauri-build.workspace = true

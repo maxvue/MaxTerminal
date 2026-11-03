@@ -174,8 +174,8 @@ describe('PreferencesDialog.vue', () => {
 
         const modalComponent = wrapper.findComponent({ name: 'MaxModal' });
         expect(modalComponent.exists()).toBe(true);
-        expect(modalComponent.props('width')).toBe('calc(100vw - 50px)');
-        expect(modalComponent.props('maxWidth')).toBe('1500px');
+        expect(modalComponent.props('width')).toBe('100vw');
+        expect(modalComponent.props('maxWidth')).toBe('100vw');
         expect(modalComponent.classes()).toContain('prefs-dialog-modal');
     });
 

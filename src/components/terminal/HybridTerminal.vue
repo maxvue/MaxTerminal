@@ -24,6 +24,7 @@
     import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
     import AiPaneResults from '@/components/ai/AiPaneResults.vue';
     import { useAiTriggers } from '@/composables/ai/useAiTriggers';
+    import { useViewportTriggers } from '@/composables/terminal/useViewportTriggers';
     import { useEditorLinks } from '@/composables/useEditorLinks';
     import { useShellCommandBlocks } from '@/composables/useShellCommandBlocks';
     import type { ExitInfo, LinkContext, PaneId, PtyId, TabId } from '@/types/bindings';
@@ -74,6 +75,7 @@
     const hadRichFocusBeforeAltScreen = ref<boolean>(false);
     let editorLinksSub: Disposable | null = null;
     let shellBlocksSub: ReturnType<typeof useShellCommandBlocks> | null = null;
+    let viewportTriggersSub: Disposable | null = null;
 
     function startShellBlocksSync(paneId: PaneId, ptyId: PtyId): void {
         shellBlocksSub?.stop();
@@ -147,6 +149,14 @@
             getContext: resolvePaneLinkContext
         });
         startShellBlocksSync(props.paneId, props.ptyId);
+        viewportTriggersSub?.dispose();
+        const triggers = useViewportTriggers({
+            paneId: props.paneId,
+            onTrigger: (trigger) => {
+                richInputRef.value?.insertTrigger(trigger);
+            }
+        });
+        viewportTriggersSub = triggers.attach();
     }
 
     watch(
@@ -154,11 +164,21 @@
         ([nextPaneId, nextPtyId]) => {
             if (isReady.value) {
                 startShellBlocksSync(nextPaneId, nextPtyId);
+                viewportTriggersSub?.dispose();
+                const triggers = useViewportTriggers({
+                    paneId: nextPaneId,
+                    onTrigger: (trigger) => {
+                        richInputRef.value?.insertTrigger(trigger);
+                    }
+                });
+                viewportTriggersSub = triggers.attach();
             }
         }
     );
 
     onBeforeUnmount(() => {
+        viewportTriggersSub?.dispose();
+        viewportTriggersSub = null;
         shellBlocksSub?.stop();
         shellBlocksSub = null;
         editorLinksSub?.dispose();

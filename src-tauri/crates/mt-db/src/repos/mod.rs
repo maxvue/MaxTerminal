@@ -2,6 +2,7 @@
 //! `TemplatesRepo`, `TabsRepo`, `PanesRepo`, `TabSessionsRepo`, `ScrollbackRepo` e `WorkspaceOperationsRepo`).
 
 pub mod command_blocks;
+pub mod credentials;
 pub mod os_settings;
 pub mod panes;
 pub mod projects;
@@ -15,6 +16,12 @@ pub mod workspace_operations;
 
 pub use command_blocks::{
     COMMAND_BLOCKS_RETENTION_RULE, CommandBlocksRepo, FinishCommandBlock, NewCommandBlock,
+};
+pub use credentials::{
+    CredentialsRepo, StoredCredentialRow, StoredVaultMetadata, delete_credential_tx,
+    get_credential_conn, get_vault_metadata_conn, insert_credential_tx,
+    list_credentials_by_project_conn, save_vault_metadata_tx, update_credential_tx,
+    update_vault_metadata_tx,
 };
 pub use os_settings::{OsSettingsRepo, OsSettingsRow};
 pub use panes::{

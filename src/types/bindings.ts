@@ -461,6 +461,16 @@ export const commands = {
 	appUpdateCheck: () => typedError<UpdateCheckResultDto_Serialize, MtError_Serialize>(__TAURI_INVOKE("app_update_check")),
 	/**  Aplica uma atualização após confirmação explícita do usuário (`CA-40`). */
 	appUpdateInstallConfirmed: (expectedVersion: string) => typedError<UpdateCapabilityDto_Serialize, MtError_Serialize>(__TAURI_INVOKE("app_update_install_confirmed", { expectedVersion })),
+	/**  Consulta o estado operacional do cofre (`unconfigured`, `locked` ou `unlocked`). */
+	vaultGetState: () => typedError<VaultStatus, MtError_Serialize>(__TAURI_INVOKE("vault_get_state")),
+	/**  Configura a senha mestra inicial do cofre. */
+	vaultSetup: (masterPassword: string) => typedError<VaultStatus, MtError_Serialize>(__TAURI_INVOKE("vault_setup", { masterPassword })),
+	/**  Desbloqueia o cofre com a senha mestra. */
+	vaultUnlock: (masterPassword: string) => typedError<VaultStatus, MtError_Serialize>(__TAURI_INVOKE("vault_unlock", { masterPassword })),
+	/**  Bloqueia o cofre, removendo a chave DEK da memória. */
+	vaultLock: () => typedError<VaultStatus, MtError_Serialize>(__TAURI_INVOKE("vault_lock")),
+	/**  Troca a senha mestra do cofre. */
+	vaultChangePassword: (currentPassword: string, newPassword: string) => typedError<VaultStatus, MtError_Serialize>(__TAURI_INVOKE("vault_change_password", { currentPassword, newPassword })),
 	/**  Comando compilado e exposto SOMENTE em builds de desenvolvimento/debug. */
 	perfSnapshot: () => typedError<PerfSnapshotDto, MtError_Serialize>(__TAURI_INVOKE("perf_snapshot")),
 };
@@ -7639,6 +7649,8 @@ export type LaunchSnapshot_Deserialize = {
 	environment: TemplateEnvironment_Deserialize,
 	/**  Variáveis de ambiente declaradas (sem expandir `Inherited`). */
 	envVars: { [key in string]: EnvValue },
+	/**  Conexão efetiva de lançamento da aba (local ou SSH remoto). */
+	connection?: TemplateConnection_Deserialize,
 };
 
 /**
@@ -7665,6 +7677,8 @@ export type LaunchSnapshot_Serialize = {
 	environment: TemplateEnvironment_Serialize,
 	/**  Variáveis de ambiente declaradas (sem expandir `Inherited`). */
 	envVars: { [key in string]: EnvValue },
+	/**  Conexão efetiva de lançamento da aba (local ou SSH remoto). */
+	connection: TemplateConnection_Serialize,
 };
 
 /**  Patch de atualização de proporções de um nó `Split` específico. */
@@ -8947,6 +8961,19 @@ export type PartSource =
 "vendor_bin" | 
 /**  Override configurado em `config-trabalho.json` do `MaxCode`. */
 "max_code_config";
+
+/**  Operação sobre a senha SSH no input do formulário. */
+export type PasswordCredentialOperation = 
+/**  Mantém a credencial de senha atualmente associada ao template (em edição). */
+{ action: "keep" } | 
+/**  Define ou substitui por uma nova senha informada em texto puro. */
+{ action: "set"; 
+/**  Senha em texto puro a ser cifrada nativamente antes da escrita em disco. */
+password: string } | 
+/**  Mantém uma credencial já associada por seu ID interno. */
+{ action: "keep_existing"; 
+/**  Identificador único da credencial salva no cofre. */
+credentialId: string };
 
 /**  Papel da ponta na comunicação bidirecional. */
 export type PeerRole = 
@@ -12233,6 +12260,56 @@ export type SplitDirection =
 /**  Divisor vertical: painéis lado a lado (esquerda/direita). */
 "vertical";
 
+/**  Configuração de autenticação SSH em template persistido. */
+export type SshAuth = SshAuth_Serialize | SshAuth_Deserialize;
+
+/**  Autenticação SSH informada no formulário de template. */
+export type SshAuthInput = SshAuthInput_Serialize | SshAuthInput_Deserialize;
+
+/**  Autenticação SSH informada no formulário de template. */
+export type SshAuthInput_Deserialize = 
+/**  Autenticação por senha com operação explícita. */
+{ kind: "password"; 
+/**  Operação sobre a credencial de senha. */
+operation: PasswordCredentialOperation } | 
+/**  Autenticação por chave SSH. */
+{ kind: "key"; 
+/**  Caminho opcional do arquivo de identidade. */
+identityFile?: string | null };
+
+/**  Autenticação SSH informada no formulário de template. */
+export type SshAuthInput_Serialize = 
+/**  Autenticação por senha com operação explícita. */
+{ kind: "password"; 
+/**  Operação sobre a credencial de senha. */
+operation: PasswordCredentialOperation } | 
+/**  Autenticação por chave SSH. */
+{ kind: "key"; 
+/**  Caminho opcional do arquivo de identidade. */
+identityFile: string | null };
+
+/**  Configuração de autenticação SSH em template persistido. */
+export type SshAuth_Deserialize = 
+/**  Autenticação por senha referenciando credencial opaca cifrada no cofre. */
+{ kind: "password"; 
+/**  Identificador da credencial no repositório seguro. */
+credentialId: string } | 
+/**  Autenticação por chave SSH (arquivo de identidade opcional). */
+{ kind: "key"; 
+/**  Caminho opcional do arquivo de chave privada (ex.: `~/.ssh/id_ed25519`). */
+identityFile?: string | null };
+
+/**  Configuração de autenticação SSH em template persistido. */
+export type SshAuth_Serialize = 
+/**  Autenticação por senha referenciando credencial opaca cifrada no cofre. */
+{ kind: "password"; 
+/**  Identificador da credencial no repositório seguro. */
+credentialId: string } | 
+/**  Autenticação por chave SSH (arquivo de identidade opcional). */
+{ kind: "key"; 
+/**  Caminho opcional do arquivo de chave privada (ex.: `~/.ssh/id_ed25519`). */
+identityFile: string | null };
+
 /**  Stack tecnológica primária ou detectada de um projeto. */
 export type StackKind = 
 /**  Aplicação Desktop Tauri (`src-tauri/tauri.conf.json`). */
@@ -12702,6 +12779,8 @@ export type TabTemplateInput_Deserialize = {
 	envVars: { [key in string]: EnvValue },
 	/**  Se `true`, promove este template a padrão do projeto na mesma transação. */
 	makeDefault: boolean,
+	/**  Conexão de execução (local ou remota SSH). */
+	connection?: TemplateConnectionInput_Deserialize,
 };
 
 /**  Payload de entrada para criação ou atualização de um Template de Aba. */
@@ -12724,6 +12803,8 @@ export type TabTemplateInput_Serialize = {
 	envVars: { [key in string]: EnvValue },
 	/**  Se `true`, promove este template a padrão do projeto na mesma transação. */
 	makeDefault: boolean,
+	/**  Conexão de execução (local ou remota SSH). */
+	connection: TemplateConnectionInput_Serialize,
 };
 
 /**  Representação completa de um Template de Aba persistido. */
@@ -12913,6 +12994,8 @@ export type TemplateConfig_Deserialize = {
 	environment: TemplateEnvironment_Deserialize,
 	/**  Variáveis de ambiente adicionais. */
 	envVars: { [key in string]: EnvValue },
+	/**  Conexão configurada para o template (local ou SSH remoto). */
+	connection?: TemplateConnection_Deserialize,
 };
 
 /**  Configuração persistida e compartilhada de um Template de Aba. */
@@ -12933,7 +13016,67 @@ export type TemplateConfig_Serialize = {
 	environment: TemplateEnvironment_Serialize,
 	/**  Variáveis de ambiente adicionais. */
 	envVars: { [key in string]: EnvValue },
+	/**  Conexão configurada para o template (local ou SSH remoto). */
+	connection: TemplateConnection_Serialize,
 };
+
+/**  Configuração de conexão persistida do template (local ou SSH remoto). */
+export type TemplateConnection = TemplateConnection_Serialize | TemplateConnection_Deserialize;
+
+/**  Conexão informada no payload de criação/atualização de template. */
+export type TemplateConnectionInput = TemplateConnectionInput_Serialize | TemplateConnectionInput_Deserialize;
+
+/**  Conexão informada no payload de criação/atualização de template. */
+export type TemplateConnectionInput_Deserialize = 
+/**  Execução local. */
+{ kind: "local" } | 
+/**  Conexão SSH remota. */
+{ kind: "ssh"; 
+/**  Endereço IP (v4/v6) ou hostname do host remoto. */
+host: string; 
+/**  Usuário de login remoto. */
+user: string; 
+/**  Configuração de autenticação. */
+auth: SshAuthInput_Deserialize };
+
+/**  Conexão informada no payload de criação/atualização de template. */
+export type TemplateConnectionInput_Serialize = 
+/**  Execução local. */
+{ kind: "local" } | 
+/**  Conexão SSH remota. */
+{ kind: "ssh"; 
+/**  Endereço IP (v4/v6) ou hostname do host remoto. */
+host: string; 
+/**  Usuário de login remoto. */
+user: string; 
+/**  Configuração de autenticação. */
+auth: SshAuthInput_Serialize };
+
+/**  Configuração de conexão persistida do template (local ou SSH remoto). */
+export type TemplateConnection_Deserialize = 
+/**  Conexão shell local. */
+{ kind: "local" } | 
+/**  Conexão SSH remota supervisionada. */
+{ kind: "ssh"; 
+/**  Endereço IP (v4/v6) ou hostname do servidor remoto. */
+host: string; 
+/**  Usuário de login no servidor remoto. */
+user: string; 
+/**  Configuração de autenticação (senha cifrada ou chave). */
+auth: SshAuth_Deserialize };
+
+/**  Configuração de conexão persistida do template (local ou SSH remoto). */
+export type TemplateConnection_Serialize = 
+/**  Conexão shell local. */
+{ kind: "local" } | 
+/**  Conexão SSH remota supervisionada. */
+{ kind: "ssh"; 
+/**  Endereço IP (v4/v6) ou hostname do servidor remoto. */
+host: string; 
+/**  Usuário de login no servidor remoto. */
+user: string; 
+/**  Configuração de autenticação (senha cifrada ou chave). */
+auth: SshAuth_Serialize };
 
 /**  Configuração de ambiente de execução do template. */
 export type TemplateEnvironment = TemplateEnvironment_Serialize | TemplateEnvironment_Deserialize;
@@ -13455,6 +13598,15 @@ export type ValidationReport = {
 };
 
 export type Value = null | boolean | number | string | Value[] | { [key in string]: Value };
+
+/**  Estado público do cofre retornado aos comandos IPC e exibido na UI. */
+export type VaultStatus = 
+/**  O cofre ainda não possui senha mestra configurada. */
+"unconfigured" | 
+/**  O cofre está configurado, porém bloqueado (aguarda senha mestra). */
+"locked" | 
+/**  O cofre está desbloqueado e sua chave de dados (DEK) está ativa em memória. */
+"unlocked";
 
 /**  Códigos semânticos de aviso emitidos durante a normalização de um esquema. */
 export type WarningCode = 

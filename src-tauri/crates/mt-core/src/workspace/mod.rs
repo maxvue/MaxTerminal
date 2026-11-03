@@ -21,8 +21,9 @@ pub use tab::{
 pub use template::{
     CommandOverride, EnvValue, EnvironmentKind, LaunchSnapshot, MAX_ENV_KEY_LEN,
     MAX_ENV_TOTAL_BYTES, MAX_ENV_VALUE_BYTES, MAX_ENV_VARS, MAX_INITIAL_COMMAND_BYTES,
-    MAX_TEMPLATE_ICON_CHARS, MAX_TEMPLATE_NAME_CHARS, TabOpenOverrides, TabOpenRequest,
-    TabTemplate, TabTemplateInput, TemplateConfig, TemplateEnvironment, is_forbidden_env_prefix,
-    is_likely_secret_env_key, is_valid_agent_slug, is_valid_env_ident, is_valid_iconify_id,
-    validate_command_text, validate_env_map, validate_template_input,
+    MAX_TEMPLATE_ICON_CHARS, MAX_TEMPLATE_NAME_CHARS, PasswordCredentialOperation, SshAuth,
+    SshAuthInput, TabOpenOverrides, TabOpenRequest, TabTemplate, TabTemplateInput,
+    TemplateConfig, TemplateConnection, TemplateConnectionInput, TemplateEnvironment,
+    is_forbidden_env_prefix, is_likely_secret_env_key, is_valid_agent_slug, is_valid_env_ident,
+    is_valid_iconify_id, validate_command_text, validate_env_map, validate_template_input,
 };

@@ -120,6 +120,7 @@ export class TerminalInstance implements TerminalInstanceHandle, Disposable {
     private readonly themeServiceSub: Disposable;
     private readonly xtermSubs: Array<{ dispose(): void }> = [];
     private readonly afterFlushListeners = new Set<() => void>();
+    private readonly customKeyHandlers: Array<(event: KeyboardEvent) => boolean> = [];
 
     private streamSubscription: PtyStreamSubscription | null = null;
     private subscribingPromise: Promise<void> | null = null;
@@ -313,6 +314,16 @@ export class TerminalInstance implements TerminalInstanceHandle, Disposable {
                     }
                     return false;
                 }
+                for (const handler of this.customKeyHandlers) {
+                    try {
+                        const allow = handler(event);
+                        if (!allow) {
+                            return false;
+                        }
+                    } catch {
+                        // Ignora falhas em handlers externos.
+                    }
+                }
                 return true;
             });
         }
@@ -332,6 +343,19 @@ export class TerminalInstance implements TerminalInstanceHandle, Disposable {
         this.themeServiceSub = themeService.onChange((theme) => {
             this.applyTheme(theme);
         });
+    }
+
+    /** Registra um interceptor de teclado síncrono descartável no xterm. */
+    public registerKeyHandler(handler: (event: KeyboardEvent) => boolean): Disposable {
+        this.customKeyHandlers.push(handler);
+        return {
+            dispose: () => {
+                const idx = this.customKeyHandlers.indexOf(handler);
+                if (idx !== -1) {
+                    this.customKeyHandlers.splice(idx, 1);
+                }
+            }
+        };
     }
 
     /** Anexa (ou reanexa) a instância a um container DOM sem perder o buffer nem reabrir o xterm. */

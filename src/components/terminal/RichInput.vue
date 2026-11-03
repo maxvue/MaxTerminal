@@ -104,8 +104,19 @@
         textareaRef.value?.focus();
     }
 
+    function insertTrigger(trigger: string): void {
+        text.value = trigger;
+        cursor.value = trigger.length;
+        if (textareaRef.value) {
+            textareaRef.value.focus();
+            textareaRef.value.setSelectionRange(trigger.length, trigger.length);
+        }
+        syncCursor();
+    }
+
     defineExpose({
-        focus
+        focus,
+        insertTrigger
     });
 </script>
 

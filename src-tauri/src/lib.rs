@@ -23,9 +23,11 @@ pub mod ai_context;
 pub mod ai_state;
 pub mod bridge;
 pub mod command_groups;
+pub mod credentials;
 pub mod events;
 pub mod github;
 pub mod logging;
+pub mod remote;
 pub mod search;
 pub mod security;
 pub mod specta;
@@ -90,6 +92,11 @@ use crate::workspace::{SessionRecorder, SpawnHookChain, WorkspaceManager};
 /// Executa o ciclo de vida completo do aplicativo desktop `MaxTerminal`.
 #[allow(clippy::too_many_lines)]
 pub fn run() {
+    let raw_args: Vec<String> = std::env::args().collect();
+    if raw_args.len() >= 2 && raw_args[1] == "--ssh-askpass-helper" {
+        remote::run_askpass_helper(&raw_args);
+    }
+
     let paths = match AppPaths::resolve(&SystemEnv) {
         Ok(paths) => paths,
         Err(err) => {
@@ -240,12 +247,18 @@ pub fn run() {
             let _recorder_tap =
                 pty_for_setup.add_output_tap(Arc::clone(&recorder) as Arc<dyn OutputTap>);
 
+            let vault_service = Arc::new(crate::credentials::service::VaultService::new(
+                (*db_arc).clone(),
+            ));
+            app.manage(Arc::clone(&vault_service));
+
             let workspace_manager = WorkspaceManager::new(
                 (*db_arc).clone(),
                 Arc::clone(&pty_for_setup),
                 Arc::clone(&shell_service),
                 recorder,
                 SpawnHookChain::new(),
+                Arc::clone(&vault_service),
             );
             workspace_manager.attach_app_handle(app.handle().clone());
             workspace_manager.install_pty_listener();
@@ -643,6 +656,10 @@ pub fn run() {
                     }
 
                     let report = mgr.shutdown(Duration::from_millis(3500));
+
+                    if let Some(vault_svc) = handle.try_state::<Arc<crate::credentials::service::VaultService>>() {
+                        vault_svc.lock();
+                    }
 
                     if let Some(db_svc) = handle.try_state::<DbService>() {
                         if let Err(err) = tauri::async_runtime::block_on(db_svc.db().shutdown()) {

@@ -40,6 +40,7 @@ use tauri::AppHandle;
 use tauri_specta::Event;
 use tokio::sync::Mutex as AsyncMutex;
 
+use crate::credentials::service::VaultService;
 use crate::events::workspace::{
     PaneExitedEvent, PaneExitedPayload, PanePtyReplacedEvent, PanePtyReplacedPayload,
     SessionArchivedEvent, SessionStartedEvent, TabClosedEvent, TabClosedPayload,
@@ -156,6 +157,7 @@ struct WorkspaceManagerInner {
     pty_to_pane: RwLock<HashMap<PtyId, (TabId, PaneId, SessionId, i64)>>,
     tab_locks: Mutex<HashMap<TabId, Arc<AsyncMutex<()>>>>,
     restore_lock: AsyncMutex<()>,
+    vault_service: Arc<VaultService>,
 }
 
 /// Gerenciador central de Abas, Templates, Split Panes e Sessões (Fase 07).
@@ -194,6 +196,7 @@ impl WorkspaceManager {
         shell_service: Arc<ShellService>,
         recorder: Arc<SessionRecorder>,
         spawn_hooks: SpawnHookChain,
+        vault_service: Arc<VaultService>,
     ) -> Self {
         let boot_id = uuid::Uuid::new_v4().to_string();
         Self {
@@ -215,8 +218,15 @@ impl WorkspaceManager {
                 pty_to_pane: RwLock::new(HashMap::new()),
                 tab_locks: Mutex::new(HashMap::new()),
                 restore_lock: AsyncMutex::new(()),
+                vault_service,
             }),
         }
+    }
+
+    /// Retorna uma referência ao serviço do cofre de credenciais.
+    #[must_use]
+    pub fn vault(&self) -> &Arc<VaultService> {
+        &self.inner.vault_service
     }
 
     /// Registra o listener de eventos de PTY do `WorkspaceManager` no `PtyManager`.
@@ -558,7 +568,7 @@ impl WorkspaceManager {
     pub async fn template_create(
         &self,
         project_id: ProjectId,
-        input: TabTemplateInput,
+        mut input: TabTemplateInput,
     ) -> MtResult<TabTemplate> {
         mt_core::workspace::validate_template_input(&input)?;
         EnvironmentResolver::validate_environment_available(&input.environment)?;
@@ -567,6 +577,34 @@ impl WorkspaceManager {
             && let Some(proj) = self.load_project_path(project_id).await?
         {
             let _ = EnvironmentResolver::resolve_cwd(&proj, Some(custom_cwd), false)?;
+        }
+
+        // Se a conexão for SSH com senha informada (Set), armazena no cofre e sanitiza o payload
+        if let mt_core::workspace::TemplateConnectionInput::Ssh {
+            ref host,
+            ref user,
+            ref auth,
+        } = input.connection
+        {
+            if let mt_core::workspace::SshAuthInput::Password {
+                operation: mt_core::workspace::PasswordCredentialOperation::Set { password },
+            } = auth
+            {
+                let credential_id = self
+                    .inner
+                    .vault_service
+                    .store_credential(project_id, &password)
+                    .await?;
+                input.connection = mt_core::workspace::TemplateConnectionInput::Ssh {
+                    host: host.clone(),
+                    user: user.clone(),
+                    auth: mt_core::workspace::SshAuthInput::Password {
+                        operation: mt_core::workspace::PasswordCredentialOperation::KeepExisting {
+                            credential_id,
+                        },
+                    },
+                };
+            }
         }
 
         let now_ms = mt_db::time::now_unix_ms();
@@ -586,7 +624,7 @@ impl WorkspaceManager {
         &self,
         template_id: TemplateId,
         expected_revision: i64,
-        input: TabTemplateInput,
+        mut input: TabTemplateInput,
     ) -> MtResult<TabTemplate> {
         mt_core::workspace::validate_template_input(&input)?;
         EnvironmentResolver::validate_environment_available(&input.environment)?;
@@ -596,6 +634,45 @@ impl WorkspaceManager {
             && let Some(proj) = self.load_project_path(existing.project_id).await?
         {
             let _ = EnvironmentResolver::resolve_cwd(&proj, Some(custom_cwd), false)?;
+        }
+
+        // Se a conexão for SSH com nova senha (Set), atualiza ou armazena no cofre
+        if let mt_core::workspace::TemplateConnectionInput::Ssh {
+            ref host,
+            ref user,
+            ref auth,
+        } = input.connection
+        {
+            if let mt_core::workspace::SshAuthInput::Password {
+                operation: mt_core::workspace::PasswordCredentialOperation::Set { password },
+            } = auth
+            {
+                let existing_cred_id = if let mt_core::workspace::TemplateConnection::Ssh {
+                    auth: mt_core::workspace::SshAuth::Password { credential_id },
+                    ..
+                } = &existing.config.connection
+                {
+                    Some(credential_id.as_str())
+                } else {
+                    None
+                };
+
+                let credential_id = self
+                    .inner
+                    .vault_service
+                    .update_or_store_credential(existing.project_id, existing_cred_id, &password)
+                    .await?;
+
+                input.connection = mt_core::workspace::TemplateConnectionInput::Ssh {
+                    host: host.clone(),
+                    user: user.clone(),
+                    auth: mt_core::workspace::SshAuthInput::Password {
+                        operation: mt_core::workspace::PasswordCredentialOperation::KeepExisting {
+                            credential_id,
+                        },
+                    },
+                };
+            }
         }
 
         let now_ms = mt_db::time::now_unix_ms();
@@ -616,6 +693,7 @@ impl WorkspaceManager {
         template_id: TemplateId,
         expected_revision: i64,
     ) -> MtResult<()> {
+        let existing = self.template_get(template_id).await?;
         let project_id = self
             .inner
             .db
@@ -623,6 +701,15 @@ impl WorkspaceManager {
             .delete(template_id, expected_revision)
             .await
             .map_err(map_db_error)?;
+
+        if let mt_core::workspace::TemplateConnection::Ssh {
+            auth: mt_core::workspace::SshAuth::Password { ref credential_id },
+            ..
+        } = existing.config.connection
+        {
+            let _ = self.inner.vault_service.delete_credential(credential_id).await;
+        }
+
         self.emit_template_changed(project_id, vec![template_id]);
         Ok(())
     }
@@ -765,6 +852,7 @@ impl WorkspaceManager {
             continuous: template.config.continuous,
             environment: template.config.environment.clone(),
             env_vars: template.config.env_vars.clone(),
+            connection: template.config.connection.clone(),
         };
 
         if let Some(ref title_ov) = overrides.title {
@@ -962,17 +1050,21 @@ impl WorkspaceManager {
                 resolved_env.cwd.clone()
             };
 
-            match self.spawn_pane_pty(
-                tab_row.id,
-                tab_row.project_id,
-                pane_row.id,
-                session_id,
-                tab_session_id,
-                pane_row.generation,
-                tab_row.continuous,
-                &effective_cwd,
-                &resolved_env.env,
-            ) {
+            match self
+                .spawn_pane_pty(
+                    tab_row.id,
+                    tab_row.project_id,
+                    pane_row.id,
+                    session_id,
+                    tab_session_id,
+                    pane_row.generation,
+                    tab_row.continuous,
+                    &effective_cwd,
+                    &resolved_env.env,
+                    &snapshot.connection,
+                )
+                .await
+            {
                 Ok(pty_id) => {
                     spawned_ptys.push((pane_row.id, session_id, pty_id, pane_row.generation));
                     live_panes.insert(
@@ -1110,7 +1202,7 @@ impl WorkspaceManager {
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn spawn_pane_pty(
+    async fn spawn_pane_pty(
         &self,
         tab_id: TabId,
         project_id: ProjectId,
@@ -1121,70 +1213,131 @@ impl WorkspaceManager {
         continuous: bool,
         cwd: &std::path::Path,
         base_env: &BTreeMap<String, String>,
+        connection: &mt_core::workspace::TemplateConnection,
     ) -> MtResult<PtyId> {
-        let mut env = base_env.clone();
-        let guards = self
-            .inner
-            .spawn_hooks
-            .apply(project_id, tab_id, pane_id, cwd, &mut env)?;
+        match connection {
+            mt_core::workspace::TemplateConnection::Local => {
+                let mut env = base_env.clone();
+                let guards = self
+                    .inner
+                    .spawn_hooks
+                    .apply(project_id, tab_id, pane_id, cwd, &mut env)?;
 
-        let spec = SpawnSpec {
-            shell: None,
-            args: Vec::new(),
-            login: true,
-            cwd: Some(cwd.to_string_lossy().into_owned()),
-            env,
-            env_remove: Vec::new(),
-            size: PtySize::default(),
-            owner: PtyOwner {
-                tab_id: Some(tab_id),
-                pane_id: Some(pane_id),
-            },
-        };
+                let spec = SpawnSpec {
+                    shell: None,
+                    args: Vec::new(),
+                    login: true,
+                    cwd: Some(cwd.to_string_lossy().into_owned()),
+                    env,
+                    env_remove: Vec::new(),
+                    size: PtySize::default(),
+                    owner: PtyOwner {
+                        tab_id: Some(tab_id),
+                        pane_id: Some(pane_id),
+                    },
+                };
 
-        let integration_req = ShellIntegrationRequest {
-            enabled: true,
-            continuous_policy: if continuous {
-                ContinuousPolicy::Always
-            } else {
-                ContinuousPolicy::Auto
-            },
-            project_id: Some(project_id),
-            tab_session_id: Some(tab_session_id),
-        };
+                let integration_req = ShellIntegrationRequest {
+                    enabled: true,
+                    continuous_policy: if continuous {
+                        ContinuousPolicy::Always
+                    } else {
+                        ContinuousPolicy::Auto
+                    },
+                    project_id: Some(project_id),
+                    tab_session_id: Some(tab_session_id),
+                };
 
-        let summary =
-            match self
-                .inner
-                .shell_service
-                .spawn_pty_with_session(spec, session_id, integration_req)
-            {
-                Ok(s) => s,
-                Err(err) => {
-                    for g in guards {
-                        g.release();
+                let summary = match self
+                    .inner
+                    .shell_service
+                    .spawn_pty_with_session(spec, session_id, integration_req)
+                {
+                    Ok(s) => s,
+                    Err(err) => {
+                        for g in guards {
+                            g.release();
+                        }
+                        return Err(tab_open_failed(format!(
+                            "Falha ao abrir PTY do painel: {err}"
+                        )));
                     }
-                    return Err(tab_open_failed(format!(
-                        "Falha ao abrir PTY do painel: {err}"
-                    )));
+                };
+
+                let pty_id = summary.id;
+                if !guards.is_empty() {
+                    self.inner.spawn_guards.lock().insert(pty_id, guards);
                 }
-            };
 
-        let pty_id = summary.id;
-        if !guards.is_empty() {
-            self.inner.spawn_guards.lock().insert(pty_id, guards);
+                self.inner
+                    .recorder
+                    .register_pty(tab_id, pane_id, session_id, tab_session_id, pty_id);
+
+                let observers = self.inner.observers.read().clone();
+                for obs in observers {
+                    obs.on_pane_spawned(tab_id, pane_id, pty_id, session_id);
+                }
+
+                Ok(pty_id)
+            }
+            mt_core::workspace::TemplateConnection::Ssh { host: _, user: _, auth } => {
+                let password_opt = match auth {
+                    mt_core::workspace::SshAuth::Key { .. } => None,
+                    mt_core::workspace::SshAuth::Password { credential_id } => {
+                        let pass = self
+                            .inner
+                            .vault_service
+                            .retrieve_credential(project_id, credential_id)
+                            .await?;
+                        Some(pass)
+                    }
+                };
+
+                let ssh_session = crate::remote::ssh::build_ssh_spawn(
+                    connection,
+                    password_opt,
+                    tab_id,
+                    pane_id,
+                    PtySize::default(),
+                )?;
+
+                let spec = ssh_session.spec.clone();
+                let integration_req = ShellIntegrationRequest {
+                    enabled: false,
+                    continuous_policy: ContinuousPolicy::Never,
+                    project_id: Some(project_id),
+                    tab_session_id: Some(tab_session_id),
+                };
+
+                let summary = match self
+                    .inner
+                    .shell_service
+                    .spawn_pty_with_session(spec, session_id, integration_req)
+                {
+                    Ok(s) => s,
+                    Err(err) => {
+                        return Err(MtError::new(
+                            codes::SSH_CONNECTION_FAILED,
+                            format!("Falha ao iniciar processo OpenSSH para o painel: {err}"),
+                        ));
+                    }
+                };
+
+                let pty_id = summary.id;
+                ssh_session.keep_alive_in_background(std::time::Duration::from_secs(20));
+
+                self.inner
+                    .recorder
+                    .register_pty(tab_id, pane_id, session_id, tab_session_id, pty_id);
+
+                let observers = self.inner.observers.read().clone();
+                for obs in observers {
+                    obs.on_pane_spawned(tab_id, pane_id, pty_id, session_id);
+                }
+
+                Ok(pty_id)
+            }
         }
-
-        self.inner
-            .recorder
-            .register_pty(tab_id, pane_id, session_id, tab_session_id, pty_id);
-
-        let observers = self.inner.observers.read().clone();
-        for obs in observers {
-            obs.on_pane_spawned(tab_id, pane_id, pty_id, session_id);
-        }
-
-        Ok(pty_id)
     }
 
     /// Fecha uma aba inteira (`tab_close`) encerrando seus PTYs e arquivando sua `tab_session`.
@@ -1313,7 +1466,11 @@ impl WorkspaceManager {
                 }
 
                 let summary = archive_tab_session_tx(tx, tsid, reason, now_ms)?;
-                let closed_tab = close_tab_tx(tx, tab_id, now_ms)?;
+                let closed_tab = if reason == SessionEndReason::AppExit {
+                    None
+                } else {
+                    close_tab_tx(tx, tab_id, now_ms)?
+                };
                 let rev = closed_tab.map_or(1, |t| t.revision);
 
                 let _ = enforce_tab_sessions_retention_tx(tx, keep_per_tab, max_age_days, now_ms)?;
@@ -1323,7 +1480,9 @@ impl WorkspaceManager {
             .map_err(map_db_error)?;
 
         self.emit_session_archived(archived_summary);
-        self.emit_tab_closed(live_tab.id, live_tab.project_id, new_rev);
+        if reason != SessionEndReason::AppExit {
+            self.emit_tab_closed(live_tab.id, live_tab.project_id, new_rev);
+        }
         Ok(())
     }
 
@@ -1550,17 +1709,21 @@ impl WorkspaceManager {
             .await
             .map_err(map_db_error)?;
 
-        let pty_id = match self.spawn_pane_pty(
-            tab_id,
-            project_id,
-            new_pane_id,
-            new_session_id,
-            tab_session_id,
-            created_pane_row.generation,
-            continuous,
-            &resolved_env.cwd,
-            &resolved_env.env,
-        ) {
+        let pty_id = match self
+            .spawn_pane_pty(
+                tab_id,
+                project_id,
+                new_pane_id,
+                new_session_id,
+                tab_session_id,
+                created_pane_row.generation,
+                continuous,
+                &resolved_env.cwd,
+                &resolved_env.env,
+                &snapshot.connection,
+            )
+            .await
+        {
             Ok(id) => id,
             Err(spawn_err) => {
                 // Compensação em caso de falha de spawn do novo painel
@@ -1872,17 +2035,20 @@ impl WorkspaceManager {
             .await
             .map_err(map_db_error)?;
 
-        let new_pty_id = self.spawn_pane_pty(
-            tab_id,
-            project_id,
-            pane_id,
-            new_session_id,
-            tab_session_id,
-            new_generation,
-            continuous,
-            &resolved_env.cwd,
-            &resolved_env.env,
-        )?;
+        let new_pty_id = self
+            .spawn_pane_pty(
+                tab_id,
+                project_id,
+                pane_id,
+                new_session_id,
+                tab_session_id,
+                new_generation,
+                continuous,
+                &resolved_env.cwd,
+                &resolved_env.env,
+                &snapshot.connection,
+            )
+            .await?;
 
         let view = {
             let mut tabs = self.inner.tabs.write();
@@ -2158,17 +2324,20 @@ impl WorkspaceManager {
             )?;
             let eff_cwd_str = resolved_env.cwd.to_string_lossy().into_owned();
 
-            let new_pty_id = self.spawn_pane_pty(
-                tab_id,
-                project_id,
-                pid,
-                new_sid,
-                new_tab_session_id,
-                next_gen,
-                continuous,
-                &resolved_env.cwd,
-                &resolved_env.env,
-            )?;
+            let new_pty_id = self
+                .spawn_pane_pty(
+                    tab_id,
+                    project_id,
+                    pid,
+                    new_sid,
+                    new_tab_session_id,
+                    next_gen,
+                    continuous,
+                    &resolved_env.cwd,
+                    &resolved_env.env,
+                    &snapshot.connection,
+                )
+                .await?;
 
             self.inner
                 .pty_to_pane
@@ -2489,6 +2658,207 @@ impl WorkspaceManager {
         if let Some(view) = view_opt {
             self.emit_tab_layout_changed(view);
         }
+    }
+
+    /// Restaura uma aba que estava aberta antes do encerramento da aplicação (`restore_open_tab_entry`).
+    pub async fn restore_open_tab_entry(
+        &self,
+        stored_tab: mt_db::repos::StoredTabRow,
+    ) -> MtResult<TabView> {
+        let now_ms = mt_db::time::now_unix_ms();
+        let tab_id = stored_tab.id;
+        let project_id = stored_tab.project_id;
+        let tab_session_id = TabSessionId::new();
+
+        let open_panes = self
+            .inner
+            .db
+            .panes()
+            .list_open_by_tab(tab_id)
+            .await
+            .map_err(map_db_error)?;
+
+        let panes_to_restore = if open_panes.is_empty() {
+            vec![mt_db::repos::StoredPaneRow {
+                id: stored_tab.primary_pane_id,
+                tab_id,
+                cwd: stored_tab.launch_snapshot.resolved_cwd.clone(),
+                generation: 1,
+                created_at: now_ms,
+                closed_at: None,
+            }]
+        } else {
+            open_panes
+        };
+
+        let panes_copy = panes_to_restore.clone();
+        let project_id_copy = project_id;
+        let stored_tab_id = tab_id;
+
+        let (_summary, pane_sessions) = self
+            .inner
+            .db
+            .write_sized("tab_restore_begin_tx", 2048, move |tx| {
+                let summary = start_tab_session_tx(tx, tab_session_id, stored_tab_id, now_ms)?;
+                let mut map = HashMap::new();
+                for pane in &panes_copy {
+                    let sid = SessionId::new();
+                    insert_session_tx(
+                        tx,
+                        &NewSession {
+                            id: sid,
+                            tab_id: Some(stored_tab_id),
+                            pane_id: Some(pane.id),
+                            project_id: Some(project_id_copy),
+                            tab_session_id: Some(tab_session_id),
+                            pty_id: PtyId::new(),
+                            shell_kind: ShellKind::Sh,
+                            shell_executable: SanitizedText::new("shell"),
+                            initial_cwd: SanitizedText::new(&pane.cwd),
+                            integration_mode: IntegrationMode::Pending,
+                            started_at: now_ms,
+                        },
+                    )?;
+                    attach_pane_session_tx(
+                        tx,
+                        sid,
+                        tab_session_id,
+                        pane.id,
+                        pane.generation,
+                        now_ms,
+                        InitialDispatchState::None,
+                    )?;
+                    map.insert(pane.id, sid);
+                }
+                Ok((summary, map))
+            })
+            .await
+            .map_err(map_db_error)?;
+
+        let mut live_panes = BTreeMap::new();
+        let mut p2t_entries = Vec::new();
+        let mut pty_map_entries = Vec::new();
+
+        let base_env: BTreeMap<String, String> = stored_tab
+            .launch_snapshot
+            .env_vars
+            .iter()
+            .filter_map(|(k, v)| match v {
+                mt_core::workspace::EnvValue::Literal { value } => Some((k.clone(), value.clone())),
+                mt_core::workspace::EnvValue::Inherited { source } => {
+                    std::env::var(source).ok().map(|val| (k.clone(), val))
+                }
+            })
+            .collect();
+
+        for pane_row in panes_to_restore {
+            let pane_id = pane_row.id;
+            let session_id = pane_sessions
+                .get(&pane_id)
+                .copied()
+                .unwrap_or_else(SessionId::new);
+
+            p2t_entries.push((pane_id, tab_id));
+
+            let pane_cwd = PathBuf::from(&pane_row.cwd);
+            let effective_cwd = if pane_cwd.is_dir() {
+                pane_cwd
+            } else {
+                PathBuf::from(&stored_tab.launch_snapshot.resolved_cwd)
+            };
+
+            match self
+                .spawn_pane_pty(
+                    tab_id,
+                    project_id,
+                    pane_id,
+                    session_id,
+                    tab_session_id,
+                    pane_row.generation,
+                    stored_tab.continuous,
+                    &effective_cwd,
+                    &base_env,
+                    &stored_tab.launch_snapshot.connection,
+                )
+                .await
+            {
+                Ok(pty_id) => {
+                    pty_map_entries.push((
+                        pty_id,
+                        (tab_id, pane_id, session_id, pane_row.generation),
+                    ));
+                    live_panes.insert(
+                        pane_id,
+                        LivePaneEntry {
+                            pane_id,
+                            session_id,
+                            pty_id: Some(pty_id),
+                            generation: pane_row.generation,
+                            cwd: effective_cwd.to_string_lossy().into_owned(),
+                            state: PaneRuntimeState::Live,
+                            exit: None,
+                            error: None,
+                            initial_dispatch: InitialDispatchState::None,
+                        },
+                    );
+                }
+                Err(err) => {
+                    // Preserva a aba viva mesmo se o PTY falhar no boot (ex: VAULT_LOCKED ou offline)
+                    live_panes.insert(
+                        pane_id,
+                        LivePaneEntry {
+                            pane_id,
+                            session_id,
+                            pty_id: None,
+                            generation: pane_row.generation,
+                            cwd: effective_cwd.to_string_lossy().into_owned(),
+                            state: PaneRuntimeState::Failed,
+                            exit: None,
+                            error: Some(err),
+                            initial_dispatch: InitialDispatchState::None,
+                        },
+                    );
+                }
+            }
+        }
+
+        {
+            let mut p2t = self.inner.pane_to_tab.write();
+            for (p_id, t_id) in p2t_entries {
+                p2t.insert(p_id, t_id);
+            }
+        }
+        {
+            let mut pty_map = self.inner.pty_to_pane.write();
+            for (pty_id, entry) in pty_map_entries {
+                pty_map.insert(pty_id, entry);
+            }
+        }
+
+        let live_tab = LiveTabEntry {
+            id: stored_tab.id,
+            project_id: stored_tab.project_id,
+            template_id: stored_tab.template_id,
+            title: stored_tab.title,
+            icon: stored_tab.icon,
+            position: stored_tab.position,
+            origin: stored_tab.origin,
+            continuous: stored_tab.continuous,
+            lifecycle: TabLifecycle::Ready,
+            revision: stored_tab.revision,
+            layout_revision: stored_tab.layout_revision,
+            layout: stored_tab.layout,
+            active_pane_id: stored_tab.active_pane_id,
+            primary_pane_id: stored_tab.primary_pane_id,
+            tab_session_id,
+            launch_snapshot: stored_tab.launch_snapshot,
+            panes: live_panes,
+        };
+
+        let view = live_tab.to_view();
+        self.inner.tabs.write().insert(tab_id, live_tab);
+        self.emit_tab_opened(view.clone());
+        Ok(view)
     }
 
     /// Drena e arquiva todas as abas abertas durante o encerramento gracioso da aplicação (`RunEvent::Exit`).

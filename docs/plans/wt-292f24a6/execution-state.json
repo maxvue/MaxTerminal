@@ -1,0 +1,156 @@
+{
+  "version": 2,
+  "planRevision": "99c68f76651ab3760717285227e9e0e7929b60c49446990f05cc4e3b00902b03",
+  "tasks": [
+    {
+      "id": "T0",
+      "status": "completed",
+      "files": [
+        "scripts/sync-local-libs.mjs"
+      ],
+      "validations": [],
+      "revision": "97c9893ebad2bb61e79a33d797e3686fa6169659d2ac12689926e2926cdfb475"
+    },
+    {
+      "id": "T1",
+      "status": "completed",
+      "files": [
+        "src-tauri/crates/mt-core/src/workspace/template.rs",
+        "src-tauri/crates/mt-core/src/workspace/tab.rs",
+        "src-tauri/crates/mt-db/migrations/0012_18_remote_credentials_vault.sql",
+        "src-tauri/crates/mt-db/src/repos/credentials.rs",
+        "src-tauri/crates/mt-db/src/repos/templates.rs"
+      ],
+      "validations": [],
+      "revision": "97c9893ebad2bb61e79a33d797e3686fa6169659d2ac12689926e2926cdfb475"
+    },
+    {
+      "id": "T2",
+      "status": "completed",
+      "files": [
+        "src-tauri/src/credentials/mod.rs",
+        "src-tauri/src/credentials/crypto.rs",
+        "src-tauri/src/credentials/service.rs",
+        "src-tauri/src/commands/credentials.rs",
+        "src/ipc/credentials.ts",
+        "src/stores/vault.ts"
+      ],
+      "validations": [],
+      "revision": "97c9893ebad2bb61e79a33d797e3686fa6169659d2ac12689926e2926cdfb475"
+    },
+    {
+      "id": "T3",
+      "status": "completed",
+      "files": [
+        "src-tauri/src/workspace/manager.rs",
+        "src-tauri/src/workspace/restore.rs"
+      ],
+      "validations": [],
+      "revision": "97c9893ebad2bb61e79a33d797e3686fa6169659d2ac12689926e2926cdfb475"
+    },
+    {
+      "id": "T4",
+      "status": "completed",
+      "files": [
+        "src-tauri/src/remote/mod.rs",
+        "src-tauri/src/remote/ssh.rs",
+        "src-tauri/src/remote/askpass.rs"
+      ],
+      "validations": [],
+      "revision": "97c9893ebad2bb61e79a33d797e3686fa6169659d2ac12689926e2926cdfb475"
+    },
+    {
+      "id": "T5",
+      "status": "completed",
+      "files": [
+        "src/components/workspace/TemplateEditorModal.vue",
+        "src/components/credentials/VaultUnlockModal.vue",
+        "src/components/credentials/VaultSetupModal.vue",
+        "src/components/workspace/PaneView.vue",
+        "src/app/App.vue"
+      ],
+      "validations": [],
+      "revision": "97c9893ebad2bb61e79a33d797e3686fa6169659d2ac12689926e2926cdfb475"
+    },
+    {
+      "id": "T6",
+      "status": "completed",
+      "files": [
+        "src/components/indicators/TabIndicators.vue",
+        "src/components/indicators/SshBadge.vue"
+      ],
+      "validations": [],
+      "revision": "97c9893ebad2bb61e79a33d797e3686fa6169659d2ac12689926e2926cdfb475"
+    },
+    {
+      "id": "T7",
+      "status": "completed",
+      "files": [
+        "src/terminal/engine/terminalInstance.ts",
+        "src/composables/terminal/useViewportTriggers.ts",
+        "src/components/terminal/HybridTerminal.vue",
+        "src/components/terminal/RichInput.vue"
+      ],
+      "validations": [],
+      "revision": "97c9893ebad2bb61e79a33d797e3686fa6169659d2ac12689926e2926cdfb475"
+    },
+    {
+      "id": "T8",
+      "status": "completed",
+      "files": [
+        "src/types/bindings.ts",
+        "tests/frontend/credentials/vault.store.spec.ts",
+        "tests/components/credentials/VaultUnlockModal.spec.ts",
+        "tests/components/indicators/SshBadge.spec.ts",
+        "tests/terminal/useViewportTriggers.spec.ts",
+        "tests/components/workspace/TemplateEditorModalSsh.spec.ts",
+        "tests/frontend/workspace/templates.store.spec.ts"
+      ],
+      "validations": [],
+      "revision": "97c9893ebad2bb61e79a33d797e3686fa6169659d2ac12689926e2926cdfb475"
+    }
+  ],
+  "verification": {
+    "revision": "97c9893ebad2bb61e79a33d797e3686fa6169659d2ac12689926e2926cdfb475",
+    "checks": [
+      {
+        "command": "cargo test --manifest-path src-tauri/Cargo.toml",
+        "revision": "97c9893ebad2bb61e79a33d797e3686fa6169659d2ac12689926e2926cdfb475",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run typecheck",
+        "revision": "97c9893ebad2bb61e79a33d797e3686fa6169659d2ac12689926e2926cdfb475",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run build",
+        "revision": "97c9893ebad2bb61e79a33d797e3686fa6169659d2ac12689926e2926cdfb475",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm test",
+        "revision": "97c9893ebad2bb61e79a33d797e3686fa6169659d2ac12689926e2926cdfb475",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run lint",
+        "revision": "97c9893ebad2bb61e79a33d797e3686fa6169659d2ac12689926e2926cdfb475",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run lint:style",
+        "revision": "97c9893ebad2bb61e79a33d797e3686fa6169659d2ac12689926e2926cdfb475",
+        "result": "passed",
+        "exitCode": 0
+      }
+    ]
+  },
+  "updatedAt": 1793744180000,
+  "nextAction": "Aguardar confirmação explícita do usuário para ações Git."
+}

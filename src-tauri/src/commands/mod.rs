@@ -13,6 +13,8 @@ pub mod bridge;
 #[macro_use]
 pub mod command_groups;
 #[macro_use]
+pub mod credentials;
+#[macro_use]
 pub mod db;
 #[macro_use]
 pub mod git;

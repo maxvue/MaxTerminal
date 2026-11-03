@@ -26,7 +26,8 @@ function makeTemplate(overrides: Partial<TabTemplate_Serialize> = {}): TabTempla
             addToWorkspace: false,
             continuous: false,
             environment: { kind: 'shell', agentId: null },
-            envVars: {}
+            envVars: {},
+            connection: { kind: 'local' }
         },
         isDefault: true,
         position: 0,
@@ -86,6 +87,7 @@ describe('useTemplatesStore (Fase 07)', () => {
             continuous: true,
             environment: { kind: 'shell', agentId: null },
             envVars: {},
+            connection: { kind: 'local' },
             makeDefault: false
         });
         expect(created.id).toBe('tpl-2');
