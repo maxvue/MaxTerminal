@@ -1,11 +1,22 @@
 <template>
     <div class="tab-bar-item" :class="{ 'is-active': props.active, 'is-dragging': props.dragging }" role="tab" :aria-selected="props.active" tabindex="0" draggable="true" @click="emit('select', props.tab.id)" @keydown.enter.prevent="emit('select', props.tab.id)" @keydown.space.prevent="emit('select', props.tab.id)" @dragstart="emit('drag-start', props.tab.id)" @dragover.prevent="emit('drag-over', props.tab.id)" @drop.prevent="emit('drop', props.tab.id)" @dragend="emit('drag-end')">
-        <MaxIcon :icon="props.tab.icon || 'lucide:terminal'" class="tab-bar-item__icon" aria-hidden="true" />
-        <span class="tab-bar-item__title" :title="props.tab.title">{{ props.tab.title }}</span>
-        <span v-if="paneCount > 1" class="tab-bar-item__panes-badge" :title="`${paneCount} painéis divididos`">{{ paneCount }}</span>
-        <TabStatusIndicator :status="effectiveStatus" :seen="props.active" :show-label="false" size="sm" />
-        <slot name="indicators" :tab="props.tab" />
-        <MaxIconButton icon="lucide:x" :label="`Fechar aba ${props.tab.title}`" variant="ghost" class="tab-bar-item__close" title="Fechar aba" @click.stop="emit('close', props.tab.id)" />
+        <div class="tab-bar-top-line">
+            <div class="tab-bar-left">
+                <MaxIcon :icon="props.tab.icon || 'lucide:terminal'" class="tab-bar-item__icon" aria-hidden="true" />
+            </div>
+            <div class="tab-bar-center">
+                <span class="tab-bar-item__title" :title="props.tab.title">{{ props.tab.title }}</span>
+            </div>
+            <div class="tab-bar-right">
+                <TabStatusIndicator :status="effectiveStatus" :seen="props.active" :show-label="false" size="sm" />
+            </div>
+            <div class="tab-bar-close">
+                <MaxIconButton icon="lucide:x" :label="`Fechar aba ${props.tab.title}`" variant="ghost" class="tab-bar-item__close" title="Fechar aba" @click.stop="emit('close', props.tab.id)" />
+            </div>
+        </div>
+        <div class="tab-bar-bottom-line">
+            <slot name="indicators" :tab="props.tab" />
+        </div>
     </div>
 </template>
 
@@ -50,11 +61,14 @@
 
 <style lang="scss" scoped>
     .tab-bar-item {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        height: 2.125rem;
-        padding: 0 0.625rem;
+        display: grid;
+        grid-template-rows: 18px 1fr;
+        overflow: hidden;
+        place-items: center start;
+        gap: 2px;
+        height: 2.8rem;
+        max-height: 2.9rem;
+        padding: 2px 10px;
         border-radius: 0.375rem 0.375rem 0 0;
         background: var(--mt-ui-surface-elevated, var(--background-50));
         border: 1px solid var(--mt-ui-border, var(--background-100));
@@ -66,6 +80,7 @@
         user-select: none;
         transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
         max-width: 14rem;
+        min-width: 200px !important;
         flex-shrink: 0;
 
         &:hover {
@@ -85,18 +100,62 @@
         }
     }
 
+    .tab-bar-top-line{
+        width: 100%;
+        height: 100%;
+        display: grid;
+        place-items: center;
+        grid-template-columns: auto 1fr auto auto;
+        gap: 10px;
+        .tab-bar-left{
+            width: 100%;
+            height: 100%;
+            display: grid;
+            place-items: center;
+        }
+        .tab-bar-center{
+            width: 100%;
+            height: 100%;
+            display: grid;
+            place-items: center start;
+            .tab-bar-item__title {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                font-size: 0.65rem;
+                font-weight: 400;
+            }
+        }
+        .tab-bar-right{
+            width: 100%;
+            height: 100%;
+            display: grid;
+            place-items: center;
+            padding-left: 10px;
+        }
+        .tab-bar-close{
+            width: 100%;
+            height: 100%;
+            display: grid;
+            place-items: center end;
+            // padding-left: 10px;
+        }
+    }
+
+    .tab-bar-bottom-line{
+        width: 100%;
+        max-height: 10px;
+        overflow: hidden;
+        display: flex;
+    }
+
     .tab-bar-item__icon {
         font-size: 0.9375rem;
         color: var(--max-primary-400);
         flex-shrink: 0;
     }
 
-    .tab-bar-item__title {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        min-width: 2.5rem;
-    }
+
 
     .tab-bar-item__panes-badge {
         padding: 0 0.3125rem;

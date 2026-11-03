@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "planRevision": "050db4e4c6cb797ae8368e2eb8922d552fbe781c0756127e421bffea52d63988",
+  "tasks": [
+    {
+      "id": "T1",
+      "status": "completed",
+      "files": [],
+      "validations": []
+    },
+    {
+      "id": "T2",
+      "status": "completed",
+      "files": [
+        "src/components/ai/InlineDiagnosis.vue"
+      ],
+      "validations": [],
+      "revision": "c5c8c3c817fa51c6116970818fb7961bacf85bcc167ee0378397b3e36473df4d"
+    },
+    {
+      "id": "T3",
+      "status": "manualPending",
+      "files": [
+        "src/components/ai/InlineDiagnosis.vue"
+      ],
+      "validations": [],
+      "revision": "c5c8c3c817fa51c6116970818fb7961bacf85bcc167ee0378397b3e36473df4d",
+      "nextAction": "Conferir visualmente na instância ativa do MaxTerminal a ausência do overlay Sass e o hover do botão dismiss."
+    }
+  ],
+  "verification": {
+    "revision": "c5c8c3c817fa51c6116970818fb7961bacf85bcc167ee0378397b3e36473df4d",
+    "checks": [
+      {
+        "command": "npx --no-install vitest run src/components/ai/__tests__/InlineDiagnosis.spec.ts src/composables/__tests__/useInlineDiagnosis.spec.ts",
+        "revision": "c5c8c3c817fa51c6116970818fb7961bacf85bcc167ee0378397b3e36473df4d",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run build",
+        "revision": "c5c8c3c817fa51c6116970818fb7961bacf85bcc167ee0378397b3e36473df4d",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run typecheck",
+        "revision": "c5c8c3c817fa51c6116970818fb7961bacf85bcc167ee0378397b3e36473df4d",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run lint",
+        "revision": "c5c8c3c817fa51c6116970818fb7961bacf85bcc167ee0378397b3e36473df4d",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run test",
+        "revision": "c5c8c3c817fa51c6116970818fb7961bacf85bcc167ee0378397b3e36473df4d",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run lint:style",
+        "revision": "c5c8c3c817fa51c6116970818fb7961bacf85bcc167ee0378397b3e36473df4d",
+        "result": "failed",
+        "exitCode": 2
+      },
+      {
+        "command": "npm run typecheck:vue",
+        "revision": "c5c8c3c817fa51c6116970818fb7961bacf85bcc167ee0378397b3e36473df4d",
+        "result": "failed",
+        "exitCode": 2
+      }
+    ]
+  },
+  "updatedAt": 1793734935138,
+  "nextAction": "Aguardar validação visual na instância ativa e confirmação do usuário para commit/merge."
+}

@@ -1,7 +1,7 @@
 <template>
     <div class="tab-indicators">
         <AgentAttentionIndicator :tab-id="props.tab.id" />
-        <AgentStatusLine :tab-id="props.tab.id" :compact="true" />
+        <!-- <AgentStatusLine :tab-id="props.tab.id" :compact="true" /> -->
         <WorktreeBadge :worktree="activeWorktree" />
         <GitIndicator :context="gitContext" @refresh="onRefreshGit" />
         <PortBadge :ports="tabPorts" :killing-by-port-id="portsStore.killingByPortId" @open-browser="onOpenBrowser" @kill-port="onKillPort" />

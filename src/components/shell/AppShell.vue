@@ -32,7 +32,7 @@
     .app-shell {
         display: grid;
         grid-template-rows: auto 1fr auto;
-        width: 100vw;
+        width: 100vw !important;
         height: 100vh;
         overflow: hidden;
         background: var(--mt-ui-surface, var(--background-0));
@@ -41,9 +41,11 @@
 
     .app-shell__body {
         display: grid;
-        grid-template-columns: auto 1fr;
+        grid-template-columns: 1fr;
         min-height: 0;
         overflow: hidden;
+        width: 100vw;
+        height: 100vh;
     }
 
     .app-shell__sidebar {
