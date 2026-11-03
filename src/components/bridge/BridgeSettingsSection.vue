@@ -303,6 +303,7 @@
         justify-content: flex-end;
         gap: 0.5rem;
     }
+
     .bridge-settings__btn {
         display: inline-flex;
         align-items: center;

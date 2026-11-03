@@ -217,6 +217,7 @@
     "allow-backup-restore-schedule",
     "allow-app-update-check",
     "allow-app-update-install-confirmed",
-    "core:event:default"
+    "core:event:default",
+    "core:window:allow-set-theme"
   ]
 }

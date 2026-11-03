@@ -27,13 +27,14 @@ export const DEFAULT_AGENT_SHORTCUTS: Readonly<Record<AgentKind, string>> = Obje
     opencode: 'Ctrl+Alt+O'
 });
 
-/** Atalhos reservados pelas Fases 04, 07 e 09 que não podem ser sobrescritos por agentes. */
+/** Atalhos reservados pelas Fases 04, 07, 09 e barra nativa/F5 que não podem ser sobrescritos por agentes. */
 export const RESERVED_APP_SHORTCUTS: ReadonlySet<string> = new Set([
     'Ctrl+Shift+C',
     'Ctrl+Shift+V',
     'Ctrl+Shift+F',
     'Ctrl+Shift+I',
-    'Ctrl+Alt+Backquote'
+    'Ctrl+Alt+Backquote',
+    'F5'
 ]);
 
 export interface ShortcutToastNotice {

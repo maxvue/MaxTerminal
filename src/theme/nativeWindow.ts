@@ -1,9 +1,39 @@
 import { isTauri } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
-let lastAppliedPolarity: 'dark' | 'light' | null = null;
+/** Alvo de tema da janela nativa: 'dark', 'light' ou null para seguir as cores do sistema operacional. */
+export type NativeWindowThemeTarget = 'dark' | 'light' | null;
+
+/** Opções para resolução da política de tema da janela nativa. */
+export interface WindowThemePolicyOptions {
+    contentPolarity: 'dark' | 'light';
+    /** Indica se a integração de cores do sistema está disponível. Se omitido ou true, prioriza o sistema. */
+    nativeIntegrationAvailable?: boolean | undefined;
+}
+
+/** Sentinela interna para distinguir 'não aplicado' e 'sem pedido pendente' de null (sistema). */
+const UNSET = Symbol('UNSET') as symbol;
+
+type WindowThemeTargetOrUnset = NativeWindowThemeTarget | typeof UNSET;
+
+let lastAppliedTarget: WindowThemeTargetOrUnset = UNSET;
 let inFlightPromise: Promise<boolean> | null = null;
-let pendingPolarity: 'dark' | 'light' | null = null;
+let pendingTarget: WindowThemeTargetOrUnset = UNSET;
+
+/**
+ * Deriva o alvo de tema da janela nativa conforme a política canônica:
+ * 1. Caminho principal: 'null' (preserva as cores nativas e decorações do sistema operacional);
+ * 2. Fallback escuro: 'dark' apenas quando a integração nativa for comprovadamente indisponível E o conteúdo for escuro;
+ * 3. Retorno ao sistema: 'null' quando o conteúdo for claro (não impõe barra clara artificial).
+ */
+export function resolveNativeWindowThemeTarget(
+    options: WindowThemePolicyOptions
+): NativeWindowThemeTarget {
+    if (options.nativeIntegrationAvailable === false) {
+        return options.contentPolarity === 'dark' ? 'dark' : null;
+    }
+    return null;
+}
 
 /**
  * Verifica se a aplicação está executando dentro do runtime nativo Tauri.
@@ -23,50 +53,63 @@ export function isNativeWindowAvailable(): boolean {
 }
 
 /**
- * Aplica a polaridade informada ('dark' | 'light') à janela nativa do Tauri.
+ * Aplica o alvo informado ('dark' | 'light' | null) à janela nativa do Tauri via IPC.
+ *
+ * O valor `null` instrui o Tauri/SO a utilizar o tema/cores nativas do sistema.
  *
  * Garante:
  * 1. Execução segura apenas em ambiente Tauri;
- * 2. Deduplicação de polaridades já aplicadas com sucesso;
- * 3. Serialização e reconciliação sob concorrência (último tema sempre vence);
+ * 2. Deduplicação de alvos já aplicados com sucesso (inclusive null);
+ * 3. Serialização e reconciliação sob concorrência (último alvo solicitado sempre prevalece);
  * 4. Tratamento resiliente de erro sem rejeições não tratadas.
+ *
+ * @returns `true` se o alvo foi despachado via IPC ou se já estava aplicado;
+ * note que isso atesta o transporte IPC e não a correspondência de renderização pelo gerenciador de janelas.
  */
-export async function applyNativeWindowTheme(polarity: 'dark' | 'light'): Promise<boolean> {
+export async function applyNativeWindowTheme(
+    target: NativeWindowThemeTarget
+): Promise<boolean> {
     if (!isNativeWindowAvailable()) {
         return false;
     }
 
-    if (polarity === lastAppliedPolarity && !inFlightPromise) {
+    if (target === lastAppliedTarget && !inFlightPromise) {
         return true;
     }
 
     if (inFlightPromise) {
-        pendingPolarity = polarity;
+        pendingTarget = target;
         return inFlightPromise;
     }
 
     inFlightPromise = (async () => {
-        let currentTarget: 'dark' | 'light' = polarity;
-        while (currentTarget) {
+        let currentTarget: WindowThemeTargetOrUnset = target;
+        while (currentTarget !== UNSET) {
+            const themeToApply = currentTarget as NativeWindowThemeTarget;
             try {
-                const currentWin = typeof getCurrentWindow === 'function' ? getCurrentWindow() : null;
+                let currentWin: ReturnType<typeof getCurrentWindow> | null = null;
+                try {
+                    currentWin = typeof getCurrentWindow === 'function' ? getCurrentWindow() : null;
+                } catch {
+                    currentWin = null;
+                }
                 if (currentWin && typeof currentWin.setTheme === 'function') {
-                    await currentWin.setTheme(currentTarget);
-                    lastAppliedPolarity = currentTarget;
+                    await currentWin.setTheme(themeToApply);
+                    lastAppliedTarget = themeToApply;
                 }
             } catch (err) {
                 console.warn('[nativeWindow] Falha ao sincronizar tema da janela nativa:', err);
             }
 
-            if (pendingPolarity && pendingPolarity !== lastAppliedPolarity) {
-                currentTarget = pendingPolarity;
-                pendingPolarity = null;
+            if (pendingTarget !== UNSET && pendingTarget !== lastAppliedTarget) {
+                currentTarget = pendingTarget;
+                pendingTarget = UNSET;
             } else {
-                pendingPolarity = null;
+                pendingTarget = UNSET;
                 break;
             }
         }
-        return lastAppliedPolarity === polarity;
+        return lastAppliedTarget === target;
     })().finally(() => {
         inFlightPromise = null;
     });
@@ -78,7 +121,7 @@ export async function applyNativeWindowTheme(polarity: 'dark' | 'light'): Promis
  * Redefine o estado interno do adaptador (exclusivo para isolamento em testes unitários).
  */
 export function _resetNativeWindowStateForTests(): void {
-    lastAppliedPolarity = null;
+    lastAppliedTarget = UNSET;
     inFlightPromise = null;
-    pendingPolarity = null;
+    pendingTarget = UNSET;
 }

@@ -35,8 +35,16 @@ vi.mock('@/ipc/themes', () => ({
 }));
 
 const TestHost = defineComponent({
-    setup() {
-        const { themeStore } = useThemeApplier();
+    props: {
+        fallback: {
+            type: Boolean,
+            default: false
+        }
+    },
+    setup(props) {
+        const { themeStore } = useThemeApplier(
+            props.fallback ? { nativeIntegrationAvailable: false } : undefined
+        );
         return { themeStore };
     },
     render() {
@@ -54,31 +62,78 @@ describe('useThemeApplier integration', () => {
         applyNativeWindowThemeSpy = vi.spyOn(nativeWindow, 'applyNativeWindowTheme').mockResolvedValue(true);
     });
 
-    it('sincroniza janela nativa no boot com a polaridade inicial do DOM', () => {
-        mount(TestHost);
-        expect(applyNativeWindowThemeSpy).toHaveBeenCalledWith('dark');
+    describe('caminho principal (prioridade do sistema)', () => {
+        it('sincroniza janela nativa no boot com null para preservar as cores do SO', () => {
+            mount(TestHost);
+            expect(applyNativeWindowThemeSpy).toHaveBeenCalledWith(null);
+        });
+
+        it('mantém null (sistema) mesmo quando a polaridade do tema resolvido muda', async () => {
+            const wrapper = mount(TestHost);
+            const themeStore = useThemeStore();
+
+            themeStore.activeResolved = {
+                scheme: {
+                    id: 'max-light',
+                    name: 'Max Light',
+                    origin: 'builtin',
+                    polarity: 'light'
+                },
+                uiTokens: {
+                    polarity: 'light'
+                }
+            } as unknown as ResolvedTheme;
+
+            await nextTick();
+            expect(applyNativeWindowThemeSpy).toHaveBeenCalledWith(null);
+
+            wrapper.unmount();
+        });
     });
 
-    it('reage a mudanças na polaridade do tema resolvido', async () => {
-        const wrapper = mount(TestHost);
-        const themeStore = useThemeStore();
+    describe('modo fallback escuro (quando integração nativa for indisponível)', () => {
+        it('sincroniza janela nativa no boot com "dark" se o conteúdo for escuro', () => {
+            mount(TestHost, { props: { fallback: true } });
+            expect(applyNativeWindowThemeSpy).toHaveBeenCalledWith('dark');
+        });
 
-        // Simula tema resolvido claro
-        themeStore.activeResolved = {
-            scheme: {
-                id: 'max-light',
-                name: 'Max Light',
-                origin: 'builtin',
-                polarity: 'light'
-            },
-            uiTokens: {
-                polarity: 'light'
-            }
-        } as unknown as ResolvedTheme;
+        it('alterna para null ao transicionar para tema claro e volta para "dark" ao retornar ao escuro', async () => {
+            const wrapper = mount(TestHost, { props: { fallback: true } });
+            const themeStore = useThemeStore();
 
-        await nextTick();
-        expect(applyNativeWindowThemeSpy).toHaveBeenCalledWith('light');
+            // Transiciona para tema claro: fallback desativa, retornando para null
+            themeStore.activeResolved = {
+                scheme: {
+                    id: 'max-light',
+                    name: 'Max Light',
+                    origin: 'builtin',
+                    polarity: 'light'
+                },
+                uiTokens: {
+                    polarity: 'light'
+                }
+            } as unknown as ResolvedTheme;
 
-        wrapper.unmount();
+            await nextTick();
+            expect(applyNativeWindowThemeSpy).toHaveBeenCalledWith(null);
+
+            // Transiciona de volta para tema escuro: fallback escuro ativa com 'dark'
+            themeStore.activeResolved = {
+                scheme: {
+                    id: 'max-navy-teal',
+                    name: 'Max Navy Teal',
+                    origin: 'builtin',
+                    polarity: 'dark'
+                },
+                uiTokens: {
+                    polarity: 'dark'
+                }
+            } as unknown as ResolvedTheme;
+
+            await nextTick();
+            expect(applyNativeWindowThemeSpy).toHaveBeenCalledWith('dark');
+
+            wrapper.unmount();
+        });
     });
 });

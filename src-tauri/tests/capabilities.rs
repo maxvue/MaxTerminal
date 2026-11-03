@@ -42,7 +42,7 @@ fn capabilities_restrict_to_main_window_and_allowed_commands() {
     let window_labels: Vec<&str> = windows.iter().filter_map(|w| w.as_str()).collect();
     assert_eq!(window_labels, vec!["main"]);
 
-    // Permissões autorizadas: app_info, app_log_frontend, 9 comandos pty_*, 5 comandos db_* e core:event:default
+    // Permissões autorizadas: app_info, app_log_frontend, comandos pty_*, comandos db_*, core:event:default e core:window:allow-set-theme
     let permissions = cap["permissions"]
         .as_array()
         .unwrap_or_else(|| panic!("Campo 'permissions' deve ser um array"));
@@ -264,6 +264,7 @@ fn capabilities_restrict_to_main_window_and_allowed_commands() {
             "allow-app-update-check",
             "allow-app-update-install-confirmed",
             "core:event:default",
+            "core:window:allow-set-theme",
         ]
     );
     assert!(

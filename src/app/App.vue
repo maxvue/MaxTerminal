@@ -36,6 +36,7 @@
     import { useSearchShortcut } from '@/composables/search/useSearchShortcut';
     import { useActiveProjectSync } from '@/composables/useActiveProjectSync';
     import { useIpcError } from '@/composables/useIpcError';
+    import { usePageReloadShortcut } from '@/composables/usePageReloadShortcut';
     import { useThemeApplier } from '@/composables/useThemeApplier';
     import { useAgentsStore } from '@/stores/agents';
     import { useAiStore } from '@/stores/ai';
@@ -59,6 +60,7 @@
     const shellHistoryStore = useShellHistoryStore();
     const ipcError = useIpcError();
     useThemeApplier();
+    usePageReloadShortcut();
     useActiveProjectSync();
     useSearchShortcut();
     const shellExtDisposable = installShellIntegrationExtension();

@@ -227,6 +227,7 @@
         align-items: center;
         gap: 0.25rem;
     }
+
     .rag-results__btn {
         display: inline-flex;
         align-items: center;

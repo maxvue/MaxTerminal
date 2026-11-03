@@ -1,6 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useAgentShortcuts } from '@/composables/useAgentShortcuts';
+import { RESERVED_APP_SHORTCUTS, useAgentShortcuts } from '@/composables/useAgentShortcuts';
 import { useAgentsStore } from '@/stores/agents';
 import type { AgentInfo_Serialize } from '@/types/bindings';
 
@@ -134,6 +134,29 @@ describe('useAgentShortcuts (Fase 13)', () => {
         expect(shortcuts.handleKeyEvent(evUninstalled)).toBe(true);
         expect(openAgentSpy).not.toHaveBeenCalled();
         expect(shortcuts.lastToast.value?.title).toBe('Agente não encontrado no PATH');
+
+        shortcuts.dispose();
+    });
+
+    it('reserva a tecla F5 na constante RESERVED_APP_SHORTCUTS e bloqueia acionamento de agentes por F5', () => {
+        expect(RESERVED_APP_SHORTCUTS.has('F5')).toBe(true);
+
+        const store = useAgentsStore();
+        store.agents = [makeAgentInfo('claude-code', 'F5', true)];
+        const openAgentSpy = vi.spyOn(store, 'openAgent');
+
+        const shortcuts = useAgentShortcuts({ projectId: 'proj-1' });
+
+        const evF5 = new KeyboardEvent('keydown', {
+            key: 'F5',
+            code: 'F5',
+            bubbles: true,
+            cancelable: true
+        });
+
+        const handled = shortcuts.handleKeyEvent(evF5);
+        expect(handled).toBe(false);
+        expect(openAgentSpy).not.toHaveBeenCalled();
 
         shortcuts.dispose();
     });

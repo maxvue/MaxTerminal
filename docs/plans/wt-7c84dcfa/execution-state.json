@@ -1,0 +1,140 @@
+{
+  "version": 2,
+  "planRevision": "ae934ff8a9dd38a7755c2ffcc1332b992d776d4b443fba5b2caeb1039353a662",
+  "tasks": [
+    {
+      "id": "T1",
+      "status": "completed",
+      "files": [
+        "scripts/sync-local-libs.mjs",
+        "package.json"
+      ],
+      "validations": [
+        {
+          "command": "node scripts/sync-local-libs.mjs --check",
+          "revision": "bb132be8fd550e47a8cfd8d6bb9dabd2abc09d4adc64ed90889c23c9ba5f77a7",
+          "result": "passed"
+        }
+      ],
+      "revision": "bb132be8fd550e47a8cfd8d6bb9dabd2abc09d4adc64ed90889c23c9ba5f77a7"
+    },
+    {
+      "id": "T2",
+      "status": "completed",
+      "files": [
+        "src/theme/nativeWindow.ts",
+        "src/composables/useThemeApplier.ts",
+        "src-tauri/capabilities/default.json",
+        "src-tauri/tests/capabilities.rs",
+        "tests/theme/nativeWindow.spec.ts",
+        "tests/composables/useThemeApplier.spec.ts"
+      ],
+      "validations": [
+        {
+          "command": "npx vitest run tests/theme/nativeWindow.spec.ts tests/composables/useThemeApplier.spec.ts",
+          "revision": "630be2390ee9064b90bbf1914b6a7d1b1b64df9abe7f40461e722439bb7060a2",
+          "result": "passed"
+        },
+        {
+          "command": "cargo test --manifest-path src-tauri/Cargo.toml --test capabilities",
+          "revision": "630be2390ee9064b90bbf1914b6a7d1b1b64df9abe7f40461e722439bb7060a2",
+          "result": "passed"
+        }
+      ],
+      "revision": "630be2390ee9064b90bbf1914b6a7d1b1b64df9abe7f40461e722439bb7060a2"
+    },
+    {
+      "id": "T3",
+      "status": "completed",
+      "files": [
+        "src/composables/usePageReloadShortcut.ts",
+        "src/app/App.vue",
+        "src/composables/useAgentShortcuts.ts",
+        "tests/composables/usePageReloadShortcut.spec.ts",
+        "tests/composables/useAgentShortcuts.spec.ts"
+      ],
+      "validations": [
+        {
+          "command": "npx vitest run tests/composables/usePageReloadShortcut.spec.ts tests/composables/useAgentShortcuts.spec.ts",
+          "revision": "9c13b4710135e8f5938e8fb607aa77e991d9a02058e67152f35dd0b5992ce1ab",
+          "result": "passed"
+        }
+      ],
+      "revision": "9c13b4710135e8f5938e8fb607aa77e991d9a02058e67152f35dd0b5992ce1ab"
+    },
+    {
+      "id": "T4",
+      "status": "completed",
+      "files": [
+        "src/theme/nativeWindow.ts",
+        "src/composables/useThemeApplier.ts",
+        "src/composables/usePageReloadShortcut.ts",
+        "src/app/App.vue",
+        "src-tauri/capabilities/default.json"
+      ],
+      "validations": [
+        {
+          "command": "npm run test",
+          "revision": "890b7fe812efc13913a655ac4bd728798f8085386a7de7c7842adf8ddf62da7c",
+          "result": "passed"
+        },
+        {
+          "command": "npm run build",
+          "revision": "890b7fe812efc13913a655ac4bd728798f8085386a7de7c7842adf8ddf62da7c",
+          "result": "passed"
+        }
+      ],
+      "revision": "890b7fe812efc13913a655ac4bd728798f8085386a7de7c7842adf8ddf62da7c"
+    },
+    {
+      "id": "T5",
+      "status": "manualPending",
+      "files": [],
+      "validations": [],
+      "nextAction": "Validar visualmente a barra nativa no compositor X11/Wayland e F5 com PTY em execução"
+    }
+  ],
+  "verification": {
+    "revision": "890b7fe812efc13913a655ac4bd728798f8085386a7de7c7842adf8ddf62da7c",
+    "checks": [
+      {
+        "command": "npm run test",
+        "revision": "890b7fe812efc13913a655ac4bd728798f8085386a7de7c7842adf8ddf62da7c",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run build",
+        "revision": "890b7fe812efc13913a655ac4bd728798f8085386a7de7c7842adf8ddf62da7c",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run typecheck",
+        "revision": "890b7fe812efc13913a655ac4bd728798f8085386a7de7c7842adf8ddf62da7c",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run lint",
+        "revision": "890b7fe812efc13913a655ac4bd728798f8085386a7de7c7842adf8ddf62da7c",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "cargo test --manifest-path src-tauri/Cargo.toml --test capabilities",
+        "revision": "890b7fe812efc13913a655ac4bd728798f8085386a7de7c7842adf8ddf62da7c",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "cargo clippy --manifest-path src-tauri/Cargo.toml --locked --workspace --all-targets -- -D warnings",
+        "revision": "890b7fe812efc13913a655ac4bd728798f8085386a7de7c7842adf8ddf62da7c",
+        "result": "passed",
+        "exitCode": 0
+      }
+    ]
+  },
+  "updatedAt": 1793737500000,
+  "nextAction": "Aguardar confirmação do usuário para validação visual nativa e ações de Git"
+}

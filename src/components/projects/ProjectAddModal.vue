@@ -363,6 +363,7 @@
             @include mt-focus-ring;
         }
     }
+
     .project-add-modal__identity-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
