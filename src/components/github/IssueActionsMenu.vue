@@ -1,25 +1,14 @@
 <template>
     <div class="issue-actions-menu" role="toolbar" aria-label="Ações da Issue">
-        <button type="button" class="issue-actions-menu__btn" :disabled="props.busy" title="Enviar para o MaxCode (Abrir Issue)" @click="emit('send-maxcode', 'open')">
-            <MaxIcon icon="lucide:external-link" />
-            <span>Abrir no MaxCode</span>
-        </button>
-        <button type="button" class="issue-actions-menu__btn issue-actions-menu__btn--plan" :disabled="props.busy" title="Enviar para o MaxCode em modo Analisar (BUG PLAN)" @click="emit('send-maxcode', 'bug_plan')">
-            <MaxIcon icon="lucide:compass" />
-            <span>Analisar (BUG PLAN)</span>
-        </button>
-        <button type="button" class="issue-actions-menu__btn issue-actions-menu__btn--fix" :disabled="props.busy" title="Enviar para o MaxCode em modo Corrigir (BUG FIX)" @click="emit('send-maxcode', 'bug_fix')">
-            <MaxIcon icon="lucide:wrench" />
-            <span>Corrigir (BUG FIX)</span>
-        </button>
-        <button type="button" class="issue-actions-menu__btn issue-actions-menu__btn--terminal" :disabled="props.busy" title="Abrir Aba no MaxTerminal posicionada na worktree/branch da issue" @click="emit('open-tab-modal')">
-            <MaxIcon icon="lucide:terminal" />
-            <span>Abrir Aba no MaxTerminal</span>
-        </button>
+        <MaxButton label="Abrir no MaxCode" icon="lucide:external-link" class="issue-actions-menu__btn" :disabled="props.busy" title="Enviar para o MaxCode (Abrir Issue)" @click="emit('send-maxcode', 'open')" />
+        <MaxButton label="Analisar (BUG PLAN)" icon="lucide:compass" class="issue-actions-menu__btn issue-actions-menu__btn--plan" :disabled="props.busy" title="Enviar para o MaxCode em modo Analisar (BUG PLAN)" @click="emit('send-maxcode', 'bug_plan')" />
+        <MaxButton label="Corrigir (BUG FIX)" icon="lucide:wrench" class="issue-actions-menu__btn issue-actions-menu__btn--fix" :disabled="props.busy" title="Enviar para o MaxCode em modo Corrigir (BUG FIX)" @click="emit('send-maxcode', 'bug_fix')" />
+        <MaxButton label="Abrir Aba no MaxTerminal" icon="lucide:terminal" class="issue-actions-menu__btn issue-actions-menu__btn--terminal" :disabled="props.busy" title="Abrir Aba no MaxTerminal posicionada na worktree/branch da issue" @click="emit('open-tab-modal')" />
     </div>
 </template>
 
 <script setup lang="ts">
+    import { MaxButton } from '@maxvue/max-components-ui';
     import type { MaxCodeIssueAction } from '@/types/bindings';
 
     export interface IssueActionsMenuProps {

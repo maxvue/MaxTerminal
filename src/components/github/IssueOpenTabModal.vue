@@ -1,66 +1,57 @@
 <template>
-    <div v-if="props.open && props.issue" class="issue-open-tab-modal" role="dialog" aria-modal="true" aria-label="Abrir Aba para a Issue">
-        <div class="issue-open-tab-modal__card">
-            <header class="issue-open-tab-modal__header">
-                <h3 class="issue-open-tab-modal__title">Abrir Aba no MaxTerminal — Issue #{{ props.issue.number }}</h3>
-                <button type="button" class="issue-open-tab-modal__close" aria-label="Fechar modal" @click="emit('close')">
-                    <MaxIcon icon="lucide:x" />
-                </button>
-            </header>
-            <div class="issue-open-tab-modal__body">
-                <div class="issue-open-tab-modal__section">
-                    <span class="issue-open-tab-modal__label">Tipo de Aba:</span>
-                    <div class="issue-open-tab-modal__targets" role="radiogroup" aria-label="Tipo de aba a abrir">
-                        <label class="issue-open-tab-modal__radio">
-                            <input v-model="selectedTarget" type="radio" value="terminal">
-                            <span>Terminal Padrão</span>
-                        </label>
-                        <label class="issue-open-tab-modal__radio">
-                            <input v-model="selectedTarget" type="radio" value="claude-code">
-                            <span>Claude Code</span>
-                        </label>
-                        <label class="issue-open-tab-modal__radio">
-                            <input v-model="selectedTarget" type="radio" value="codex">
-                            <span>Codex</span>
-                        </label>
-                        <label class="issue-open-tab-modal__radio">
-                            <input v-model="selectedTarget" type="radio" value="agy">
-                            <span>Antigravity (agy)</span>
-                        </label>
-                        <label class="issue-open-tab-modal__radio">
-                            <input v-model="selectedTarget" type="radio" value="opencode">
-                            <span>OpenCode</span>
-                        </label>
-                    </div>
+    <MaxModal v-if="props.issue" :visible="props.open" :title="`Abrir Aba no MaxTerminal — Issue #${props.issue.number}`" :no-button="true" max-width="36rem" class="issue-open-tab-modal" :dismissable="!props.submitting" :close-on-escape="!props.submitting" @update:visible="emit('close')">
+        <div class="issue-open-tab-modal__body">
+            <div class="issue-open-tab-modal__section">
+                <span class="issue-open-tab-modal__label">Tipo de Aba:</span>
+                <div class="issue-open-tab-modal__targets" role="radiogroup" aria-label="Tipo de aba a abrir">
+                    <label class="issue-open-tab-modal__radio">
+                        <input v-model="selectedTarget" type="radio" value="terminal">
+                        <span>Terminal Padrão</span>
+                    </label>
+                    <label class="issue-open-tab-modal__radio">
+                        <input v-model="selectedTarget" type="radio" value="claude-code">
+                        <span>Claude Code</span>
+                    </label>
+                    <label class="issue-open-tab-modal__radio">
+                        <input v-model="selectedTarget" type="radio" value="codex">
+                        <span>Codex</span>
+                    </label>
+                    <label class="issue-open-tab-modal__radio">
+                        <input v-model="selectedTarget" type="radio" value="agy">
+                        <span>Antigravity (agy)</span>
+                    </label>
+                    <label class="issue-open-tab-modal__radio">
+                        <input v-model="selectedTarget" type="radio" value="opencode">
+                        <span>OpenCode</span>
+                    </label>
                 </div>
-                <div v-if="props.resolution" class="issue-open-tab-modal__resolution">
-                    <p v-if="props.resolution.status === 'existing_worktree'" class="issue-open-tab-modal__res-info">
-                        Worktree existente detectada: <code>{{ props.resolution.path }}</code> (branch <code>{{ props.resolution.branch }}</code>)
-                    </p>
-                    <p v-else-if="props.resolution.status === 'existing_branch'" class="issue-open-tab-modal__res-info">
-                        Branch local encontrada (<code>{{ props.resolution.branch }}</code>). Worktree sugerida: <code>{{ props.resolution.suggested_worktree_path }}</code>
-                    </p>
-                    <p v-else class="issue-open-tab-modal__res-info">
-                        Nova worktree sugerida: <code>{{ props.resolution.suggested_worktree_path }}</code> (branch <code>{{ props.resolution.suggested_branch }}</code>)
-                    </p>
-                </div>
-                <label class="issue-open-tab-modal__checkbox">
-                    <input v-model="createWorktreeIfMissing" type="checkbox">
-                    <span>Criar worktree isolada automaticamente caso ainda não exista</span>
-                </label>
             </div>
-            <footer class="issue-open-tab-modal__footer">
-                <button type="button" class="issue-open-tab-modal__btn" @click="emit('close')">Cancelar</button>
-                <button type="button" class="issue-open-tab-modal__btn issue-open-tab-modal__btn--primary" :disabled="props.submitting" @click="onConfirm">
-                    <span>{{ props.submitting ? 'Abrindo...' : 'Abrir Aba' }}</span>
-                </button>
-            </footer>
+            <div v-if="props.resolution" class="issue-open-tab-modal__resolution">
+                <p v-if="props.resolution.status === 'existing_worktree'" class="issue-open-tab-modal__res-info">
+                    Worktree existente detectada: <code>{{ props.resolution.path }}</code> (branch <code>{{ props.resolution.branch }}</code>)
+                </p>
+                <p v-else-if="props.resolution.status === 'existing_branch'" class="issue-open-tab-modal__res-info">
+                    Branch local encontrada (<code>{{ props.resolution.branch }}</code>). Worktree sugerida: <code>{{ props.resolution.suggested_worktree_path }}</code>
+                </p>
+                <p v-else class="issue-open-tab-modal__res-info">
+                    Nova worktree sugerida: <code>{{ props.resolution.suggested_worktree_path }}</code> (branch <code>{{ props.resolution.suggested_branch }}</code>)
+                </p>
+            </div>
+            <label class="issue-open-tab-modal__checkbox">
+                <input v-model="createWorktreeIfMissing" type="checkbox">
+                <span>Criar worktree isolada automaticamente caso ainda não exista</span>
+            </label>
         </div>
-    </div>
+        <footer class="issue-open-tab-modal__footer">
+            <MaxButton label="Cancelar" variant="secondary" class="issue-open-tab-modal__btn" @click="emit('close')" />
+            <MaxButton :label="props.submitting ? 'Abrindo...' : 'Abrir Aba'" variant="primary" class="issue-open-tab-modal__btn issue-open-tab-modal__btn--primary" :disabled="props.submitting" :loading="props.submitting" @click="onConfirm" />
+        </footer>
+    </MaxModal>
 </template>
 
 <script setup lang="ts">
     import { ref } from 'vue';
+    import { MaxButton, MaxModal } from '@maxvue/max-components-ui';
     import type {
         AgentKind,
         IssueSummary,

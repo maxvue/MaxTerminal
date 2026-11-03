@@ -1,16 +1,14 @@
 <template>
     <div class="wayland-shortcut-help">
         <div class="wayland-shortcut-help__header">
-            <span class="wayland-shortcut-help__badge">Wayland / Compositor</span>
+            <MaxTag value="Wayland / Compositor" severity="info" :no-uppercase="true" class="wayland-shortcut-help__badge" />
             <span class="wayland-shortcut-help__status">{{ backendStatusText }}</span>
         </div>
         <p class="wayland-shortcut-help__desc">
             Em sessões Wayland (KDE Plasma, Hyprland, Sway, GNOME), atalhos globais são gerenciados pelo Portal XDG ou diretamente pelas regras de keybind do compositor.
         </p>
         <div v-if="props.portalAvailable" class="wayland-shortcut-help__portal-row">
-            <button type="button" class="wayland-shortcut-help__btn" :disabled="props.busy" @click="emit('configure-portal')">
-                Configurar no Portal do Sistema
-            </button>
+            <MaxButton type="button" label="Configurar no Portal do Sistema" :disabled="props.busy" size="small" class="wayland-shortcut-help__btn" @click="emit('configure-portal')" />
             <span v-if="props.shortcutStatus?.effectiveTrigger" class="wayland-shortcut-help__trigger">
                 Gatilho ativo no portal: <code>{{ props.shortcutStatus.effectiveTrigger }}</code>
             </span>
@@ -18,17 +16,16 @@
         <div class="wayland-shortcut-help__cli">
             <div class="wayland-shortcut-help__cli-top">
                 <span class="wayland-shortcut-help__cli-label">Comando CLI universal (fallback garantido):</span>
-                <button type="button" class="wayland-shortcut-help__copy-btn" @click="copyCommand">
-                    {{ copied ? 'Copiado!' : 'Copiar comando' }}
-                </button>
+                <MaxButton type="button" :label="copied ? 'Copiado!' : 'Copiar comando'" variant="outlined" size="small" class="wayland-shortcut-help__copy-btn" @click="copyCommand" />
             </div>
-            <pre class="wayland-shortcut-help__code"><code>{{ snippetText }}</code></pre>
+            <MaxCodeBlock :code="snippetText" language="bash" class="wayland-shortcut-help__code" />
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
     import { computed, ref } from 'vue';
+    import { MaxButton, MaxCodeBlock, MaxTag } from '@maxvue/max-components-ui';
     import type { ShortcutStatus_Serialize } from '@/types/bindings';
 
     export interface WaylandShortcutHelpProps {

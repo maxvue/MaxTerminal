@@ -7,15 +7,16 @@
             <span v-if="props.cycle.currentIssue" class="bug-cycle-progress__current">Processando #{{ props.cycle.currentIssue }} ({{ props.cycle.currentStage }})</span>
         </div>
         <div class="bug-cycle-progress__actions">
-            <button v-if="props.cycle.status === 'running'" type="button" class="bug-cycle-progress__btn" @click="emit('control', 'pause')">Pausar</button>
-            <button v-if="props.cycle.status === 'paused'" type="button" class="bug-cycle-progress__btn bug-cycle-progress__btn--resume" @click="emit('control', 'resume')">Retomar</button>
-            <button v-if="props.cycle.status === 'running' || props.cycle.status === 'paused'" type="button" class="bug-cycle-progress__btn bug-cycle-progress__btn--cancel" @click="emit('control', 'cancel')">Cancelar</button>
+            <MaxButton v-if="props.cycle.status === 'running'" label="Pausar" variant="secondary" size="small" class="bug-cycle-progress__btn" @click="emit('control', 'pause')" />
+            <MaxButton v-if="props.cycle.status === 'paused'" label="Retomar" variant="success" size="small" class="bug-cycle-progress__btn bug-cycle-progress__btn--resume" @click="emit('control', 'resume')" />
+            <MaxButton v-if="props.cycle.status === 'running' || props.cycle.status === 'paused'" label="Cancelar" variant="danger" size="small" class="bug-cycle-progress__btn bug-cycle-progress__btn--cancel" @click="emit('control', 'cancel')" />
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
     import { computed } from 'vue';
+    import { MaxButton, MaxIcon } from '@maxvue/max-components-ui';
     import type { BugCycleRunState } from '@/types/bindings';
 
     export interface BugCycleProgressProps {

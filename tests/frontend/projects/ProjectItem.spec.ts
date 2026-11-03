@@ -48,7 +48,8 @@ describe('ProjectItem.vue', () => {
             },
             global: {
                 stubs: {
-                    MaxIcon: MaxIconStub
+                    MaxIcon: MaxIconStub,
+                    teleport: true
                 }
             }
         });
@@ -70,18 +71,18 @@ describe('ProjectItem.vue', () => {
 
         // Abre menu de ações e testa emits: edit, configure, redetect, remove
         await wrapper.find('.project-item__menu-trigger').trigger('click');
-        expect(wrapper.find('.project-item__menu').exists()).toBe(true);
+        expect(wrapper.find('[role="menu"]').exists()).toBe(true);
 
         await wrapper.find('[data-action="edit"]').trigger('click');
         expect(wrapper.emitted('edit')?.[0]).toEqual(['proj-laravel']);
-        expect(wrapper.find('.project-item__menu').exists()).toBe(false);
+        expect(wrapper.find('[role="menu"]').exists()).toBe(false);
 
         // Reabre menu e testa configure
         await wrapper.find('.project-item__menu-trigger').trigger('click');
         const selectCountBeforeConfigure = wrapper.emitted('select')?.length ?? 0;
         await wrapper.find('[data-action="configure"]').trigger('click');
         expect(wrapper.emitted('configure')?.[0]).toEqual(['proj-laravel']);
-        expect(wrapper.find('.project-item__menu').exists()).toBe(false);
+        expect(wrapper.find('[role="menu"]').exists()).toBe(false);
         // Garantir que configure não emite select acidental
         expect(wrapper.emitted('select')?.length ?? 0).toBe(selectCountBeforeConfigure);
 

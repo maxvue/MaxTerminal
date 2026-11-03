@@ -8,13 +8,14 @@
             </div>
             <span class="issue-plan-section__meta">Origem: {{ sourceLabel }} — @{{ authorLogin }}</span>
         </header>
-        <!-- eslint-disable-next-line vue/no-v-html -->
-        <div class="issue-plan-section__body" v-html="planHtml" />
+        <MaxMarkdownViewer v-if="plan?.markdown" :source="plan.markdown" :render-markdown="renderSafeMarkdown" class="issue-plan-section__body" />
     </section>
 </template>
 
 <script setup lang="ts">
     import { computed } from 'vue';
+    import { MaxIcon, MaxMarkdownViewer } from '@maxvue/max-components-ui';
+    import { renderSafeMarkdown } from '@/composables/useMarkdownRenderer';
     import { useIssuePlan } from '@/composables/useIssuePlan';
     import type { IssueDetail } from '@/types/bindings';
 
@@ -25,7 +26,7 @@
     const props = defineProps<IssuePlanSectionProps>();
 
     const detailRef = computed<IssueDetail | null>(() => props.detail);
-    const { hasPlan, isProvisional, planHtml, sourceLabel, authorLogin, headingTitle } = useIssuePlan(detailRef);
+    const { plan, hasPlan, isProvisional, sourceLabel, authorLogin, headingTitle } = useIssuePlan(detailRef);
 </script>
 
 <style lang="scss" scoped>

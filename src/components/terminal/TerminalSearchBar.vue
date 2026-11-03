@@ -16,21 +16,16 @@
             {{ statusLabel }}
         </span>
         <div class="search-nav">
-            <button type="button" class="nav-btn" aria-label="Resultado anterior" title="Resultado anterior (Shift+Enter)" @click="prev">
-                ↑
-            </button>
-            <button type="button" class="nav-btn" aria-label="Próximo resultado" title="Próximo resultado (Enter)" @click="next">
-                ↓
-            </button>
-            <button type="button" class="nav-btn close-btn" aria-label="Fechar busca" title="Fechar busca (Escape)" @click="handleClose">
-                ✕
-            </button>
+            <MaxIconButton icon="lucide:arrow-up" label="Resultado anterior" variant="ghost" class="nav-btn" title="Resultado anterior (Shift+Enter)" @click="prev" />
+            <MaxIconButton icon="lucide:arrow-down" label="Próximo resultado" variant="ghost" class="nav-btn" title="Próximo resultado (Enter)" @click="next" />
+            <MaxIconButton icon="lucide:x" label="Fechar busca" variant="ghost" class="nav-btn close-btn" title="Fechar busca (Escape)" @click="handleClose" />
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
     import { computed, onMounted, ref, toRef } from 'vue';
+    import { MaxIconButton } from '@maxvue/max-components-ui';
     import type { PaneId } from '@/types/bindings';
     import { useTerminalSearch } from '@/composables/terminal/useTerminalSearch';
     import { useSearchStore } from '@/stores/search';

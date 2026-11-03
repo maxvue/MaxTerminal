@@ -5,9 +5,9 @@
                 <MaxIcon :icon="expanded ? 'mdi:chevron-down' : 'mdi:chevron-right'" />
                 <span>Novas pastas encontradas ({{ props.items.length }})</span>
             </button>
-            <button type="button" class="project-discovery__accept-all" @click="acceptAll">
+            <MaxButton variant="primary" class="project-discovery__accept-all" @click="acceptAll">
                 Adicionar todas
-            </button>
+            </MaxButton>
         </div>
 
         <ul v-if="expanded" class="project-discovery__list">
@@ -20,12 +20,12 @@
                     <span class="project-discovery__path" :title="item.path">{{ item.path }}</span>
                 </div>
                 <div class="project-discovery__actions">
-                    <button type="button" class="project-discovery__btn project-discovery__btn--accept" @click="emit('accept', [item.path])">
+                    <MaxButton variant="success" class="project-discovery__btn project-discovery__btn--accept" @click="emit('accept', [item.path])">
                         Adicionar
-                    </button>
-                    <button type="button" class="project-discovery__btn project-discovery__btn--dismiss" @click="emit('dismiss', [item.path])">
+                    </MaxButton>
+                    <MaxButton variant="secondary" class="project-discovery__btn project-discovery__btn--dismiss" @click="emit('dismiss', [item.path])">
                         Dispensar
-                    </button>
+                    </MaxButton>
                 </div>
             </li>
         </ul>
@@ -34,6 +34,7 @@
 
 <script setup lang="ts">
     import { ref } from 'vue';
+    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
     import type { DiscoveredFolder } from '@/types/bindings';
 
     export interface ProjectDiscoveryPanelProps {

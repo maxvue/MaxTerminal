@@ -1,32 +1,21 @@
 <template>
     <div class="theme-picker">
         <div class="theme-picker__toolbar">
-            <div class="theme-picker__filters" role="tablist" aria-label="Filtrar temas por polaridade">
-                <button type="button" class="theme-picker__filter-btn" :class="{ 'is-active': filter === 'all' }" @click="filter = 'all'">
-                    Todos ({{ themes.length }})
-                </button>
-                <button type="button" class="theme-picker__filter-btn" :class="{ 'is-active': filter === 'dark' }" @click="filter = 'dark'">
-                    Escuros ({{ darkCount }})
-                </button>
-                <button type="button" class="theme-picker__filter-btn" :class="{ 'is-active': filter === 'light' }" @click="filter = 'light'">
-                    Claros ({{ lightCount }})
-                </button>
-            </div>
-            <input v-model="searchQuery" type="search" class="theme-picker__search" placeholder="Filtrar temas pelo nome..." aria-label="Filtrar temas pelo nome">
+            <MaxSegmentedControl v-model="filter" :options="polarityOptions" aria-label="Filtrar temas por polaridade" class="theme-picker__filters" />
+            <MaxInputSearch v-model="searchQuery" placeholder="Filtrar temas pelo nome..." aria-label="Filtrar temas pelo nome" class="theme-picker__search" />
         </div>
 
         <div class="theme-picker__grid">
             <ThemeSwatch v-for="item in filteredThemes" :key="item.id" :summary="item" :active="item.id === activeThemeId" :previewing="item.id === previewingId" @select="emit('select', $event)" @hover="onHover" @leave="onLeave" @delete="emit('delete', $event)" @export="emit('export', $event)" />
         </div>
 
-        <p v-if="filteredThemes.length === 0" class="theme-picker__empty">
-            Nenhum esquema de cores corresponde ao filtro informado.
-        </p>
+        <MaxEmptyDiv v-if="filteredThemes.length === 0" message="Nenhum esquema de cores corresponde ao filtro informado." class="theme-picker__empty" />
     </div>
 </template>
 
 <script setup lang="ts">
     import { computed, ref } from 'vue';
+    import { MaxEmptyDiv, MaxInputSearch, MaxSegmentedControl } from '@maxvue/max-components-ui';
     import ThemeSwatch from '@/components/preferences/appearance/ThemeSwatch.vue';
     import { useThemePreview } from '@/composables/useThemePreview';
     import type { ThemeId, ThemeSummary } from '@/types/theme';
@@ -55,6 +44,12 @@
     const lightCount = computed(
         () => props.themes.filter((t) => t.polarity === 'light').length
     );
+
+    const polarityOptions = computed(() => [
+        { label: `Todos (${props.themes.length})`, value: 'all' },
+        { label: `Escuros (${darkCount.value})`, value: 'dark' },
+        { label: `Claros (${lightCount.value})`, value: 'light' }
+    ]);
 
     const filteredThemes = computed(() => {
         const q = searchQuery.value.trim().toLowerCase();

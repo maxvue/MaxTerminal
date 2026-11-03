@@ -681,7 +681,7 @@ export const useQuickCommandsStore = defineStore('quickCommands', () => {
                 adapters.notifyToast({
                     title: 'O preview ficou desatualizado',
                     description: msg,
-                    severity: 'warn'
+                    severity: 'warning'
                 });
                 await runPreviewForCurrentModal();
                 return null;
@@ -740,7 +740,7 @@ export const useQuickCommandsStore = defineStore('quickCommands', () => {
         if (!promptText) {
             adapters.notifyToast({
                 title: 'Informe o objetivo ou descrição do comando para preencher com IA.',
-                severity: 'warn'
+                severity: 'warning'
             });
             return;
         }
@@ -783,7 +783,7 @@ export const useQuickCommandsStore = defineStore('quickCommands', () => {
             if (!candidate) {
                 adapters.notifyToast({
                     title: 'Não foi possível gerar uma sugestão válida com a IA.',
-                    severity: 'warn'
+                    severity: 'warning'
                 });
                 return;
             }
@@ -792,7 +792,7 @@ export const useQuickCommandsStore = defineStore('quickCommands', () => {
             if (!report.valid) {
                 adapters.notifyToast({
                     title: 'A sugestão retornada pela IA contém campos inválidos e foi descartada.',
-                    severity: 'warn'
+                    severity: 'warning'
                 });
                 return;
             }

@@ -1,74 +1,65 @@
 <template>
-    <div v-if="props.open" class="template-modal-backdrop" role="dialog" aria-modal="true" :aria-label="modalTitle">
-        <div class="template-modal">
-            <header class="template-modal__header">
-                <h3 class="template-modal__title">{{ modalTitle }}</h3>
-                <button type="button" class="template-modal__close" aria-label="Fechar modal" @click="emit('close')">
-                    <MaxIcon icon="lucide:x" />
-                </button>
-            </header>
-            <form class="template-modal__form" @submit.prevent="handleSubmit">
-                <div v-if="localError || props.errorMessage" class="template-modal__error" role="alert">{{ localError || props.errorMessage }}</div>
-                <div class="template-modal__row">
-                    <label class="template-modal__field template-modal__field--grow">
-                        <span class="template-modal__label">Nome do Template *</span>
-                        <input v-model="name" type="text" class="template-modal__input" maxlength="64" required placeholder="Ex.: Servidor Dev">
-                    </label>
-                    <label class="template-modal__field">
-                        <span class="template-modal__label">Ícone (Iconify)</span>
-                        <input v-model="icon" type="text" class="template-modal__input" maxlength="64" placeholder="lucide:terminal">
-                    </label>
-                </div>
-                <label class="template-modal__field">
-                    <span class="template-modal__label">Pasta personalizada (opcional)</span>
-                    <input v-model="cwd" type="text" class="template-modal__input" placeholder="Relativa à raiz do projeto ou caminho absoluto">
+    <MaxModal :visible="props.open" :title="modalTitle" :no-button="true" max-width="36rem" class="template-modal" :dismissable="!props.saving" :close-on-escape="!props.saving" @update:visible="emit('close')">
+        <form class="template-modal__form" @submit.prevent="handleSubmit">
+            <div v-if="localError || props.errorMessage" class="template-modal__error" role="alert">{{ localError || props.errorMessage }}</div>
+            <div class="template-modal__row">
+                <label class="template-modal__field template-modal__field--grow">
+                    <span class="template-modal__label">Nome do Template *</span>
+                    <input v-model="name" type="text" class="template-modal__input" maxlength="64" required placeholder="Ex.: Servidor Dev">
                 </label>
                 <label class="template-modal__field">
-                    <span class="template-modal__label">Comando Inicial (opcional)</span>
-                    <input v-model="initialCommand" type="text" class="template-modal__input template-modal__input--mono" placeholder="Ex.: npm run dev">
+                    <span class="template-modal__label">Ícone (Iconify)</span>
+                    <input v-model="icon" type="text" class="template-modal__input" maxlength="64" placeholder="lucide:terminal">
                 </label>
-                <div class="template-modal__checkboxes">
-                    <label class="template-modal__checkbox">
-                        <input v-model="addToWorkspace" type="checkbox">
-                        <span>Adicionar ao Workspace (abrir ao iniciar)</span>
-                    </label>
-                    <label class="template-modal__checkbox">
-                        <input v-model="continuous" type="checkbox">
-                        <span>Execução Contínua (daemon / watcher)</span>
-                    </label>
-                    <label class="template-modal__checkbox">
-                        <input v-model="makeDefault" type="checkbox">
-                        <span>Definir como Template Padrão do projeto</span>
-                    </label>
+            </div>
+            <label class="template-modal__field">
+                <span class="template-modal__label">Pasta personalizada (opcional)</span>
+                <input v-model="cwd" type="text" class="template-modal__input" placeholder="Relativa à raiz do projeto ou caminho absoluto">
+            </label>
+            <label class="template-modal__field">
+                <span class="template-modal__label">Comando Inicial (opcional)</span>
+                <input v-model="initialCommand" type="text" class="template-modal__input template-modal__input--mono" placeholder="Ex.: npm run dev">
+            </label>
+            <div class="template-modal__checkboxes">
+                <label class="template-modal__checkbox">
+                    <input v-model="addToWorkspace" type="checkbox">
+                    <span>Adicionar ao Workspace (abrir ao iniciar)</span>
+                </label>
+                <label class="template-modal__checkbox">
+                    <input v-model="continuous" type="checkbox">
+                    <span>Execução Contínua (daemon / watcher)</span>
+                </label>
+                <label class="template-modal__checkbox">
+                    <input v-model="makeDefault" type="checkbox">
+                    <span>Definir como Template Padrão do projeto</span>
+                </label>
+            </div>
+            <div class="template-modal__env-section">
+                <div class="template-modal__env-header">
+                    <span class="template-modal__label">Variáveis de Ambiente</span>
+                    <MaxButton label="Adicionar variável" icon="lucide:plus" variant="ghost" size="small" class="template-modal__add-env" @click="addEnvRow" />
                 </div>
-                <div class="template-modal__env-section">
-                    <div class="template-modal__env-header">
-                        <span class="template-modal__label">Variáveis de Ambiente</span>
-                        <button type="button" class="template-modal__add-env" @click="addEnvRow">+ Adicionar variável</button>
-                    </div>
-                    <div v-for="(row, idx) in envRows" :key="idx" class="template-modal__env-row">
-                        <input v-model="row.key" type="text" class="template-modal__input template-modal__input--mono" placeholder="NOME_VAR">
-                        <select v-model="row.kind" class="template-modal__select">
-                            <option value="literal">Valor literal</option>
-                            <option value="inherited">Herdar do sistema</option>
-                        </select>
-                        <input v-model="row.value" type="text" class="template-modal__input template-modal__input--mono" :placeholder="row.kind === 'inherited' ? 'VAR_HOST' : 'valor'">
-                        <button type="button" class="template-modal__remove-env" aria-label="Remover variável" @click="removeEnvRow(idx)">
-                            <MaxIcon icon="lucide:trash-2" />
-                        </button>
-                    </div>
+                <div v-for="(row, idx) in envRows" :key="idx" class="template-modal__env-row">
+                    <input v-model="row.key" type="text" class="template-modal__input template-modal__input--mono" placeholder="NOME_VAR">
+                    <select v-model="row.kind" class="template-modal__select">
+                        <option value="literal">Valor literal</option>
+                        <option value="inherited">Herdar do sistema</option>
+                    </select>
+                    <input v-model="row.value" type="text" class="template-modal__input template-modal__input--mono" :placeholder="row.kind === 'inherited' ? 'VAR_HOST' : 'valor'">
+                    <MaxIconButton icon="lucide:trash-2" label="Remover variável" variant="danger" class="template-modal__remove-env" @click="removeEnvRow(idx)" />
                 </div>
-                <footer class="template-modal__footer">
-                    <button type="button" class="template-modal__btn template-modal__btn--ghost" @click="emit('close')">Cancelar</button>
-                    <button type="submit" class="template-modal__btn template-modal__btn--primary" :disabled="props.saving">{{ props.saving ? 'Salvando...' : 'Salvar Template' }}</button>
-                </footer>
-            </form>
-        </div>
-    </div>
+            </div>
+            <footer class="template-modal__footer">
+                <MaxButton label="Cancelar" variant="ghost" class="template-modal__btn template-modal__btn--ghost" @click="emit('close')" />
+                <MaxButton type="submit" :label="props.saving ? 'Salvando...' : 'Salvar Template'" variant="primary" class="template-modal__btn template-modal__btn--primary" :disabled="props.saving" :loading="props.saving" />
+            </footer>
+        </form>
+    </MaxModal>
 </template>
 
 <script setup lang="ts">
     import { computed, ref, watch } from 'vue';
+    import { MaxButton, MaxIconButton, MaxModal } from '@maxvue/max-components-ui';
     import type { EnvValue, TabTemplate_Serialize, TabTemplateInput_Deserialize } from '@/types/bindings';
 
     interface EnvRowItem {

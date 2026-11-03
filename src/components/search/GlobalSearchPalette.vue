@@ -9,6 +9,9 @@
                 <button v-if="searchStore.query.length > 0" type="button" class="global-search-palette__clear" aria-label="Limpar consulta" @click="clearQuery">
                     Limpar
                 </button>
+                <button v-if="searchStore.query.length > 0" type="button" class="global-search-palette__refresh" aria-label="Atualizar resultados da busca" @click="() => void searchStore.run()">
+                    Atualizar
+                </button>
                 <button type="button" class="global-search-palette__close" aria-label="Fechar busca global (Escape)" @click="handleClose">
                     Esc
                 </button>
@@ -274,6 +277,7 @@
     }
 
     .global-search-palette__clear,
+    .global-search-palette__refresh,
     .global-search-palette__close {
         padding: 3px 8px;
         border: 1px solid var(--background-700);

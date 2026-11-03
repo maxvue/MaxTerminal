@@ -21,20 +21,10 @@
                 <TemplateLaunchPopover :open="templatePopoverOpen" :templates="props.templates" @launch="onLaunchTemplate" @create-template="onCreateTemplate" @edit-template="onEditTemplate" @delete-template="emit('delete-template', $event)" @set-default="emit('set-default-template', $event)" />
             </div>
             <template v-if="props.activeTabId">
-                <button type="button" class="tab-bar__btn" title="Dividir painel verticalmente (lado a lado)" aria-label="Dividir painel verticalmente" :disabled="!props.canSplitActivePane" @click="emit('split-active-pane', 'vertical')">
-                    <MaxIcon icon="lucide:columns-2" />
-                </button>
-                <button type="button" class="tab-bar__btn" title="Dividir painel horizontalmente (acima/abaixo)" aria-label="Dividir painel horizontalmente" :disabled="!props.canSplitActivePane" @click="emit('split-active-pane', 'horizontal')">
-                    <MaxIcon icon="lucide:rows-2" />
-                </button>
-                <button type="button" class="tab-bar__btn" title="Iniciar nova Sessão limpa nesta aba" aria-label="Iniciar nova Sessão" @click="emit('new-session')">
-                    <MaxIcon icon="lucide:rotate-ccw" />
-                    <span>Iniciar nova Sessão</span>
-                </button>
-                <button type="button" class="tab-bar__btn" title="Histórico de Sessões da aba" aria-label="Histórico de Sessões" @click="emit('open-session-history')">
-                    <MaxIcon icon="lucide:history" />
-                    <span>Sessões</span>
-                </button>
+                <MaxIconButton icon="lucide:columns-2" label="Dividir painel verticalmente" variant="ghost" class="tab-bar__btn" title="Dividir painel verticalmente (lado a lado)" :disabled="!props.canSplitActivePane" @click="emit('split-active-pane', 'vertical')" />
+                <MaxIconButton icon="lucide:rows-2" label="Dividir painel horizontalmente" variant="ghost" class="tab-bar__btn" title="Dividir painel horizontalmente (acima/abaixo)" :disabled="!props.canSplitActivePane" @click="emit('split-active-pane', 'horizontal')" />
+                <MaxButton label="Iniciar nova Sessão" icon="lucide:rotate-ccw" variant="secondary" size="small" class="tab-bar__btn" title="Iniciar nova Sessão limpa nesta aba" aria-label="Iniciar nova Sessão" @click="emit('new-session')" />
+                <MaxButton label="Sessões" icon="lucide:history" variant="secondary" size="small" class="tab-bar__btn" title="Histórico de Sessões da aba" aria-label="Histórico de Sessões" @click="emit('open-session-history')" />
             </template>
             <slot name="bar-extra" />
         </div>
@@ -43,6 +33,7 @@
 
 <script setup lang="ts">
     import { ref } from 'vue';
+    import { MaxButton, MaxIcon, MaxIconButton } from '@maxvue/max-components-ui';
     import type { SplitDirection, TabId, TabTemplate_Serialize, TabView_Serialize, TemplateId } from '@/types/bindings';
     import TabBarItem from './TabBarItem.vue';
     import TemplateLaunchPopover from './TemplateLaunchPopover.vue';

@@ -17,18 +17,10 @@
             </div>
 
             <div class="group-item-row__actions">
-                <button type="button" class="group-item-row__icon-btn" :data-testid="`item-move-up-${index}`" :disabled="index === 0" title="Mover para cima (Alt+↑)" aria-label="Mover item para cima" @click="emit('move-up', index)">
-                    <MaxIcon icon="lucide:arrow-up" />
-                </button>
-                <button type="button" class="group-item-row__icon-btn" :data-testid="`item-move-down-${index}`" :disabled="index >= total - 1" title="Mover para baixo (Alt+↓)" aria-label="Mover item para baixo" @click="emit('move-down', index)">
-                    <MaxIcon icon="lucide:arrow-down" />
-                </button>
-                <button type="button" class="group-item-row__icon-btn" :data-testid="`item-duplicate-${index}`" title="Duplicar item" aria-label="Duplicar item" @click="emit('duplicate', index)">
-                    <MaxIcon icon="lucide:copy" />
-                </button>
-                <button type="button" class="group-item-row__icon-btn group-item-row__icon-btn--danger" :data-testid="`item-remove-${index}`" title="Remover item" aria-label="Remover item" @click="emit('remove', index)">
-                    <MaxIcon icon="lucide:trash-2" />
-                </button>
+                <MaxIconButton icon="lucide:arrow-up" label="Mover item para cima" variant="ghost" class="group-item-row__icon-btn" :data-testid="`item-move-up-${index}`" :disabled="index === 0" title="Mover para cima (Alt+↑)" @click="emit('move-up', index)" />
+                <MaxIconButton icon="lucide:arrow-down" label="Mover item para baixo" variant="ghost" class="group-item-row__icon-btn" :data-testid="`item-move-down-${index}`" :disabled="index >= total - 1" title="Mover para baixo (Alt+↓)" @click="emit('move-down', index)" />
+                <MaxIconButton icon="lucide:copy" label="Duplicar item" variant="ghost" class="group-item-row__icon-btn" :data-testid="`item-duplicate-${index}`" title="Duplicar item" @click="emit('duplicate', index)" />
+                <MaxIconButton icon="lucide:trash-2" label="Remover item" variant="danger" class="group-item-row__icon-btn group-item-row__icon-btn--danger" :data-testid="`item-remove-${index}`" title="Remover item" @click="emit('remove', index)" />
             </div>
         </div>
 
@@ -44,10 +36,7 @@
                 <span>Execução Contínua (daemon/watcher)</span>
             </label>
 
-            <button type="button" class="group-item-row__env-toggle" :data-testid="`item-add-env-${index}`" @click="onAddEnvPair">
-                <MaxIcon icon="lucide:plus" />
-                <span>Variável de ambiente ({{ item.envPairs.length }})</span>
-            </button>
+            <MaxButton :label="`Variável de ambiente (${item.envPairs.length})`" icon="lucide:plus" variant="ghost" class="group-item-row__env-toggle" :data-testid="`item-add-env-${index}`" @click="onAddEnvPair" />
         </div>
 
         <div v-if="item.envPairs.length > 0" class="group-item-row__env-list">
@@ -55,12 +44,8 @@
             <div v-for="(pair, envIdx) in item.envPairs" :key="envIdx" class="group-item-row__env-row">
                 <input type="text" class="group-item-row__input group-item-row__input--mono" :data-testid="`item-${index}-env-key-${envIdx}`" placeholder="NOME_VAR" :value="pair.key" @input="onEnvKeyInput(envIdx, $event)">
                 <input :type="shouldMaskEnv(pair.key, envIdx) ? 'password' : 'text'" class="group-item-row__input group-item-row__input--mono" :data-testid="`item-${index}-env-val-${envIdx}`" placeholder="valor" :value="pair.value" @input="onEnvValueInput(envIdx, $event)">
-                <button v-if="isSensitiveEnvKey(pair.key)" type="button" class="group-item-row__icon-btn" :aria-label="revealedEnvIndices.has(envIdx) ? 'Ocultar valor' : 'Mostrar valor'" @click="toggleRevealEnv(envIdx)">
-                    <MaxIcon :icon="revealedEnvIndices.has(envIdx) ? 'lucide:eye-off' : 'lucide:eye'" />
-                </button>
-                <button type="button" class="group-item-row__icon-btn group-item-row__icon-btn--danger" aria-label="Remover variável" @click="onRemoveEnvPair(envIdx)">
-                    <MaxIcon icon="lucide:x" />
-                </button>
+                <MaxIconButton v-if="isSensitiveEnvKey(pair.key)" :icon="revealedEnvIndices.has(envIdx) ? 'lucide:eye-off' : 'lucide:eye'" :label="revealedEnvIndices.has(envIdx) ? 'Ocultar valor' : 'Mostrar valor'" variant="ghost" class="group-item-row__icon-btn" @click="toggleRevealEnv(envIdx)" />
+                <MaxIconButton icon="lucide:x" label="Remover variável" variant="danger" class="group-item-row__icon-btn group-item-row__icon-btn--danger" @click="onRemoveEnvPair(envIdx)" />
             </div>
             <span v-if="envError" class="group-item-row__error" :data-testid="`item-env-error-${index}`">{{ envError }}</span>
         </div>
@@ -69,6 +54,7 @@
 
 <script setup lang="ts">
     import { computed, ref } from 'vue';
+    import { MaxButton, MaxIconButton } from '@maxvue/max-components-ui';
     import { isSensitiveEnvKey } from '@/composables/commandGroups/useCommandGroupEditor';
     import type { EditableGroupItem } from '@/types/commandGroups';
 

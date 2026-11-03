@@ -29,32 +29,34 @@
         </div>
 
         <div class="project-identity-form__reset-row">
-            <button type="button" class="project-identity-form__reset-btn" :disabled="submitting" @click="handleResetIdentity">
+            <MaxButton type="button" variant="secondary" class="project-identity-form__reset-btn" :disabled="submitting" @click="handleResetIdentity">
                 Restaurar identidade automática
-            </button>
+            </MaxButton>
         </div>
 
-        <div v-if="errorMessage" class="project-identity-form__error" role="alert">
+        <MaxAlert v-if="errorMessage" type="danger" role="alert" class="project-identity-form__error">
             {{ errorMessage }}
-        </div>
+        </MaxAlert>
 
-        <div v-if="successMessage" class="project-identity-form__success" role="status">
+        <MaxAlert v-if="successMessage" type="success" role="status" class="project-identity-form__success">
             {{ successMessage }}
-        </div>
+        </MaxAlert>
 
         <footer class="project-identity-form__footer">
-            <button type="button" class="project-identity-form__btn project-identity-form__btn--cancel" :disabled="submitting" @click="handleCancel">
+            <MaxButton type="button" variant="secondary" class="project-identity-form__btn project-identity-form__btn--cancel" :disabled="submitting" @click="handleCancel">
                 Cancelar
-            </button>
-            <button type="submit" class="project-identity-form__btn project-identity-form__btn--submit" :disabled="submitting">
+            </MaxButton>
+            <MaxButton type="submit" variant="primary" class="project-identity-form__btn project-identity-form__btn--submit" :disabled="submitting" :loading="submitting">
                 {{ submitting ? 'Salvando...' : 'Salvar alterações' }}
-            </button>
+            </MaxButton>
         </footer>
     </form>
 </template>
 
 <script setup lang="ts">
     import { computed, ref, watch } from 'vue';
+    import MaxAlert from '@maxvue/max-components-ui/components/MaxAlert';
+    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
     import MaxInputText from '@maxvue/max-components-ui/components/MaxInputText';
     import { useIpcError } from '@/composables/useIpcError';
     import {

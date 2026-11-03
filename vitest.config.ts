@@ -6,6 +6,7 @@ import { defineConfig } from 'vitest/config';
 const workspaceRoot = fileURLToPath(new URL('.', import.meta.url));
 
 export default defineConfig({
+    cacheDir: path.resolve(workspaceRoot, '.tmp/vite'),
     plugins: [vue()],
     resolve: {
         preserveSymlinks: false,

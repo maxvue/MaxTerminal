@@ -2,19 +2,15 @@
     <div v-if="state" class="ai-suggestion-block" :class="[`is-${state.status}`]" data-testid="ai-suggestion-block">
         <header class="ai-suggestion-block__header">
             <div class="ai-suggestion-block__title-wrap">
-                <MaxIcon :icon="state.status === 'streaming' ? 'lucide:loader-circle' : 'lucide:sparkles'" class="ai-suggestion-block__icon" :class="{ 'is-spin': state.status === 'streaming' }" />
+                <MaxIcon :icon="state.status === 'streaming' ? 'lucide:loader-circle' : 'lucide:sparkles'" :size="0.875" class="ai-suggestion-block__icon" :class="{ 'is-spin': state.status === 'streaming' }" />
                 <span class="ai-suggestion-block__title">{{ titleText }}</span>
                 <span v-if="selectionBadge" class="ai-suggestion-block__model" data-testid="suggestion-model-badge">{{ selectionBadge }}</span>
             </div>
 
             <div class="ai-suggestion-block__meta">
                 <RiskBadge v-if="effectiveRisk" :risk="effectiveRisk" />
-                <button type="button" class="ai-suggestion-block__icon-btn" title="Ver contexto sanitizado enviado" aria-label="Ver contexto enviado" data-testid="btn-toggle-context" @click="onToggleContext">
-                    <MaxIcon icon="lucide:eye" />
-                </button>
-                <button type="button" class="ai-suggestion-block__icon-btn" title="Fechar sugestão" aria-label="Fechar sugestão" data-testid="btn-dismiss-suggestion" @click="onDismiss">
-                    <MaxIcon icon="lucide:x" />
-                </button>
+                <MaxIconButton icon="lucide:eye" :size="0.75" class="ai-suggestion-block__icon-btn" title="Ver contexto sanitizado enviado" aria-label="Ver contexto enviado" data-testid="btn-toggle-context" @click="onToggleContext" />
+                <MaxIconButton icon="lucide:x" :size="0.75" class="ai-suggestion-block__icon-btn" title="Fechar sugestão" aria-label="Fechar sugestão" data-testid="btn-dismiss-suggestion" @click="onDismiss" />
             </div>
         </header>
 
@@ -25,7 +21,7 @@
         </div>
 
         <div v-else-if="state.status === 'failed'" class="ai-suggestion-block__error" role="alert" data-testid="suggestion-error">
-            <MaxIcon icon="lucide:circle-alert" />
+            <MaxIcon icon="lucide:circle-alert" :size="0.875" />
             <span>{{ state.error || 'Falha ao gerar comando.' }}</span>
         </div>
 
@@ -47,32 +43,28 @@
         <div v-if="cautionConfirmOpen && effectiveRisk?.level === 'caution'" class="ai-suggestion-block__caution-popover" role="alertdialog" aria-label="Confirmar comando com atenção" data-testid="caution-confirm-popover">
             <span class="ai-suggestion-block__caution-text">Este comando requer atenção antes de executar. Deseja prosseguir?</span>
             <div class="ai-suggestion-block__caution-actions">
-                <button type="button" class="ai-suggestion-block__btn is-secondary" data-testid="btn-cancel-caution" @click="cautionConfirmOpen = false">Cancelar</button>
-                <button type="button" class="ai-suggestion-block__btn is-warning" data-testid="btn-confirm-caution" @click="onConfirmCaution">Confirmar execução</button>
+                <MaxButton type="button" variant="secondary" size="sm" data-testid="btn-cancel-caution" @click="cautionConfirmOpen = false">Cancelar</MaxButton>
+                <MaxButton type="button" variant="warning" size="sm" data-testid="btn-confirm-caution" @click="onConfirmCaution">Confirmar execução</MaxButton>
             </div>
         </div>
 
         <footer class="ai-suggestion-block__actions">
-            <button v-if="state.status === 'streaming'" type="button" class="ai-suggestion-block__btn is-secondary" data-testid="btn-cancel-stream" @click="onCancel">
-                <MaxIcon icon="lucide:square" />
+            <MaxButton v-if="state.status === 'streaming'" type="button" variant="secondary" size="sm" icon="lucide:square" data-testid="btn-cancel-stream" @click="onCancel">
                 <span>Cancelar</span>
-            </button>
+            </MaxButton>
 
             <template v-else>
-                <button type="button" class="ai-suggestion-block__btn is-secondary" data-testid="btn-regenerate" @click="onRegenerate">
-                    <MaxIcon icon="lucide:refresh-cw" />
+                <MaxButton type="button" variant="secondary" size="sm" icon="lucide:refresh-cw" data-testid="btn-regenerate" @click="onRegenerate">
                     <span>Regenerar</span>
-                </button>
+                </MaxButton>
 
-                <button v-if="state.status === 'completed'" type="button" class="ai-suggestion-block__btn is-secondary" data-testid="btn-insert-input" @click="onInsert">
-                    <MaxIcon icon="lucide:corner-down-left" />
+                <MaxButton v-if="state.status === 'completed'" type="button" variant="secondary" size="sm" icon="lucide:corner-down-left" data-testid="btn-insert-input" @click="onInsert">
                     <span>Inserir no input</span>
-                </button>
+                </MaxButton>
 
-                <button v-if="state.status === 'completed'" type="button" class="ai-suggestion-block__btn" :class="executeBtnClass" :disabled="reclassifying || !effectiveCommand.trim()" data-testid="btn-execute-command" @click="onExecuteClick">
-                    <MaxIcon :icon="executeBtnIcon" />
+                <MaxButton v-if="state.status === 'completed'" type="button" :variant="executeVariant" size="sm" :disabled="reclassifying || !effectiveCommand.trim()" :icon="executeBtnIcon" data-testid="btn-execute-command" @click="onExecuteClick">
                     <span>{{ executeBtnLabel }}</span>
-                </button>
+                </MaxButton>
             </template>
         </footer>
 
@@ -82,6 +74,8 @@
 
 <script setup lang="ts">
     import { computed, ref } from 'vue';
+    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
+    import MaxIconButton from '@maxvue/max-components-ui/components/MaxIconButton';
     import MaxIcon from '@maxvue/max-components-ui/components/MaxIcon';
     import AiContextPreview from '@/components/ai/AiContextPreview.vue';
     import DestructiveConfirm from '@/components/ai/DestructiveConfirm.vue';
@@ -143,15 +137,15 @@
             : `${sel.harnessId} · ${sel.modelId}`;
     });
 
-    const executeBtnClass = computed<string>(() => {
+    const executeVariant = computed<'primary' | 'warning' | 'danger'>(() => {
         const level = effectiveRisk.value?.level ?? 'safe';
         if (level === 'destructive') {
-            return 'is-danger';
+            return 'danger';
         }
         if (level === 'caution') {
-            return 'is-warning';
+            return 'warning';
         }
-        return 'is-primary';
+        return 'primary';
     });
 
     const executeBtnIcon = computed<string>(() => {
@@ -278,7 +272,6 @@
     }
 
     .ai-suggestion-block__icon {
-        font-size: 0.875rem;
         color: var(--max-primary-400);
         flex-shrink: 0;
     }
@@ -304,19 +297,9 @@
     }
 
     .ai-suggestion-block__icon-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 1.5rem;
-        height: 1.5rem;
-        border-radius: 0.25rem;
-        border: 1px solid transparent;
-        background: transparent;
         color: var(--background-300);
-        cursor: pointer;
 
         &:hover {
-            background: var(--background-800);
             color: var(--background-50);
         }
     }
@@ -423,62 +406,5 @@
         justify-content: flex-end;
         gap: 0.375rem;
         flex-wrap: wrap;
-    }
-
-    .ai-suggestion-block__btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.25rem;
-        padding: 0.3125rem 0.625rem;
-        border-radius: 0.375rem;
-        border: 1px solid transparent;
-        font-size: 0.75rem;
-        font-weight: 600;
-        cursor: pointer;
-
-        &:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        &.is-secondary {
-            border-color: var(--background-700);
-            background: var(--background-850);
-            color: var(--background-100);
-
-            &:hover:not(:disabled) {
-                background: var(--background-800);
-            }
-        }
-
-        &.is-primary {
-            border-color: var(--max-primary-500);
-            background: var(--max-primary-600);
-            color: var(--background-50);
-
-            &:hover:not(:disabled) {
-                background: var(--max-primary-500);
-            }
-        }
-
-        &.is-warning {
-            border-color: var(--max-warning-500);
-            background: var(--max-warning-600);
-            color: var(--background-950);
-
-            &:hover:not(:disabled) {
-                background: var(--max-warning-500);
-            }
-        }
-
-        &.is-danger {
-            border-color: var(--max-danger-500);
-            background: var(--max-danger-600);
-            color: var(--background-50);
-
-            &:hover:not(:disabled) {
-                background: var(--max-danger-500);
-            }
-        }
     }
 </style>

@@ -1,17 +1,18 @@
 <template>
     <div v-if="(isAwaiting || isSuspected) && !isAcknowledged" class="agent-attention-indicator" :class="{ 'is-awaiting': isAwaiting, 'is-suspected': isSuspected }" role="status" aria-live="polite" :title="tooltipText">
-        <MaxIcon :icon="isAwaiting ? 'lucide:shield-alert' : 'lucide:circle-help'" class="agent-attention-indicator__icon" aria-hidden="true" />
+        <MaxIcon :icon="isAwaiting ? 'lucide:shield-alert' : 'lucide:circle-help'" size="0.875" class="agent-attention-indicator__icon" aria-hidden="true" />
         <span class="agent-attention-indicator__badge">{{ badgeLabel }}</span>
         <span v-if="sourceLabel" class="agent-attention-indicator__source">({{ sourceLabel }})</span>
         <div class="agent-attention-indicator__actions">
-            <button type="button" class="agent-attention-indicator__btn agent-attention-indicator__btn--focus" aria-label="Visualizar aba do agente" @click.stop="onFocus">Visualizar</button>
-            <button type="button" class="agent-attention-indicator__btn agent-attention-indicator__btn--dismiss" aria-label="Dispensar aviso de atenção" @click.stop="onDismiss">Dispensar aviso</button>
+            <MaxButton type="button" variant="secondary" size="small" class="agent-attention-indicator__btn agent-attention-indicator__btn--focus" aria-label="Visualizar aba do agente" @click.stop="onFocus">Visualizar</MaxButton>
+            <MaxButton type="button" variant="secondary" size="small" class="agent-attention-indicator__btn agent-attention-indicator__btn--dismiss" aria-label="Dispensar aviso de atenção" @click.stop="onDismiss">Dispensar aviso</MaxButton>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
     import { computed } from 'vue';
+    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
     import { useAgentAttention } from '@/composables/useAgentAttention';
     import type { TabId } from '@/types/bindings';
 
@@ -83,7 +84,6 @@
     }
 
     .agent-attention-indicator__icon {
-        font-size: 0.875rem;
         flex-shrink: 0;
     }
 

@@ -11,10 +11,7 @@
                 <span v-if="output.ended.value" class="group-run-output-view__ended-tag" data-testid="group-run-output-ended">
                     Stream encerrado
                 </span>
-                <button type="button" class="group-run-output-view__close-btn" data-testid="group-run-output-close" aria-label="Fechar visualização de saída" @click="onClose">
-                    <MaxIcon icon="lucide:x" />
-                    <span>Fechar</span>
-                </button>
+                <MaxButton label="Fechar" icon="lucide:x" variant="ghost" size="small" class="group-run-output-view__close-btn" data-testid="group-run-output-close" aria-label="Fechar visualização de saída" @click="onClose" />
             </div>
         </header>
 
@@ -49,6 +46,7 @@
 
 <script setup lang="ts">
     import { computed, onBeforeUnmount, ref, watch } from 'vue';
+    import { MaxButton, MaxIcon } from '@maxvue/max-components-ui';
     import { useGroupRunOutput } from '@/composables/commandGroups/useGroupRunOutput';
     import type { GroupRunId, GroupRunItem } from '@/types/commandGroups';
 

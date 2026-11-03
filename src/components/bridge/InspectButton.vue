@@ -1,13 +1,12 @@
 <template>
-    <button v-if="visible" type="button" class="inspect-button" :class="{ 'is-loading': loading }" :disabled="loading" title="Abrir conversa em Plan Mode no MaxCode" aria-label="Inspecionar erro no MaxCode" @click="onClick">
-        <MaxIcon :icon="loading ? 'lucide:loader-circle' : 'mdi:magnify-scan'" class="inspect-button__icon" />
-        <span class="inspect-button__label">{{ buttonLabel }}</span>
-    </button>
+    <MaxButton v-if="visible" type="button" variant="danger" size="sm" :class="[{ 'is-loading': loading }, 'inspect-button']" :disabled="loading" :icon="loading ? 'lucide:loader-circle' : 'mdi:magnify-scan'" title="Abrir conversa em Plan Mode no MaxCode" aria-label="Inspecionar erro no MaxCode" @click="onClick">
+        <span>{{ buttonLabel }}</span>
+    </MaxButton>
 </template>
 
 <script setup lang="ts">
     import { computed, ref } from 'vue';
-    import MaxIcon from '@maxvue/max-components-ui/components/MaxIcon';
+    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
     import { useMaxCodeInspect, type InspectableBlockLike } from '@/composables/useMaxCodeInspect';
     import type { InspectDispatchResult_Serialize } from '@/types/bindings';
 
@@ -55,30 +54,6 @@
 <style lang="scss" scoped>
     .inspect-button {
         order: 10;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.25rem;
-        padding: 0.125rem 0.5rem;
-        border-radius: 0.25rem;
-        border: 1px solid var(--max-danger-500);
-        background: color-mix(in srgb, var(--max-danger-500) 15%, transparent);
-        color: var(--max-danger-400);
-        font-size: 0.6875rem;
-        font-weight: 600;
         cursor: pointer;
-
-        &:disabled {
-            opacity: 0.65;
-            cursor: not-allowed;
-        }
-
-        &:hover:not(:disabled) {
-            background: color-mix(in srgb, var(--max-danger-500) 28%, transparent);
-            color: var(--background-50);
-        }
-    }
-
-    .inspect-button__icon {
-        font-size: 0.8125rem;
     }
 </style>

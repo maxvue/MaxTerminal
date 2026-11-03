@@ -2,7 +2,7 @@
     <div class="project-item" :class="{ 'project-item--selected': props.selected, 'project-item--missing': props.project.missing }" :style="{ '--project-color': safeColor, '--mt-project-color': safeColor }" :data-project-id="props.project.id" @contextmenu.prevent="toggleMenu">
         <button type="button" class="project-item__main" :aria-current="props.selected ? 'true' : undefined" :title="props.project.path" @click="emit('select', props.project.id)">
             <span class="project-item__avatar" aria-hidden="true">
-                <MaxIcon :icon="safeIcon" class="project-item__icon" />
+                <MaxIcon :icon="safeIcon" size="1.125" class="project-item__icon" />
             </span>
             <span class="project-item__content">
                 <span class="project-item__header">
@@ -15,33 +15,26 @@
         </button>
 
         <div class="project-item__actions">
-            <button type="button" class="project-item__menu-trigger" :aria-expanded="menuOpen ? 'true' : 'false'" aria-label="Opções do projeto" title="Opções do projeto" @click.stop="toggleMenu">
-                <MaxIcon icon="mdi:dots-vertical" />
-            </button>
-            <div v-if="menuOpen" class="project-item__menu" role="menu" aria-label="Ações do projeto">
-                <button type="button" class="project-item__menu-btn" data-action="edit" role="menuitem" @click.stop="handleEdit">
-                    <MaxIcon icon="mdi:pencil-outline" />
-                    <span>Editar</span>
-                </button>
-                <button type="button" class="project-item__menu-btn" data-action="configure" role="menuitem" @click.stop="handleConfigure">
-                    <MaxIcon icon="lucide:settings" />
-                    <span>Configurar</span>
-                </button>
-                <button type="button" class="project-item__menu-btn" data-action="redetect" role="menuitem" @click.stop="handleRedetect">
-                    <MaxIcon icon="mdi:refresh" />
-                    <span>Re-detectar identidade</span>
-                </button>
-                <button type="button" class="project-item__menu-btn project-item__menu-btn--danger" data-action="remove" role="menuitem" @click.stop="handleRemove">
-                    <MaxIcon icon="mdi:trash-can-outline" />
-                    <span>Remover do MaxTerminal</span>
-                </button>
-            </div>
+            <MaxPopoverMenu ref="popoverMenuRef" :items="menuItems" aria-label="Opções do projeto">
+                <template #trigger="slotProps">
+                    <button type="button" class="project-item__menu-trigger" v-bind="slotProps" aria-label="Opções do projeto" title="Opções do projeto">
+                        <MaxIcon icon="mdi:dots-vertical" />
+                    </button>
+                </template>
+                <template #item="{ data }">
+                    <button type="button" class="project-item__menu-btn" :class="{ 'project-item__menu-btn--danger': data.danger }" :data-action="data.actionKey" role="menuitem" @click.stop="data.action">
+                        <MaxIcon :icon="data.icon" />
+                        <span>{{ data.label }}</span>
+                    </button>
+                </template>
+            </MaxPopoverMenu>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
     import { computed, ref } from 'vue';
+    import MaxPopoverMenu from '@maxvue/max-components-ui/components/MaxPopoverMenu';
     import ProjectStatusBadges from '@/components/projects/ProjectStatusBadges.vue';
     import { isValidProjectColor, isValidProjectIcon } from '@/constants/projectIdentity';
     import type { ProjectStatusCounters } from '@/stores/projects';
@@ -63,7 +56,7 @@
         redetect: [id: ProjectId];
     }>();
 
-    const menuOpen = ref<boolean>(false);
+    const popoverMenuRef = ref<InstanceType<typeof MaxPopoverMenu> | null>(null);
 
     const safeIcon = computed<string>(() =>
         isValidProjectIcon(props.project.icon) ? props.project.icon : 'mdi:folder'
@@ -73,27 +66,55 @@
         isValidProjectColor(props.project.color) ? props.project.color : '#14B8A6'
     );
 
-    function toggleMenu(): void {
-        menuOpen.value = !menuOpen.value;
+    const menuItems = computed(() => [
+        {
+            label: 'Editar',
+            icon: 'mdi:pencil-outline',
+            actionKey: 'edit',
+            action: () => handleEdit()
+        },
+        {
+            label: 'Configurar',
+            icon: 'lucide:settings',
+            actionKey: 'configure',
+            action: () => handleConfigure()
+        },
+        {
+            label: 'Re-detectar identidade',
+            icon: 'mdi:refresh',
+            actionKey: 'redetect',
+            action: () => handleRedetect()
+        },
+        {
+            label: 'Remover do MaxTerminal',
+            icon: 'mdi:trash-can-outline',
+            actionKey: 'remove',
+            danger: true,
+            action: () => handleRemove()
+        }
+    ]);
+
+    function toggleMenu(event?: MouseEvent): void {
+        popoverMenuRef.value?.toggle(event);
     }
 
     function handleEdit(): void {
-        menuOpen.value = false;
+        popoverMenuRef.value?.hide();
         emit('edit', props.project.id);
     }
 
     function handleConfigure(): void {
-        menuOpen.value = false;
+        popoverMenuRef.value?.hide();
         emit('configure', props.project.id);
     }
 
     function handleRedetect(): void {
-        menuOpen.value = false;
+        popoverMenuRef.value?.hide();
         emit('redetect', props.project.id);
     }
 
     function handleRemove(): void {
-        menuOpen.value = false;
+        popoverMenuRef.value?.hide();
         emit('remove', props.project.id);
     }
 </script>
@@ -156,10 +177,6 @@
         background: color-mix(in srgb, var(--mt-project-color, #14B8A6) 15%, transparent);
         color: var(--mt-project-color, #14B8A6);
         border: 1px solid color-mix(in srgb, var(--mt-project-color, #14B8A6) 35%, transparent);
-    }
-
-    .project-item__icon {
-        font-size: 1.125rem;
     }
 
     .project-item__content {

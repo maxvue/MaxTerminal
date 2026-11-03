@@ -70,25 +70,12 @@ function prefersReducedMotion(): boolean {
 }
 
 function showTargetMissingToast(onRefresh?: () => void): void {
+    onRefresh?.();
     void import('@maxvue/max-components-ui')
         .then((mod) => {
-            const toastObj = (
-                mod as {
-                    Toast?: {
-                        show?: (opts: {
-                            title: string;
-                            severity: string;
-                            actionLabel?: string | undefined;
-                            onAction?: (() => void) | undefined;
-                        }) => void;
-                    };
-                }
-            ).Toast;
-            toastObj?.show?.({
+            mod.Toast?.show?.({
                 title: 'Este resultado não está mais disponível',
-                severity: 'warn',
-                actionLabel: 'Atualizar busca',
-                onAction: onRefresh
+                severity: 'warning'
             });
         })
         .catch(() => {

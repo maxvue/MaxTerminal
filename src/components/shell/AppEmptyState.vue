@@ -1,7 +1,7 @@
 <template>
     <section class="app-empty-state" flex flex-col items-center justify-center gap-3 p-6 text-center>
         <div class="app-empty-state__badge" flex items-center justify-center w-12 h-12 rounded-full>
-            <MaxIcon :icon="props.icon ?? 'mdi:console-line'" class="app-empty-state__icon" />
+            <MaxIcon :icon="props.icon ?? 'mdi:console-line'" size="1.5" class="app-empty-state__icon" />
         </div>
         <h2 class="app-empty-state__title" text-base font-semibold m-0>{{ props.title }}</h2>
         <p v-if="props.description" class="app-empty-state__description" text-sm op-75 m-0>{{ props.description }}</p>
@@ -38,7 +38,6 @@
 
     .app-empty-state__icon {
         color: var(--max-primary-400);
-        font-size: 1.5rem;
     }
 
     .app-empty-state__title {

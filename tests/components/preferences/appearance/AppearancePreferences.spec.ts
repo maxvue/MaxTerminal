@@ -1,4 +1,5 @@
 import { mount } from '@vue/test-utils';
+import { MaxInputSelect } from '@maxvue/max-components-ui';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AppearancePreferences from '@/components/preferences/appearance/AppearancePreferences.vue';
@@ -143,7 +144,8 @@ describe('AppearancePreferences e subcomponentes', () => {
             }
         });
 
-        await wrapper.find('#mt-font-preset').setValue('fira-code');
+        const selects = wrapper.findAllComponents(MaxInputSelect);
+        await selects[0]!.vm.$emit('change', 'fira-code');
         expect(wrapper.emitted('update')?.[0]?.[0]).toHaveProperty('fontFamily');
 
         await wrapper.find('#mt-font-family').setValue('bad;font{color:red}');
@@ -152,8 +154,8 @@ describe('AppearancePreferences e subcomponentes', () => {
         await wrapper.find('#mt-font-family').setValue('Iosevka, monospace');
         await wrapper.find('#mt-font-size').setValue('16');
         await wrapper.find('#mt-line-height').setValue('1.35');
-        await wrapper.find('#mt-cursor-style').setValue('bar');
-        await wrapper.find('#mt-cursor-style').setValue('theme');
+        await selects[1]!.vm.$emit('change', 'bar');
+        await selects[1]!.vm.$emit('change', 'theme');
         await wrapper.find('#mt-contrast-ratio').setValue('4.5');
 
         const checkboxes = wrapper.findAll('input[type="checkbox"]');

@@ -2,7 +2,7 @@
     <section class="project-workspace" aria-label="Workspace do projeto">
         <header v-if="props.project" class="project-workspace__header" :style="{ '--project-color': props.project.color, '--mt-project-color': props.project.color }">
             <span class="project-workspace__avatar" aria-hidden="true">
-                <MaxIcon :icon="props.project.icon" class="project-workspace__icon" />
+                <MaxIcon :icon="props.project.icon" size="1.25" class="project-workspace__icon" />
             </span>
             <div class="project-workspace__meta">
                 <div class="project-workspace__title-row">
@@ -14,32 +14,28 @@
                 <span class="project-workspace__path">{{ props.project.path }}</span>
             </div>
             <div class="project-workspace__actions">
-                <button type="button" class="project-workspace__search-btn" title="Buscar em tudo… (Ctrl+K)" aria-label="Buscar em tudo… (Ctrl+K)" @click="searchStore.show(undefined, props.project.id)">
+                <MaxButton type="button" variant="secondary" size="small" class="project-workspace__search-btn" title="Buscar em tudo… (Ctrl+K)" aria-label="Buscar em tudo… (Ctrl+K)" @click="searchStore.show(undefined, props.project.id)">
                     <MaxIcon icon="lucide:search" />
                     <span>Buscar em tudo…</span>
                     <kbd class="project-workspace__kbd">Ctrl+K</kbd>
-                </button>
+                </MaxButton>
                 <AiStatusIndicator />
                 <BridgeStatusIndicator />
                 <ShortcutStatusBadge />
-                <button type="button" class="project-workspace__prefs-btn" title="Preferências do sistema" aria-label="Abrir preferências do sistema" @click="windowStore.openPreferences('system')">
-                    <MaxIcon icon="lucide:settings" />
-                </button>
+                <MaxIconButton icon="lucide:settings" size="1.1" class="project-workspace__prefs-btn" title="Preferências do sistema" aria-label="Abrir preferências do sistema" @click="windowStore.openPreferences('system')" />
             </div>
         </header>
         <header v-else class="project-workspace__header project-workspace__header--empty">
             <div class="project-workspace__actions ml-auto">
-                <button type="button" class="project-workspace__search-btn" title="Buscar em tudo… (Ctrl+K)" aria-label="Buscar em tudo… (Ctrl+K)" @click="searchStore.show()">
+                <MaxButton type="button" variant="secondary" size="small" class="project-workspace__search-btn" title="Buscar em tudo… (Ctrl+K)" aria-label="Buscar em tudo… (Ctrl+K)" @click="searchStore.show()">
                     <MaxIcon icon="lucide:search" />
                     <span>Buscar em tudo…</span>
                     <kbd class="project-workspace__kbd">Ctrl+K</kbd>
-                </button>
+                </MaxButton>
                 <AiStatusIndicator />
                 <BridgeStatusIndicator />
                 <ShortcutStatusBadge />
-                <button type="button" class="project-workspace__prefs-btn" title="Preferências do sistema" aria-label="Abrir preferências do sistema" @click="windowStore.openPreferences('system')">
-                    <MaxIcon icon="lucide:settings" />
-                </button>
+                <MaxIconButton icon="lucide:settings" size="1.1" class="project-workspace__prefs-btn" title="Preferências do sistema" aria-label="Abrir preferências do sistema" @click="windowStore.openPreferences('system')" />
             </div>
         </header>
         <div v-if="props.project" class="project-workspace__body">
@@ -57,6 +53,7 @@
 
 <script setup lang="ts">
     import { computed } from 'vue';
+    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
     import MaxIconButton from '@maxvue/max-components-ui/components/MaxIconButton';
     import AiStatusIndicator from '@/components/ai/AiStatusIndicator.vue';
     import BridgeStatusIndicator from '@/components/bridge/BridgeStatusIndicator.vue';
@@ -181,10 +178,6 @@
         color: var(--mt-project-color, #14B8A6);
         border: 1px solid color-mix(in srgb, var(--mt-project-color, #14B8A6) 35%, transparent);
         flex-shrink: 0;
-    }
-
-    .project-workspace__icon {
-        font-size: 1.25rem;
     }
 
     .project-workspace__meta {

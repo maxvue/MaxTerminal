@@ -1,7 +1,7 @@
 <template>
     <div class="agent-status-line" :class="{ 'is-compact': props.compact, 'is-inactive': !agentActive }" role="group" aria-label="Telemetria do Agente CLI">
         <div class="agent-status-line__item agent-status-line__item--model" :class="{ 'is-unavailable': !model.isAvailable, 'is-stale': model.isStale, 'is-configured': model.isConfigured }" :title="model.tooltip">
-            <MaxIcon icon="lucide:cpu" class="agent-status-line__icon" aria-hidden="true" />
+            <MaxIcon icon="lucide:cpu" size="0.8125" class="agent-status-line__icon" aria-hidden="true" />
             <span class="agent-status-line__label">{{ model.label }}:</span>
             <span class="agent-status-line__value">{{ model.display }}</span>
             <span v-if="model.isStale" class="agent-status-line__stale">desatualizado</span>
@@ -9,8 +9,8 @@
         <div class="agent-status-line__item agent-status-line__item--context" :class="[`tone-${context.tone}`, { 'is-unavailable': !context.isAvailable, 'is-stale': context.isStale }]" :title="context.tooltip">
             <span class="agent-status-line__label">{{ context.label }}:</span>
             <span class="agent-status-line__value">{{ context.display }}</span>
-            <div v-if="context.isAvailable && context.percent !== null" class="agent-status-line__bar" role="progressbar" :aria-valuenow="Math.round(context.percent)" aria-valuemin="0" aria-valuemax="100" :aria-label="`${context.label}: ${context.display}`">
-                <div class="agent-status-line__bar-fill" :class="`tone-${context.tone}`" :style="{ width: `${Math.min(100, Math.max(0, context.percent))}%` }" />
+            <div v-if="context.isAvailable && context.percent !== null" class="agent-status-line__bar">
+                <MaxProgressBar :value="context.percent" :max="100" :severity="contextSeverity" :aria-label="`${context.label}: ${context.display}`" class="agent-status-line__progress" />
             </div>
             <span v-if="context.isStale" class="agent-status-line__stale">desatualizado</span>
         </div>
@@ -35,6 +35,8 @@
 </template>
 
 <script setup lang="ts">
+    import { computed } from 'vue';
+    import MaxProgressBar from '@maxvue/max-components-ui/components/MaxProgressBar';
     import { useAgentTelemetry } from '@/composables/useAgentTelemetry';
     import type { TabId } from '@/types/bindings';
 
@@ -50,6 +52,12 @@
     const { model, context, quota5h, quotaWeekly, cost, agentActive } = useAgentTelemetry(
         () => props.tabId
     );
+
+    const contextSeverity = computed<'info' | 'warning' | 'danger'>(() => {
+        if (context.value.tone === 'danger') return 'danger';
+        if (context.value.tone === 'warning') return 'warning';
+        return 'info';
+    });
 </script>
 
 <style lang="scss" scoped>
@@ -88,7 +96,6 @@
     }
 
     .agent-status-line__icon {
-        font-size: 0.8125rem;
         color: var(--max-primary-400);
     }
 

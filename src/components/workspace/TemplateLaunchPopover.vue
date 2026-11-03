@@ -2,10 +2,7 @@
     <div v-if="props.open" class="template-popover" role="dialog" aria-label="Iniciar Aba Template">
         <div class="template-popover__header">
             <span class="template-popover__title">Templates do Projeto</span>
-            <button type="button" class="template-popover__new-btn" @click="emit('create-template')">
-                <MaxIcon icon="lucide:plus" />
-                <span>Novo Template</span>
-            </button>
+            <MaxButton label="Novo Template" icon="lucide:plus" variant="ghost" size="small" class="template-popover__new-btn" @click="emit('create-template')" />
         </div>
         <div v-if="props.templates.length === 0" class="template-popover__empty">Nenhum template cadastrado neste projeto.</div>
         <ul v-else class="template-popover__list" role="menu">
@@ -23,15 +20,9 @@
                     </div>
                 </button>
                 <div class="template-popover__actions">
-                    <button v-if="!tpl.isDefault" type="button" class="template-popover__action-btn" title="Definir como padrão" :aria-label="`Definir ${tpl.config.name} como padrão`" @click.stop="emit('set-default', tpl.id)">
-                        <MaxIcon icon="lucide:star" />
-                    </button>
-                    <button type="button" class="template-popover__action-btn" title="Editar template" :aria-label="`Editar ${tpl.config.name}`" @click.stop="emit('edit-template', tpl)">
-                        <MaxIcon icon="lucide:pencil" />
-                    </button>
-                    <button v-if="!tpl.isDefault" type="button" class="template-popover__action-btn template-popover__action-btn--danger" title="Excluir template" :aria-label="`Excluir ${tpl.config.name}`" @click.stop="emit('delete-template', tpl)">
-                        <MaxIcon icon="lucide:trash-2" />
-                    </button>
+                    <MaxIconButton v-if="!tpl.isDefault" icon="lucide:star" :label="`Definir ${tpl.config.name} como padrão`" variant="ghost" class="template-popover__action-btn" title="Definir como padrão" @click.stop="emit('set-default', tpl.id)" />
+                    <MaxIconButton icon="lucide:pencil" :label="`Editar ${tpl.config.name}`" variant="ghost" class="template-popover__action-btn" title="Editar template" @click.stop="emit('edit-template', tpl)" />
+                    <MaxIconButton v-if="!tpl.isDefault" icon="lucide:trash-2" :label="`Excluir ${tpl.config.name}`" variant="danger" class="template-popover__action-btn template-popover__action-btn--danger" title="Excluir template" @click.stop="emit('delete-template', tpl)" />
                 </div>
             </li>
         </ul>
@@ -39,6 +30,7 @@
 </template>
 
 <script setup lang="ts">
+    import { MaxButton, MaxIcon, MaxIconButton } from '@maxvue/max-components-ui';
     import type { TabTemplate_Serialize, TemplateId } from '@/types/bindings';
 
     export interface TemplateLaunchPopoverProps {

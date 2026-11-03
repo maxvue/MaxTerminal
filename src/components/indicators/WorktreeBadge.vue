@@ -1,8 +1,8 @@
 <template>
     <span v-if="props.worktree && props.worktree.isLinked" class="worktree-badge" :class="kindClass" :title="badgeTitle">
-        <MaxIcon icon="lucide:git-fork" class="worktree-badge__icon" />
+        <MaxIcon icon="lucide:git-fork" size="0.6875" class="worktree-badge__icon" />
         <span class="worktree-badge__label">WT: {{ props.worktree.name }}</span>
-        <MaxIcon v-if="props.worktree.locked" icon="lucide:lock" class="worktree-badge__lock" aria-label="Worktree bloqueada" />
+        <MaxIcon v-if="props.worktree.locked" icon="lucide:lock" size="0.6875" class="worktree-badge__lock" aria-label="Worktree bloqueada" />
     </span>
 </template>
 
@@ -76,7 +76,6 @@
         &__icon,
         &__lock {
             flex-shrink: 0;
-            font-size: 0.6875rem;
         }
 
         &__label {

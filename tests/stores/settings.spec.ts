@@ -239,7 +239,6 @@ describe('stores/settings + DbRecoveryPanel', () => {
         expect(wrapper.find('.db-recovery-panel').exists()).toBe(true);
         expect(wrapper.text()).toContain('db.corrupted');
         expect(wrapper.text()).toContain('32.0 KiB');
-        expect(wrapper.text()).toContain('512 B');
 
         // 1. Falha ao tentar reabrir exibe alerta de erro
         vi.mocked(dbIpc.recover).mockResolvedValueOnce({
@@ -253,8 +252,7 @@ describe('stores/settings + DbRecoveryPanel', () => {
             )
         });
 
-        const buttons = wrapper.findAll('button');
-        await buttons[0]!.trigger('click');
+        await wrapper.find('[data-testid="btn-recovery-retry"]').trigger('click');
         await flushPromises();
         expect(dbIpc.recover).toHaveBeenCalledWith({ action: 'retry_open' });
         expect(wrapper.find('[role="alert"]').text()).toContain('inconsistências');
@@ -264,7 +262,7 @@ describe('stores/settings + DbRecoveryPanel', () => {
             ok: true,
             data: recoveryStatus
         });
-        await buttons[1]!.trigger('click');
+        await wrapper.find('[data-testid="btn-recovery-restore"]').trigger('click');
         await flushPromises();
         expect(dbIpc.recover).toHaveBeenCalledWith({
             action: 'restore_from_backup',
@@ -280,7 +278,7 @@ describe('stores/settings + DbRecoveryPanel', () => {
             ok: true,
             data: readyStatus
         });
-        await buttons[2]!.trigger('click');
+        await wrapper.find('[data-testid="btn-recovery-reset"]').trigger('click');
         await flushPromises();
         expect(dbIpc.recover).toHaveBeenCalledWith({ action: 'reset_database' });
         expect(store.isRecoveryRequired).toBe(false);

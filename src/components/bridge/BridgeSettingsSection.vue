@@ -5,7 +5,7 @@
                 <h3 class="bridge-settings__title">Integração Bidirecional com MaxCode</h3>
                 <p class="bridge-settings__subtitle">Sincronização de projetos em tempo real, inspeção de erros em Plan Mode e protocolo de Issues.</p>
             </div>
-            <span class="bridge-settings__badge" :class="`is-${bridgeStore.indicator.color}`">{{ bridgeStore.indicator.label }}</span>
+            <MaxTag :variant="bridgeBadgeVariant" size="sm" class="bridge-settings__badge">{{ bridgeStore.indicator.label }}</MaxTag>
         </header>
 
         <div class="bridge-settings__grid">
@@ -78,17 +78,17 @@
         </div>
 
         <footer class="bridge-settings__actions">
-            <button type="button" class="bridge-settings__btn" data-testid="btn-reconnect" @click="onReconnect">
-                <MaxIcon icon="lucide:refresh-cw" />
+            <MaxButton type="button" variant="primary" icon="lucide:refresh-cw" data-testid="btn-reconnect" @click="onReconnect">
                 <span>Reconectar agora</span>
-            </button>
+            </MaxButton>
         </footer>
     </section>
 </template>
 
 <script setup lang="ts">
     import { computed } from 'vue';
-    import MaxIcon from '@maxvue/max-components-ui/components/MaxIcon';
+    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
+    import MaxTag from '@maxvue/max-components-ui/components/MaxTag';
     import { useMaxCodeBridgeStore } from '@/stores/maxCodeBridge';
     import type { BridgeSettings_Serialize, InspectFallbackMode } from '@/types/bindings';
 
@@ -105,6 +105,20 @@
     }>();
 
     const bridgeStore = useMaxCodeBridgeStore();
+
+    const bridgeBadgeVariant = computed<'success' | 'info' | 'danger' | 'secondary'>(() => {
+        switch (bridgeStore.indicator.color) {
+            case 'success':
+                return 'success';
+            case 'info':
+                return 'info';
+            case 'danger':
+                return 'danger';
+            case 'neutral':
+            default:
+                return 'secondary';
+        }
+    });
 
     const capabilitiesSummary = computed<string>(() => {
         const caps = bridgeStore.peerCapabilities;
@@ -186,30 +200,7 @@
     }
 
     .bridge-settings__badge {
-        padding: 0.1875rem 0.5rem;
-        border-radius: 999px;
-        font-size: 0.6875rem;
-        font-weight: 600;
-
-        &.is-success {
-            background: color-mix(in srgb, var(--max-success-500) 18%, transparent);
-            color: var(--max-success-400);
-        }
-
-        &.is-info {
-            background: color-mix(in srgb, var(--max-info-500) 18%, transparent);
-            color: var(--max-info-400);
-        }
-
-        &.is-danger {
-            background: color-mix(in srgb, var(--max-danger-500) 18%, transparent);
-            color: var(--max-danger-400);
-        }
-
-        &.is-neutral {
-            background: var(--background-800);
-            color: var(--background-400);
-        }
+        white-space: nowrap;
     }
 
     .bridge-settings__grid {
@@ -287,23 +278,5 @@
         display: flex;
         justify-content: flex-end;
         gap: 0.5rem;
-    }
-
-    .bridge-settings__btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.375rem;
-        padding: 0.375rem 0.75rem;
-        border-radius: 0.375rem;
-        border: 1px solid var(--max-primary-500);
-        background: var(--max-primary-600);
-        color: var(--background-50);
-        font-size: 0.75rem;
-        font-weight: 500;
-        cursor: pointer;
-
-        &:hover {
-            background: var(--max-primary-500);
-        }
     }
 </style>

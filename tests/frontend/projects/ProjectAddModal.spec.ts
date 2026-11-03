@@ -69,7 +69,7 @@ describe('ProjectAddModal.vue (Fase 06)', () => {
         const wrapper = mount(ProjectAddModal, {
             props: { visible: true },
             global: {
-                stubs: { MaxIcon: true }
+                stubs: { MaxIcon: true, teleport: true }
             }
         });
 
@@ -141,7 +141,7 @@ describe('ProjectAddModal.vue (Fase 06)', () => {
         const wrapper = mount(ProjectAddModal, {
             props: { visible: true },
             global: {
-                stubs: { MaxIcon: true }
+                stubs: { MaxIcon: true, teleport: true }
             }
         });
 

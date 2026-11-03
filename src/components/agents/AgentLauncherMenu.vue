@@ -1,30 +1,34 @@
 <template>
     <div class="agent-launcher">
-        <button type="button" class="agent-launcher__trigger" title="Abrir aba de Agente CLI" aria-label="Abrir Agente CLI" :aria-expanded="menuOpen" @click="toggleMenu">
-            <MaxIcon icon="lucide:bot" />
-            <span>Agentes CLI</span>
-            <MaxIcon icon="lucide:chevron-down" class="agent-launcher__caret" />
-        </button>
-        <div v-if="menuOpen" class="agent-launcher__popover" role="menu" aria-label="Agentes CLI disponíveis">
-            <div v-for="item in agentItems" :key="item.kind" class="agent-launcher__row">
-                <button type="button" class="agent-launcher__item" role="menuitem" :disabled="!item.enabled" :title="item.tooltip" @click="onQuickLaunch(item.kind)">
-                    <MaxIcon :icon="item.icon" class="agent-launcher__item-icon" />
-                    <div class="agent-launcher__item-body">
-                        <span class="agent-launcher__item-title">{{ item.displayName }}</span>
-                        <span class="agent-launcher__item-meta" :class="{ 'is-installed': item.installed, 'is-missing': !item.installed }">{{ item.installed ? (item.version ? `v${item.version}` : 'Instalado') : 'Não instalado' }}</span>
-                    </div>
-                    <kbd v-if="item.shortcut" class="agent-launcher__kbd">{{ item.shortcut }}</kbd>
+        <MaxPopover ref="popoverRef" :no-header="true" class="agent-launcher__popover-host">
+            <template #trigger="slotProps">
+                <button type="button" class="agent-launcher__trigger" title="Abrir aba de Agente CLI" aria-label="Abrir Agente CLI" v-bind="slotProps">
+                    <MaxIcon icon="lucide:bot" />
+                    <span>Agentes CLI</span>
+                    <MaxIcon icon="lucide:chevron-down" class="agent-launcher__caret" />
                 </button>
-                <button type="button" class="agent-launcher__options-btn" :title="`Abrir ${item.displayName} com opções de Worktree e Modelo`" :aria-label="`Opções de abertura para ${item.displayName}`" @click="onOpenWithDialog(item.kind)">
-                    <MaxIcon icon="lucide:git-branch-plus" />
-                </button>
+            </template>
+            <div class="agent-launcher__popover" role="menu" aria-label="Agentes CLI disponíveis">
+                <div v-for="item in agentItems" :key="item.kind" class="agent-launcher__row">
+                    <button type="button" class="agent-launcher__item" role="menuitem" :disabled="!item.enabled" :title="item.tooltip" @click="onQuickLaunch(item.kind)">
+                        <MaxIcon :icon="item.icon" class="agent-launcher__item-icon" />
+                        <div class="agent-launcher__item-body">
+                            <span class="agent-launcher__item-title">{{ item.displayName }}</span>
+                            <span class="agent-launcher__item-meta" :class="{ 'is-installed': item.installed, 'is-missing': !item.installed }">{{ item.installed ? (item.version ? `v${item.version}` : 'Instalado') : 'Não instalado' }}</span>
+                        </div>
+                        <kbd v-if="item.shortcut" class="agent-launcher__kbd">{{ item.shortcut }}</kbd>
+                    </button>
+                    <MaxIconButton icon="lucide:git-branch-plus" size="1" class="agent-launcher__options-btn" :title="`Abrir ${item.displayName} com opções de Worktree e Modelo`" :aria-label="`Opções de abertura para ${item.displayName}`" @click="onOpenWithDialog(item.kind)" />
+                </div>
             </div>
-        </div>
+        </MaxPopover>
     </div>
 </template>
 
 <script setup lang="ts">
     import { computed, onMounted, ref } from 'vue';
+    import MaxIconButton from '@maxvue/max-components-ui/components/MaxIconButton';
+    import MaxPopover from '@maxvue/max-components-ui/components/MaxPopover';
     import { DEFAULT_AGENT_SHORTCUTS } from '@/composables/useAgentShortcuts';
     import { useAgentsStore } from '@/stores/agents';
     import type { AgentKind, ProjectId } from '@/types/bindings';
@@ -36,7 +40,7 @@
     const props = defineProps<AgentLauncherMenuProps>();
 
     const agentsStore = useAgentsStore();
-    const menuOpen = ref<boolean>(false);
+    const popoverRef = ref<InstanceType<typeof MaxPopover> | null>(null);
 
     interface LauncherAgentItem {
         kind: AgentKind;
@@ -94,12 +98,8 @@
         }
     });
 
-    function toggleMenu(): void {
-        menuOpen.value = !menuOpen.value;
-    }
-
     async function onQuickLaunch(kind: AgentKind): Promise<void> {
-        menuOpen.value = false;
+        popoverRef.value?.hide();
         const info = agentsStore.agentByKind(kind);
         if (info && !info.installation.installed) {
             return;
@@ -121,7 +121,7 @@
     }
 
     function onOpenWithDialog(kind: AgentKind): void {
-        menuOpen.value = false;
+        popoverRef.value?.hide();
         agentsStore.openAgentDialog(props.projectId, kind, true);
     }
 </script>

@@ -38,7 +38,7 @@ export const RESERVED_APP_SHORTCUTS: ReadonlySet<string> = new Set([
 
 export interface ShortcutToastNotice {
     title: string;
-    severity: 'info' | 'warn' | 'error' | 'success';
+    severity: 'info' | 'warning' | 'error' | 'success';
 }
 
 type ToastListener = (notice: ShortcutToastNotice) => void;
@@ -54,7 +54,7 @@ export function onAgentShortcutToast(listener: ToastListener): () => void {
 
 function showAgentShortcutToast(
     title: string,
-    severity: 'info' | 'warn' | 'error' | 'success'
+    severity: 'info' | 'warning' | 'error' | 'success'
 ): void {
     const notice: ShortcutToastNotice = { title, severity };
     for (const cb of toastListeners) {
@@ -66,12 +66,7 @@ function showAgentShortcutToast(
     }
     void import('@maxvue/max-components-ui')
         .then((mod) => {
-            const toastObj = (
-                mod as {
-                    Toast?: { show?: (opts: { title: string; severity: string }) => void };
-                }
-            ).Toast;
-            toastObj?.show?.(notice);
+            mod.Toast?.show?.(notice);
         })
         .catch(() => {
             // Ignora quando o container de Toast não está montado no ambiente de teste.
@@ -292,7 +287,7 @@ export function useAgentShortcuts(options?: UseAgentShortcutsOptions): UseAgentS
         if (info && !info.installation.installed) {
             const notice: ShortcutToastNotice = {
                 title: 'Agente não encontrado no PATH',
-                severity: 'warn'
+                severity: 'warning'
             };
             lastToast.value = notice;
             showAgentShortcutToast(notice.title, notice.severity);

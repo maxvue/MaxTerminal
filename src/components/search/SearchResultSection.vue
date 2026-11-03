@@ -13,15 +13,14 @@
         </div>
 
         <div v-if="props.section.nextCursor" class="search-result-section__footer">
-            <button type="button" class="search-result-section__more" :disabled="props.loadingMore" :aria-label="`Carregar mais em ${sectionLabel}`" @click="emit('load-more', props.section.source)">
-                {{ props.loadingMore ? 'Carregando…' : 'Carregar mais' }}
-            </button>
+            <MaxButton :label="props.loadingMore ? 'Carregando…' : 'Carregar mais'" variant="ghost" size="small" class="search-result-section__more" :disabled="props.loadingMore" :loading="props.loadingMore" :aria-label="`Carregar mais em ${sectionLabel}`" @click="emit('load-more', props.section.source)" />
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
     import { computed } from 'vue';
+    import { MaxButton } from '@maxvue/max-components-ui';
     import SearchResultItem from '@/components/search/SearchResultItem.vue';
     import type { SearchNavigationAction } from '@/composables/search/useSearchNavigation';
     import { SEARCH_SECTION_LABELS } from '@/stores/search';

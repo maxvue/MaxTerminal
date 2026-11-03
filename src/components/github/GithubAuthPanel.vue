@@ -1,56 +1,49 @@
 <template>
-    <div v-if="props.open" class="github-auth-panel" role="dialog" aria-modal="true" aria-label="Autenticação e Transporte GitHub">
-        <div class="github-auth-panel__card">
-            <header class="github-auth-panel__header">
-                <h3 class="github-auth-panel__title">Autenticação GitHub (`gh` CLI &amp; REST API)</h3>
-                <button type="button" class="github-auth-panel__close" aria-label="Fechar painel de autenticação" @click="emit('close')">
-                    <MaxIcon icon="lucide:x" />
-                </button>
-            </header>
-            <div class="github-auth-panel__body">
-                <div class="github-auth-panel__row">
-                    <span class="github-auth-panel__label">GitHub CLI (`gh`):</span>
-                    <span class="github-auth-panel__value">
-                        <template v-if="props.status?.ghCli.installed">
-                            Instalado ({{ props.status.ghCli.version || 'versão detectada' }}) —
-                            <strong>{{ props.status.ghCli.authenticated ? `Autenticado (${props.status.ghCli.accountLogin || 'ativo'})` : 'Não autenticado (`gh auth login`)' }}</strong>
-                        </template>
-                        <template v-else>Não detectado no PATH</template>
-                    </span>
-                </div>
-                <div class="github-auth-panel__row">
-                    <span class="github-auth-panel__label">Transporte preferencial:</span>
-                    <span class="github-auth-panel__value">{{ preferredTransportLabel }}</span>
-                </div>
-                <div class="github-auth-panel__row">
-                    <span class="github-auth-panel__label">Token REST API:</span>
-                    <span class="github-auth-panel__value">
-                        <template v-if="props.status?.restToken.configured">
-                            Configurado ({{ props.status.restToken.maskedHint || 'mascarado' }})
-                        </template>
-                        <template v-else>Não configurado</template>
-                    </span>
-                </div>
-                <div v-if="props.status?.rateLimit" class="github-auth-panel__row">
-                    <span class="github-auth-panel__label">Rate Limit REST:</span>
-                    <span class="github-auth-panel__value">{{ props.status.rateLimit.remaining }} / {{ props.status.rateLimit.limit }} restantes</span>
-                </div>
-                <form class="github-auth-panel__form" @submit.prevent="onSaveToken">
-                    <label class="github-auth-panel__input-label" for="github-pat-input">Configurar Personal Access Token (fallback REST):</label>
-                    <div class="github-auth-panel__input-group">
-                        <input id="github-pat-input" v-model="tokenInput" type="password" class="github-auth-panel__input" placeholder="ghp_... ou github_pat_..." autocomplete="off">
-                        <button type="submit" class="github-auth-panel__btn github-auth-panel__btn--primary" :disabled="!tokenInput.trim() || saving">Salvar Token</button>
-                        <button v-if="props.status?.restToken.configured" type="button" class="github-auth-panel__btn github-auth-panel__btn--danger" :disabled="saving" @click="onClearToken">Remover</button>
-                    </div>
-                </form>
-                <p v-if="errorMessage" class="github-auth-panel__error" role="alert">{{ errorMessage }}</p>
+    <MaxModal :visible="props.open" title="Autenticação GitHub (`gh` CLI & REST API)" :no-button="true" max-width="36rem" class="github-auth-panel" @update:visible="emit('close')">
+        <div class="github-auth-panel__body">
+            <div class="github-auth-panel__row">
+                <span class="github-auth-panel__label">GitHub CLI (`gh`):</span>
+                <span class="github-auth-panel__value">
+                    <template v-if="props.status?.ghCli.installed">
+                        Instalado ({{ props.status.ghCli.version || 'versão detectada' }}) —
+                        <strong>{{ props.status.ghCli.authenticated ? `Autenticado (${props.status.ghCli.accountLogin || 'ativo'})` : 'Não autenticado (`gh auth login`)' }}</strong>
+                    </template>
+                    <template v-else>Não detectado no PATH</template>
+                </span>
             </div>
+            <div class="github-auth-panel__row">
+                <span class="github-auth-panel__label">Transporte preferencial:</span>
+                <span class="github-auth-panel__value">{{ preferredTransportLabel }}</span>
+            </div>
+            <div class="github-auth-panel__row">
+                <span class="github-auth-panel__label">Token REST API:</span>
+                <span class="github-auth-panel__value">
+                    <template v-if="props.status?.restToken.configured">
+                        Configurado ({{ props.status.restToken.maskedHint || 'mascarado' }})
+                    </template>
+                    <template v-else>Não configurado</template>
+                </span>
+            </div>
+            <div v-if="props.status?.rateLimit" class="github-auth-panel__row">
+                <span class="github-auth-panel__label">Rate Limit REST:</span>
+                <span class="github-auth-panel__value">{{ props.status.rateLimit.remaining }} / {{ props.status.rateLimit.limit }} restantes</span>
+            </div>
+            <form class="github-auth-panel__form" @submit.prevent="onSaveToken">
+                <label class="github-auth-panel__input-label" for="github-pat-input">Configurar Personal Access Token (fallback REST):</label>
+                <div class="github-auth-panel__input-group">
+                    <input id="github-pat-input" v-model="tokenInput" type="password" class="github-auth-panel__input" placeholder="ghp_... ou github_pat_..." autocomplete="off">
+                    <MaxButton type="submit" label="Salvar Token" variant="primary" class="github-auth-panel__btn github-auth-panel__btn--primary" :disabled="!tokenInput.trim() || saving" />
+                    <MaxButton v-if="props.status?.restToken.configured" type="button" label="Remover" variant="danger" class="github-auth-panel__btn github-auth-panel__btn--danger" :disabled="saving" @click="onClearToken" />
+                </div>
+            </form>
+            <p v-if="errorMessage" class="github-auth-panel__error" role="alert">{{ errorMessage }}</p>
         </div>
-    </div>
+    </MaxModal>
 </template>
 
 <script setup lang="ts">
     import { computed, ref } from 'vue';
+    import { MaxButton, MaxModal } from '@maxvue/max-components-ui';
     import type { GithubAuthStatus } from '@/types/bindings';
 
     export interface GithubAuthPanelProps {

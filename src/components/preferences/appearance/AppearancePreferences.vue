@@ -1,16 +1,11 @@
 <template>
     <div class="prefs-appearance">
-        <div v-if="errorMsg" class="prefs-appearance__error" role="alert">
-            {{ errorMsg }}
-        </div>
+        <MaxAlert v-if="errorMsg" :message="errorMsg" severity="error" class="prefs-appearance__error" />
 
         <section class="prefs-appearance__group">
             <div class="prefs-appearance__header">
                 <h3 class="prefs-appearance__heading">Pré-visualização ao Vivo</h3>
-                <label class="prefs-appearance__checkbox">
-                    <input type="checkbox" :checked="themeStore.appearance.followSystem" @change="onFollowSystemToggle">
-                    <span>Sincronizar modo claro/escuro com o sistema operacional</span>
-                </label>
+                <MaxInputCheckbox :model-value="themeStore.appearance.followSystem" label="Sincronizar modo claro/escuro com o sistema operacional" @update:model-value="onFollowSystemToggle" />
             </div>
             <ThemePreview :resolved="themeStore.effectiveResolved" :appearance="themeStore.appearance" />
         </section>
@@ -19,13 +14,9 @@
             <div class="prefs-appearance__header">
                 <h3 class="prefs-appearance__heading">Catálogo de Temas e Importador Tabby</h3>
                 <div class="prefs-appearance__import-bar">
-                    <input v-model="importPathInput" type="text" class="prefs-appearance__input" placeholder="Caminho de arquivo (.yaml/.json) ou pasta..." aria-label="Caminho para importar tema">
-                    <button type="button" class="prefs-appearance__btn" :disabled="!importPathInput.trim()" @click="onImportFileClick">
-                        Importar Arquivo
-                    </button>
-                    <button type="button" class="prefs-appearance__btn prefs-appearance__btn--secondary" :disabled="!importPathInput.trim()" @click="onImportDirClick">
-                        Importar Pasta
-                    </button>
+                    <MaxInputText v-model="importPathInput" placeholder="Caminho de arquivo (.yaml/.json) ou pasta..." aria-label="Caminho para importar tema" class="prefs-appearance__input" />
+                    <MaxButton type="button" label="Importar Arquivo" :disabled="!importPathInput.trim()" @click="onImportFileClick" />
+                    <MaxButton type="button" label="Importar Pasta" variant="outlined" :disabled="!importPathInput.trim()" @click="onImportDirClick" />
                 </div>
             </div>
 
@@ -36,11 +27,9 @@
             <div v-if="exportedSnippet" class="prefs-appearance__exported">
                 <div class="prefs-appearance__exported-header">
                     <span>YAML Exportado (Tabby)</span>
-                    <button type="button" class="prefs-appearance__btn prefs-appearance__btn--secondary" @click="exportedSnippet = null">
-                        Fechar
-                    </button>
+                    <MaxButton type="button" label="Fechar" variant="outlined" size="small" @click="exportedSnippet = null" />
                 </div>
-                <textarea class="prefs-appearance__textarea" readonly :value="exportedSnippet" rows="6" aria-label="Conteúdo YAML exportado" />
+                <MaxCodeBlock :code="exportedSnippet" language="yaml" aria-label="Conteúdo YAML exportado" />
             </div>
         </section>
 
@@ -58,6 +47,7 @@
 
 <script setup lang="ts">
     import { onMounted, ref } from 'vue';
+    import { MaxAlert, MaxButton, MaxCodeBlock, MaxInputCheckbox, MaxInputText } from '@maxvue/max-components-ui';
     import ProjectThemeOverrides from '@/components/preferences/appearance/ProjectThemeOverrides.vue';
     import TerminalFontSettings from '@/components/preferences/appearance/TerminalFontSettings.vue';
     import ThemeImportReport from '@/components/preferences/appearance/ThemeImportReport.vue';
@@ -115,8 +105,8 @@
         }
     }
 
-    async function onFollowSystemToggle(ev: Event): Promise<void> {
-        const followSystem = (ev.target as HTMLInputElement).checked;
+    async function onFollowSystemToggle(val: unknown): Promise<void> {
+        const followSystem = typeof val === 'boolean' ? val : Boolean((val as { target?: HTMLInputElement })?.target?.checked);
         errorMsg.value = null;
         try {
             await themeStore.updateAppearance({ followSystem });

@@ -6,21 +6,20 @@
                 <p class="agent-settings-panel__subtitle">Configure atalhos dedicados, injeção de integração, StatusLine e consulte capacidades verificadas por versão.</p>
             </div>
             <div class="agent-settings-panel__header-actions">
-                <button type="button" class="agent-settings-panel__btn" :disabled="agentsStore.loading" data-testid="agent-refresh-btn" @click="onRefreshInstallations">
+                <MaxButton type="button" variant="secondary" :disabled="agentsStore.loading" data-testid="agent-refresh-btn" @click="onRefreshInstallations">
                     <MaxIcon icon="lucide:refresh-cw" />
                     <span>Redetectar CLIs</span>
-                </button>
-                <button type="button" class="agent-settings-panel__btn agent-settings-panel__btn--primary" :disabled="!draftSettings || saving" data-testid="agent-save-settings-btn" @click="onSave">
+                </MaxButton>
+                <MaxButton type="button" variant="primary" :disabled="!draftSettings || saving" :loading="saving" data-testid="agent-save-settings-btn" @click="onSave">
                     <MaxIcon icon="lucide:check" />
                     <span>{{ saving ? 'Salvando...' : 'Salvar Alterações' }}</span>
-                </button>
+                </MaxButton>
             </div>
         </header>
 
-        <div v-if="activeError" class="agent-settings-panel__error" role="alert" data-testid="agent-settings-error">
-            <MaxIcon icon="lucide:alert-circle" />
-            <span>{{ activeError }}</span>
-        </div>
+        <MaxAlert v-if="activeError" type="danger" role="alert" data-testid="agent-settings-error">
+            {{ activeError }}
+        </MaxAlert>
 
         <template v-if="draftSettings">
             <section class="agent-settings-panel__section">
@@ -117,6 +116,8 @@
 
 <script setup lang="ts">
     import { computed, onMounted, ref, watch } from 'vue';
+    import MaxAlert from '@maxvue/max-components-ui/components/MaxAlert';
+    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
     import { normalizeAccelerator as normalizeShortcutCombo } from '@/composables/useAgentShortcuts';
     import { useAgentsStore } from '@/stores/agents';
     import type { AgentKind, AgentsSettings_Serialize, CapabilitySupport } from '@/types/bindings';

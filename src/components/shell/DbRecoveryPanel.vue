@@ -2,7 +2,7 @@
     <section v-if="recoveryState" class="db-recovery-panel" role="alertdialog" aria-labelledby="db-recovery-title" aria-describedby="db-recovery-desc">
         <header class="db-recovery-panel__header">
             <h2 id="db-recovery-title" class="db-recovery-panel__title">Recuperação do banco de dados necessária</h2>
-            <span class="db-recovery-panel__code">{{ recoveryState.code }}</span>
+            <MaxTag :value="recoveryState.code" severity="danger" />
         </header>
 
         <p id="db-recovery-desc" class="db-recovery-panel__reason">{{ recoveryState.reason }}</p>
@@ -10,32 +10,23 @@
 
         <div v-if="recoveryState.available_backups.length > 0" class="db-recovery-panel__backups">
             <label for="db-backup-select" class="db-recovery-panel__label">Backups disponíveis para restauração:</label>
-            <select id="db-backup-select" v-model="selectedBackup" class="db-recovery-panel__select" :disabled="settingsStore.loading">
-                <option v-for="b in recoveryState.available_backups" :key="b.fileName" :value="b.fileName">
-                    {{ b.fileName }} ({{ formatBytes(b.sizeBytes) }})
-                </option>
-            </select>
+            <MaxInputSelect id="db-backup-select" v-model="selectedBackup" :options="backupOptions" option-value="value" option-label="label" option-name="label" :disabled="settingsStore.loading" class="db-recovery-panel__select" />
         </div>
-        <p v-else class="db-recovery-panel__empty-backups">Nenhum backup anterior encontrado no diretório local.</p>
+        <MaxEmptyDiv v-else message="Nenhum backup anterior encontrado no diretório local." class="db-recovery-panel__empty-backups" />
 
-        <p v-if="errorMessage" class="db-recovery-panel__error" role="alert">{{ errorMessage }}</p>
+        <MaxAlert v-if="errorMessage" severity="danger" :message="errorMessage" class="db-recovery-panel__error" />
 
         <footer class="db-recovery-panel__actions">
-            <button type="button" class="db-recovery-panel__btn db-recovery-panel__btn--secondary" :disabled="settingsStore.loading" @click="onRetry">
-                Tentar reabrir
-            </button>
-            <button v-if="selectedBackup" type="button" class="db-recovery-panel__btn db-recovery-panel__btn--primary" :disabled="settingsStore.loading" @click="onRestore">
-                Restaurar backup selecionado
-            </button>
-            <button type="button" class="db-recovery-panel__btn db-recovery-panel__btn--danger" :disabled="settingsStore.loading" @click="onReset">
-                Recriar banco limpo (preservar cópia em quarentena)
-            </button>
+            <MaxButton type="button" label="Tentar reabrir" variant="outlined" data-testid="btn-recovery-retry" :disabled="settingsStore.loading" @click="onRetry" />
+            <MaxButton v-if="selectedBackup" type="button" label="Restaurar backup selecionado" severity="primary" data-testid="btn-recovery-restore" :disabled="settingsStore.loading" @click="onRestore" />
+            <MaxButton type="button" label="Recriar banco limpo (preservar cópia em quarentena)" severity="danger" data-testid="btn-recovery-reset" :disabled="settingsStore.loading" @click="onReset" />
         </footer>
     </section>
 </template>
 
 <script setup lang="ts">
     import { computed, ref, watchEffect } from 'vue';
+    import { MaxAlert, MaxButton, MaxEmptyDiv, MaxInputSelect, MaxTag } from '@maxvue/max-components-ui';
     import { useIpcError } from '@/composables/useIpcError';
     import { useSettingsStore } from '@/stores/settings';
 
@@ -48,6 +39,13 @@
     });
 
     const selectedBackup = ref<string>('');
+
+    const backupOptions = computed(() => {
+        return (recoveryState.value?.available_backups ?? []).map((b) => ({
+            label: `${b.fileName} (${formatBytes(b.sizeBytes)})`,
+            value: b.fileName
+        }));
+    });
 
     watchEffect(() => {
         const firstBackup = recoveryState.value?.available_backups[0];

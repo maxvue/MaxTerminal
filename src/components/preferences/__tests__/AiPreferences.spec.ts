@@ -33,8 +33,8 @@ describe('AiPreferences.vue (Fase 12 — Unidade 05)', () => {
 
         expect(wrapper.text()).toContain('Integração com MaxAiManager');
 
-        await wrapper.find('[data-testid="input-ai-base-url"]').setValue('http://127.0.0.1:8899');
-        await wrapper.find('[data-testid="input-rag-topk"]').setValue('8');
+        await wrapper.find('[data-testid="input-ai-base-url"] input').setValue('http://127.0.0.1:8899');
+        await wrapper.find('[data-testid="input-rag-topk"] input').setValue('8');
         await wrapper.find('[data-testid="btn-save-ai-settings"]').trigger('click');
         await flushPromises();
 

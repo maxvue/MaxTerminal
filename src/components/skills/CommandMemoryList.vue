@@ -2,7 +2,7 @@
     <div class="command-memory-list" data-testid="command-memory-list">
         <header class="command-memory-list__header">
             <div class="command-memory-list__search">
-                <MaxIcon icon="lucide:history" />
+                <MaxIcon icon="lucide:history" :size="0.875" />
                 <input v-model="filterPrefix" type="text" class="command-memory-list__input" placeholder="Filtrar comandos memorizados..." aria-label="Filtrar comandos memorizados" data-testid="memory-filter-input">
             </div>
             <div class="command-memory-list__controls">
@@ -10,10 +10,9 @@
                     <input v-model="includeHidden" type="checkbox" data-testid="memory-include-hidden" @change="onReload">
                     <span>Exibir ocultos</span>
                 </label>
-                <button type="button" class="command-memory-list__btn" data-testid="memory-rebuild-btn" @click="onRebuild">
-                    <MaxIcon icon="lucide:refresh-cw" />
+                <MaxButton type="button" size="sm" variant="secondary" icon="lucide:refresh-cw" data-testid="memory-rebuild-btn" @click="onRebuild">
                     <span>Reconstruir</span>
-                </button>
+                </MaxButton>
             </div>
         </header>
 
@@ -28,15 +27,9 @@
                     </span>
                 </button>
                 <div class="command-memory-list__actions">
-                    <button type="button" class="command-memory-list__action-btn" :class="{ 'command-memory-list__action-btn--active': entry.pinned }" :aria-label="entry.pinned ? 'Desafixar comando' : 'Fixar comando'" :data-testid="`memory-pin-${entry.command}`" @click="onTogglePin(entry)">
-                        <MaxIcon icon="lucide:pin" />
-                    </button>
-                    <button type="button" class="command-memory-list__action-btn" :class="{ 'command-memory-list__action-btn--active': entry.hidden }" :aria-label="entry.hidden ? 'Reexibir comando' : 'Ocultar comando'" :data-testid="`memory-hide-${entry.command}`" @click="onToggleHide(entry)">
-                        <MaxIcon :icon="entry.hidden ? 'lucide:eye' : 'lucide:eye-off'" />
-                    </button>
-                    <button type="button" class="command-memory-list__action-btn command-memory-list__action-btn--danger" aria-label="Esquecer comando permanentemente" :data-testid="`memory-forget-${entry.command}`" @click="onForget(entry)">
-                        <MaxIcon icon="lucide:trash-2" />
-                    </button>
+                    <MaxIconButton icon="lucide:pin" :size="0.75" class="command-memory-list__action-btn" :class="{ 'command-memory-list__action-btn--active': entry.pinned }" :aria-label="entry.pinned ? 'Desafixar comando' : 'Fixar comando'" :data-testid="`memory-pin-${entry.command}`" @click="onTogglePin(entry)" />
+                    <MaxIconButton :icon="entry.hidden ? 'lucide:eye' : 'lucide:eye-off'" :size="0.75" class="command-memory-list__action-btn" :class="{ 'command-memory-list__action-btn--active': entry.hidden }" :aria-label="entry.hidden ? 'Reexibir comando' : 'Ocultar comando'" :data-testid="`memory-hide-${entry.command}`" @click="onToggleHide(entry)" />
+                    <MaxIconButton icon="lucide:trash-2" :size="0.75" class="command-memory-list__action-btn command-memory-list__action-btn--danger" aria-label="Esquecer comando permanentemente" :data-testid="`memory-forget-${entry.command}`" @click="onForget(entry)" />
                 </div>
             </li>
         </ul>
@@ -46,6 +39,9 @@
 
 <script setup lang="ts">
     import { computed, onMounted, ref, watch } from 'vue';
+    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
+    import MaxIconButton from '@maxvue/max-components-ui/components/MaxIconButton';
+    import MaxIcon from '@maxvue/max-components-ui/components/MaxIcon';
     import { useCommandMemorySuggestions } from '@/composables/useCommandMemorySuggestions';
     import { useSkillsStore } from '@/stores/skills';
     import type { MemoryEntry_Serialize, PaneId, ProjectId } from '@/types/bindings';

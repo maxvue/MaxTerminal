@@ -12,10 +12,7 @@
                     exit {{ block.exitCode }}
                 </span>
                 <div class="block-actions">
-                    <button v-for="act in actions" :key="act.id" type="button" class="block-action-btn" :title="act.label" :aria-label="act.label" @click="emit('action', act.id)">
-                        <MaxIcon :icon="act.icon" class="action-icon" />
-                        <span class="action-label">{{ act.label }}</span>
-                    </button>
+                    <MaxButton v-for="act in actions" :key="act.id" :label="act.label" :icon="act.icon" variant="ghost" size="small" class="block-action-btn" :title="act.label" :aria-label="act.label" @click="emit('action', act.id)" />
                     <InspectButton :block="block" />
                     <slot name="actions" :block="block" />
                 </div>
@@ -27,7 +24,7 @@
 
 <script setup lang="ts">
     import { computed } from 'vue';
-    import MaxIcon from '@maxvue/max-components-ui/components/MaxIcon';
+    import { MaxButton } from '@maxvue/max-components-ui';
     import InlineDiagnosis from '@/components/ai/InlineDiagnosis.vue';
     import InspectButton from '@/components/bridge/InspectButton.vue';
     import CommandBlockStatus from '@/components/shell/CommandBlockStatus.vue';

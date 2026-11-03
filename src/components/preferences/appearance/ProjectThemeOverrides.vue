@@ -4,9 +4,7 @@
             Associe opcionalmente um esquema de cores específico para cada projeto. Ao selecionar o projeto na barra lateral, o MaxTerminal aplicará automaticamente o tema configurado.
         </p>
 
-        <div v-if="props.projects.length === 0" class="project-overrides__empty">
-            Nenhum projeto cadastrado até o momento.
-        </div>
+        <MaxEmptyDiv v-if="props.projects.length === 0" message="Nenhum projeto cadastrado até o momento." class="project-overrides__empty" />
 
         <div v-else class="project-overrides__list">
             <div v-for="proj in props.projects" :key="proj.id" class="project-overrides__row">
@@ -14,15 +12,15 @@
                     <MaxIcon :icon="proj.icon" class="project-overrides__icon" />
                     <span class="project-overrides__title">{{ proj.title }}</span>
                 </div>
-                <MaxInputSelect :model-value="props.overrides[proj.id] ?? ''" :options="themeOptions" option-label="label" option-value="value" option-name="label" :disabled="props.disabled" :aria-label="`Tema para o projeto ${proj.title}`" class="project-overrides__select" @change="onProjectThemeChange(proj.id, $event)" />
+                <MaxInputSelect :ref="(el) => setSelectRef(proj.id, el)" :model-value="props.overrides[proj.id] ?? ''" :options="themeOptions" option-label="label" option-value="value" option-name="label" :disabled="props.disabled" :aria-label="`Tema para o projeto ${proj.title}`" class="project-overrides__select" @change="onProjectThemeChange(proj.id, $event)" />
             </div>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-    import { computed } from 'vue';
-    import MaxInputSelect from '@maxvue/max-components-ui/components/MaxInputSelect';
+    import { computed, ref, watch } from 'vue';
+    import { MaxEmptyDiv, MaxIcon, MaxInputSelect } from '@maxvue/max-components-ui';
     import type { Project_Serialize } from '@/types/bindings';
     import type { ThemeId, ThemeScope, ThemeSummary } from '@/types/theme';
 
@@ -39,7 +37,26 @@
 
     const emit = defineEmits<{
         change: [id: ThemeId, scope: ThemeScope];
+        'dropdown-change': [open: boolean];
     }>();
+
+    const selectRefs = ref<Record<string, { isOpen?: boolean } | null>>({});
+
+    function setSelectRef(id: string, el: unknown): void {
+        selectRefs.value[id] = el as { isOpen?: boolean } | null;
+    }
+
+    const hasAnyDropdownOpen = computed<boolean>(() => {
+        return Object.values(selectRefs.value).some((inst) => Boolean(inst?.isOpen));
+    });
+
+    watch(hasAnyDropdownOpen, (open) => {
+        emit('dropdown-change', open);
+    });
+
+    defineExpose({
+        hasAnyDropdownOpen
+    });
 
     const themeOptions = computed(() => [
         { label: 'Herdar tema global', value: '' },

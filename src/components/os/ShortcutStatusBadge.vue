@@ -1,13 +1,14 @@
 <template>
-    <button type="button" class="shortcut-badge" :class="`shortcut-badge--${variant}`" :title="tooltipText" aria-label="Status do atalho global e preferências do sistema" @click="onOpenPreferences">
+    <MaxButton type="button" class="shortcut-badge" :class="`shortcut-badge--${variant}`" :title="tooltipText" aria-label="Status do atalho global e preferências do sistema" variant="outlined" size="small" @click="onOpenPreferences">
         <span class="shortcut-badge__dot" />
         <span class="shortcut-badge__key">{{ acceleratorLabel }}</span>
         <span class="shortcut-badge__mode">{{ modeLabel }}</span>
-    </button>
+    </MaxButton>
 </template>
 
 <script setup lang="ts">
     import { computed } from 'vue';
+    import { MaxButton } from '@maxvue/max-components-ui';
     import { useWindowStore } from '@/stores/window';
 
     const windowStore = useWindowStore();

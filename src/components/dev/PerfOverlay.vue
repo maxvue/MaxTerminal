@@ -3,9 +3,9 @@
         <header class="perf-overlay__header">
             <span class="perf-overlay__title">Telemetria Dev</span>
             <div class="perf-overlay__actions">
-                <button type="button" class="perf-overlay__btn" data-testid="perf-refresh-btn" @click="refreshBackendSnapshot">Atualizar</button>
-                <button type="button" class="perf-overlay__btn" data-testid="perf-export-btn" @click="handleExport">Exportar JSON</button>
-                <button type="button" class="perf-overlay__btn" data-testid="perf-close-btn" @click="visible = false">Fechar</button>
+                <MaxButton label="Atualizar" variant="secondary" size="small" class="perf-overlay__btn" data-testid="perf-refresh-btn" @click="refreshBackendSnapshot" />
+                <MaxButton label="Exportar JSON" variant="secondary" size="small" class="perf-overlay__btn" data-testid="perf-export-btn" @click="handleExport" />
+                <MaxButton label="Fechar" variant="ghost" size="small" class="perf-overlay__btn" data-testid="perf-close-btn" @click="visible = false" />
             </div>
         </header>
 
@@ -51,6 +51,7 @@
 
 <script setup lang="ts">
     import { onBeforeUnmount, onMounted, ref } from 'vue';
+    import { MaxButton } from '@maxvue/max-components-ui';
     import { usePerfTelemetry } from '@/composables/dev/usePerfTelemetry';
 
     const {

@@ -4,9 +4,7 @@
             <AppEmptyState v-if="appStore.status === 'error'" icon="mdi:alert-circle-outline" title="Falha ao inicializar o MaxTerminal" :description="errorDescription">
                 <div flex flex-col items-center gap-2>
                     <span v-if="errorCode" class="app-error-code" text-xs px-2 py-0.5 rounded>{{ errorCode }}</span>
-                    <button type="button" class="app-retry-btn" px-4 py-1.5 rounded text-sm font-medium cursor-pointer @click="handleRetry">
-                        Tentar novamente
-                    </button>
+                    <MaxButton type="button" class="app-retry-btn" label="Tentar novamente" severity="primary" @click="handleRetry" />
                 </div>
             </AppEmptyState>
             <DbRecoveryPanel v-else-if="settingsStore.isRecoveryRequired" />
@@ -19,10 +17,12 @@
             <PerfOverlay />
         </template>
     </AppShell>
+    <MaxToast />
 </template>
 
 <script setup lang="ts">
     import { computed, onBeforeUnmount, onMounted } from 'vue';
+    import { MaxButton, MaxToast } from '@maxvue/max-components-ui';
     import { DevTerminalPlaygroundComponent, isDevTerminalPlaygroundRoute } from '@/app/router';
     import PerfOverlay from '@/components/dev/PerfOverlay.vue';
     import AppLayout from '@/components/layout/AppLayout.vue';

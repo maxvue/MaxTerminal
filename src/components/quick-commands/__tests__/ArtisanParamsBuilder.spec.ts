@@ -1,9 +1,13 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { mount } from '@vue/test-utils';
+import { createPinia, setActivePinia } from 'pinia';
 import ArtisanParamsBuilder from '../ArtisanParamsBuilder.vue';
 import type { ArtisanParam } from '@/types/bindings';
 
 describe('ArtisanParamsBuilder', () => {
+    beforeEach(() => {
+        setActivePinia(createPinia());
+    });
     it('adiciona, move e remove parametros emitindo update:modelValue', async () => {
         const initial: ArtisanParam[] = [
             {

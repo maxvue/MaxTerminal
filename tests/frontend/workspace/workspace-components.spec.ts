@@ -19,7 +19,8 @@ describe('Componentes do Workspace de Abas e Sessões (Fase 07)', () => {
             },
             global: {
                 stubs: {
-                    MaxIcon: true
+                    MaxIcon: true,
+                    teleport: true
                 }
             }
         });
@@ -52,7 +53,8 @@ describe('Componentes do Workspace de Abas e Sessões (Fase 07)', () => {
             },
             global: {
                 stubs: {
-                    MaxIcon: true
+                    MaxIcon: true,
+                    teleport: true
                 }
             }
         });
@@ -73,7 +75,8 @@ describe('Componentes do Workspace de Abas e Sessões (Fase 07)', () => {
             },
             global: {
                 stubs: {
-                    MaxIcon: true
+                    MaxIcon: true,
+                    teleport: true
                 }
             }
         });

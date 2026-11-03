@@ -5,7 +5,7 @@
                 <h3 class="ai-preferences__title">Integração com MaxAiManager</h3>
                 <p class="ai-preferences__subtitle">Comando por linguagem natural (@ / ?), diagnóstico rápido inline de falhas e consulta RAG.</p>
             </div>
-            <span class="ai-preferences__badge" :class="`is-${aiStore.indicator.color}`" data-testid="ai-prefs-status-badge">{{ aiStore.indicator.label }}</span>
+            <MaxTag :value="aiStore.indicator.label" :class="`is-${aiStore.indicator.color}`" data-testid="ai-prefs-status-badge" />
         </header>
 
         <div class="ai-preferences__grid">
@@ -14,7 +14,7 @@
                     <span class="ai-preferences__row-title">Ativar integração com MaxAiManager</span>
                     <span class="ai-preferences__row-desc">Habilita os gatilhos @ e ?, diagnóstico rápido inline e geração assistida.</span>
                 </div>
-                <input v-model="draft.enabled" type="checkbox" class="ai-preferences__checkbox" data-testid="toggle-ai-enabled">
+                <MaxInputCheckbox v-model="draft.enabled" data-testid="toggle-ai-enabled" />
             </label>
 
             <label class="ai-preferences__row">
@@ -22,7 +22,7 @@
                     <span class="ai-preferences__row-title">URL do Gateway MaxAiManager</span>
                     <span class="ai-preferences__row-desc">Endereço HTTP local do gateway (ex.: http://127.0.0.1:8787).</span>
                 </div>
-                <input v-model="baseUrlInput" type="text" class="ai-preferences__input" placeholder="http://127.0.0.1:8787" data-testid="input-ai-base-url">
+                <MaxInputText v-model="baseUrlInput" placeholder="http://127.0.0.1:8787" data-testid="input-ai-base-url" />
             </label>
 
             <label class="ai-preferences__row">
@@ -30,7 +30,7 @@
                     <span class="ai-preferences__row-title">Permitir host fora de loopback</span>
                     <span class="ai-preferences__row-desc">Autoriza conexão com um gateway MaxAiManager em outro host da rede local.</span>
                 </div>
-                <input v-model="draft.allowRemote" type="checkbox" class="ai-preferences__checkbox" data-testid="toggle-ai-allow-remote">
+                <MaxInputCheckbox v-model="draft.allowRemote" data-testid="toggle-ai-allow-remote" />
             </label>
         </div>
 
@@ -51,7 +51,7 @@
                     <span class="ai-preferences__row-title">Diagnóstico rápido inline automático</span>
                     <span class="ai-preferences__row-desc">Exibe causa resumida e sugestão de comando corretivo ao lado do botão Inspecionar.</span>
                 </div>
-                <input v-model="draft.diagnosis.enabled" type="checkbox" class="ai-preferences__checkbox" data-testid="toggle-diagnosis-enabled">
+                <MaxInputCheckbox v-model="draft.diagnosis.enabled" data-testid="toggle-diagnosis-enabled" />
             </label>
 
             <label class="ai-preferences__row">
@@ -59,7 +59,7 @@
                     <span class="ai-preferences__row-title">Atraso de debounce do diagnóstico (ms)</span>
                     <span class="ai-preferences__row-desc">Tempo de espera após a falha do comando antes de consultar o gateway.</span>
                 </div>
-                <input v-model.number="draft.diagnosis.debounceMs" type="number" min="0" max="10000" class="ai-preferences__input is-narrow" data-testid="input-diagnosis-debounce">
+                <MaxInputNumber v-model="draft.diagnosis.debounceMs" :min="0" :max="10000" class="is-narrow" data-testid="input-diagnosis-debounce" />
             </label>
 
             <label class="ai-preferences__row">
@@ -67,7 +67,7 @@
                     <span class="ai-preferences__row-title">Quantidade de trechos RAG (topK)</span>
                     <span class="ai-preferences__row-desc">Número máximo de resultados retornados por consulta de documentação (1 a 20).</span>
                 </div>
-                <input v-model.number="draft.rag.topK" type="number" min="1" max="20" class="ai-preferences__input is-narrow" data-testid="input-rag-topk">
+                <MaxInputNumber v-model="draft.rag.topK" :min="1" :max="20" class="is-narrow" data-testid="input-rag-topk" />
             </label>
 
             <label class="ai-preferences__row">
@@ -75,7 +75,7 @@
                     <span class="ai-preferences__row-title">Incluir cauda de saída no contexto</span>
                     <span class="ai-preferences__row-desc">Envia as últimas linhas sanitizadas do comando anterior nas traduções @ e ?.</span>
                 </div>
-                <input v-model="draft.context.includeOutputTail" type="checkbox" class="ai-preferences__checkbox" data-testid="toggle-include-output-tail">
+                <MaxInputCheckbox v-model="draft.context.includeOutputTail" data-testid="toggle-include-output-tail" />
             </label>
 
             <label class="ai-preferences__row">
@@ -83,43 +83,28 @@
                     <span class="ai-preferences__row-title">Salvar histórico sanitizado de prompts</span>
                     <span class="ai-preferences__row-desc">Armazena interações redigidas de segredos no SQLite local.</span>
                 </div>
-                <input v-model="draft.saveHistory" type="checkbox" class="ai-preferences__checkbox" data-testid="toggle-save-history">
+                <MaxInputCheckbox v-model="draft.saveHistory" data-testid="toggle-save-history" />
             </label>
         </div>
 
-        <p v-if="feedbackMsg" class="ai-preferences__feedback" data-testid="ai-prefs-feedback">{{ feedbackMsg }}</p>
+        <MaxAlert v-if="feedbackMsg" :message="feedbackMsg" severity="info" data-testid="ai-prefs-feedback" class="ai-preferences__feedback" />
 
         <footer class="ai-preferences__footer">
             <div class="ai-preferences__maintenance">
-                <button type="button" class="ai-preferences__btn is-secondary" data-testid="btn-test-health" @click="onTestHealth">
-                    <MaxIcon icon="lucide:activity" />
-                    <span>Testar conexão</span>
-                </button>
-                <button type="button" class="ai-preferences__btn is-secondary" data-testid="btn-refresh-catalog" @click="onRefreshCatalog">
-                    <MaxIcon icon="lucide:refresh-cw" />
-                    <span>Atualizar catálogo</span>
-                </button>
-                <button type="button" class="ai-preferences__btn is-secondary" data-testid="btn-clear-cache" @click="onClearCache">
-                    <MaxIcon icon="lucide:eraser" />
-                    <span>Limpar cache</span>
-                </button>
-                <button type="button" class="ai-preferences__btn is-secondary" data-testid="btn-clear-history" @click="onClearHistory">
-                    <MaxIcon icon="lucide:trash-2" />
-                    <span>Limpar histórico</span>
-                </button>
+                <MaxButton type="button" label="Testar conexão" icon="lucide:activity" variant="outlined" data-testid="btn-test-health" @click="onTestHealth" />
+                <MaxButton type="button" label="Atualizar catálogo" icon="lucide:refresh-cw" variant="outlined" data-testid="btn-refresh-catalog" @click="onRefreshCatalog" />
+                <MaxButton type="button" label="Limpar cache" icon="lucide:eraser" variant="outlined" data-testid="btn-clear-cache" @click="onClearCache" />
+                <MaxButton type="button" label="Limpar histórico" icon="lucide:trash-2" variant="outlined" data-testid="btn-clear-history" @click="onClearHistory" />
             </div>
 
-            <button type="button" class="ai-preferences__btn is-primary" data-testid="btn-save-ai-settings" @click="onSave">
-                <MaxIcon icon="lucide:check" />
-                <span>Salvar preferências</span>
-            </button>
+            <MaxButton type="button" label="Salvar preferências" icon="lucide:check" severity="primary" data-testid="btn-save-ai-settings" @click="onSave" />
         </footer>
     </section>
 </template>
 
 <script setup lang="ts">
     import { computed, ref, watch } from 'vue';
-    import MaxIcon from '@maxvue/max-components-ui/components/MaxIcon';
+    import { MaxAlert, MaxButton, MaxInputCheckbox, MaxInputNumber, MaxInputText, MaxTag } from '@maxvue/max-components-ui';
     import HarnessPicker from '@/components/ai/HarnessPicker.vue';
     import { DEFAULT_AI_SETTINGS, useAiStore } from '@/stores/ai';
     import type { AiSelection_Serialize, AiSettings_Serialize } from '@/types/bindings';

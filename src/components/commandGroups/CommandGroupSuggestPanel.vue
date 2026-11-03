@@ -7,18 +7,9 @@
             <textarea v-model="goalText" rows="3" class="group-suggest-panel__textarea" data-testid="suggest-goal-input" placeholder="Ex.: Subir servidor Vite, fila Horizon e acompanhar logs em desenvolvimento" :disabled="loading" />
 
             <div class="group-suggest-panel__actions">
-                <button type="button" class="group-suggest-panel__btn group-suggest-panel__btn--primary" data-testid="btn-suggest-ai" :disabled="loading || goalText.trim().length === 0" @click="onRequestSuggestion">
-                    <MaxIcon icon="lucide:sparkles" />
-                    <span>{{ loading ? 'Gerando sugestão…' : 'Sugerir com IA' }}</span>
-                </button>
-                <button v-if="loading" type="button" class="group-suggest-panel__btn group-suggest-panel__btn--ghost" data-testid="btn-cancel-suggest-ai" @click="onCancelSuggestion">
-                    <MaxIcon icon="lucide:x" />
-                    <span>Cancelar</span>
-                </button>
-                <button v-if="hasUndoSnapshot" type="button" class="group-suggest-panel__btn group-suggest-panel__btn--ghost" data-testid="btn-undo-suggestion" @click="emit('undo-suggestion')">
-                    <MaxIcon icon="lucide:undo-2" />
-                    <span>Desfazer aplicação</span>
-                </button>
+                <MaxButton :label="loading ? 'Gerando sugestão…' : 'Sugerir com IA'" icon="lucide:sparkles" variant="primary" class="group-suggest-panel__btn group-suggest-panel__btn--primary" data-testid="btn-suggest-ai" :disabled="loading || goalText.trim().length === 0" :loading="loading" @click="onRequestSuggestion" />
+                <MaxButton v-if="loading" label="Cancelar" icon="lucide:x" variant="ghost" class="group-suggest-panel__btn group-suggest-panel__btn--ghost" data-testid="btn-cancel-suggest-ai" @click="onCancelSuggestion" />
+                <MaxButton v-if="hasUndoSnapshot" label="Desfazer aplicação" icon="lucide:undo-2" variant="ghost" class="group-suggest-panel__btn group-suggest-panel__btn--ghost" data-testid="btn-undo-suggestion" @click="emit('undo-suggestion')" />
             </div>
 
             <p v-if="errorMessage" class="group-suggest-panel__error" role="alert" data-testid="suggest-error">{{ errorMessage }}</p>
@@ -36,10 +27,7 @@
                         <code>{{ item.command }}</code>
                     </li>
                 </ul>
-                <button type="button" class="group-suggest-panel__btn group-suggest-panel__btn--apply" data-testid="btn-apply-suggestion" @click="onApplyPreview">
-                    <MaxIcon icon="lucide:check" />
-                    <span>Aplicar ao rascunho</span>
-                </button>
+                <MaxButton label="Aplicar ao rascunho" icon="lucide:check" variant="primary" class="group-suggest-panel__btn group-suggest-panel__btn--apply" data-testid="btn-apply-suggestion" @click="onApplyPreview" />
             </div>
         </div>
 
@@ -58,6 +46,7 @@
 
 <script setup lang="ts">
     import { computed, ref, watch } from 'vue';
+    import { MaxButton } from '@maxvue/max-components-ui';
     import { createGroupRequestId } from '@/composables/commandGroups/useCommandGroupRun';
     import { aiIpc } from '@/ipc/ai';
     import { isMtIpcError } from '@/ipc/core';

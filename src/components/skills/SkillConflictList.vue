@@ -5,16 +5,16 @@
             <div v-for="item in props.conflicts" :key="item.skill" class="skill-conflict-list__item" :data-testid="`skill-conflict-${item.skill}`">
                 <div class="skill-conflict-list__info">
                     <div class="skill-conflict-list__name-row">
-                        <MaxIcon icon="lucide:alert-triangle" />
+                        <MaxIcon icon="lucide:alert-triangle" :size="0.875" />
                         <strong>{{ item.skill }}</strong>
                         <span class="skill-conflict-list__dest">{{ item.dest }}</span>
                     </div>
                     <p class="skill-conflict-list__reason">{{ formatConflictReason(item.conflict) }}</p>
                 </div>
                 <div class="skill-conflict-list__actions" role="radiogroup" :aria-label="`Resolução para ${item.skill}`">
-                    <button type="button" class="skill-conflict-list__btn" :class="{ 'skill-conflict-list__btn--active': resolutionFor(item.skill) === 'keep' }" :data-testid="`resolve-keep-${item.skill}`" @click="setResolution(item.skill, 'keep')">Manter atual</button>
-                    <button type="button" class="skill-conflict-list__btn" :class="{ 'skill-conflict-list__btn--active': resolutionFor(item.skill) === 'overwrite' }" :data-testid="`resolve-overwrite-${item.skill}`" @click="setResolution(item.skill, 'overwrite')">Sobrescrever com backup</button>
-                    <button type="button" class="skill-conflict-list__btn" :class="{ 'skill-conflict-list__btn--active': resolutionFor(item.skill) === 'adopt' }" :data-testid="`resolve-adopt-${item.skill}`" @click="setResolution(item.skill, 'adopt')">Adotar</button>
+                    <MaxButton type="button" size="sm" :variant="resolutionFor(item.skill) === 'keep' ? 'primary' : 'secondary'" class="skill-conflict-list__btn" :class="{ 'skill-conflict-list__btn--active': resolutionFor(item.skill) === 'keep' }" :data-testid="`resolve-keep-${item.skill}`" @click="setResolution(item.skill, 'keep')">Manter atual</MaxButton>
+                    <MaxButton type="button" size="sm" :variant="resolutionFor(item.skill) === 'overwrite' ? 'primary' : 'secondary'" class="skill-conflict-list__btn" :class="{ 'skill-conflict-list__btn--active': resolutionFor(item.skill) === 'overwrite' }" :data-testid="`resolve-overwrite-${item.skill}`" @click="setResolution(item.skill, 'overwrite')">Sobrescrever com backup</MaxButton>
+                    <MaxButton type="button" size="sm" :variant="resolutionFor(item.skill) === 'adopt' ? 'primary' : 'secondary'" class="skill-conflict-list__btn" :class="{ 'skill-conflict-list__btn--active': resolutionFor(item.skill) === 'adopt' }" :data-testid="`resolve-adopt-${item.skill}`" @click="setResolution(item.skill, 'adopt')">Adotar</MaxButton>
                 </div>
             </div>
         </div>
@@ -22,6 +22,8 @@
 </template>
 
 <script setup lang="ts">
+    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
+    import MaxIcon from '@maxvue/max-components-ui/components/MaxIcon';
     import type { ConflictKind, ConflictResolution, SyncAction } from '@/types/bindings';
 
     export type ConflictSyncAction = Extract<SyncAction, { action: 'conflict' }>;

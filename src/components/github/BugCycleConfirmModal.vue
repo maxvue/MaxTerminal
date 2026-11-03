@@ -1,50 +1,40 @@
 <template>
-    <div v-if="props.open" class="bug-cycle-confirm-modal" role="dialog" aria-modal="true" aria-label="Confirmar Ciclo Corrigir todos os Bugs">
-        <div class="bug-cycle-confirm-modal__card">
-            <header class="bug-cycle-confirm-modal__header">
-                <h3 class="bug-cycle-confirm-modal__title">Corrigir todos os Bugs — Prévia do Ciclo MaxCode</h3>
-                <button type="button" class="bug-cycle-confirm-modal__close" aria-label="Fechar modal" @click="emit('close')">
-                    <MaxIcon icon="lucide:x" />
-                </button>
-            </header>
-            <div class="bug-cycle-confirm-modal__body">
-                <div v-if="!props.preview" class="bug-cycle-confirm-modal__loading">Calculando fila elegível de bugs...</div>
-                <template v-else>
-                    <div class="bug-cycle-confirm-modal__section">
-                        <h4 class="bug-cycle-confirm-modal__subtitle">Issues Elegíveis em Fila ({{ props.preview.candidates.length }})</h4>
-                        <p v-if="props.preview.candidates.length === 0" class="bug-cycle-confirm-modal__empty">Nenhum bug elegível encontrado para o ciclo automatizado.</p>
-                        <ul v-else class="bug-cycle-confirm-modal__list">
-                            <li v-for="item in props.preview.candidates" :key="item.issueNumber" class="bug-cycle-confirm-modal__item">
-                                <span class="bug-cycle-confirm-modal__num">#{{ item.issueNumber }}</span>
-                                <span class="bug-cycle-confirm-modal__name">{{ item.title }}</span>
-                                <span class="bug-cycle-confirm-modal__stage">{{ item.plannedStage }}</span>
-                            </li>
-                        </ul>
-                    </div>
-                    <div v-if="props.preview.skipped.length > 0" class="bug-cycle-confirm-modal__section">
-                        <h4 class="bug-cycle-confirm-modal__subtitle">Issues Ignoradas ({{ props.preview.skipped.length }})</h4>
-                        <ul class="bug-cycle-confirm-modal__list bug-cycle-confirm-modal__list--skipped">
-                            <li v-for="skip in props.preview.skipped" :key="skip.issueNumber" class="bug-cycle-confirm-modal__item">
-                                <span class="bug-cycle-confirm-modal__num">#{{ skip.issueNumber }}</span>
-                                <span class="bug-cycle-confirm-modal__name">{{ skip.title }}</span>
-                                <span class="bug-cycle-confirm-modal__reason">{{ skip.reason }}</span>
-                            </li>
-                        </ul>
-                    </div>
-                </template>
-            </div>
-            <footer class="bug-cycle-confirm-modal__footer">
-                <button type="button" class="bug-cycle-confirm-modal__btn" @click="emit('close')">Cancelar</button>
-                <button type="button" class="bug-cycle-confirm-modal__btn bug-cycle-confirm-modal__btn--primary" :disabled="!props.preview || props.preview.candidates.length === 0 || props.submitting" @click="onStartCycle">
-                    <MaxIcon icon="lucide:play" />
-                    <span>{{ props.submitting ? 'Iniciando...' : `Iniciar Ciclo (${props.preview?.candidates.length ?? 0} Bugs)` }}</span>
-                </button>
-            </footer>
+    <MaxModal :visible="props.open" title="Corrigir todos os Bugs — Prévia do Ciclo MaxCode" :no-button="true" max-width="36rem" class="bug-cycle-confirm-modal" :dismissable="!props.submitting" :close-on-escape="!props.submitting" @update:visible="emit('close')">
+        <div class="bug-cycle-confirm-modal__body">
+            <div v-if="!props.preview" class="bug-cycle-confirm-modal__loading">Calculando fila elegível de bugs...</div>
+            <template v-else>
+                <div class="bug-cycle-confirm-modal__section">
+                    <h4 class="bug-cycle-confirm-modal__subtitle">Issues Elegíveis em Fila ({{ props.preview.candidates.length }})</h4>
+                    <p v-if="props.preview.candidates.length === 0" class="bug-cycle-confirm-modal__empty">Nenhum bug elegível encontrado para o ciclo automatizado.</p>
+                    <ul v-else class="bug-cycle-confirm-modal__list">
+                        <li v-for="item in props.preview.candidates" :key="item.issueNumber" class="bug-cycle-confirm-modal__item">
+                            <span class="bug-cycle-confirm-modal__num">#{{ item.issueNumber }}</span>
+                            <span class="bug-cycle-confirm-modal__name">{{ item.title }}</span>
+                            <span class="bug-cycle-confirm-modal__stage">{{ item.plannedStage }}</span>
+                        </li>
+                    </ul>
+                </div>
+                <div v-if="props.preview.skipped.length > 0" class="bug-cycle-confirm-modal__section">
+                    <h4 class="bug-cycle-confirm-modal__subtitle">Issues Ignoradas ({{ props.preview.skipped.length }})</h4>
+                    <ul class="bug-cycle-confirm-modal__list bug-cycle-confirm-modal__list--skipped">
+                        <li v-for="skip in props.preview.skipped" :key="skip.issueNumber" class="bug-cycle-confirm-modal__item">
+                            <span class="bug-cycle-confirm-modal__num">#{{ skip.issueNumber }}</span>
+                            <span class="bug-cycle-confirm-modal__name">{{ skip.title }}</span>
+                            <span class="bug-cycle-confirm-modal__reason">{{ skip.reason }}</span>
+                        </li>
+                    </ul>
+                </div>
+            </template>
         </div>
-    </div>
+        <footer class="bug-cycle-confirm-modal__footer">
+            <MaxButton label="Cancelar" variant="secondary" class="bug-cycle-confirm-modal__btn" @click="emit('close')" />
+            <MaxButton :label="props.submitting ? 'Iniciando...' : `Iniciar Ciclo (${props.preview?.candidates.length ?? 0} Bugs)`" icon="lucide:play" variant="primary" class="bug-cycle-confirm-modal__btn bug-cycle-confirm-modal__btn--primary" :disabled="!props.preview || props.preview.candidates.length === 0 || props.submitting" :loading="props.submitting" @click="onStartCycle" />
+        </footer>
+    </MaxModal>
 </template>
 
 <script setup lang="ts">
+    import { MaxButton, MaxModal } from '@maxvue/max-components-ui';
     import type { BugCyclePreview, ProjectId, StartBugCycleRequest } from '@/types/bindings';
 
     export interface BugCycleConfirmModalProps {

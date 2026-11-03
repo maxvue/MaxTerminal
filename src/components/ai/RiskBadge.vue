@@ -1,6 +1,6 @@
 <template>
     <div class="risk-badge" :class="[`is-${level}`, { 'is-compact': compact }]" :title="tooltipText" data-testid="risk-badge">
-        <MaxIcon :icon="iconName" class="risk-badge__icon" />
+        <MaxIcon :icon="iconName" :size="0.75" class="risk-badge__icon" />
         <span class="risk-badge__label">{{ labelText }}</span>
         <span v-if="!compact && reasons.length > 0" class="risk-badge__count">({{ reasons.length }})</span>
     </div>
@@ -91,7 +91,6 @@
     }
 
     .risk-badge__icon {
-        font-size: 0.75rem;
         flex-shrink: 0;
     }
 

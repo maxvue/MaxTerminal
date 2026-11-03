@@ -5,7 +5,7 @@
             <span class="project-status-badges__count">{{ badge.count }}</span>
         </span>
         <span v-for="ext in visibleProviderBadges" :key="ext.id" class="project-status-badges__pill project-status-badges__pill--provider" :data-badge-key="ext.id" :style="{ '--mt-badge-color': `var(${ext.colorVar})` }" :title="ext.tooltip" :aria-label="ext.tooltip">
-            <MaxIcon :icon="ext.icon" class="project-status-badges__icon" />
+            <MaxIcon :icon="ext.icon" size="0.75" class="project-status-badges__icon" />
             <span class="project-status-badges__count">{{ ext.count }}</span>
         </span>
     </div>
@@ -155,7 +155,6 @@
     }
 
     .project-status-badges__icon {
-        font-size: 0.75rem;
         color: var(--mt-badge-color, var(--max-primary-400));
         flex-shrink: 0;
     }

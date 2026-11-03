@@ -1,12 +1,6 @@
 <template>
-    <div v-if="props.open" class="issue-create-modal" role="dialog" aria-modal="true" aria-label="Criar Nova Issue">
+    <MaxModal :visible="props.open" title="Criar Nova Issue" :no-button="true" max-width="36rem" class="issue-create-modal" :dismissable="!props.submitting" :close-on-escape="!props.submitting" @update:visible="emit('close')">
         <form class="issue-create-modal__card" @submit.prevent="onSubmit">
-            <header class="issue-create-modal__header">
-                <h3 class="issue-create-modal__title">Criar Nova Issue</h3>
-                <button type="button" class="issue-create-modal__close" aria-label="Fechar modal" @click="emit('close')">
-                    <MaxIcon icon="lucide:x" />
-                </button>
-            </header>
             <div class="issue-create-modal__body">
                 <label class="issue-create-modal__field">
                     <span class="issue-create-modal__label">Título da Issue *</span>
@@ -14,7 +8,7 @@
                 </label>
                 <label class="issue-create-modal__field">
                     <span class="issue-create-modal__label">Descrição (Markdown)</span>
-                    <textarea v-model="bodyMarkdown" class="issue-create-modal__textarea" rows="6" placeholder="Passos para reproduzir, comportamento esperado ou especificação..." />
+                    <MaxInputTextArea v-model="bodyMarkdown" class="issue-create-modal__textarea" :rows="6" placeholder="Passos para reproduzir, comportamento esperado ou especificação..." />
                 </label>
                 <label class="issue-create-modal__field">
                     <span class="issue-create-modal__label">Estado Inicial MaxCode</span>
@@ -32,17 +26,16 @@
                 <p v-if="validationError" class="issue-create-modal__error" role="alert">{{ validationError }}</p>
             </div>
             <footer class="issue-create-modal__footer">
-                <button type="button" class="issue-create-modal__btn" @click="emit('close')">Cancelar</button>
-                <button type="submit" class="issue-create-modal__btn issue-create-modal__btn--primary" :disabled="props.submitting">
-                    <span>{{ props.submitting ? 'Criando...' : 'Criar Issue' }}</span>
-                </button>
+                <MaxButton label="Cancelar" variant="secondary" class="issue-create-modal__btn" @click="emit('close')" />
+                <MaxButton type="submit" :label="props.submitting ? 'Criando...' : 'Criar Issue'" variant="primary" class="issue-create-modal__btn issue-create-modal__btn--primary" :disabled="props.submitting" :loading="props.submitting" />
             </footer>
         </form>
-    </div>
+    </MaxModal>
 </template>
 
 <script setup lang="ts">
     import { ref } from 'vue';
+    import { MaxButton, MaxInputTextArea, MaxModal } from '@maxvue/max-components-ui';
     import { CANONICAL_CATEGORY_LABELS, CANONICAL_STATE_LABELS } from '@/constants/githubLabels';
     import type { CreateIssueInput, ProjectId } from '@/types/bindings';
 

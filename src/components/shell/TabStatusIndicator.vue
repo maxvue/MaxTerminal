@@ -2,12 +2,13 @@
     <span class="tab-status-indicator" :class="[bucketClass, `size-${size}`, { 'is-degraded': confidence === 'degraded' }]" role="status" :aria-label="ariaDescription" :title="tooltipText" :data-status="status" :data-bucket="effectiveBucket">
         <span class="indicator-dot" :class="{ 'is-pulsing': effectiveBucket === 'running' || effectiveBucket === 'continuous' }" />
         <span v-if="showLabel" class="indicator-label">{{ bucketLabel }}</span>
-        <span v-if="unknownOutcome" class="indicator-unknown">Resultado desconhecido</span>
+        <MaxTag v-if="unknownOutcome" value="Resultado desconhecido" severity="warning" :no-uppercase="true" class="indicator-unknown" />
     </span>
 </template>
 
 <script setup lang="ts">
     import { computed } from 'vue';
+    import { MaxTag } from '@maxvue/max-components-ui';
     import type { ObservationConfidence, TabStatus } from '@/types/bindings';
 
     export interface TabStatusIndicatorProps {

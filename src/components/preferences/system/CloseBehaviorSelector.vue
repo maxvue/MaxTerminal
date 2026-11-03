@@ -1,10 +1,8 @@
 <template>
     <div class="close-behavior-selector" role="radiogroup" aria-label="Comportamento ao fechar a janela">
-        <div v-if="!props.trayAvailable" class="close-behavior-selector__warning" role="status">
-            Bandeja do sistema (StatusNotifierWatcher) indisponível na sessão atual. Enquanto indisponível, fechar a janela encerrará ou minimizará sem ocultar na bandeja.
-        </div>
+        <MaxAlert v-if="!props.trayAvailable" message="Bandeja do sistema (StatusNotifierWatcher) indisponível na sessão atual. Enquanto indisponível, fechar a janela encerrará ou minimizará sem ocultar na bandeja." severity="warning" class="close-behavior-selector__warning" />
         <label v-for="option in options" :key="option.value" class="close-behavior-selector__option" :class="{ 'is-selected': props.modelValue === option.value }">
-            <input type="radio" name="closeBehavior" class="close-behavior-selector__radio" :value="option.value" :checked="props.modelValue === option.value" :disabled="props.disabled" @change="emit('update:modelValue', option.value)">
+            <MaxInputRadio :model-value="props.modelValue" :value="option.value" name="closeBehavior" :disabled="props.disabled" class="close-behavior-selector__radio" @update:model-value="emit('update:modelValue', $event)" />
             <div class="close-behavior-selector__text">
                 <span class="close-behavior-selector__title">{{ option.title }}</span>
                 <span class="close-behavior-selector__desc">{{ option.description }}</span>
@@ -14,6 +12,7 @@
 </template>
 
 <script setup lang="ts">
+    import { MaxAlert, MaxInputRadio } from '@maxvue/max-components-ui';
     import type { CloseBehavior } from '@/types/bindings';
 
     export interface CloseBehaviorSelectorProps {

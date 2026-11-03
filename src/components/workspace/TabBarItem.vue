@@ -5,14 +5,13 @@
         <span v-if="paneCount > 1" class="tab-bar-item__panes-badge" :title="`${paneCount} painéis divididos`">{{ paneCount }}</span>
         <TabStatusIndicator :status="effectiveStatus" :seen="props.active" :show-label="false" size="sm" />
         <slot name="indicators" :tab="props.tab" />
-        <button type="button" class="tab-bar-item__close" :aria-label="`Fechar aba ${props.tab.title}`" title="Fechar aba" @click.stop="emit('close', props.tab.id)">
-            <MaxIcon icon="lucide:x" class="tab-bar-item__close-icon" />
-        </button>
+        <MaxIconButton icon="lucide:x" :label="`Fechar aba ${props.tab.title}`" variant="ghost" class="tab-bar-item__close" title="Fechar aba" @click.stop="emit('close', props.tab.id)" />
     </div>
 </template>
 
 <script setup lang="ts">
     import { computed } from 'vue';
+    import { MaxIcon, MaxIconButton } from '@maxvue/max-components-ui';
     import TabStatusIndicator from '@/components/shell/TabStatusIndicator.vue';
     import { useTabStatusStore } from '@/stores/tabStatus';
     import type { TabId, TabStatus, TabView_Serialize } from '@/types/bindings';

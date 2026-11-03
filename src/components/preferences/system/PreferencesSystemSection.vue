@@ -1,55 +1,35 @@
 <template>
     <div class="prefs-system">
-        <div v-if="osSettingsStore.error" class="prefs-system__error" role="alert">
-            {{ osSettingsStore.error }}
-        </div>
+        <MaxAlert v-if="osSettingsStore.error" :message="osSettingsStore.error" severity="error" class="prefs-system__error" />
         <section v-if="settings" class="prefs-system__group">
             <h3 class="prefs-system__heading">Janela, Bandeja e Inicialização</h3>
             <CloseBehaviorSelector :model-value="settings.closeBehavior" :tray-available="windowStore.trayAvailable" :disabled="osSettingsStore.saving" @update:model-value="onCloseBehaviorChange" />
             <div class="prefs-system__toggles">
-                <label class="prefs-system__checkbox">
-                    <input type="checkbox" :checked="autostartEnabled" :disabled="osSettingsStore.saving" @change="onAutostartToggle">
-                    <span>Iniciar automaticamente o MaxTerminal ao entrar na sessão do CachyOS</span>
-                </label>
-                <label class="prefs-system__checkbox">
-                    <input type="checkbox" :checked="settings.startMinimized" :disabled="osSettingsStore.saving" @change="onStartMinimizedToggle">
-                    <span>Iniciar oculto na bandeja do sistema quando iniciado automaticamente</span>
-                </label>
+                <MaxInputCheckbox :model-value="autostartEnabled" :disabled="osSettingsStore.saving" label="Iniciar automaticamente o MaxTerminal ao entrar na sessão do CachyOS" class="prefs-system__checkbox" @update:model-value="onAutostartToggle" />
+                <MaxInputCheckbox :model-value="settings.startMinimized" :disabled="osSettingsStore.saving" label="Iniciar oculto na bandeja do sistema quando iniciado automaticamente" class="prefs-system__checkbox" @update:model-value="onStartMinimizedToggle" />
             </div>
         </section>
 
         <section v-if="settings" class="prefs-system__group">
             <h3 class="prefs-system__heading">Atalho Global e Modo Quake</h3>
             <div class="prefs-system__toggles">
-                <label class="prefs-system__checkbox">
-                    <input type="checkbox" :checked="settings.quake.enabled" :disabled="osSettingsStore.saving" @change="onQuakeEnabledToggle">
-                    <span>Habilitar atalho rápido global para exibir/ocultar o MaxTerminal</span>
-                </label>
+                <MaxInputCheckbox :model-value="settings.quake.enabled" :disabled="osSettingsStore.saving" label="Habilitar atalho rápido global para exibir/ocultar o MaxTerminal" class="prefs-system__checkbox" @update:model-value="onQuakeEnabledToggle" />
             </div>
             <ShortcutRecorder :model-value="settings.quake.accelerator" :disabled="osSettingsStore.saving || !settings.quake.enabled" @update:model-value="onAcceleratorChange" />
             <WaylandShortcutHelp v-if="showWaylandHelp" :shortcut-status="windowStore.shortcutStatus" :portal-available="portalAvailable" :busy="osSettingsStore.saving" @configure-portal="onConfigurePortal" />
             <div class="prefs-system__grid">
                 <div class="prefs-system__field">
                     <label class="prefs-system__label" for="mt-quake-mode">Estilo de abertura</label>
-                    <select id="mt-quake-mode" class="prefs-system__select" :value="settings.quake.mode" :disabled="osSettingsStore.saving" @change="onQuakeModeChange">
-                        <option value="drop_down">Drop-down no topo do monitor (Quake)</option>
-                        <option value="normal">Janela normal</option>
-                    </select>
+                    <MaxInputSelect id="mt-quake-mode" :model-value="settings.quake.mode" :options="quakeModeOptions" option-label="label" option-value="value" option-name="label" :disabled="osSettingsStore.saving" class="prefs-system__select" @change="onQuakeModeChange" />
                 </div>
                 <div class="prefs-system__field">
                     <label class="prefs-system__label" for="mt-quake-height">Altura no modo Quake ({{ settings.quake.dropDownHeightPct }}%)</label>
-                    <input id="mt-quake-height" type="number" min="20" max="100" class="prefs-system__input" :value="settings.quake.dropDownHeightPct" :disabled="osSettingsStore.saving" @change="onQuakeHeightChange">
+                    <MaxInputNumber id="mt-quake-height" :model-value="settings.quake.dropDownHeightPct" :min="20" :max="100" :disabled="osSettingsStore.saving" class="prefs-system__input" @update:model-value="onQuakeHeightChange" @change="onQuakeHeightChange" />
                 </div>
             </div>
             <div class="prefs-system__toggles">
-                <label class="prefs-system__checkbox">
-                    <input type="checkbox" :checked="settings.quake.alwaysOnTop" :disabled="osSettingsStore.saving" @change="onAlwaysOnTopToggle">
-                    <span>Manter janela sempre no topo quando em modo Quake</span>
-                </label>
-                <label class="prefs-system__checkbox">
-                    <input type="checkbox" :checked="settings.quake.hideOnBlur" :disabled="osSettingsStore.saving" @change="onHideOnBlurToggle">
-                    <span>Ocultar automaticamente ao clicar fora da janela</span>
-                </label>
+                <MaxInputCheckbox :model-value="settings.quake.alwaysOnTop" :disabled="osSettingsStore.saving" label="Manter janela sempre no topo quando em modo Quake" class="prefs-system__checkbox" @update:model-value="onAlwaysOnTopToggle" />
+                <MaxInputCheckbox :model-value="settings.quake.hideOnBlur" :disabled="osSettingsStore.saving" label="Ocultar automaticamente ao clicar fora da janela" class="prefs-system__checkbox" @update:model-value="onHideOnBlurToggle" />
             </div>
         </section>
 
@@ -61,22 +41,13 @@
         <section v-if="settings" class="prefs-system__group">
             <h3 class="prefs-system__heading">Notificações Nativas</h3>
             <div class="prefs-system__toggles">
-                <label class="prefs-system__checkbox">
-                    <input type="checkbox" :checked="settings.notifications.enabled" :disabled="osSettingsStore.saving" @change="onNotificationsEnabledToggle">
-                    <span>Habilitar notificações nativas do sistema operacional</span>
-                </label>
-                <label class="prefs-system__checkbox">
-                    <input type="checkbox" :checked="settings.notifications.longCommandEnabled" :disabled="osSettingsStore.saving || !settings.notifications.enabled" @change="onLongCommandToggle">
-                    <span>Notificar quando comandos longos terminarem</span>
-                </label>
-                <label class="prefs-system__checkbox">
-                    <input type="checkbox" :checked="settings.notifications.onlyWhenUnfocused" :disabled="osSettingsStore.saving || !settings.notifications.enabled" @change="onOnlyWhenUnfocusedToggle">
-                    <span>Notificar comandos longos apenas quando a janela não estiver em foco</span>
-                </label>
+                <MaxInputCheckbox :model-value="settings.notifications.enabled" :disabled="osSettingsStore.saving" label="Habilitar notificações nativas do sistema operacional" class="prefs-system__checkbox" @update:model-value="onNotificationsEnabledToggle" />
+                <MaxInputCheckbox :model-value="settings.notifications.longCommandEnabled" :disabled="osSettingsStore.saving || !settings.notifications.enabled" label="Notificar quando comandos longos terminarem" class="prefs-system__checkbox" @update:model-value="onLongCommandToggle" />
+                <MaxInputCheckbox :model-value="settings.notifications.onlyWhenUnfocused" :disabled="osSettingsStore.saving || !settings.notifications.enabled" label="Notificar comandos longos apenas quando a janela não estiver em foco" class="prefs-system__checkbox" @update:model-value="onOnlyWhenUnfocusedToggle" />
             </div>
             <div class="prefs-system__field prefs-system__field--inline">
                 <label class="prefs-system__label" for="mt-long-cmd-secs">Tempo mínimo para comando longo (segundos)</label>
-                <input id="mt-long-cmd-secs" type="number" min="3" max="3600" class="prefs-system__input prefs-system__input--short" :value="settings.notifications.longCommandThresholdSecs" :disabled="osSettingsStore.saving || !settings.notifications.enabled" @change="onThresholdSecsChange">
+                <MaxInputNumber id="mt-long-cmd-secs" :model-value="settings.notifications.longCommandThresholdSecs" :min="3" :max="3600" :disabled="osSettingsStore.saving || !settings.notifications.enabled" class="prefs-system__input prefs-system__input--short" @update:model-value="onThresholdSecsChange" @change="onThresholdSecsChange" />
             </div>
         </section>
 
@@ -84,19 +55,19 @@
             <div class="prefs-system__row-head">
                 <h3 class="prefs-system__heading">Backups do Banco de Dados (SQLite) e Telemetria</h3>
                 <div class="prefs-system__actions">
-                    <button type="button" class="prefs-system__btn" :disabled="backupBusy" data-testid="prefs-backup-refresh-btn" @click="onRefreshBackups">Atualizar Lista</button>
-                    <button type="button" class="prefs-system__btn prefs-system__btn--primary" :disabled="backupBusy" data-testid="prefs-backup-create-btn" @click="onCreateBackup">{{ backupBusy ? 'Processando...' : 'Criar Backup Manual' }}</button>
-                    <button type="button" class="prefs-system__btn" data-testid="prefs-perf-toggle-btn" @click="perfVisible = !perfVisible">{{ perfVisible ? 'Ocultar Telemetria Dev' : 'Exibir Telemetria Dev' }}</button>
+                    <MaxButton type="button" label="Atualizar Lista" :disabled="backupBusy" data-testid="prefs-backup-refresh-btn" variant="outlined" size="small" @click="onRefreshBackups" />
+                    <MaxButton type="button" :label="backupBusy ? 'Processando...' : 'Criar Backup Manual'" severity="primary" :disabled="backupBusy" data-testid="prefs-backup-create-btn" size="small" @click="onCreateBackup" />
+                    <MaxButton type="button" :label="perfVisible ? 'Ocultar Telemetria Dev' : 'Exibir Telemetria Dev'" data-testid="prefs-perf-toggle-btn" variant="outlined" size="small" @click="perfVisible = !perfVisible" />
                 </div>
             </div>
-            <p v-if="backupFeedback" class="prefs-system__feedback" role="status" data-testid="prefs-backup-feedback">{{ backupFeedback }}</p>
+            <MaxAlert v-if="backupFeedback" :message="backupFeedback" severity="info" role="status" data-testid="prefs-backup-feedback" class="prefs-system__feedback" />
             <ul v-if="backups.length > 0" class="prefs-system__backup-list" data-testid="prefs-backup-list">
                 <li v-for="entry in backups" :key="entry.fileName" class="prefs-system__backup-item">
                     <div class="prefs-system__backup-meta">
                         <code>{{ entry.fileName }}</code>
                         <span>{{ formatBytes(entry.sizeBytes) }}</span>
                     </div>
-                    <button type="button" class="prefs-system__btn" :disabled="backupBusy" :data-testid="`prefs-backup-restore-${entry.fileName}`" @click="onScheduleRestore(entry.fileName)">Agendar Restauração</button>
+                    <MaxButton type="button" label="Agendar Restauração" variant="outlined" size="small" :disabled="backupBusy" :data-testid="`prefs-backup-restore-${entry.fileName}`" @click="onScheduleRestore(entry.fileName)" />
                 </li>
             </ul>
         </section>
@@ -105,6 +76,13 @@
 
 <script setup lang="ts">
     import { computed, onMounted, ref } from 'vue';
+    import {
+        MaxAlert,
+        MaxButton,
+        MaxInputCheckbox,
+        MaxInputNumber,
+        MaxInputSelect
+    } from '@maxvue/max-components-ui';
     import CloseBehaviorSelector from '@/components/preferences/system/CloseBehaviorSelector.vue';
     import EditorSelector from '@/components/preferences/system/EditorSelector.vue';
     import ShortcutRecorder from '@/components/preferences/system/ShortcutRecorder.vue';
@@ -126,6 +104,11 @@
     const backups = ref<BackupEntryDto[]>([]);
     const backupBusy = ref<boolean>(false);
     const backupFeedback = ref<string | null>(null);
+
+    const quakeModeOptions = [
+        { label: 'Drop-down no topo do monitor (Quake)', value: 'drop_down' },
+        { label: 'Janela normal', value: 'normal' }
+    ];
 
     const settings = computed(() => osSettingsStore.settings);
     const autostartEnabled = computed<boolean>(
@@ -154,18 +137,18 @@
         void osSettingsStore.update({ closeBehavior }).catch(() => {});
     }
 
-    function onAutostartToggle(event: Event): void {
-        const checked = (event.target as HTMLInputElement).checked;
+    function onAutostartToggle(valOrEv: unknown): void {
+        const checked = typeof valOrEv === 'boolean' ? valOrEv : Boolean((valOrEv as { target?: HTMLInputElement })?.target?.checked);
         void osSettingsStore.setAutostart(checked).catch(() => {});
     }
 
-    function onStartMinimizedToggle(event: Event): void {
-        const checked = (event.target as HTMLInputElement).checked;
+    function onStartMinimizedToggle(valOrEv: unknown): void {
+        const checked = typeof valOrEv === 'boolean' ? valOrEv : Boolean((valOrEv as { target?: HTMLInputElement })?.target?.checked);
         void osSettingsStore.update({ startMinimized: checked }).catch(() => {});
     }
 
-    function onQuakeEnabledToggle(event: Event): void {
-        const checked = (event.target as HTMLInputElement).checked;
+    function onQuakeEnabledToggle(valOrEv: unknown): void {
+        const checked = typeof valOrEv === 'boolean' ? valOrEv : Boolean((valOrEv as { target?: HTMLInputElement })?.target?.checked);
         void osSettingsStore.update({ quake: { enabled: checked } }).catch(() => {});
     }
 
@@ -177,26 +160,28 @@
         void osSettingsStore.configurePortal().catch(() => {});
     }
 
-    function onQuakeModeChange(event: Event): void {
-        const mode = (event.target as HTMLSelectElement).value as QuakeMode;
-        void osSettingsStore.update({ quake: { mode } }).catch(() => {});
+    function onQuakeModeChange(valOrEv: unknown): void {
+        const mode = (typeof valOrEv === 'string' ? valOrEv : (valOrEv as { target?: HTMLSelectElement })?.target?.value) as QuakeMode;
+        if (mode) {
+            void osSettingsStore.update({ quake: { mode } }).catch(() => {});
+        }
     }
 
-    function onQuakeHeightChange(event: Event): void {
-        const raw = Number.parseInt((event.target as HTMLInputElement).value, 10);
+    function onQuakeHeightChange(valOrEv: unknown): void {
+        const raw = typeof valOrEv === 'number' ? valOrEv : Number.parseInt((valOrEv as { target?: HTMLInputElement })?.target?.value ?? String(valOrEv), 10);
         if (Number.isFinite(raw)) {
             const dropDownHeightPct = Math.min(100, Math.max(20, raw));
             void osSettingsStore.update({ quake: { dropDownHeightPct } }).catch(() => {});
         }
     }
 
-    function onAlwaysOnTopToggle(event: Event): void {
-        const checked = (event.target as HTMLInputElement).checked;
+    function onAlwaysOnTopToggle(valOrEv: unknown): void {
+        const checked = typeof valOrEv === 'boolean' ? valOrEv : Boolean((valOrEv as { target?: HTMLInputElement })?.target?.checked);
         void osSettingsStore.update({ quake: { alwaysOnTop: checked } }).catch(() => {});
     }
 
-    function onHideOnBlurToggle(event: Event): void {
-        const checked = (event.target as HTMLInputElement).checked;
+    function onHideOnBlurToggle(valOrEv: unknown): void {
+        const checked = typeof valOrEv === 'boolean' ? valOrEv : Boolean((valOrEv as { target?: HTMLInputElement })?.target?.checked);
         void osSettingsStore.update({ quake: { hideOnBlur: checked } }).catch(() => {});
     }
 
@@ -204,27 +189,27 @@
         void osSettingsStore.update({ editor }).catch(() => {});
     }
 
-    function onNotificationsEnabledToggle(event: Event): void {
-        const checked = (event.target as HTMLInputElement).checked;
+    function onNotificationsEnabledToggle(valOrEv: unknown): void {
+        const checked = typeof valOrEv === 'boolean' ? valOrEv : Boolean((valOrEv as { target?: HTMLInputElement })?.target?.checked);
         void osSettingsStore.update({ notifications: { enabled: checked } }).catch(() => {});
     }
 
-    function onLongCommandToggle(event: Event): void {
-        const checked = (event.target as HTMLInputElement).checked;
+    function onLongCommandToggle(valOrEv: unknown): void {
+        const checked = typeof valOrEv === 'boolean' ? valOrEv : Boolean((valOrEv as { target?: HTMLInputElement })?.target?.checked);
         void osSettingsStore
             .update({ notifications: { longCommandEnabled: checked } })
             .catch(() => {});
     }
 
-    function onOnlyWhenUnfocusedToggle(event: Event): void {
-        const checked = (event.target as HTMLInputElement).checked;
+    function onOnlyWhenUnfocusedToggle(valOrEv: unknown): void {
+        const checked = typeof valOrEv === 'boolean' ? valOrEv : Boolean((valOrEv as { target?: HTMLInputElement })?.target?.checked);
         void osSettingsStore
             .update({ notifications: { onlyWhenUnfocused: checked } })
             .catch(() => {});
     }
 
-    function onThresholdSecsChange(event: Event): void {
-        const raw = Number.parseInt((event.target as HTMLInputElement).value, 10);
+    function onThresholdSecsChange(valOrEv: unknown): void {
+        const raw = typeof valOrEv === 'number' ? valOrEv : Number.parseInt((valOrEv as { target?: HTMLInputElement })?.target?.value ?? String(valOrEv), 10);
         if (Number.isFinite(raw)) {
             const longCommandThresholdSecs = Math.min(3600, Math.max(3, raw));
             void osSettingsStore

@@ -23,8 +23,8 @@
             <IssuePlanSection :detail="props.detail" />
             <section class="issue-detail__body-section" aria-label="Descrição da issue">
                 <h4 class="issue-detail__section-title">Descrição</h4>
-                <!-- eslint-disable-next-line vue/no-v-html -->
-                <div class="issue-detail__markdown" v-html="bodyHtml" />
+                <MaxMarkdownViewer v-if="props.detail?.bodyMarkdown" :source="props.detail.bodyMarkdown" :render-markdown="renderSafeMarkdown" class="issue-detail__markdown" />
+                <p v-else class="issue-detail__empty-desc"><em>Sem descrição informada.</em></p>
             </section>
             <IssueComments :comments="props.detail.comments" />
         </div>
@@ -33,6 +33,7 @@
 
 <script setup lang="ts">
     import { computed } from 'vue';
+    import { MaxIcon, MaxMarkdownViewer } from '@maxvue/max-components-ui';
     import { renderSafeMarkdown } from '@/composables/useMarkdownRenderer';
     import { sortLabelsCanonically } from '@/constants/githubLabels';
     import type {
@@ -67,13 +68,6 @@
     const sortedLabels = computed<RepoLabel[]>(() =>
         props.detail ? sortLabelsCanonically(props.detail.summary.labels) : []
     );
-
-    const bodyHtml = computed<string>(() => {
-        if (!props.detail?.bodyMarkdown) {
-            return '<p><em>Sem descrição informada.</em></p>';
-        }
-        return renderSafeMarkdown(props.detail.bodyMarkdown);
-    });
 </script>
 
 <style lang="scss" scoped>

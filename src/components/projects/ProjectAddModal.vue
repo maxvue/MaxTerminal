@@ -1,73 +1,66 @@
 <template>
-    <div v-if="props.visible" class="project-add-modal" role="dialog" aria-modal="true" aria-labelledby="project-add-modal-title">
-        <div class="project-add-modal__backdrop" @click="handleClose" />
-        <div class="project-add-modal__dialog">
-            <header class="project-add-modal__header">
-                <h2 id="project-add-modal-title" class="project-add-modal__title">Adicionar projeto</h2>
-                <button type="button" class="project-add-modal__close" aria-label="Fechar modal" @click="handleClose">
-                    <MaxIcon icon="mdi:close" />
-                </button>
-            </header>
+    <MaxModal :visible="props.visible" title="Adicionar projeto" :no-button="true" max-width="32rem" class="project-add-modal" :dismissable="!submitting" :close-on-escape="!submitting" @update:visible="emit('update:visible', $event)">
+        <form class="project-add-modal__form" @submit.prevent="handleSubmit">
+            <div class="project-add-modal__field">
+                <label for="project-add-path" class="project-add-modal__label">Pasta do projeto</label>
+                <div class="project-add-modal__path-row">
+                    <input id="project-add-path" v-model="pathInput" type="text" class="project-add-modal__input" placeholder="~/GitHub/meu-projeto" autocomplete="off" @input="onPathInputChanged">
+                    <MaxButton type="button" variant="secondary" class="project-add-modal__pick-btn" data-testid="pick-folder-btn" @click="handlePickFolder">
+                        Escolher pasta
+                    </MaxButton>
+                </div>
+            </div>
 
-            <form class="project-add-modal__form" @submit.prevent="handleSubmit">
+            <div class="project-add-modal__field">
+                <label for="project-add-title" class="project-add-modal__label">Título</label>
+                <input id="project-add-title" v-model="titleInput" type="text" class="project-add-modal__input" placeholder="Nome do projeto" maxlength="120" @input="onTitleManualEdit">
+            </div>
+
+            <div class="project-add-modal__identity-grid">
                 <div class="project-add-modal__field">
-                    <label for="project-add-path" class="project-add-modal__label">Pasta do projeto</label>
-                    <div class="project-add-modal__path-row">
-                        <input id="project-add-path" v-model="pathInput" type="text" class="project-add-modal__input" placeholder="~/GitHub/meu-projeto" autocomplete="off" @input="onPathInputChanged">
-                        <button type="button" class="project-add-modal__pick-btn" data-testid="pick-folder-btn" @click="handlePickFolder">
-                            Escolher pasta
-                        </button>
+                    <label for="project-add-icon" class="project-add-modal__label">Ícone (Iconify)</label>
+                    <div class="project-add-modal__icon-row" :style="{ '--project-color': effectiveColor, '--mt-project-color': effectiveColor }">
+                        <span class="project-add-modal__icon-preview" aria-hidden="true">
+                            <MaxIcon :icon="effectiveIcon" />
+                        </span>
+                        <input id="project-add-icon" v-model="iconInput" type="text" class="project-add-modal__input" placeholder="logos:laravel" @input="onIconManualEdit">
                     </div>
                 </div>
 
                 <div class="project-add-modal__field">
-                    <label for="project-add-title" class="project-add-modal__label">Título</label>
-                    <input id="project-add-title" v-model="titleInput" type="text" class="project-add-modal__input" placeholder="Nome do projeto" maxlength="120" @input="onTitleManualEdit">
-                </div>
-
-                <div class="project-add-modal__identity-grid">
-                    <div class="project-add-modal__field">
-                        <label for="project-add-icon" class="project-add-modal__label">Ícone (Iconify)</label>
-                        <div class="project-add-modal__icon-row" :style="{ '--project-color': effectiveColor, '--mt-project-color': effectiveColor }">
-                            <span class="project-add-modal__icon-preview" aria-hidden="true">
-                                <MaxIcon :icon="effectiveIcon" />
-                            </span>
-                            <input id="project-add-icon" v-model="iconInput" type="text" class="project-add-modal__input" placeholder="logos:laravel" @input="onIconManualEdit">
-                        </div>
-                    </div>
-
-                    <div class="project-add-modal__field">
-                        <label for="project-add-color" class="project-add-modal__label">Cor (#RRGGBB)</label>
-                        <div class="project-add-modal__color-row">
-                            <input v-model="colorInput" type="color" class="project-add-modal__color-picker" aria-label="Selecionar cor" @input="onColorManualEdit">
-                            <input id="project-add-color" v-model="colorInput" type="text" class="project-add-modal__input" placeholder="#14B8A6" maxlength="7" @input="onColorManualEdit">
-                        </div>
+                    <label for="project-add-color" class="project-add-modal__label">Cor (#RRGGBB)</label>
+                    <div class="project-add-modal__color-row">
+                        <input v-model="colorInput" type="color" class="project-add-modal__color-picker" aria-label="Selecionar cor" @input="onColorManualEdit">
+                        <input id="project-add-color" v-model="colorInput" type="text" class="project-add-modal__input" placeholder="#14B8A6" maxlength="7" @input="onColorManualEdit">
                     </div>
                 </div>
+            </div>
 
-                <div v-if="detectedStackLabel" class="project-add-modal__detected">
-                    <span>Stack detectada: <strong>{{ detectedStackLabel }}</strong></span>
-                </div>
+            <div v-if="detectedStackLabel" class="project-add-modal__detected">
+                <span>Stack detectada: <strong>{{ detectedStackLabel }}</strong></span>
+            </div>
 
-                <div v-if="errorMessage" class="project-add-modal__error" role="alert">
-                    {{ errorMessage }}
-                </div>
+            <MaxAlert v-if="errorMessage" type="danger" role="alert" class="project-add-modal__error">
+                {{ errorMessage }}
+            </MaxAlert>
 
-                <footer class="project-add-modal__footer">
-                    <button type="button" class="project-add-modal__btn project-add-modal__btn--cancel" @click="handleClose">
-                        Cancelar
-                    </button>
-                    <button type="submit" class="project-add-modal__btn project-add-modal__btn--submit" :disabled="submitting" data-testid="submit-project-btn">
-                        {{ submitting ? 'Adicionando...' : 'Adicionar projeto' }}
-                    </button>
-                </footer>
-            </form>
-        </div>
-    </div>
+            <footer class="project-add-modal__footer">
+                <MaxButton type="button" variant="secondary" class="project-add-modal__btn project-add-modal__btn--cancel" @click="handleClose">
+                    Cancelar
+                </MaxButton>
+                <MaxButton type="submit" variant="primary" class="project-add-modal__btn project-add-modal__btn--submit" :disabled="submitting" :loading="submitting" data-testid="submit-project-btn">
+                    {{ submitting ? 'Adicionando...' : 'Adicionar projeto' }}
+                </MaxButton>
+            </footer>
+        </form>
+    </MaxModal>
 </template>
 
 <script setup lang="ts">
     import { computed, onScopeDispose, ref, watch } from 'vue';
+    import MaxAlert from '@maxvue/max-components-ui/components/MaxAlert';
+    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
+    import MaxModal from '@maxvue/max-components-ui/components/MaxModal';
     import { useIpcError } from '@/composables/useIpcError';
     import {
         isValidProjectColor,
@@ -303,65 +296,13 @@
 <style lang="scss" scoped>
     @use '@/styles/params' as *;
 
-    .project-add-modal {
-        position: fixed;
-        inset: 0;
-        z-index: 100;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 1rem;
-    }
-
-    .project-add-modal__backdrop {
-        position: absolute;
-        inset: 0;
-        background: rgb(0 0 0 / 60%);
-    }
-
-    .project-add-modal__dialog {
-        position: relative;
-        z-index: 1;
-        width: 100%;
-        max-width: 30rem;
-        border-radius: 0.625rem;
-        background: var(--background-800);
-        border: 1px solid var(--background-600);
+    :deep(.project-add-modal.max-modal) {
+        background-color: var(--background-800);
+        border-color: var(--background-600);
         color: var(--background-100);
-        box-shadow: 0 16px 40px rgb(0 0 0 / 55%);
-        overflow: hidden;
-    }
 
-    .project-add-modal__header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0.875rem 1.125rem;
-        border-bottom: 1px solid var(--background-700);
-    }
-
-    .project-add-modal__title {
-        margin: 0;
-        font-size: 1rem;
-        font-weight: 600;
-        color: var(--background-50);
-    }
-
-    .project-add-modal__close {
-        border: none;
-        background: transparent;
-        color: var(--background-300);
-        cursor: pointer;
-        padding: 0.25rem;
-        border-radius: 0.375rem;
-
-        &:hover {
-            background: var(--background-700);
-            color: var(--background-50);
-        }
-
-        &:focus-visible {
-            @include mt-focus-ring;
+        .max-modal-content {
+            padding: 1.125rem;
         }
     }
 
@@ -369,7 +310,6 @@
         display: flex;
         flex-direction: column;
         gap: 0.875rem;
-        padding: 1.125rem;
     }
 
     .project-add-modal__field {
@@ -398,26 +338,6 @@
         background: var(--background-900);
         color: var(--background-50);
         font-size: 0.8125rem;
-
-        &:focus-visible {
-            @include mt-focus-ring;
-        }
-    }
-
-    .project-add-modal__pick-btn {
-        padding: 0.4375rem 0.75rem;
-        border-radius: 0.375rem;
-        border: 1px solid var(--background-600);
-        background: var(--background-700);
-        color: var(--background-100);
-        font-size: 0.75rem;
-        font-weight: 600;
-        cursor: pointer;
-        white-space: nowrap;
-
-        &:hover {
-            background: var(--background-600);
-        }
 
         &:focus-visible {
             @include mt-focus-ring;
@@ -467,11 +387,6 @@
     }
 
     .project-add-modal__error {
-        padding: 0.5rem 0.75rem;
-        border-radius: 0.375rem;
-        background: color-mix(in srgb, var(--max-danger-500) 15%, var(--background-900));
-        border: 1px solid var(--max-danger-500);
-        color: var(--max-danger-400);
         font-size: 0.75rem;
     }
 
@@ -480,42 +395,5 @@
         justify-content: flex-end;
         gap: 0.5rem;
         padding-top: 0.375rem;
-    }
-
-    .project-add-modal__btn {
-        padding: 0.4375rem 0.875rem;
-        border-radius: 0.375rem;
-        font-size: 0.8125rem;
-        font-weight: 600;
-        cursor: pointer;
-
-        &:focus-visible {
-            @include mt-focus-ring;
-        }
-
-        &:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-    }
-
-    .project-add-modal__btn--cancel {
-        border: 1px solid var(--background-600);
-        background: transparent;
-        color: var(--background-200);
-
-        &:hover {
-            background: var(--background-700);
-        }
-    }
-
-    .project-add-modal__btn--submit {
-        border: 1px solid var(--max-primary-500);
-        background: var(--max-primary-600);
-        color: var(--background-50);
-
-        &:hover:not(:disabled) {
-            background: var(--max-primary-500);
-        }
     }
 </style>

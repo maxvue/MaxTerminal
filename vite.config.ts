@@ -35,6 +35,7 @@ function resolveAllowedFsRoots(): string[] {
 
 export default defineConfig({
     clearScreen: false,
+    cacheDir: path.resolve(workspaceRoot, '.tmp/vite'),
     envPrefix: ['VITE_'],
     plugins: [
         vue(),

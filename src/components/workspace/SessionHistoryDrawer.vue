@@ -6,18 +6,13 @@
                 <h3 class="session-drawer__title">Sessões da Aba</h3>
             </div>
             <div class="session-drawer__header-actions">
-                <button type="button" class="session-drawer__new-btn" @click="emit('new-session')">
-                    <MaxIcon icon="lucide:rotate-ccw" />
-                    <span>Iniciar nova Sessão</span>
-                </button>
-                <button type="button" class="session-drawer__close-btn" aria-label="Fechar histórico de sessões" @click="emit('close')">
-                    <MaxIcon icon="lucide:x" />
-                </button>
+                <MaxButton label="Iniciar nova Sessão" icon="lucide:rotate-ccw" variant="secondary" size="small" class="session-drawer__new-btn" @click="emit('new-session')" />
+                <MaxIconButton icon="lucide:x" label="Fechar histórico de sessões" variant="ghost" class="session-drawer__close-btn" @click="emit('close')" />
             </div>
         </header>
         <div class="session-drawer__search">
             <input v-model="searchQuery" type="search" class="session-drawer__search-input" placeholder="Buscar no histórico desta aba (FTS5)..." aria-label="Buscar no histórico desta aba" @keydown.enter.prevent="triggerSearch">
-            <button type="button" class="session-drawer__search-btn" @click="triggerSearch">Buscar</button>
+            <MaxButton label="Buscar" variant="secondary" size="small" class="session-drawer__search-btn" @click="triggerSearch" />
         </div>
         <div v-if="searchQuery.trim() && props.searchHits.length > 0" class="session-drawer__hits">
             <span class="session-drawer__section-label">Resultados da busca ({{ props.searchHits.length }})</span>
@@ -55,6 +50,7 @@
 
 <script setup lang="ts">
     import { ref } from 'vue';
+    import { MaxButton, MaxIcon, MaxIconButton } from '@maxvue/max-components-ui';
     import type { ScrollbackChunk, SessionDetail_Serialize, SessionId, SessionSearchHit, SessionSummary_Serialize, TabSessionId } from '@/types/bindings';
     import SessionReadonlyViewer from './SessionReadonlyViewer.vue';
 

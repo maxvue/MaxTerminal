@@ -2,14 +2,12 @@
     <div v-if="report" class="import-report" role="status" aria-live="polite">
         <div class="import-report__header">
             <div class="import-report__summary">
-                <span class="import-report__badge import-report__badge--success">{{ report.imported.length }} importado(s)</span>
-                <span v-if="report.warnings.length > 0" class="import-report__badge import-report__badge--warning">{{ report.warnings.length }} aviso(s)</span>
-                <span v-if="report.errors.length > 0" class="import-report__badge import-report__badge--danger">{{ report.errors.length }} falha(s)</span>
-                <span v-if="report.skipped.length > 0" class="import-report__badge">{{ report.skipped.length }} ignorado(s)</span>
+                <MaxTag :value="`${report.imported.length} importado(s)`" severity="success" :no-uppercase="true" class="import-report__badge import-report__badge--success" />
+                <MaxTag v-if="report.warnings.length > 0" :value="`${report.warnings.length} aviso(s)`" severity="warning" :no-uppercase="true" class="import-report__badge import-report__badge--warning" />
+                <MaxTag v-if="report.errors.length > 0" :value="`${report.errors.length} falha(s)`" severity="danger" :no-uppercase="true" class="import-report__badge import-report__badge--danger" />
+                <MaxTag v-if="report.skipped.length > 0" :value="`${report.skipped.length} ignorado(s)`" severity="secondary" :no-uppercase="true" class="import-report__badge" />
             </div>
-            <button type="button" class="import-report__close" aria-label="Fechar relatório de importação" @click="emit('close')">
-                <MaxIcon icon="lucide:x" />
-            </button>
+            <MaxIconButton icon="lucide:x" size="small" variant="text" class="import-report__close" aria-label="Fechar relatório de importação" @click="emit('close')" />
         </div>
 
         <ul v-if="report.warnings.length > 0" class="import-report__list import-report__list--warning">
@@ -27,6 +25,7 @@
 </template>
 
 <script setup lang="ts">
+    import { MaxIconButton, MaxTag } from '@maxvue/max-components-ui';
     import type { ImportReport } from '@/types/theme';
 
     export interface ThemeImportReportProps {

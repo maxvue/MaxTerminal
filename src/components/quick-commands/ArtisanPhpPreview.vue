@@ -51,10 +51,7 @@
                 <ol class="php-preview__steps" data-testid="preview-manual-steps">
                     <li v-for="(step, idx) in manualSteps" :key="idx" class="php-preview__step">
                         <pre class="php-preview__step-text"><code>{{ step }}</code></pre>
-                        <button type="button" class="php-preview__copy-btn" data-testid="copy-manual-step-btn" @click="copyText(step)">
-                            <MaxIcon icon="mdi:content-copy" />
-                            <span>Copiar trecho</span>
-                        </button>
+                        <MaxButton label="Copiar trecho" icon="mdi:content-copy" variant="ghost" size="small" class="php-preview__copy-btn" data-testid="copy-manual-step-btn" @click="copyText(step)" />
                     </li>
                 </ol>
             </template>
@@ -67,6 +64,7 @@
 
 <script setup lang="ts">
     import { computed, ref, watch } from 'vue';
+    import { MaxButton } from '@maxvue/max-components-ui';
     import type { ArtisanPreview } from '@/types/bindings';
 
     export interface ArtisanPhpPreviewProps {

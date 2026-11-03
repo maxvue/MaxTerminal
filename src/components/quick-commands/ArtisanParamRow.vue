@@ -5,15 +5,9 @@
                 {{ modelValue.kind === 'argument' ? 'Argumento' : 'Opção (--flag)' }}
             </span>
             <div class="param-row__actions">
-                <button type="button" class="param-row__icon-btn" title="Mover para cima" aria-label="Mover parâmetro para cima" :disabled="index === 0" @click="emit('move', -1)">
-                    <MaxIcon icon="mdi:arrow-up" />
-                </button>
-                <button type="button" class="param-row__icon-btn" title="Mover para baixo" aria-label="Mover parâmetro para baixo" :disabled="index >= total - 1" @click="emit('move', 1)">
-                    <MaxIcon icon="mdi:arrow-down" />
-                </button>
-                <button type="button" class="param-row__icon-btn param-row__icon-btn--danger" title="Remover parâmetro" aria-label="Remover parâmetro" @click="emit('remove')">
-                    <MaxIcon icon="mdi:trash-can-outline" />
-                </button>
+                <MaxIconButton icon="mdi:arrow-up" label="Mover parâmetro para cima" variant="ghost" class="param-row__icon-btn" :disabled="index === 0" title="Mover para cima" @click="emit('move', -1)" />
+                <MaxIconButton icon="mdi:arrow-down" label="Mover parâmetro para baixo" variant="ghost" class="param-row__icon-btn" :disabled="index >= total - 1" title="Mover para baixo" @click="emit('move', 1)" />
+                <MaxIconButton icon="mdi:trash-can-outline" label="Remover parâmetro" variant="danger" class="param-row__icon-btn param-row__icon-btn--danger" title="Remover parâmetro" @click="emit('remove')" />
             </div>
         </div>
 
@@ -70,6 +64,7 @@
 
 <script setup lang="ts">
     import { computed } from 'vue';
+    import { MaxIconButton } from '@maxvue/max-components-ui';
     import type { ArtisanParam, FieldIssue } from '@/types/bindings';
 
     export interface ArtisanParamRowProps {

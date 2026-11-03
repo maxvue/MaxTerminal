@@ -1,17 +1,6 @@
 <template>
-    <div v-if="open" class="destructive-confirm" role="dialog" aria-modal="true" aria-labelledby="destructive-confirm-title" data-testid="destructive-confirm-modal">
-        <div class="destructive-confirm__backdrop" @click="onCancel" />
-        <div class="destructive-confirm__panel">
-            <header class="destructive-confirm__header">
-                <div class="destructive-confirm__title-wrap">
-                    <MaxIcon icon="lucide:skull" class="destructive-confirm__title-icon" />
-                    <h3 id="destructive-confirm-title" class="destructive-confirm__title">Confirmar execução de comando destrutivo</h3>
-                </div>
-                <button type="button" class="destructive-confirm__close" aria-label="Fechar confirmação" @click="onCancel">
-                    <MaxIcon icon="lucide:x" />
-                </button>
-            </header>
-
+    <MaxModal :visible="open" title="Confirmar execução de comando destrutivo" :no-button="true" max-width="36rem" class="destructive-confirm" @update:visible="onCancel">
+        <div class="destructive-confirm__body" data-testid="destructive-confirm-modal">
             <p class="destructive-confirm__warning">Este comando pode causar perda irreversível de dados, remoção recursiva ou alteração crítica do sistema.</p>
 
             <div class="destructive-confirm__command-box">
@@ -29,18 +18,23 @@
                 <span class="destructive-confirm__field-label">Para liberar a execução, digite exatamente <strong class="destructive-confirm__token" data-testid="expected-confirm-token">{{ expectedToken }}</strong> abaixo:</span>
                 <input v-model="typedToken" type="text" class="destructive-confirm__input" :placeholder="expectedToken" autocomplete="off" spellcheck="false" data-testid="confirm-token-input" @keydown.enter.prevent="onConfirm" @keydown.esc.prevent="onCancel">
             </label>
-
-            <footer class="destructive-confirm__footer">
-                <button type="button" class="destructive-confirm__btn is-secondary" data-testid="btn-cancel-destructive" @click="onCancel">Cancelar</button>
-                <button type="button" class="destructive-confirm__btn is-danger" :disabled="!isConfirmed" data-testid="btn-confirm-destructive" @click="onConfirm">Executar comando destrutivo</button>
-            </footer>
         </div>
-    </div>
+
+        <footer class="destructive-confirm__footer">
+            <MaxButton type="button" variant="secondary" size="sm" data-testid="btn-cancel-destructive" @click="onCancel">
+                <span>Cancelar</span>
+            </MaxButton>
+            <MaxButton type="button" variant="danger" size="sm" :disabled="!isConfirmed" data-testid="btn-confirm-destructive" @click="onConfirm">
+                <span>Executar comando destrutivo</span>
+            </MaxButton>
+        </footer>
+    </MaxModal>
 </template>
 
 <script setup lang="ts">
     import { computed, ref, watch } from 'vue';
-    import MaxIcon from '@maxvue/max-components-ui/components/MaxIcon';
+    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
+    import MaxModal from '@maxvue/max-components-ui/components/MaxModal';
     import type { RiskAssessment_Serialize } from '@/types/bindings';
 
     export interface DestructiveConfirmProps {
@@ -133,8 +127,8 @@
     }
 
     .destructive-confirm__title-icon {
-        font-size: 1.125rem;
         color: var(--max-danger-400);
+        flex-shrink: 0;
     }
 
     .destructive-confirm__title {
@@ -145,19 +139,9 @@
     }
 
     .destructive-confirm__close {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 1.75rem;
-        height: 1.75rem;
-        border-radius: 0.25rem;
-        border: 1px solid transparent;
-        background: transparent;
         color: var(--background-300);
-        cursor: pointer;
 
         &:hover {
-            background: var(--background-800);
             color: var(--background-50);
         }
     }
@@ -250,39 +234,5 @@
         display: flex;
         justify-content: flex-end;
         gap: 0.5rem;
-    }
-
-    .destructive-confirm__btn {
-        padding: 0.4375rem 0.875rem;
-        border-radius: 0.375rem;
-        font-size: 0.75rem;
-        font-weight: 600;
-        cursor: pointer;
-        border: 1px solid transparent;
-
-        &.is-secondary {
-            border-color: var(--background-700);
-            background: var(--background-850);
-            color: var(--background-100);
-
-            &:hover {
-                background: var(--background-800);
-            }
-        }
-
-        &.is-danger {
-            border-color: var(--max-danger-500);
-            background: var(--max-danger-600);
-            color: var(--background-50);
-
-            &:disabled {
-                opacity: 0.45;
-                cursor: not-allowed;
-            }
-
-            &:hover:not(:disabled) {
-                background: var(--max-danger-500);
-            }
-        }
     }
 </style>

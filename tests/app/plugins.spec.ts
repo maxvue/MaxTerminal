@@ -55,6 +55,9 @@ describe('Registro de plugins da aplicação - registerAppPlugins', () => {
         const activePinia = getActivePinia();
         expect(activePinia).toBeDefined();
 
+        // Diretiva tooltip do MaxComponentsUi deve estar registrada globalmente
+        expect(app.directive('tooltip')).toBeDefined();
+
         const statusElement = container.querySelector('.store-status');
         expect(statusElement).not.toBeNull();
         expect(statusElement?.textContent).toBe('idle');

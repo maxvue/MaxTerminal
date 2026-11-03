@@ -18,16 +18,12 @@
         <div class="theme-swatch__footer">
             <div class="theme-swatch__meta">
                 <span class="theme-swatch__name">{{ summary.name }}</span>
-                <span class="theme-swatch__badge">{{ polarityLabel }}</span>
+                <MaxTag :value="polarityLabel" severity="secondary" :no-uppercase="true" class="theme-swatch__badge" />
             </div>
             <div class="theme-swatch__actions" @click.stop>
-                <span v-if="active" class="theme-swatch__active-tag">Ativo</span>
-                <button v-if="summary.origin !== 'builtin'" type="button" class="theme-swatch__icon-btn" title="Exportar tema" :aria-label="`Exportar tema ${summary.name}`" @click="emit('export', summary.id)">
-                    <MaxIcon icon="lucide:download" />
-                </button>
-                <button v-if="summary.origin !== 'builtin' && !active" type="button" class="theme-swatch__icon-btn theme-swatch__icon-btn--danger" title="Excluir tema" :aria-label="`Excluir tema ${summary.name}`" @click="emit('delete', summary.id)">
-                    <MaxIcon icon="lucide:trash-2" />
-                </button>
+                <MaxTag v-if="active" value="Ativo" severity="success" :no-uppercase="true" class="theme-swatch__active-tag" />
+                <MaxIconButton v-if="summary.origin !== 'builtin'" icon="lucide:download" title="Exportar tema" :aria-label="`Exportar tema ${summary.name}`" size="small" variant="text" class="theme-swatch__icon-btn" @click="emit('export', summary.id)" />
+                <MaxIconButton v-if="summary.origin !== 'builtin' && !active" icon="lucide:trash-2" title="Excluir tema" :aria-label="`Excluir tema ${summary.name}`" size="small" variant="text" severity="danger" class="theme-swatch__icon-btn theme-swatch__icon-btn--danger" @click="emit('delete', summary.id)" />
             </div>
         </div>
     </div>
@@ -35,6 +31,7 @@
 
 <script setup lang="ts">
     import { computed } from 'vue';
+    import { MaxIconButton, MaxTag } from '@maxvue/max-components-ui';
     import type { ThemeId, ThemeSummary } from '@/types/theme';
 
     export interface ThemeSwatchProps {

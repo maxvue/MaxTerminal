@@ -53,7 +53,7 @@ export interface QuickCommandsAdapters {
     notifyToast: (opts: {
         title: string;
         description?: string;
-        severity: 'success' | 'info' | 'warn' | 'error';
+        severity: 'success' | 'info' | 'warning' | 'warn' | 'error';
     }) => void;
     focusPaneInput: (paneId: PaneId | null) => void;
 }

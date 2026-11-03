@@ -6,9 +6,7 @@
                 <span class="session-viewer__badge" :class="{ 'is-archived': props.detail.summary.archived }">{{ props.detail.summary.archived ? 'Arquivada' : 'Ativa' }}</span>
                 <span v-if="props.detail.summary.endReason" class="session-viewer__reason">{{ reasonLabel }}</span>
             </div>
-            <button type="button" class="session-viewer__close" aria-label="Fechar visualizador de sessão" @click="emit('close')">
-                <MaxIcon icon="lucide:x" />
-            </button>
+            <MaxIconButton icon="lucide:x" label="Fechar visualizador de sessão" variant="ghost" class="session-viewer__close" @click="emit('close')" />
         </header>
         <div v-if="props.detail.panes.length > 1" class="session-viewer__panes" role="tablist" aria-label="Painéis da sessão">
             <button v-for="(pane, idx) in props.detail.panes" :key="pane.sessionId" type="button" class="session-viewer__pane-tab" :class="{ 'is-active': selectedSessionId === pane.sessionId }" role="tab" :aria-selected="selectedSessionId === pane.sessionId" @click="selectPaneSession(pane.sessionId)">Painel {{ idx + 1 }} (geração {{ pane.generation }})</button>
@@ -17,7 +15,7 @@
             <div v-if="props.chunks.length === 0" class="session-viewer__empty">Nenhum scrollback gravado para este painel nesta sessão.</div>
             <template v-else>
                 <div v-for="chunk in props.chunks" :key="chunk.seq" class="session-viewer__chunk" :class="{ 'is-gap': chunk.kind === 'gap' }">{{ chunk.text }}</div>
-                <button v-if="props.hasMore" type="button" class="session-viewer__more" @click="emit('load-more', selectedSessionId)">Carregar mais saída</button>
+                <MaxButton v-if="props.hasMore" label="Carregar mais saída" variant="ghost" size="small" class="session-viewer__more" @click="emit('load-more', selectedSessionId)" />
             </template>
         </div>
     </section>
@@ -25,6 +23,7 @@
 
 <script setup lang="ts">
     import { computed, ref, watch } from 'vue';
+    import { MaxButton, MaxIconButton } from '@maxvue/max-components-ui';
     import type { ScrollbackChunk, SessionDetail_Serialize, SessionEndReason, SessionId } from '@/types/bindings';
 
     export interface SessionReadonlyViewerProps {

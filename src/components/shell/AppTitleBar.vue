@@ -4,17 +4,19 @@
         <span class="app-title-bar__title" font-semibold>{{ props.title }}</span>
         <span v-if="props.version" class="app-title-bar__version" text-xs op-60>{{ props.version }}</span>
         <div ml-auto flex items-center gap-2>
-            <button type="button" class="app-title-bar__search-btn" title="Buscar em tudo… (Ctrl+K)" aria-label="Buscar em tudo… (Ctrl+K)" @click="emit('open-global-search')">
+            <MaxButton type="button" class="app-title-bar__search-btn" title="Buscar em tudo… (Ctrl+K)" aria-label="Buscar em tudo… (Ctrl+K)" variant="outlined" size="small" @click="emit('open-global-search')">
                 <MaxIcon icon="lucide:search" />
                 <span>Buscar em tudo…</span>
                 <kbd class="app-title-bar__kbd">Ctrl+K</kbd>
-            </button>
+            </MaxButton>
             <slot name="actions" />
         </div>
     </header>
 </template>
 
 <script setup lang="ts">
+    import { MaxButton } from '@maxvue/max-components-ui';
+
     interface AppTitleBarProps {
         title: string;
         version?: string;

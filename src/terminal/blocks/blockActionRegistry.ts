@@ -33,11 +33,10 @@ export function bindBlockMarkersLookup(
     getMarkersCallback = fn;
 }
 
-function showSafeToast(title: string, severity: 'info' | 'warn' | 'error' | 'success'): void {
+function showSafeToast(title: string, severity: 'info' | 'warning' | 'error' | 'success'): void {
     void import('@maxvue/max-components-ui')
         .then((mod) => {
-            const toastObj = (mod as { Toast?: { show?: (opts: { title: string; severity: string }) => void } }).Toast;
-            toastObj?.show?.({ title, severity });
+            mod.Toast?.show?.({ title, severity });
         })
         .catch(() => {
             // Ignora em ambientes de teste sem container de Toast montado.
@@ -162,7 +161,7 @@ const builtinCopyOutputAction: BlockAction = {
         if (!instance) {
             showSafeToast(
                 'A saída deste comando já foi descartada do histórico do terminal.',
-                'warn'
+                'warning'
             );
             return;
         }
@@ -171,7 +170,7 @@ const builtinCopyOutputAction: BlockAction = {
         if (!extracted.available) {
             showSafeToast(
                 'A saída deste comando já foi descartada do histórico do terminal.',
-                'warn'
+                'warning'
             );
             return;
         }

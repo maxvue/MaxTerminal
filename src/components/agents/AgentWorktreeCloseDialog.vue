@@ -1,52 +1,47 @@
 <template>
-    <div v-if="props.modelValue && currentInspection" class="agent-close-dialog__backdrop" role="dialog" aria-modal="true" aria-label="Resolver Git Worktree do Agente" data-modal-trap="true">
-        <div class="agent-close-dialog">
-            <header class="agent-close-dialog__header">
-                <h2 class="agent-close-dialog__title">Resolver Git Worktree pós-fechamento</h2>
-                <button type="button" class="agent-close-dialog__close" aria-label="Fechar diálogo mantendo worktree" @click="onCloseModal">
-                    <MaxIcon icon="lucide:x" />
-                </button>
-            </header>
-            <div class="agent-close-dialog__body">
-                <div class="agent-close-dialog__meta">
-                    <div class="agent-close-dialog__meta-row">
-                        <span class="agent-close-dialog__meta-label">Worktree:</span>
-                        <code class="agent-close-dialog__code">{{ currentInspection.link.worktreePath ?? '—' }}</code>
-                    </div>
-                    <div class="agent-close-dialog__meta-row">
-                        <span class="agent-close-dialog__meta-label">Branch:</span>
-                        <code class="agent-close-dialog__code">{{ currentInspection.link.branch ?? '—' }}</code>
-                    </div>
-                    <div class="agent-close-dialog__meta-row">
-                        <span class="agent-close-dialog__meta-label">Commits à frente da base:</span>
-                        <strong>{{ currentInspection.aheadOfBase }}</strong>
-                    </div>
+    <MaxModal v-if="props.modelValue && currentInspection" :visible="props.modelValue" title="Resolver Git Worktree pós-fechamento" :no-button="true" max-width="36rem" class="agent-close-dialog" :dismissable="!submitting" :close-on-escape="!submitting" @update:visible="emit('update:modelValue', $event)">
+        <div class="agent-close-dialog__body">
+            <div class="agent-close-dialog__meta">
+                <div class="agent-close-dialog__meta-row">
+                    <span class="agent-close-dialog__meta-label">Worktree:</span>
+                    <code class="agent-close-dialog__code">{{ currentInspection.link.worktreePath ?? '—' }}</code>
                 </div>
-                <div v-if="blockerReasons.length > 0" class="agent-close-dialog__blockers" role="alert">
-                    <strong class="agent-close-dialog__blockers-title">Restrições de segurança detectadas:</strong>
-                    <ul class="agent-close-dialog__blockers-list">
-                        <li v-for="(reason, idx) in blockerReasons" :key="idx" class="agent-close-dialog__blocker-item">{{ reason }}</li>
-                    </ul>
+                <div class="agent-close-dialog__meta-row">
+                    <span class="agent-close-dialog__meta-label">Branch:</span>
+                    <code class="agent-close-dialog__code">{{ currentInspection.link.branch ?? '—' }}</code>
                 </div>
-                <div v-if="currentInspection.changedFiles.length > 0" class="agent-close-dialog__files">
-                    <span class="agent-close-dialog__files-title">Arquivos modificados ou não rastreados ({{ currentInspection.changedFiles.length }}{{ currentInspection.changedFilesTruncated ? '+' : '' }}):</span>
-                    <ul class="agent-close-dialog__files-list">
-                        <li v-for="file in currentInspection.changedFiles" :key="file"><code>{{ file }}</code></li>
-                    </ul>
+                <div class="agent-close-dialog__meta-row">
+                    <span class="agent-close-dialog__meta-label">Commits à frente da base:</span>
+                    <strong>{{ currentInspection.aheadOfBase }}</strong>
                 </div>
-                <p v-if="errorMessage" class="agent-close-dialog__error" role="alert">{{ errorMessage }}</p>
             </div>
-            <footer class="agent-close-dialog__footer">
-                <button type="button" class="agent-close-dialog__btn agent-close-dialog__btn--keep" :disabled="submitting" @click="onResolve('keep')">Manter worktree</button>
-                <button type="button" class="agent-close-dialog__btn agent-close-dialog__btn--remove" :disabled="submitting || !canRemoveWorktree" @click="onResolve('remove')">Remover worktree</button>
-                <button type="button" class="agent-close-dialog__btn agent-close-dialog__btn--delete-branch" :disabled="submitting || !canRemoveAndDeleteBranch" @click="onResolve('removeAndDeleteBranch')">Remover worktree e apagar branch</button>
-            </footer>
+            <MaxAlert v-if="blockerReasons.length > 0" type="warning" role="alert" class="agent-close-dialog__blockers">
+                <strong class="agent-close-dialog__blockers-title">Restrições de segurança detectadas:</strong>
+                <ul class="agent-close-dialog__blockers-list">
+                    <li v-for="(reason, idx) in blockerReasons" :key="idx" class="agent-close-dialog__blocker-item">{{ reason }}</li>
+                </ul>
+            </MaxAlert>
+            <div v-if="currentInspection.changedFiles.length > 0" class="agent-close-dialog__files">
+                <span class="agent-close-dialog__files-title">Arquivos modificados ou não rastreados ({{ currentInspection.changedFiles.length }}{{ currentInspection.changedFilesTruncated ? '+' : '' }}):</span>
+                <ul class="agent-close-dialog__files-list">
+                    <li v-for="file in currentInspection.changedFiles" :key="file"><code>{{ file }}</code></li>
+                </ul>
+            </div>
+            <MaxAlert v-if="errorMessage" type="danger" role="alert" class="agent-close-dialog__error">{{ errorMessage }}</MaxAlert>
         </div>
-    </div>
+        <footer class="agent-close-dialog__footer">
+            <MaxButton type="button" variant="primary" class="agent-close-dialog__btn agent-close-dialog__btn--keep" :disabled="submitting" @click="onResolve('keep')">Manter worktree</MaxButton>
+            <MaxButton type="button" variant="secondary" class="agent-close-dialog__btn agent-close-dialog__btn--remove" :disabled="submitting || !canRemoveWorktree" @click="onResolve('remove')">Remover worktree</MaxButton>
+            <MaxButton type="button" variant="danger" class="agent-close-dialog__btn agent-close-dialog__btn--delete-branch" :disabled="submitting || !canRemoveAndDeleteBranch" @click="onResolve('removeAndDeleteBranch')">Remover worktree e apagar branch</MaxButton>
+        </footer>
+    </MaxModal>
 </template>
 
 <script setup lang="ts">
     import { computed, ref, watch } from 'vue';
+    import MaxAlert from '@maxvue/max-components-ui/components/MaxAlert';
+    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
+    import MaxModal from '@maxvue/max-components-ui/components/MaxModal';
     import { isMtIpcError } from '@/ipc/core';
     import { useAgentsStore } from '@/stores/agents';
     import type {
@@ -124,10 +119,6 @@
         return reasons;
     });
 
-    function onCloseModal(): void {
-        emit('update:modelValue', false);
-    }
-
     async function onResolve(action: WorktreeResolution): Promise<void> {
         const insp = currentInspection.value;
         if (!insp) {
@@ -169,52 +160,17 @@
 </script>
 
 <style lang="scss" scoped>
-    .agent-close-dialog__backdrop {
-        position: fixed;
-        inset: 0;
-        z-index: 65;
-        background: rgb(0 0 0 / 62%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 1rem;
-    }
-
-    .agent-close-dialog {
-        width: 100%;
-        max-width: 36rem;
-        border-radius: 0.5rem;
-        background: var(--background-850, var(--background-900));
-        border: 1px solid var(--background-600);
+    :deep(.agent-close-dialog.max-modal) {
+        background-color: var(--background-850, var(--background-900));
+        border-color: var(--background-600);
         color: var(--background-100);
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-    }
 
-    .agent-close-dialog__header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0.75rem 1rem;
-        border-bottom: 1px solid var(--background-700);
-    }
-
-    .agent-close-dialog__title {
-        margin: 0;
-        font-size: 0.9375rem;
-        font-weight: 600;
-    }
-
-    .agent-close-dialog__close {
-        border: none;
-        background: transparent;
-        color: var(--background-300);
-        cursor: pointer;
+        .max-modal-content {
+            padding: 1rem;
+        }
     }
 
     .agent-close-dialog__body {
-        padding: 1rem;
         display: flex;
         flex-direction: column;
         gap: 0.75rem;
@@ -247,11 +203,6 @@
     }
 
     .agent-close-dialog__blockers {
-        padding: 0.625rem 0.75rem;
-        border-radius: 0.375rem;
-        background: rgb(245 158 11 / 15%);
-        border: 1px solid var(--max-warning-500);
-        color: var(--max-warning-300);
         font-size: 0.75rem;
     }
 
@@ -289,7 +240,6 @@
 
     .agent-close-dialog__error {
         margin: 0;
-        color: var(--max-danger-400);
         font-size: 0.75rem;
     }
 
@@ -298,35 +248,6 @@
         justify-content: flex-end;
         flex-wrap: wrap;
         gap: 0.5rem;
-        padding: 0.75rem 1rem;
-        border-top: 1px solid var(--background-700);
-    }
-
-    .agent-close-dialog__btn {
-        height: 2rem;
-        padding: 0 0.75rem;
-        border-radius: 0.3125rem;
-        border: 1px solid var(--background-600);
-        background: var(--background-800);
-        color: var(--background-200);
-        font-size: 0.7813rem;
-        font-weight: 600;
-        cursor: pointer;
-
-        &:disabled {
-            opacity: 0.45;
-            cursor: not-allowed;
-        }
-
-        &--keep {
-            border-color: var(--max-primary-500);
-            background: rgb(20 184 166 / 18%);
-            color: var(--max-primary-300);
-        }
-
-        &--delete-branch:not(:disabled) {
-            border-color: var(--max-danger-500);
-            color: var(--max-danger-300);
-        }
+        padding-top: 0.75rem;
     }
 </style>

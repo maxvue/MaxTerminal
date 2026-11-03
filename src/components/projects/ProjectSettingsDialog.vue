@@ -1,5 +1,5 @@
 <template>
-    <MaxModal v-if="targetProject" :visible="isOpen" :title="dialogTitle" :sub-title="targetProject.path" :no-button="true" max-width="44rem" class="project-settings-dialog" :dismissable="!isBusy" :close-on-escape="!isBusy" @update:visible="handleVisibleUpdate">
+    <MaxModal v-if="targetProject" :visible="isOpen" :title="dialogTitle" :sub-title="targetProject.path" :no-button="true" max-width="44rem" class="project-settings-dialog" :dismissable="!isBusy" :close-on-escape="!isBusy && !childDropdownOpen" @before-close="handleBeforeClose" @update:visible="handleVisibleUpdate">
         <div class="project-settings-dialog__body">
             <section class="project-settings-dialog__section" aria-labelledby="proj-settings-identity-heading">
                 <header class="project-settings-dialog__section-header">
@@ -19,7 +19,7 @@
                 <div v-if="themeError" class="project-settings-dialog__theme-error" role="alert">
                     {{ themeError }}
                 </div>
-                <ProjectThemeOverrides :projects="[targetProject]" :themes="themeStore.themes" :overrides="themeStore.appearance.projectOverrides" :disabled="themeBusy" @change="handleThemeChange" />
+                <ProjectThemeOverrides :projects="[targetProject]" :themes="themeStore.themes" :overrides="themeStore.appearance.projectOverrides" :disabled="themeBusy" @dropdown-change="childDropdownOpen = $event" @change="handleThemeChange" />
             </section>
         </div>
     </MaxModal>
@@ -45,8 +45,15 @@
     const identityBusy = ref<boolean>(false);
     const themeBusy = ref<boolean>(false);
     const themeError = ref<string | null>(null);
+    const childDropdownOpen = ref<boolean>(false);
 
     const isBusy = computed<boolean>(() => identityBusy.value || themeBusy.value);
+
+    function handleBeforeClose(event: { preventDefault: () => void }): void {
+        if (isBusy.value || childDropdownOpen.value) {
+            event.preventDefault();
+        }
+    }
 
     const targetProject = computed<Project_Serialize | null>(() => {
         const id = windowStore.projectSettingsProjectId;
@@ -110,17 +117,15 @@
 </script>
 
 <style lang="scss" scoped>
-    .project-settings-dialog {
-        :deep(.max-modal) {
-            background-color: var(--background-900);
-            border-color: var(--background-700);
-            color: var(--background-100);
-            max-height: 85vh;
-            display: flex;
-            flex-direction: column;
-        }
+    :deep(.project-settings-dialog.max-modal) {
+        background-color: var(--background-900);
+        border-color: var(--background-700);
+        color: var(--background-100);
+        max-height: 85vh;
+        display: flex;
+        flex-direction: column;
 
-        :deep(.max-modal-content) {
+        .max-modal-content {
             padding: 1.25rem;
             flex: 1;
             min-height: 0;

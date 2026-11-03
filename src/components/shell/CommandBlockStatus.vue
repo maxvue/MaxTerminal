@@ -4,24 +4,16 @@
             <MaxIcon :icon="statusIcon" class="cbs-icon" />
             <span class="cbs-label status-text">{{ primaryLabel }}</span>
         </span>
-        <span v-if="showExitCode" class="cbs-chip cbs-chip-danger block-exit-code">
-            Código de saída {{ effectiveExitCode }} (exit {{ effectiveExitCode }})
-        </span>
-        <span v-if="isUnknownOutcome" class="cbs-chip cbs-chip-warning">
-            Resultado desconhecido
-        </span>
-        <span v-if="persistence === 'failed'" class="cbs-chip cbs-chip-warning" title="Falha ao persistir este bloco no banco SQLite">
-            Histórico não salvo
-        </span>
-        <span v-if="outputTruncated" class="cbs-chip cbs-chip-neutral" title="A saída excedeu o limite de captura e foi truncada">
-            Saída parcial
-        </span>
+        <MaxTag v-if="showExitCode" :value="`Código de saída ${effectiveExitCode} (exit ${effectiveExitCode})`" severity="danger" :no-uppercase="true" class="cbs-chip cbs-chip-danger block-exit-code" />
+        <MaxTag v-if="isUnknownOutcome" value="Resultado desconhecido" severity="warning" :no-uppercase="true" class="cbs-chip cbs-chip-warning" />
+        <MaxTag v-if="persistence === 'failed'" value="Histórico não salvo" severity="warning" :no-uppercase="true" class="cbs-chip cbs-chip-warning" title="Falha ao persistir este bloco no banco SQLite" />
+        <MaxTag v-if="outputTruncated" value="Saída parcial" severity="secondary" :no-uppercase="true" class="cbs-chip cbs-chip-neutral" title="A saída excedeu o limite de captura e foi truncada" />
     </div>
 </template>
 
 <script setup lang="ts">
     import { computed } from 'vue';
-    import MaxIcon from '@maxvue/max-components-ui/components/MaxIcon';
+    import { MaxIcon, MaxTag } from '@maxvue/max-components-ui';
     import type { BlockStatus, ObservationConfidence, PersistenceState } from '@/types/bindings';
     import type { CommandBlockStatus as FrontendBlockStatus } from '@/types/terminal';
 

@@ -1,7 +1,7 @@
 <template>
     <div v-if="repositoryContext" class="git-indicator">
         <button type="button" class="git-indicator__chip" :class="chipStateClass" :title="tooltipText" @click.stop="toggleDetails">
-            <MaxIcon icon="lucide:git-branch" class="git-indicator__icon" />
+            <MaxIcon icon="lucide:git-branch" :size="0.75" class="git-indicator__icon" />
             <span class="git-indicator__branch">{{ branchLabel }}</span>
             <span v-if="repositoryContext.changes.dirty" class="git-indicator__dirty-dot" aria-label="Repositório com alterações locais" />
             <span v-if="upstreamSummary" class="git-indicator__upstream">{{ upstreamSummary }}</span>
@@ -9,10 +9,9 @@
         <div v-if="detailsOpen" class="git-indicator__popover" role="dialog" aria-label="Detalhes do Git" @click.stop>
             <div class="git-indicator__popover-head">
                 <span class="git-indicator__popover-title">{{ branchLabel }}</span>
-                <button type="button" class="git-indicator__refresh-btn" aria-label="Atualizar status" @click="onRefresh">
-                    <MaxIcon icon="lucide:refresh-cw" />
+                <MaxButton type="button" size="sm" variant="secondary" icon="lucide:refresh-cw" aria-label="Atualizar status" class="git-indicator__refresh-btn" @click="onRefresh">
                     <span>Atualizar status</span>
-                </button>
+                </MaxButton>
             </div>
             <div class="git-indicator__stats">
                 <span class="git-indicator__stat">Staged: <strong>{{ repositoryContext.changes.staged }}</strong></span>
@@ -25,7 +24,7 @@
     </div>
     <div v-else-if="degradedContext" class="git-indicator git-indicator--degraded">
         <span class="git-indicator__chip git-indicator__chip--degraded" :title="degradedContext.message">
-            <MaxIcon icon="lucide:alert-triangle" class="git-indicator__icon" />
+            <MaxIcon icon="lucide:alert-triangle" :size="0.75" class="git-indicator__icon" />
             <span class="git-indicator__branch">Git indisponível</span>
         </span>
     </div>
@@ -33,6 +32,8 @@
 
 <script setup lang="ts">
     import { computed, ref } from 'vue';
+    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
+    import MaxIcon from '@maxvue/max-components-ui/components/MaxIcon';
     import type { GitContext_Serialize } from '@/types/bindings';
 
     export interface GitIndicatorProps {

@@ -101,26 +101,6 @@
 </script>
 
 <style lang="scss" scoped>
-    .prefs-dialog-modal {
-        :deep(.max-modal) {
-            background-color: var(--background-950);
-            border-color: var(--background-700);
-            color: var(--background-100);
-            max-height: 85vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        :deep(.max-modal-content) {
-            padding: 0;
-            flex: 1;
-            min-height: 0;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-    }
-
     .prefs-dialog__body {
         display: grid;
         grid-template-columns: 13rem 1fr;
@@ -172,5 +152,23 @@
     .prefs-dialog__content {
         padding: 1rem 1.25rem;
         overflow-y: auto;
+    }
+
+    :deep(.prefs-dialog-modal.max-modal) {
+        background-color: var(--background-950);
+        border-color: var(--background-700);
+        color: var(--background-100);
+        max-height: 85vh;
+        display: flex;
+        flex-direction: column;
+
+        .max-modal-content {
+            padding: 0;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
     }
 </style>

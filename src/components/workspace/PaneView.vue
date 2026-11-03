@@ -3,15 +3,9 @@
         <header class="pane-view__toolbar">
             <span class="pane-view__cwd" :title="props.pane.cwd">{{ shortCwd }}</span>
             <div class="pane-view__actions">
-                <button type="button" class="pane-view__action-btn" title="Dividir verticalmente" aria-label="Dividir painel verticalmente" :disabled="!props.canSplit" @click.stop="emit('split', props.pane.id, 'vertical')">
-                    <MaxIcon icon="lucide:columns-2" />
-                </button>
-                <button type="button" class="pane-view__action-btn" title="Dividir horizontalmente" aria-label="Dividir painel horizontalmente" :disabled="!props.canSplit" @click.stop="emit('split', props.pane.id, 'horizontal')">
-                    <MaxIcon icon="lucide:rows-2" />
-                </button>
-                <button type="button" class="pane-view__action-btn pane-view__action-btn--danger" title="Fechar painel" aria-label="Fechar painel" @click.stop="emit('close', props.pane.id)">
-                    <MaxIcon icon="lucide:x" />
-                </button>
+                <MaxIconButton icon="lucide:columns-2" label="Dividir painel verticalmente" variant="ghost" class="pane-view__action-btn" title="Dividir verticalmente" :disabled="!props.canSplit" @click.stop="emit('split', props.pane.id, 'vertical')" />
+                <MaxIconButton icon="lucide:rows-2" label="Dividir painel horizontalmente" variant="ghost" class="pane-view__action-btn" title="Dividir horizontalmente" :disabled="!props.canSplit" @click.stop="emit('split', props.pane.id, 'horizontal')" />
+                <MaxIconButton icon="lucide:x" label="Fechar painel" variant="danger" class="pane-view__action-btn pane-view__action-btn--danger" title="Fechar painel" @click.stop="emit('close', props.pane.id)" />
             </div>
         </header>
         <div class="pane-view__body">
@@ -19,8 +13,8 @@
             <div v-else class="pane-view__exited" role="status">
                 <p class="pane-view__exited-title">{{ exitDescription }}</p>
                 <div class="pane-view__exited-actions">
-                    <button type="button" class="pane-view__restart-btn" @click="emit('restart', props.pane.id)">Reiniciar Painel</button>
-                    <button type="button" class="pane-view__close-btn" @click="emit('close', props.pane.id)">Fechar Painel</button>
+                    <MaxButton label="Reiniciar Painel" variant="primary" size="small" class="pane-view__restart-btn" @click="emit('restart', props.pane.id)" />
+                    <MaxButton label="Fechar Painel" variant="secondary" size="small" class="pane-view__close-btn" @click="emit('close', props.pane.id)" />
                 </div>
             </div>
         </div>
@@ -29,6 +23,7 @@
 
 <script setup lang="ts">
     import { computed, onMounted, watch } from 'vue';
+    import { MaxButton, MaxIconButton } from '@maxvue/max-components-ui';
     import HybridTerminal from '@/components/terminal/HybridTerminal.vue';
     import type { PaneId, PaneView_Serialize, SplitDirection, TabId } from '@/types/bindings';
 

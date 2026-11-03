@@ -54,7 +54,7 @@ describe('AgentWorktreeCloseDialog.vue (Fase 13)', () => {
                 inspection
             },
             global: {
-                stubs: { MaxIcon: true }
+                stubs: { MaxIcon: true, teleport: true }
             }
         });
 
@@ -106,7 +106,7 @@ describe('AgentWorktreeCloseDialog.vue (Fase 13)', () => {
                 inspection: initial
             },
             global: {
-                stubs: { MaxIcon: true }
+                stubs: { MaxIcon: true, teleport: true }
             }
         });
 

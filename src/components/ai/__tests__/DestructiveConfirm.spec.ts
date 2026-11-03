@@ -1,5 +1,6 @@
 import { mount } from '@vue/test-utils';
-import { describe, expect, it } from 'vitest';
+import { createPinia, setActivePinia } from 'pinia';
+import { beforeEach, describe, expect, it } from 'vitest';
 import DestructiveConfirm from '@/components/ai/DestructiveConfirm.vue';
 import type { RiskAssessment_Serialize } from '@/types/bindings';
 
@@ -19,6 +20,9 @@ const sampleRisk: RiskAssessment_Serialize = {
 };
 
 describe('DestructiveConfirm.vue (Fase 12 — Unidade 03)', () => {
+    beforeEach(() => {
+        setActivePinia(createPinia());
+    });
     it('mantém o botão de confirmação desabilitado até o usuário digitar exatamente o confirmToken', async () => {
         const wrapper = mount(DestructiveConfirm, {
             props: {

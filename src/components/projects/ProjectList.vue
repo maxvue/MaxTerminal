@@ -3,39 +3,41 @@
         <header class="project-list__header">
             <span class="project-list__heading">Projetos</span>
             <div class="project-list__toolbar">
-                <button type="button" class="project-list__tool-btn" title="Adicionar projeto" aria-label="Adicionar projeto" @click="showAddModal = true">
+                <MaxButton type="button" variant="secondary" size="small" class="project-list__tool-btn" title="Adicionar projeto" aria-label="Adicionar projeto" @click="showAddModal = true">
                     <MaxIcon icon="mdi:plus" />
                     <span>Adicionar projeto</span>
-                </button>
-                <button type="button" class="project-list__tool-btn project-list__tool-btn--icon" title="Adicionar pasta de projetos" aria-label="Adicionar pasta de projetos" @click="openNewRootModal">
-                    <MaxIcon icon="mdi:folder-multiple-plus-outline" />
-                </button>
+                </MaxButton>
+                <MaxIconButton icon="mdi:folder-multiple-plus-outline" size="1.1" class="project-list__tool-btn project-list__tool-btn--icon" title="Adicionar pasta de projetos" aria-label="Adicionar pasta de projetos" @click="openNewRootModal" />
             </div>
         </header>
 
         <ProjectDiscoveryPanel v-if="projectsStore.discovered.length > 0" :items="projectsStore.discovered" @accept="handleAcceptDiscovered" @dismiss="handleDismissDiscovered" />
 
-        <div v-if="projectsStore.error && projectsStore.projects.length === 0" class="project-list__error" role="alert">
+        <MaxAlert v-if="projectsStore.error && projectsStore.projects.length === 0" type="danger" role="alert" class="project-list__error">
             <span>{{ projectsStore.error }}</span>
-            <button type="button" class="project-list__retry-btn" @click="handleRetry">
+            <MaxButton type="button" variant="primary" size="small" class="project-list__retry-btn" @click="handleRetry">
                 Tentar novamente
-            </button>
-        </div>
+            </MaxButton>
+        </MaxAlert>
 
         <div class="project-list__scroll">
-            <ul v-if="projectsStore.projects.length > 0" class="project-list__items" role="list">
-                <li v-for="(proj, idx) in projectsStore.projects" :key="proj.id" class="project-list__li" :draggable="!projectsStore.reordering" @dragstart="onDragStart(idx)" @dragover.prevent @drop="onDrop(idx)">
-                    <ProjectItem :project="proj" :counters="projectsStore.countersFor(proj.id)" :selected="projectsStore.selectedId === proj.id" @select="handleSelectProject" @edit="handleOpenEdit" @configure="handleConfigureProject" @redetect="handleRedetect" @remove="handleRemoveProject" />
-                </li>
-            </ul>
-            <ProjectEmptyState v-else-if="!projectsStore.loading" @add-project="showAddModal = true" @add-root="openNewRootModal" />
+            <MaxQueryState :state="listState" :retryable="true" :message="projectsStore.error ?? undefined" @retry="handleRetry">
+                <template #empty>
+                    <ProjectEmptyState @add-project="showAddModal = true" @add-root="openNewRootModal" />
+                </template>
+                <ul class="project-list__items" role="list">
+                    <li v-for="(proj, idx) in projectsStore.projects" :key="proj.id" class="project-list__li" :draggable="!projectsStore.reordering" @dragstart="onDragStart(idx)" @dragover.prevent @drop="onDrop(idx)">
+                        <ProjectItem :project="proj" :counters="projectsStore.countersFor(proj.id)" :selected="projectsStore.selectedId === proj.id" @select="handleSelectProject" @edit="handleOpenEdit" @configure="handleConfigureProject" @redetect="handleRedetect" @remove="handleRemoveProject" />
+                    </li>
+                </ul>
+            </MaxQueryState>
         </div>
 
         <footer class="project-list__footer">
-            <button type="button" class="project-list__settings-btn" title="Configurações gerais" aria-label="Abrir configurações gerais" @click="handleOpenGeneralSettings">
+            <MaxButton type="button" variant="secondary" class="project-list__settings-btn" title="Configurações gerais" aria-label="Abrir configurações gerais" @click="handleOpenGeneralSettings">
                 <MaxIcon icon="lucide:settings" />
                 <span>Configurações</span>
-            </button>
+            </MaxButton>
         </footer>
 
         <ProjectAddModal v-model:visible="showAddModal" />
@@ -46,6 +48,10 @@
 
 <script setup lang="ts">
     import { computed, ref } from 'vue';
+    import MaxAlert from '@maxvue/max-components-ui/components/MaxAlert';
+    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
+    import MaxIconButton from '@maxvue/max-components-ui/components/MaxIconButton';
+    import MaxQueryState from '@maxvue/max-components-ui/components/MaxQueryState';
     import ProjectAddModal from '@/components/projects/ProjectAddModal.vue';
     import ProjectDiscoveryPanel from '@/components/projects/ProjectDiscoveryPanel.vue';
     import ProjectEditModal from '@/components/projects/ProjectEditModal.vue';
@@ -71,6 +77,13 @@
             return null;
         }
         return projectsStore.projectById(editingProjectId.value) ?? null;
+    });
+
+    const listState = computed<'loading' | 'error' | 'ready-empty' | 'ready-with-data'>(() => {
+        if (projectsStore.loading && projectsStore.projects.length === 0) return 'loading';
+        if (projectsStore.error && projectsStore.projects.length === 0) return 'error';
+        if (projectsStore.projects.length === 0) return 'ready-empty';
+        return 'ready-with-data';
     });
 
     function openNewRootModal(): void {

@@ -1,0 +1,210 @@
+{
+  "version": 2,
+  "planRevision": "00fdaa27b95cba7d3e7dc513dcba5b7733e6688168304ee72ba9c8272da9e49d",
+  "tasks": [
+    {
+      "id": "T0",
+      "status": "completed",
+      "files": [
+        "vite.config.ts",
+        "vitest.config.ts"
+      ],
+      "validations": []
+    },
+    {
+      "id": "T1",
+      "status": "completed",
+      "files": [
+        "src/app/plugins.ts",
+        "src/app/App.vue",
+        "src/composables/useAgentShortcuts.ts",
+        "src/terminal/blocks/blockActionRegistry.ts",
+        "src/composables/search/useSearchNavigation.ts",
+        "src/components/search/GlobalSearchPalette.vue",
+        "tests/app/plugins.spec.ts",
+        "tests/app/toastIntegration.spec.ts"
+      ],
+      "validations": []
+    },
+    {
+      "id": "T2",
+      "status": "completed",
+      "files": [
+        "src/components/shell/AppTitleBar.vue",
+        "src/components/shell/DbRecoveryPanel.vue",
+        "src/components/shell/AppEmptyState.vue",
+        "src/components/shell/CommandBlockStatus.vue",
+        "src/components/shell/TabStatusIndicator.vue",
+        "src/components/os/ShortcutStatusBadge.vue",
+        "src/components/preferences/AiPreferences.vue",
+        "src/components/preferences/PreferencesDialog.vue",
+        "src/components/preferences/appearance/AppearancePreferences.vue",
+        "src/components/preferences/appearance/ProjectThemeOverrides.vue",
+        "src/components/preferences/appearance/TerminalFontSettings.vue",
+        "src/components/preferences/appearance/ThemeImportReport.vue",
+        "src/components/preferences/appearance/ThemePicker.vue",
+        "src/components/preferences/appearance/ThemeSwatch.vue",
+        "src/components/preferences/system/CloseBehaviorSelector.vue",
+        "src/components/preferences/system/EditorSelector.vue",
+        "src/components/preferences/system/PreferencesSystemSection.vue",
+        "src/components/preferences/system/ShortcutRecorder.vue",
+        "src/components/preferences/system/WaylandShortcutHelp.vue",
+        "src/components/projects/ProjectAddModal.vue",
+        "src/components/projects/ProjectDiscoveryPanel.vue",
+        "src/components/projects/ProjectEditModal.vue",
+        "src/components/projects/ProjectEmptyState.vue",
+        "src/components/projects/ProjectIdentityForm.vue",
+        "src/components/projects/ProjectItem.vue",
+        "src/components/projects/ProjectList.vue",
+        "src/components/projects/ProjectRootModal.vue",
+        "src/components/projects/ProjectSettingsDialog.vue",
+        "src/components/projects/ProjectStatusBadges.vue",
+        "src/components/projects/ProjectWorkspace.vue",
+        "src/components/indicators/WorktreeBadge.vue",
+        "tests/frontend/projects/ProjectAddModal.spec.ts",
+        "tests/frontend/projects/ProjectItem.spec.ts",
+        "tests/frontend/projects/ProjectSettingsNavigation.spec.ts"
+      ],
+      "validations": []
+    },
+    {
+      "id": "T3",
+      "status": "completed",
+      "files": [
+        "src/components/agents/AgentAttentionIndicator.vue",
+        "src/components/agents/AgentLauncherMenu.vue",
+        "src/components/agents/AgentSettingsPanel.vue",
+        "src/components/agents/AgentTabOpenDialog.vue",
+        "src/components/agents/AgentWorktreeCloseDialog.vue",
+        "src/components/agents/AgentStatusLine.vue",
+        "src/components/ai/AiPromptInput.vue",
+        "src/components/ai/AiStatusIndicator.vue",
+        "src/components/ai/AiSuggestionBlock.vue",
+        "src/components/ai/DestructiveConfirm.vue",
+        "src/components/ai/HarnessPicker.vue",
+        "src/components/ai/InlineDiagnosis.vue",
+        "src/components/ai/RagResults.vue",
+        "src/components/ai/AiContextPreview.vue",
+        "src/components/ai/RiskBadge.vue",
+        "src/components/bridge/BridgeSettingsSection.vue",
+        "src/components/bridge/BridgeStatusIndicator.vue",
+        "src/components/bridge/InspectButton.vue",
+        "src/components/indicators/GitIndicator.vue",
+        "src/components/indicators/PortBadge.vue",
+        "src/components/skills/CommandMemoryList.vue",
+        "src/components/skills/SkillConflictList.vue",
+        "src/components/skills/SkillsSyncPanel.vue",
+        "tests/components/agents/AgentWorktreeCloseDialog.spec.ts",
+        "tests/components/agents/AgentStatusLine.spec.ts",
+        "tests/components/bridge/BridgeSettingsSection.spec.ts",
+        "tests/components/bridge/BridgeStatusIndicator.spec.ts",
+        "tests/components/bridge/InspectButton.spec.ts"
+      ],
+      "validations": []
+    },
+    {
+      "id": "T4",
+      "status": "completed",
+      "files": [
+        "src/components/github/BugCycleConfirmModal.vue",
+        "src/components/github/BugCycleProgress.vue",
+        "src/components/github/GithubAuthPanel.vue",
+        "src/components/github/IssueActionsMenu.vue",
+        "src/components/github/IssueCreateModal.vue",
+        "src/components/github/IssueOpenTabModal.vue",
+        "src/components/github/LabelSyncBanner.vue",
+        "src/components/github/IssuesTab.vue",
+        "src/components/github/IssueDetail.vue",
+        "src/components/github/IssueComments.vue",
+        "src/components/github/IssuePlanSection.vue",
+        "src/components/commandGroups/CommandGroupModal.vue",
+        "src/components/commandGroups/CommandGroupItemRow.vue",
+        "src/components/commandGroups/CommandGroupSuggestPanel.vue",
+        "src/components/commandGroups/GroupRunPanel.vue",
+        "src/components/commandGroups/GroupRunOutputView.vue",
+        "src/components/quick-commands/ArtisanCommandModal.vue",
+        "src/components/quick-commands/ArtisanParamRow.vue",
+        "src/components/quick-commands/ArtisanParamsBuilder.vue",
+        "src/components/quick-commands/ArtisanPhpPreview.vue",
+        "src/components/quick-commands/QuickCommandsHost.vue",
+        "tests/components/quick-commands/ArtisanParamsBuilder.spec.ts"
+      ],
+      "validations": []
+    },
+    {
+      "id": "T5",
+      "status": "completed",
+      "files": [
+        "src/components/search/SearchFilterBar.vue",
+        "src/components/search/SearchResultSection.vue",
+        "src/components/search/SearchResultItem.vue",
+        "src/components/workspace/TemplateEditorModal.vue",
+        "src/components/workspace/TemplateLaunchPopover.vue",
+        "src/components/workspace/SessionHistoryDrawer.vue",
+        "src/components/workspace/SessionReadonlyViewer.vue",
+        "src/components/workspace/TabBar.vue",
+        "src/components/workspace/TabBarItem.vue",
+        "src/components/workspace/TabWorkspaceView.vue",
+        "src/components/workspace/PaneView.vue",
+        "src/components/terminal/CommandBlock.vue",
+        "src/components/terminal/TerminalExitBanner.vue",
+        "src/components/terminal/TerminalSearchBar.vue",
+        "src/components/terminal/__dev__/TerminalPlayground.vue",
+        "src/components/dev/PerfOverlay.vue"
+      ],
+      "validations": []
+    },
+    {
+      "id": "T6",
+      "status": "completed",
+      "files": [
+        "tests/lint/max-components-architecture.spec.ts",
+        "tests/setup.ts"
+      ],
+      "validations": []
+    },
+    {
+      "id": "T7",
+      "status": "completed",
+      "files": [
+        "docs/plans/wt-8e0aaf7f/execution-state.json"
+      ],
+      "validations": []
+    }
+  ],
+  "verification": {
+    "revision": "00fdaa27b95cba7d3e7dc513dcba5b7733e6688168304ee72ba9c8272da9e49d",
+    "checks": [
+      {
+        "command": "npx --no-install vitest run tests/lint/max-components-architecture.spec.ts",
+        "revision": "00fdaa27b95cba7d3e7dc513dcba5b7733e6688168304ee72ba9c8272da9e49d",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run typecheck",
+        "revision": "00fdaa27b95cba7d3e7dc513dcba5b7733e6688168304ee72ba9c8272da9e49d",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run lint",
+        "revision": "00fdaa27b95cba7d3e7dc513dcba5b7733e6688168304ee72ba9c8272da9e49d",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run build",
+        "revision": "00fdaa27b95cba7d3e7dc513dcba5b7733e6688168304ee72ba9c8272da9e49d",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npx --no-install vitest run",
+        "revision": "00fdaa27b95cba7d3e7dc513dcba5b7733e6688168304ee72ba9c8272da9e49d",
+        "result": "passed",
+        "exitCode": 0
+      }
+    ]
+  }
+}

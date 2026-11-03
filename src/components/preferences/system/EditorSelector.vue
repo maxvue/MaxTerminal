@@ -2,16 +2,12 @@
     <div class="editor-selector">
         <div class="editor-selector__field">
             <label class="editor-selector__label" for="mt-editor-kind">Editor preferencial para links do terminal</label>
-            <select id="mt-editor-kind" class="editor-selector__select" :value="props.modelValue.kind" :disabled="props.disabled" @change="onKindChange">
-                <option v-for="item in editorOptions" :key="item.kind" :value="item.kind">
-                    {{ item.label }}{{ availabilitySuffix(item.kind) }}
-                </option>
-            </select>
+            <MaxInputSelect id="mt-editor-kind" :model-value="props.modelValue.kind" :options="selectOptions" option-label="label" option-value="value" option-name="label" :disabled="props.disabled" class="editor-selector__select" @change="onKindChange" />
         </div>
         <div v-if="props.modelValue.kind === 'custom'" class="editor-selector__custom">
             <div class="editor-selector__field">
                 <label class="editor-selector__label" for="mt-editor-custom-argv">Comando e argumentos personalizados (use {file}, {line}, {column})</label>
-                <input id="mt-editor-custom-argv" type="text" class="editor-selector__input" placeholder="Ex.: code --goto {file}:{line}:{column}" :value="customArgvText" :disabled="props.disabled" @change="onCustomArgvChange">
+                <MaxInputText id="mt-editor-custom-argv" :model-value="customArgvText" placeholder="Ex.: code --goto {file}:{line}:{column}" :disabled="props.disabled" class="editor-selector__input" @update:model-value="onCustomArgvChange" @change="onCustomArgvChange" />
             </div>
         </div>
     </div>
@@ -19,6 +15,7 @@
 
 <script setup lang="ts">
     import { computed } from 'vue';
+    import { MaxInputSelect, MaxInputText } from '@maxvue/max-components-ui';
     import type {
         EditorAvailability_Serialize,
         EditorKind,
@@ -54,6 +51,13 @@
 
     const customArgvText = computed<string>(() => (props.modelValue.customArgv ?? []).join(' '));
 
+    const selectOptions = computed(() => {
+        return editorOptions.map((item) => ({
+            label: `${item.label}${availabilitySuffix(item.kind)}`,
+            value: item.kind
+        }));
+    });
+
     function availabilitySuffix(kind: EditorKind): string {
         if (kind === 'custom') {
             return '';
@@ -65,9 +69,8 @@
         return entry.available ? ' — Disponível' : ' — Não detectado';
     }
 
-    function onKindChange(event: Event): void {
-        const select = event.target as HTMLSelectElement;
-        const nextKind = select.value as EditorKind;
+    function onKindChange(valOrEv: unknown): void {
+        const nextKind = (typeof valOrEv === 'string' ? valOrEv : (valOrEv as { target?: HTMLSelectElement })?.target?.value) as EditorKind;
         const defaultArgv =
             nextKind === 'custom' && props.modelValue.customArgv.length === 0
                 ? ['code', '--goto', '{file}:{line}:{column}']
@@ -78,9 +81,9 @@
         });
     }
 
-    function onCustomArgvChange(event: Event): void {
-        const input = event.target as HTMLInputElement;
-        const tokens = input.value
+    function onCustomArgvChange(valOrEv: unknown): void {
+        const raw = typeof valOrEv === 'string' ? valOrEv : ((valOrEv as { target?: HTMLInputElement })?.target?.value ?? '');
+        const tokens = raw
             .split(/\s+/)
             .map((s) => s.trim())
             .filter(Boolean);

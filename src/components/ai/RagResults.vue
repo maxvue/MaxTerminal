@@ -2,7 +2,7 @@
     <div v-if="response" class="rag-results" data-testid="rag-results">
         <header class="rag-results__header">
             <div class="rag-results__title-wrap">
-                <MaxIcon icon="lucide:book-open" class="rag-results__icon" />
+                <MaxIcon icon="lucide:book-open" :size="0.875" class="rag-results__icon" />
                 <span class="rag-results__title">Documentação ({{ response.slug }})</span>
                 <span class="rag-results__query">“{{ response.query }}” · {{ response.latencyMs }} ms</span>
             </div>
@@ -11,9 +11,7 @@
                 <select v-if="slugs.length > 0" :value="selectedSlug" class="rag-results__slug-select" aria-label="Selecionar base RAG" data-testid="rag-slug-select" @change="onChangeSlug">
                     <option v-for="s in slugs" :key="s.slug" :value="s.slug">{{ s.title || s.slug }}</option>
                 </select>
-                <button type="button" class="rag-results__close" title="Fechar resultados RAG" aria-label="Fechar resultados RAG" data-testid="btn-close-rag" @click="clear">
-                    <MaxIcon icon="lucide:x" />
-                </button>
+                <MaxIconButton icon="lucide:x" :size="0.75" class="rag-results__close" title="Fechar resultados RAG" aria-label="Fechar resultados RAG" data-testid="btn-close-rag" @click="clear" />
             </div>
         </header>
 
@@ -29,14 +27,12 @@
                 <div class="rag-results__item-actions">
                     <span v-if="item.source" class="rag-results__item-source">{{ item.source }}</span>
                     <div class="rag-results__item-btns">
-                        <button type="button" class="rag-results__btn" :data-testid="`btn-copy-rag-${idx}`" @click="onCopy(item, idx)">
-                            <MaxIcon icon="lucide:copy" />
+                        <MaxButton type="button" size="sm" variant="secondary" icon="lucide:copy" :data-testid="`btn-copy-rag-${idx}`" @click="onCopy(item, idx)">
                             <span>{{ copiedIdx === idx ? 'Copiado' : 'Copiar' }}</span>
-                        </button>
-                        <button type="button" class="rag-results__btn" :data-testid="`btn-insert-rag-${idx}`" @click="insertResultIntoInput(item)">
-                            <MaxIcon icon="lucide:corner-down-left" />
+                        </MaxButton>
+                        <MaxButton type="button" size="sm" variant="secondary" icon="lucide:corner-down-left" :data-testid="`btn-insert-rag-${idx}`" @click="insertResultIntoInput(item)">
                             <span>Inserir</span>
-                        </button>
+                        </MaxButton>
                     </div>
                 </div>
             </li>
@@ -46,6 +42,8 @@
 
 <script setup lang="ts">
     import { ref } from 'vue';
+    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
+    import MaxIconButton from '@maxvue/max-components-ui/components/MaxIconButton';
     import MaxIcon from '@maxvue/max-components-ui/components/MaxIcon';
     import { useRagSearch } from '@/composables/ai/useRagSearch';
     import type { PaneId, RagResult_Serialize } from '@/types/bindings';
@@ -118,7 +116,6 @@
     }
 
     .rag-results__icon {
-        font-size: 0.875rem;
         color: var(--max-info-400);
     }
 
@@ -148,19 +145,9 @@
     }
 
     .rag-results__close {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 1.5rem;
-        height: 1.5rem;
-        border-radius: 0.25rem;
-        border: 1px solid transparent;
-        background: transparent;
         color: var(--background-300);
-        cursor: pointer;
 
         &:hover {
-            background: var(--background-800);
             color: var(--background-50);
         }
     }
@@ -206,7 +193,6 @@
     .rag-results__item-score {
         font-family: var(--mt-font-mono);
         font-size: 0.6875rem;
-        color: var(--max-info-400);
     }
 
     .rag-results__item-content {
@@ -239,22 +225,5 @@
         display: flex;
         align-items: center;
         gap: 0.25rem;
-    }
-
-    .rag-results__btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.25rem;
-        padding: 0.125rem 0.375rem;
-        border-radius: 0.25rem;
-        border: 1px solid var(--background-700);
-        background: var(--background-850);
-        color: var(--background-100);
-        font-size: 0.6875rem;
-        cursor: pointer;
-
-        &:hover {
-            border-color: var(--max-primary-500);
-        }
     }
 </style>

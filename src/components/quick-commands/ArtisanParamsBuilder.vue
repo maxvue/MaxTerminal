@@ -3,14 +3,8 @@
         <div class="params-builder__header">
             <span class="params-builder__title">Argumentos e Flags (--options)</span>
             <div class="params-builder__buttons">
-                <button type="button" class="params-builder__add-btn" data-testid="add-argument-btn" @click="addArgument">
-                    <MaxIcon icon="mdi:plus" />
-                    <span>Adicionar argumento</span>
-                </button>
-                <button type="button" class="params-builder__add-btn" data-testid="add-option-btn" @click="addOption">
-                    <MaxIcon icon="mdi:plus" />
-                    <span>Adicionar opção</span>
-                </button>
+                <MaxButton label="Adicionar argumento" icon="mdi:plus" variant="secondary" size="small" class="params-builder__add-btn" data-testid="add-argument-btn" @click="addArgument" />
+                <MaxButton label="Adicionar opção" icon="mdi:plus" variant="secondary" size="small" class="params-builder__add-btn" data-testid="add-option-btn" @click="addOption" />
             </div>
         </div>
 
@@ -25,6 +19,7 @@
 </template>
 
 <script setup lang="ts">
+    import { MaxButton } from '@maxvue/max-components-ui';
     import ArtisanParamRow from '@/components/quick-commands/ArtisanParamRow.vue';
     import type { ArtisanParam, FieldIssue } from '@/types/bindings';
 

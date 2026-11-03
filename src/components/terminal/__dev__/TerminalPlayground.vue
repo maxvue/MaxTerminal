@@ -10,15 +10,9 @@
                     <option value="/usr/bin/fish">fish (/usr/bin/fish)</option>
                     <option value="/bin/sh">sh (/bin/sh)</option>
                 </select>
-                <button type="button" class="pg-btn pg-btn-primary" @click="spawnActiveSlot">
-                    Iniciar (Spawn)
-                </button>
-                <button type="button" class="pg-btn" :disabled="!activeSlot.ptyId" @click="restartActiveSlot">
-                    Reiniciar
-                </button>
-                <button type="button" class="pg-btn pg-btn-danger" :disabled="!activeSlot.ptyId" @click="killActiveSlot">
-                    Encerrar (Kill)
-                </button>
+                <MaxButton label="Iniciar (Spawn)" variant="primary" size="small" class="pg-btn pg-btn-primary" @click="spawnActiveSlot" />
+                <MaxButton label="Reiniciar" variant="secondary" size="small" class="pg-btn" :disabled="!activeSlot.ptyId" @click="restartActiveSlot" />
+                <MaxButton label="Encerrar (Kill)" variant="danger" size="small" class="pg-btn pg-btn-danger" :disabled="!activeSlot.ptyId" @click="killActiveSlot" />
             </div>
             <div class="toolbar-group">
                 <button type="button" class="pg-btn pg-tab-btn" :class="{ 'is-active': activeSlotIndex === 0 }" @click="switchSlot(0)">
@@ -29,23 +23,13 @@
                     <span>Aba 2 (pane-2)</span>
                     <TabStatusIndicator :status="slotTabStatus(1)" size="sm" :show-label="true" />
                 </button>
-                <button type="button" class="pg-btn" @click="triggerWebglLoss">
-                    Perder contexto WebGL
-                </button>
-                <button type="button" class="pg-btn" :class="{ 'is-active': demoTriggersEnabled }" @click="toggleDemoTriggers">
-                    {{ demoTriggersEnabled ? 'Gatilhos Demo: ON' : 'Gatilhos Demo: OFF' }}
-                </button>
+                <MaxButton label="Perder contexto WebGL" variant="secondary" size="small" class="pg-btn" @click="triggerWebglLoss" />
+                <MaxButton :label="demoTriggersEnabled ? 'Gatilhos Demo: ON' : 'Gatilhos Demo: OFF'" variant="secondary" size="small" class="pg-btn" :class="{ 'is-active': demoTriggersEnabled }" @click="toggleDemoTriggers" />
             </div>
             <div class="toolbar-group">
-                <button type="button" class="pg-btn" @click="simulateBlock('success')">
-                    + Bloco OK (0)
-                </button>
-                <button type="button" class="pg-btn" @click="simulateBlock('error')">
-                    + Bloco Erro (1)
-                </button>
-                <button type="button" class="pg-btn" @click="simulateBlock('aborted')">
-                    + Bloco Abort (null)
-                </button>
+                <MaxButton label="+ Bloco OK (0)" variant="secondary" size="small" class="pg-btn" @click="simulateBlock('success')" />
+                <MaxButton label="+ Bloco Erro (1)" variant="secondary" size="small" class="pg-btn" @click="simulateBlock('error')" />
+                <MaxButton label="+ Bloco Abort (null)" variant="secondary" size="small" class="pg-btn" @click="simulateBlock('aborted')" />
             </div>
         </header>
         <div v-if="cleanupAlertMessage" class="playground-alert" role="alert">
@@ -81,6 +65,7 @@
 
 <script setup lang="ts">
     import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+    import { MaxButton } from '@maxvue/max-components-ui';
     import type { UnlistenFn } from '@tauri-apps/api/event';
     import type { TabStatus } from '@/types/bindings';
     import type { Disposable } from '@/types/terminal';

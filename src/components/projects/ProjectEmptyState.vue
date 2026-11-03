@@ -1,22 +1,24 @@
 <template>
     <div class="project-empty-state">
         <div class="project-empty-state__icon-box" aria-hidden="true">
-            <MaxIcon icon="mdi:folder-plus-outline" class="project-empty-state__icon" />
+            <MaxIcon icon="mdi:folder-plus-outline" size="1.5" class="project-empty-state__icon" />
         </div>
         <h3 class="project-empty-state__title">Nenhum projeto cadastrado</h3>
         <p class="project-empty-state__desc">Adicione um projeto individual ou cadastre uma pasta de projetos para descobrir subpastas automaticamente.</p>
         <div class="project-empty-state__actions">
-            <button type="button" class="project-empty-state__btn project-empty-state__btn--primary" @click="emit('add-project')">
+            <MaxButton variant="primary" class="project-empty-state__btn project-empty-state__btn--primary" @click="emit('add-project')">
                 Adicionar projeto
-            </button>
-            <button type="button" class="project-empty-state__btn project-empty-state__btn--secondary" @click="emit('add-root')">
+            </MaxButton>
+            <MaxButton variant="secondary" class="project-empty-state__btn project-empty-state__btn--secondary" @click="emit('add-root')">
                 Adicionar pasta de projetos
-            </button>
+            </MaxButton>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
+    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
+
     const emit = defineEmits<{
         'add-project': [];
         'add-root': [];
@@ -47,10 +49,6 @@
         background: var(--background-800);
         color: var(--max-primary-400);
         border: 1px solid var(--background-700);
-    }
-
-    .project-empty-state__icon {
-        font-size: 1.5rem;
     }
 
     .project-empty-state__title {

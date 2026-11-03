@@ -64,12 +64,12 @@ describe('ThemePicker.vue', () => {
 
         expect(wrapper.findAll('.theme-swatch')).toHaveLength(2);
 
-        const filterBtns = wrapper.findAll('.theme-picker__filter-btn');
+        const filterBtns = wrapper.findAll('[role="radio"]');
         await filterBtns[2]!.trigger('click');
         expect(wrapper.findAll('.theme-swatch')).toHaveLength(1);
 
         await filterBtns[0]!.trigger('click');
-        const input = wrapper.find('.theme-picker__search');
+        const input = wrapper.find('.theme-picker__search input');
         await input.setValue('Navy');
         expect(wrapper.findAll('.theme-swatch')).toHaveLength(1);
 

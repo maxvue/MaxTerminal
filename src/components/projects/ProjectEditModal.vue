@@ -32,14 +32,12 @@
 </script>
 
 <style lang="scss" scoped>
-    .project-edit-modal {
-        :deep(.max-modal) {
-            background-color: var(--background-800);
-            border-color: var(--background-600);
-            color: var(--background-100);
-        }
+    :deep(.project-edit-modal.max-modal) {
+        background-color: var(--background-800);
+        border-color: var(--background-600);
+        color: var(--background-100);
 
-        :deep(.max-modal-content) {
+        .max-modal-content {
             padding: 1.125rem;
         }
     }

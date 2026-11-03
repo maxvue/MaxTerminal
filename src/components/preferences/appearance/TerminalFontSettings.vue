@@ -3,61 +3,52 @@
         <div class="font-settings__grid">
             <div class="font-settings__field">
                 <label class="font-settings__label" for="mt-font-preset">Preset de fonte monoespaçada</label>
-                <select id="mt-font-preset" class="font-settings__select" :value="selectedPresetId" :disabled="disabled" @change="onPresetChange">
-                    <option v-for="preset in MONOSPACE_FONT_PRESETS" :key="preset.id" :value="preset.id">
-                        {{ preset.label }}
-                    </option>
-                    <option value="custom">Pilha personalizada</option>
-                </select>
+                <MaxInputSelect id="mt-font-preset" :model-value="selectedPresetId" :options="presetOptions" option-label="label" option-value="value" option-name="label" :disabled="disabled" class="font-settings__select" @change="onPresetChange" />
             </div>
 
             <div class="font-settings__field">
                 <label class="font-settings__label" for="mt-font-family">Pilha CSS font-family</label>
-                <input id="mt-font-family" type="text" class="font-settings__input" :value="appearance.fontFamily" :disabled="disabled" @change="onFontFamilyChange">
-                <span v-if="fontError" class="font-settings__error">{{ fontError }}</span>
+                <MaxInputText id="mt-font-family" :model-value="appearance.fontFamily" :disabled="disabled" class="font-settings__input" @update:model-value="onFontFamilyChange" @change="onFontFamilyChange" />
+                <MaxAlert v-if="fontError" :message="fontError" severity="error" class="font-settings__error" />
             </div>
 
             <div class="font-settings__field">
                 <label class="font-settings__label" for="mt-font-size">Tamanho da fonte ({{ appearance.fontSize }}px)</label>
-                <input id="mt-font-size" type="number" min="8" max="36" step="1" class="font-settings__input" :value="appearance.fontSize" :disabled="disabled" @change="onFontSizeChange">
+                <MaxInputNumber id="mt-font-size" :model-value="appearance.fontSize" :min="8" :max="36" :step="1" :disabled="disabled" class="font-settings__input" @update:model-value="onFontSizeChange" @change="onFontSizeChange" />
             </div>
 
             <div class="font-settings__field">
                 <label class="font-settings__label" for="mt-line-height">Altura da linha ({{ appearance.lineHeight }})</label>
-                <input id="mt-line-height" type="number" min="0.8" max="2.5" step="0.05" class="font-settings__input" :value="appearance.lineHeight" :disabled="disabled" @change="onLineHeightChange">
+                <MaxInputNumber id="mt-line-height" :model-value="appearance.lineHeight" :min="0.8" :max="2.5" :step="0.05" :disabled="disabled" class="font-settings__input" @update:model-value="onLineHeightChange" @change="onLineHeightChange" />
             </div>
 
             <div class="font-settings__field">
                 <label class="font-settings__label" for="mt-cursor-style">Estilo do cursor</label>
-                <select id="mt-cursor-style" class="font-settings__select" :value="appearance.cursorStyleOverride ?? 'theme'" :disabled="disabled" @change="onCursorStyleChange">
-                    <option value="theme">Seguir esquema de cores</option>
-                    <option value="block">Bloco (█)</option>
-                    <option value="bar">Barra vertical (▏)</option>
-                    <option value="underline">Sublinhado (_)</option>
-                </select>
+                <MaxInputSelect id="mt-cursor-style" :model-value="appearance.cursorStyleOverride ?? 'theme'" :options="cursorStyleOptions" option-label="label" option-value="value" option-name="label" :disabled="disabled" class="font-settings__select" @change="onCursorStyleChange" />
             </div>
 
             <div class="font-settings__field">
                 <label class="font-settings__label" for="mt-contrast-ratio">Contraste mínimo ({{ appearance.minimumContrastRatio }}:1)</label>
-                <input id="mt-contrast-ratio" type="number" min="1" max="21" step="0.5" class="font-settings__input" :value="appearance.minimumContrastRatio" :disabled="disabled" @change="onMinimumContrastChange">
+                <MaxInputNumber id="mt-contrast-ratio" :model-value="appearance.minimumContrastRatio" :min="1" :max="21" :step="0.5" :disabled="disabled" class="font-settings__input" @update:model-value="onMinimumContrastChange" @change="onMinimumContrastChange" />
             </div>
         </div>
 
         <div class="font-settings__toggles">
-            <label class="font-settings__checkbox">
-                <input type="checkbox" :checked="appearance.fontLigatures" :disabled="disabled" @change="onLigaturesToggle">
-                <span>Habilitar ligaduras tipográficas no terminal (ex.: =&gt;, !==, -&gt;)</span>
-            </label>
-            <label class="font-settings__checkbox">
-                <input type="checkbox" :checked="appearance.cursorBlink" :disabled="disabled" @change="onCursorBlinkToggle">
-                <span>Cursor piscante nas sessões interativas</span>
-            </label>
+            <MaxInputCheckbox id="mt-font-ligatures" :model-value="appearance.fontLigatures" :disabled="disabled" label="Habilitar ligaduras tipográficas no terminal (ex.: =>, !==, ->)" class="font-settings__checkbox" @update:model-value="onLigaturesToggle" @change="onLigaturesToggle" />
+            <MaxInputCheckbox id="mt-cursor-blink" :model-value="appearance.cursorBlink" :disabled="disabled" label="Cursor piscante nas sessões interativas" class="font-settings__checkbox" @update:model-value="onCursorBlinkToggle" @change="onCursorBlinkToggle" />
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
     import { computed, ref } from 'vue';
+    import {
+        MaxAlert,
+        MaxInputCheckbox,
+        MaxInputNumber,
+        MaxInputSelect,
+        MaxInputText
+    } from '@maxvue/max-components-ui';
     import {
         isValidFontFamilyStack,
         MONOSPACE_FONT_PRESETS
@@ -83,6 +74,18 @@
 
     const fontError = ref<string | null>(null);
 
+    const presetOptions = computed(() => [
+        ...MONOSPACE_FONT_PRESETS.map((p) => ({ label: p.label, value: p.id })),
+        { label: 'Pilha personalizada', value: 'custom' }
+    ]);
+
+    const cursorStyleOptions = [
+        { label: 'Seguir esquema de cores', value: 'theme' },
+        { label: 'Bloco (█)', value: 'block' },
+        { label: 'Barra vertical (▏)', value: 'bar' },
+        { label: 'Sublinhado (_)', value: 'underline' }
+    ];
+
     const selectedPresetId = computed(() => {
         const matched = MONOSPACE_FONT_PRESETS.find(
             (p) => p.family === props.appearance.fontFamily
@@ -90,8 +93,8 @@
         return matched ? matched.id : 'custom';
     });
 
-    function onPresetChange(ev: Event): void {
-        const presetId = (ev.target as HTMLSelectElement).value;
+    function onPresetChange(valOrEv: unknown): void {
+        const presetId = typeof valOrEv === 'string' ? valOrEv : (valOrEv as { target?: HTMLSelectElement })?.target?.value;
         const preset = MONOSPACE_FONT_PRESETS.find((p) => p.id === presetId);
         if (preset) {
             fontError.value = null;
@@ -99,8 +102,9 @@
         }
     }
 
-    function onFontFamilyChange(ev: Event): void {
-        const value = (ev.target as HTMLInputElement).value.trim();
+    function onFontFamilyChange(valOrEv: unknown): void {
+        const raw = typeof valOrEv === 'string' ? valOrEv : ((valOrEv as { target?: HTMLInputElement })?.target?.value ?? '');
+        const value = raw.trim();
         if (!isValidFontFamilyStack(value)) {
             fontError.value = 'Pilha de fontes contém caracteres inválidos.';
             return;
@@ -109,46 +113,46 @@
         emit('update', { fontFamily: value });
     }
 
-    function onFontSizeChange(ev: Event): void {
-        const raw = Number.parseInt((ev.target as HTMLInputElement).value, 10);
+    function onFontSizeChange(valOrEv: unknown): void {
+        const raw = typeof valOrEv === 'number' ? valOrEv : Number.parseInt((valOrEv as { target?: HTMLInputElement })?.target?.value ?? String(valOrEv), 10);
         if (Number.isFinite(raw)) {
             const fontSize = Math.min(36, Math.max(8, raw));
             emit('update', { fontSize });
         }
     }
 
-    function onLineHeightChange(ev: Event): void {
-        const raw = Number.parseFloat((ev.target as HTMLInputElement).value);
+    function onLineHeightChange(valOrEv: unknown): void {
+        const raw = typeof valOrEv === 'number' ? valOrEv : Number.parseFloat((valOrEv as { target?: HTMLInputElement })?.target?.value ?? String(valOrEv));
         if (Number.isFinite(raw)) {
             const lineHeight = Math.min(2.5, Math.max(0.8, Number(raw.toFixed(2))));
             emit('update', { lineHeight });
         }
     }
 
-    function onCursorStyleChange(ev: Event): void {
-        const val = (ev.target as HTMLSelectElement).value;
+    function onCursorStyleChange(valOrEv: unknown): void {
+        const val = typeof valOrEv === 'string' ? valOrEv : (valOrEv as { target?: HTMLSelectElement })?.target?.value;
         if (val === 'theme') {
             emit('update', { cursorStyleOverride: null });
-        } else {
+        } else if (val) {
             emit('update', { cursorStyleOverride: val as CursorStyle });
         }
     }
 
-    function onMinimumContrastChange(ev: Event): void {
-        const raw = Number.parseFloat((ev.target as HTMLInputElement).value);
+    function onMinimumContrastChange(valOrEv: unknown): void {
+        const raw = typeof valOrEv === 'number' ? valOrEv : Number.parseFloat((valOrEv as { target?: HTMLInputElement })?.target?.value ?? String(valOrEv));
         if (Number.isFinite(raw)) {
             const minimumContrastRatio = Math.min(21, Math.max(1, raw));
             emit('update', { minimumContrastRatio });
         }
     }
 
-    function onLigaturesToggle(ev: Event): void {
-        const fontLigatures = (ev.target as HTMLInputElement).checked;
+    function onLigaturesToggle(valOrEv: unknown): void {
+        const fontLigatures = typeof valOrEv === 'boolean' ? valOrEv : Boolean((valOrEv as { target?: HTMLInputElement })?.target?.checked);
         emit('update', { fontLigatures });
     }
 
-    function onCursorBlinkToggle(ev: Event): void {
-        const cursorBlink = (ev.target as HTMLInputElement).checked;
+    function onCursorBlinkToggle(valOrEv: unknown): void {
+        const cursorBlink = typeof valOrEv === 'boolean' ? valOrEv : Boolean((valOrEv as { target?: HTMLInputElement })?.target?.checked);
         emit('update', { cursorBlink });
     }
 </script>

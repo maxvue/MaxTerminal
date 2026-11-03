@@ -1,77 +1,58 @@
 <template>
-    <div v-if="props.visible" class="project-root-modal" role="dialog" aria-modal="true" aria-labelledby="project-root-modal-title">
-        <div class="project-root-modal__backdrop" @click="handleClose" />
-        <div class="project-root-modal__dialog">
-            <header class="project-root-modal__header">
-                <h2 id="project-root-modal-title" class="project-root-modal__title">
-                    {{ props.root ? 'Configurar pasta de projetos' : 'Adicionar pasta de projetos' }}
-                </h2>
-                <button type="button" class="project-root-modal__close" aria-label="Fechar modal" @click="handleClose">
-                    <MaxIcon icon="mdi:close" />
-                </button>
-            </header>
-
-            <form class="project-root-modal__form" @submit.prevent="handleSubmit">
-                <div class="project-root-modal__field">
-                    <label for="project-root-path" class="project-root-modal__label">Caminho da pasta de projetos</label>
-                    <div class="project-root-modal__path-row">
-                        <input id="project-root-path" v-model="pathInput" type="text" class="project-root-modal__input" placeholder="~/GitHub" :readonly="Boolean(props.root)" autocomplete="off">
-                        <button v-if="!props.root" type="button" class="project-root-modal__pick-btn" @click="handlePickFolder">
-                            Escolher pasta
-                        </button>
-                    </div>
+    <MaxModal :visible="props.visible" :title="props.root ? 'Configurar pasta de projetos' : 'Adicionar pasta de projetos'" :no-button="true" max-width="32rem" class="project-root-modal" :dismissable="!submitting" :close-on-escape="!submitting" @update:visible="emit('update:visible', $event)">
+        <form class="project-root-modal__form" @submit.prevent="handleSubmit">
+            <div class="project-root-modal__field">
+                <label for="project-root-path" class="project-root-modal__label">Caminho da pasta de projetos</label>
+                <div class="project-root-modal__path-row">
+                    <input id="project-root-path" v-model="pathInput" type="text" class="project-root-modal__input" placeholder="~/GitHub" :readonly="Boolean(props.root)" autocomplete="off">
+                    <MaxButton v-if="!props.root" type="button" variant="secondary" size="small" class="project-root-modal__pick-btn" @click="handlePickFolder">
+                        Escolher pasta
+                    </MaxButton>
                 </div>
+            </div>
 
-                <fieldset class="project-root-modal__fieldset">
-                    <legend class="project-root-modal__label">Modo de descoberta</legend>
-                    <label class="project-root-modal__radio">
-                        <input v-model="discoveryMode" type="radio" value="suggest">
-                        <span>Sugerir novas pastas</span>
-                    </label>
-                    <label class="project-root-modal__radio">
-                        <input v-model="discoveryMode" type="radio" value="auto_import">
-                        <span>Importar automaticamente</span>
-                    </label>
-                </fieldset>
+            <fieldset class="project-root-modal__fieldset">
+                <legend class="project-root-modal__label">Modo de descoberta</legend>
+                <MaxInputRadio v-model="discoveryMode" value="suggest" label="Sugerir novas pastas" />
+                <MaxInputRadio v-model="discoveryMode" value="auto_import" label="Importar automaticamente" />
+            </fieldset>
 
-                <label v-if="!props.root" class="project-root-modal__checkbox">
-                    <input v-model="importExisting" type="checkbox">
-                    <span>Importar subpastas existentes agora</span>
-                </label>
+            <MaxInputCheckbox v-if="!props.root" v-model="importExisting" label="Importar subpastas existentes agora" />
 
-                <label class="project-root-modal__checkbox">
-                    <input v-model="watchEnabled" type="checkbox">
-                    <span>Monitorar alterações automaticamente</span>
-                </label>
+            <MaxInputCheckbox v-model="watchEnabled" label="Monitorar alterações automaticamente" />
 
-                <div v-if="props.root" class="project-root-modal__edit-actions">
-                    <button type="button" class="project-root-modal__btn project-root-modal__btn--secondary" :disabled="submitting" @click="handleRescan">
-                        Varrer agora
-                    </button>
-                    <button type="button" class="project-root-modal__btn project-root-modal__btn--danger" :disabled="submitting" @click="handleRemoveRoot">
-                        Remover pasta de projetos
-                    </button>
-                </div>
+            <div v-if="props.root" class="project-root-modal__edit-actions">
+                <MaxButton type="button" variant="secondary" :disabled="submitting" @click="handleRescan">
+                    Varrer agora
+                </MaxButton>
+                <MaxButton type="button" variant="danger" :disabled="submitting" @click="handleRemoveRoot">
+                    Remover pasta de projetos
+                </MaxButton>
+            </div>
 
-                <div v-if="errorMessage" class="project-root-modal__error" role="alert">
-                    {{ errorMessage }}
-                </div>
+            <MaxAlert v-if="errorMessage" type="danger" role="alert" class="project-root-modal__error">
+                {{ errorMessage }}
+            </MaxAlert>
 
-                <footer class="project-root-modal__footer">
-                    <button type="button" class="project-root-modal__btn project-root-modal__btn--cancel" @click="handleClose">
-                        Cancelar
-                    </button>
-                    <button type="submit" class="project-root-modal__btn project-root-modal__btn--submit" :disabled="submitting">
-                        {{ submitting ? 'Salvando...' : 'Salvar' }}
-                    </button>
-                </footer>
-            </form>
-        </div>
-    </div>
+            <footer class="project-root-modal__footer">
+                <MaxButton type="button" variant="secondary" class="project-root-modal__btn project-root-modal__btn--cancel" @click="handleClose">
+                    Cancelar
+                </MaxButton>
+                <MaxButton type="submit" variant="primary" class="project-root-modal__btn project-root-modal__btn--submit" :disabled="submitting" :loading="submitting">
+                    {{ submitting ? 'Salvando...' : 'Salvar' }}
+                </MaxButton>
+            </footer>
+        </form>
+    </MaxModal>
 </template>
 
 <script setup lang="ts">
     import { ref, watch } from 'vue';
+    import MaxAlert from '@maxvue/max-components-ui/components/MaxAlert';
+    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
+    import MaxInputCheckbox from '@maxvue/max-components-ui/components/MaxInputCheckbox';
+    import MaxInputRadio from '@maxvue/max-components-ui/components/MaxInputRadio';
+    import MaxModal from '@maxvue/max-components-ui/components/MaxModal';
     import { useIpcError } from '@/composables/useIpcError';
     import * as projectsIpc from '@/ipc/projects';
     import { useProjectsStore } from '@/stores/projects';
@@ -221,61 +202,13 @@
 <style lang="scss" scoped>
     @use '@/styles/params' as *;
 
-    .project-root-modal {
-        position: fixed;
-        inset: 0;
-        z-index: 100;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 1rem;
-    }
-
-    .project-root-modal__backdrop {
-        position: absolute;
-        inset: 0;
-        background: rgb(0 0 0 / 60%);
-    }
-
-    .project-root-modal__dialog {
-        position: relative;
-        z-index: 1;
-        width: 100%;
-        max-width: 30rem;
-        border-radius: 0.625rem;
-        background: var(--background-800);
-        border: 1px solid var(--background-600);
+    :deep(.project-root-modal.max-modal) {
+        background-color: var(--background-800);
+        border-color: var(--background-600);
         color: var(--background-100);
-        box-shadow: 0 16px 40px rgb(0 0 0 / 55%);
-        overflow: hidden;
-    }
 
-    .project-root-modal__header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0.875rem 1.125rem;
-        border-bottom: 1px solid var(--background-700);
-    }
-
-    .project-root-modal__title {
-        margin: 0;
-        font-size: 1rem;
-        font-weight: 600;
-        color: var(--background-50);
-    }
-
-    .project-root-modal__close {
-        border: none;
-        background: transparent;
-        color: var(--background-300);
-        cursor: pointer;
-        padding: 0.25rem;
-        border-radius: 0.375rem;
-
-        &:hover {
-            background: var(--background-700);
-            color: var(--background-50);
+        .max-modal-content {
+            padding: 1.125rem;
         }
     }
 
@@ -283,7 +216,6 @@
         display: flex;
         flex-direction: column;
         gap: 0.875rem;
-        padding: 1.125rem;
     }
 
     .project-root-modal__field {
@@ -314,17 +246,6 @@
         font-size: 0.8125rem;
     }
 
-    .project-root-modal__pick-btn {
-        padding: 0.4375rem 0.75rem;
-        border-radius: 0.375rem;
-        border: 1px solid var(--background-600);
-        background: var(--background-700);
-        color: var(--background-100);
-        font-size: 0.75rem;
-        font-weight: 600;
-        cursor: pointer;
-    }
-
     .project-root-modal__fieldset {
         border: 1px solid var(--background-700);
         border-radius: 0.375rem;
@@ -334,16 +255,6 @@
         gap: 0.375rem;
     }
 
-    .project-root-modal__radio,
-    .project-root-modal__checkbox {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 0.8125rem;
-        color: var(--background-100);
-        cursor: pointer;
-    }
-
     .project-root-modal__edit-actions {
         display: flex;
         justify-content: space-between;
@@ -351,11 +262,6 @@
     }
 
     .project-root-modal__error {
-        padding: 0.5rem 0.75rem;
-        border-radius: 0.375rem;
-        background: color-mix(in srgb, var(--max-danger-500) 15%, var(--background-900));
-        border: 1px solid var(--max-danger-500);
-        color: var(--max-danger-400);
         font-size: 0.75rem;
     }
 
@@ -363,41 +269,5 @@
         display: flex;
         justify-content: flex-end;
         gap: 0.5rem;
-    }
-
-    .project-root-modal__btn {
-        padding: 0.4375rem 0.875rem;
-        border-radius: 0.375rem;
-        font-size: 0.8125rem;
-        font-weight: 600;
-        cursor: pointer;
-
-        &:focus-visible {
-            @include mt-focus-ring;
-        }
-    }
-
-    .project-root-modal__btn--secondary {
-        border: 1px solid var(--background-600);
-        background: var(--background-700);
-        color: var(--background-100);
-    }
-
-    .project-root-modal__btn--danger {
-        border: 1px solid var(--max-danger-500);
-        background: transparent;
-        color: var(--max-danger-400);
-    }
-
-    .project-root-modal__btn--cancel {
-        border: 1px solid var(--background-600);
-        background: transparent;
-        color: var(--background-200);
-    }
-
-    .project-root-modal__btn--submit {
-        border: 1px solid var(--max-primary-500);
-        background: var(--max-primary-600);
-        color: var(--background-50);
     }
 </style>

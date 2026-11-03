@@ -7,29 +7,17 @@
                 <span v-if="openCount !== null" class="issues-tab__open-badge">{{ openCount }} abertas</span>
             </div>
             <div class="issues-tab__actions">
-                <button type="button" class="issues-tab__btn issues-tab__btn--primary" @click="createModalOpen = true">
-                    <MaxIcon icon="lucide:plus" />
-                    <span>Nova Issue</span>
-                </button>
-                <button type="button" class="issues-tab__btn issues-tab__btn--cycle" @click="onOpenBugCycleModal">
-                    <MaxIcon icon="lucide:sparkles" />
-                    <span>Corrigir todos os Bugs</span>
-                </button>
-                <button type="button" class="issues-tab__btn" title="Autenticação GitHub (`gh` CLI e REST)" @click="onOpenAuthPanel">
-                    <MaxIcon icon="lucide:key-round" />
-                    <span>Autenticação</span>
-                </button>
-                <button type="button" class="issues-tab__btn" :disabled="isLoadingList" title="Sincronizar com o GitHub agora" @click="onRefresh">
-                    <MaxIcon icon="lucide:refresh-cw" />
-                    <span>Atualizar</span>
-                </button>
+                <MaxButton label="Nova Issue" icon="lucide:plus" variant="primary" class="issues-tab__btn issues-tab__btn--primary" @click="createModalOpen = true" />
+                <MaxButton label="Corrigir todos os Bugs" icon="lucide:sparkles" variant="secondary" class="issues-tab__btn issues-tab__btn--cycle" @click="onOpenBugCycleModal" />
+                <MaxButton label="Autenticação" icon="lucide:key-round" variant="secondary" class="issues-tab__btn" title="Autenticação GitHub (`gh` CLI e REST)" @click="onOpenAuthPanel" />
+                <MaxButton label="Atualizar" icon="lucide:refresh-cw" variant="secondary" class="issues-tab__btn" :disabled="isLoadingList" :loading="isLoadingList" title="Sincronizar com o GitHub agora" @click="onRefresh" />
             </div>
         </header>
         <LabelSyncBanner :missing-count="missingLabelsCount" @sync="onSyncCanonicalLabels" />
         <BugCycleProgress :cycle="activeCycle" @control="onControlCycle" />
         <div v-if="projectError" class="issues-tab__error" role="alert">
             <span>{{ projectError }}</span>
-            <button type="button" class="issues-tab__error-dismiss" @click="clearProjectError">OK</button>
+            <MaxButton label="OK" variant="ghost" size="small" class="issues-tab__error-dismiss" @click="clearProjectError" />
         </div>
         <IssueFilters :filter="filter" :has-active-filters="hasActiveFilters" @set-state="setState" @toggle-state-label="toggleStateLabel" @toggle-category-label="toggleCategoryLabel" @set-search="setSearchText" @set-has-plan="setHasPlan" @set-sort="setSort" @reset="resetFilters" />
         <div class="issues-tab__split">
@@ -49,6 +37,7 @@
 
 <script setup lang="ts">
     import { computed, ref, watch } from 'vue';
+    import { MaxButton, MaxIcon } from '@maxvue/max-components-ui';
     import { useIssueFilters } from '@/composables/useIssueFilters';
     import { useGithubIssuesStore } from '@/stores/githubIssues';
     import type {

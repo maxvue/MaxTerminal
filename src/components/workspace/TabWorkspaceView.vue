@@ -22,7 +22,7 @@
         </TabBar>
         <div v-if="tabsStore.error || templatesStore.error || sessionsStore.error" class="tab-workspace__error" role="alert">
             <span>{{ tabsStore.error || templatesStore.error || sessionsStore.error }}</span>
-            <button type="button" class="tab-workspace__error-dismiss" aria-label="Dispensar erro" @click="clearErrors">OK</button>
+            <MaxButton label="OK" variant="ghost" size="small" class="tab-workspace__error-dismiss" aria-label="Dispensar erro" @click="clearErrors" />
         </div>
         <div class="tab-workspace__stage">
             <div class="tab-workspace__main">
@@ -35,14 +35,8 @@
                     <p class="tab-workspace__empty-title">Nenhuma aba aberta em {{ props.project.title }}</p>
                     <p class="tab-workspace__empty-desc">Abra uma nova aba com o Template Padrão do projeto ou escolha um Template configurado.</p>
                     <div class="tab-workspace__empty-actions">
-                        <button type="button" class="tab-workspace__open-btn" @click="onAddDefaultTab">
-                            <MaxIcon icon="lucide:plus" />
-                            <span>Adicionar nova aba</span>
-                        </button>
-                        <button type="button" class="tab-workspace__tpl-btn" @click="onOpenCreateTemplate">
-                            <MaxIcon icon="lucide:settings-2" />
-                            <span>Configurar Template</span>
-                        </button>
+                        <MaxButton label="Adicionar nova aba" icon="lucide:plus" variant="primary" class="tab-workspace__open-btn" @click="onAddDefaultTab" />
+                        <MaxButton label="Configurar Template" icon="lucide:settings-2" variant="secondary" class="tab-workspace__tpl-btn" @click="onOpenCreateTemplate" />
                     </div>
                 </div>
                 <GroupRunPanel v-if="commandGroupsStore.activeRunForPanel || commandGroupsStore.busyPaneFallback" :run="commandGroupsStore.activeRunForPanel" :busy-pane-fallback="commandGroupsStore.busyPaneFallback" @cancel-run="onCancelGroupRun" @cancel-item="onCancelGroupRunItem" @show-output="onShowGroupItemOutput" @focus-tab="onFocusGroupItemTab" @run-in-new-tab="onRunBusyGroupInNewTab" @restart-busy-pane="onRestartPane" @close="onCloseGroupRunPanel" />
@@ -59,6 +53,7 @@
 
 <script setup lang="ts">
     import { computed, ref, watch } from 'vue';
+    import { MaxButton } from '@maxvue/max-components-ui';
     import AgentLauncherMenu from '@/components/agents/AgentLauncherMenu.vue';
     import AgentStatusLine from '@/components/agents/AgentStatusLine.vue';
     import AgentTabOpenDialog from '@/components/agents/AgentTabOpenDialog.vue';

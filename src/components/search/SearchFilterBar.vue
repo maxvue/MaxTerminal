@@ -38,9 +38,7 @@
                 </select>
             </label>
 
-            <button v-if="hasActiveFilters" type="button" class="search-filter-bar__clear" aria-label="Limpar filtros ativos" @click="clearFilters">
-                Limpar filtros
-            </button>
+            <MaxButton v-if="hasActiveFilters" label="Limpar filtros" variant="ghost" size="small" class="search-filter-bar__clear" aria-label="Limpar filtros ativos" @click="clearFilters" />
         </div>
 
         <div class="search-filter-bar__chips" role="group" aria-label="Fontes de busca">
@@ -57,6 +55,7 @@
 
 <script setup lang="ts">
     import { computed, ref } from 'vue';
+    import { MaxButton } from '@maxvue/max-components-ui';
     import {
         ALL_SEARCH_SOURCE_KINDS,
         createDefaultSearchFilters,

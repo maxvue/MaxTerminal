@@ -6,10 +6,7 @@
                 <span>{{ props.busyPaneFallback.reason || 'O painel atual está ocupado com um processo em execução.' }}</span>
             </div>
             <div class="group-run-panel__busy-actions">
-                <button type="button" class="group-run-panel__new-tab-btn" data-testid="group-run-in-new-tab-btn" @click="onRunInNewTab">
-                    <MaxIcon icon="lucide:plus-square" />
-                    <span>Executar em nova aba</span>
-                </button>
+                <MaxButton label="Executar em nova aba" icon="lucide:plus-square" variant="secondary" size="small" class="group-run-panel__new-tab-btn" data-testid="group-run-in-new-tab-btn" @click="onRunInNewTab" />
             </div>
         </div>
 
@@ -31,19 +28,9 @@
                         <template v-if="failedCount > 0"> · {{ failedCount }} falhas</template>
                     </span>
 
-                    <button v-if="canRestartBusyOriginPane" type="button" class="group-run-panel__restart-btn" data-testid="group-run-restart-pane-btn" @click="onRestartBusyPane">
-                        <MaxIcon icon="lucide:rotate-ccw" />
-                        <span>Encerrar e reiniciar painel</span>
-                    </button>
-
-                    <button v-if="isRunActive" type="button" class="group-run-panel__cancel-all-btn" data-testid="group-run-cancel-all-btn" @click="emit('cancel-run', props.run.id)">
-                        <MaxIcon icon="lucide:octagon-x" />
-                        <span>Cancelar tudo</span>
-                    </button>
-
-                    <button type="button" class="group-run-panel__close-btn" aria-label="Fechar painel de execução" @click="emit('close')">
-                        <MaxIcon icon="lucide:x" />
-                    </button>
+                    <MaxButton v-if="canRestartBusyOriginPane" label="Encerrar e reiniciar painel" icon="lucide:rotate-ccw" variant="secondary" size="small" class="group-run-panel__restart-btn" data-testid="group-run-restart-pane-btn" @click="onRestartBusyPane" />
+                    <MaxButton v-if="isRunActive" label="Cancelar tudo" icon="lucide:octagon-x" variant="danger" size="small" class="group-run-panel__cancel-all-btn" data-testid="group-run-cancel-all-btn" @click="emit('cancel-run', props.run.id)" />
+                    <MaxIconButton icon="lucide:x" label="Fechar painel de execução" variant="ghost" class="group-run-panel__close-btn" @click="emit('close')" />
                 </div>
             </header>
 
@@ -61,6 +48,7 @@
 
 <script setup lang="ts">
     import { computed } from 'vue';
+    import { MaxButton, MaxIcon, MaxIconButton } from '@maxvue/max-components-ui';
     import type { BusyPaneFallbackState } from '@/stores/commandGroups';
     import type { PaneId, TabId } from '@/types/bindings';
     import type {

@@ -1,107 +1,89 @@
 <template>
-    <div v-if="open" ref="modalRootRef" class="artisan-modal-backdrop" role="dialog" aria-modal="true" aria-label="Criar comando Artisan" data-testid="artisan-command-modal" @keydown.esc.stop.prevent="handleClose">
-        <div class="artisan-modal">
-            <header class="artisan-modal__header">
-                <div class="artisan-modal__title-wrap">
-                    <MaxIcon icon="logos:laravel" />
-                    <h2 class="artisan-modal__title">Criar comando Artisan</h2>
-                    <span v-if="root" class="artisan-modal__root">{{ root }}</span>
-                </div>
-                <button type="button" class="artisan-modal__close-btn" title="Fechar (Esc)" aria-label="Fechar modal" data-testid="artisan-modal-close" @click="handleClose">
-                    <MaxIcon icon="mdi:close" />
-                </button>
-            </header>
-
-            <div v-if="store.modal.lastCreateResult" class="artisan-modal__created-banner" data-testid="artisan-created-banner">
-                <span>Comando criado em <strong>{{ store.modal.lastCreateResult.path }}</strong>. Conclua os passos manuais listados ao lado antes de fechar.</span>
+    <MaxModal v-if="open" :visible="open" title="Criar comando Artisan" :no-button="true" max-width="56rem" class="artisan-modal" data-testid="artisan-command-modal" @update:visible="handleClose">
+        <template #header>
+            <div class="artisan-modal__title-wrap">
+                <MaxIcon icon="logos:laravel" />
+                <h2 class="artisan-modal__title">Criar comando Artisan</h2>
+                <span v-if="root" class="artisan-modal__root">{{ root }}</span>
             </div>
+        </template>
 
-            <div class="artisan-modal__columns">
-                <div class="artisan-modal__form-col">
-                    <div class="artisan-modal__row">
-                        <label class="artisan-modal__field">
-                            <span class="artisan-modal__label">Nome da Classe</span>
-                            <input type="text" class="artisan-modal__input" data-field-path="className" data-testid="input-class-name" placeholder="SendWeeklyReport" :value="form.className" @input="onClassNameInput">
-                            <span v-if="firstErrorMessageFor('className')" class="artisan-modal__error" data-testid="error-class-name">{{ firstErrorMessageFor('className') }}</span>
-                        </label>
-
-                        <label class="artisan-modal__field">
-                            <span class="artisan-modal__label">Signature</span>
-                            <input type="text" class="artisan-modal__input" data-field-path="signatureName" data-testid="input-signature-name" placeholder="reports:send-weekly" :value="form.signatureName" @input="onSignatureNameInput">
-                            <span v-if="firstErrorMessageFor('signatureName')" class="artisan-modal__error" data-testid="error-signature-name">{{ firstErrorMessageFor('signatureName') }}</span>
-                        </label>
-                    </div>
-
-                    <label class="artisan-modal__field">
-                        <span class="artisan-modal__label">Descrição</span>
-                        <input type="text" class="artisan-modal__input" data-field-path="description" data-testid="input-description" placeholder="Envia o relatório semanal por e-mail" :value="form.description" @input="onDescriptionInput">
-                        <span v-if="firstErrorMessageFor('description')" class="artisan-modal__error" data-testid="error-description">{{ firstErrorMessageFor('description') }}</span>
-                    </label>
-
-                    <ArtisanParamsBuilder :model-value="form.params ?? []" :issues="allIssues" @update:model-value="setParams" />
-
-                    <div class="artisan-modal__interfaces">
-                        <label class="artisan-modal__checkbox">
-                            <input type="checkbox" data-testid="checkbox-isolatable" :checked="form.isolatable" @change="onIsolatableChange">
-                            <span>Isolatable (--isolated)</span>
-                        </label>
-                        <label class="artisan-modal__checkbox">
-                            <input type="checkbox" data-testid="checkbox-prompts" :checked="form.promptsForMissingInput" @change="onPromptsChange">
-                            <span>PromptsForMissingInput</span>
-                        </label>
-                    </div>
-                    <p v-if="promptsWarning" class="artisan-modal__warning" data-testid="warning-prompts">{{ promptsWarning }}</p>
-
-                    <ArtisanSchedulePicker :model-value="form.schedule ?? null" :params="form.params ?? []" :issues="allIssues" @update:model-value="setSchedule" />
-
-                    <label class="artisan-modal__field">
-                        <span class="artisan-modal__label">Objetivo / Regras do Comando</span>
-                        <textarea rows="6" class="artisan-modal__textarea" data-field-path="objective" data-testid="textarea-objective" placeholder="Descreva o objetivo e as regras de negócio do comando para gerar o PHPDoc, preencher com IA ou enviar ao MaxCode…" :value="form.objective" @input="onObjectiveInput" />
-                        <span v-if="firstErrorMessageFor('objective')" class="artisan-modal__error">{{ firstErrorMessageFor('objective') }}</span>
-                    </label>
-
-                    <div v-if="generalIssues.length > 0" class="artisan-modal__general-errors">
-                        <p v-for="(iss, idx) in generalIssues" :key="idx" class="artisan-modal__error">{{ iss.message }}</p>
-                    </div>
-                </div>
-
-                <div class="artisan-modal__preview-col">
-                    <ArtisanPhpPreview :preview="store.modal.preview" :loading="store.modal.previewLoading" />
-                </div>
-            </div>
-
-            <footer class="artisan-modal__footer">
-                <div class="artisan-modal__footer-left">
-                    <button type="button" class="artisan-modal__btn artisan-modal__btn--secondary" data-testid="btn-fill-ai" :disabled="store.modal.aiLoading || !canFillWithAi" @click="handleFillWithAi">
-                        <MaxIcon icon="mdi:sparkles" />
-                        <span>{{ store.modal.aiLoading ? 'Gerando sugestão…' : 'Preencher com IA' }}</span>
-                    </button>
-                    <button v-if="hasAiSnapshot" type="button" class="artisan-modal__btn artisan-modal__btn--ghost" data-testid="btn-undo-ai" @click="store.undoAiSuggestion()">
-                        <MaxIcon icon="mdi:undo" />
-                        <span>Desfazer sugestão</span>
-                    </button>
-                </div>
-
-                <div class="artisan-modal__footer-right">
-                    <button type="button" class="artisan-modal__btn artisan-modal__btn--ghost" data-testid="btn-cancel-modal" @click="handleClose">
-                        <span>Cancelar</span>
-                    </button>
-                    <button type="button" class="artisan-modal__btn artisan-modal__btn--secondary" data-testid="btn-create-maxcode" @click="handleCreateWithMaxCode">
-                        <MaxIcon icon="mdi:code-braces" />
-                        <span>Criar com MaxCode</span>
-                    </button>
-                    <button type="button" class="artisan-modal__btn artisan-modal__btn--primary" data-testid="btn-create-artisan" :disabled="!canCreate" @click="handleCreate">
-                        <MaxIcon icon="mdi:check" />
-                        <span>{{ store.modal.creating ? 'Criando…' : 'Criar' }}</span>
-                    </button>
-                </div>
-            </footer>
+        <div v-if="store.modal.lastCreateResult" class="artisan-modal__created-banner" data-testid="artisan-created-banner">
+            <span>Comando criado em <strong>{{ store.modal.lastCreateResult.path }}</strong>. Conclua os passos manuais listados ao lado antes de fechar.</span>
         </div>
-    </div>
+
+        <div class="artisan-modal__columns">
+            <div class="artisan-modal__form-col">
+                <div class="artisan-modal__row">
+                    <label class="artisan-modal__field">
+                        <span class="artisan-modal__label">Nome da Classe</span>
+                        <input type="text" class="artisan-modal__input" data-field-path="className" data-testid="input-class-name" placeholder="SendWeeklyReport" :value="form.className" @input="onClassNameInput">
+                        <span v-if="firstErrorMessageFor('className')" class="artisan-modal__error" data-testid="error-class-name">{{ firstErrorMessageFor('className') }}</span>
+                    </label>
+
+                    <label class="artisan-modal__field">
+                        <span class="artisan-modal__label">Signature</span>
+                        <input type="text" class="artisan-modal__input" data-field-path="signatureName" data-testid="input-signature-name" placeholder="reports:send-weekly" :value="form.signatureName" @input="onSignatureNameInput">
+                        <span v-if="firstErrorMessageFor('signatureName')" class="artisan-modal__error" data-testid="error-signature-name">{{ firstErrorMessageFor('signatureName') }}</span>
+                    </label>
+                </div>
+
+                <label class="artisan-modal__field">
+                    <span class="artisan-modal__label">Descrição</span>
+                    <input type="text" class="artisan-modal__input" data-field-path="description" data-testid="input-description" placeholder="Envia o relatório semanal por e-mail" :value="form.description" @input="onDescriptionInput">
+                    <span v-if="firstErrorMessageFor('description')" class="artisan-modal__error" data-testid="error-description">{{ firstErrorMessageFor('description') }}</span>
+                </label>
+
+                <ArtisanParamsBuilder :model-value="form.params ?? []" :issues="allIssues" @update:model-value="setParams" />
+
+                <div class="artisan-modal__interfaces">
+                    <label class="artisan-modal__checkbox">
+                        <input type="checkbox" data-testid="checkbox-isolatable" :checked="form.isolatable" @change="onIsolatableChange">
+                        <span>Isolatable (--isolated)</span>
+                    </label>
+                    <label class="artisan-modal__checkbox">
+                        <input type="checkbox" data-testid="checkbox-prompts" :checked="form.promptsForMissingInput" @change="onPromptsChange">
+                        <span>PromptsForMissingInput</span>
+                    </label>
+                </div>
+                <p v-if="promptsWarning" class="artisan-modal__warning" data-testid="warning-prompts">{{ promptsWarning }}</p>
+
+                <ArtisanSchedulePicker :model-value="form.schedule ?? null" :params="form.params ?? []" :issues="allIssues" @update:model-value="setSchedule" />
+
+                <label class="artisan-modal__field">
+                    <span class="artisan-modal__label">Objetivo / Regras do Comando</span>
+                    <MaxInputTextArea :rows="6" class="artisan-modal__textarea" data-field-path="objective" data-testid="textarea-objective" placeholder="Descreva o objetivo e as regras de negócio do comando para gerar o PHPDoc, preencher com IA ou enviar ao MaxCode…" :model-value="form.objective" @update:model-value="(val: string) => { if (val !== form.objective) setObjective(val); }" />
+                    <span v-if="firstErrorMessageFor('objective')" class="artisan-modal__error">{{ firstErrorMessageFor('objective') }}</span>
+                </label>
+
+                <div v-if="generalIssues.length > 0" class="artisan-modal__general-errors">
+                    <p v-for="(iss, idx) in generalIssues" :key="idx" class="artisan-modal__error">{{ iss.message }}</p>
+                </div>
+            </div>
+
+            <div class="artisan-modal__preview-col">
+                <ArtisanPhpPreview :preview="store.modal.preview" :loading="store.modal.previewLoading" />
+            </div>
+        </div>
+
+        <footer class="artisan-modal__footer">
+            <div class="artisan-modal__footer-left">
+                <MaxButton :label="store.modal.aiLoading ? 'Gerando sugestão…' : 'Preencher com IA'" icon="mdi:sparkles" variant="secondary" class="artisan-modal__btn artisan-modal__btn--secondary" data-testid="btn-fill-ai" :disabled="store.modal.aiLoading || !canFillWithAi" :loading="store.modal.aiLoading" @click="handleFillWithAi" />
+                <MaxButton v-if="hasAiSnapshot" label="Desfazer sugestão" icon="mdi:undo" variant="ghost" class="artisan-modal__btn artisan-modal__btn--ghost" data-testid="btn-undo-ai" @click="store.undoAiSuggestion()" />
+            </div>
+
+            <div class="artisan-modal__footer-right">
+                <MaxButton label="Cancelar" variant="ghost" class="artisan-modal__btn artisan-modal__btn--ghost" data-testid="btn-cancel-modal" @click="handleClose" />
+                <MaxButton label="Criar com MaxCode" icon="mdi:code-braces" variant="secondary" class="artisan-modal__btn artisan-modal__btn--secondary" data-testid="btn-create-maxcode" @click="handleCreateWithMaxCode" />
+                <MaxButton :label="store.modal.creating ? 'Criando…' : 'Criar'" icon="mdi:check" variant="primary" class="artisan-modal__btn artisan-modal__btn--primary" data-testid="btn-create-artisan" :disabled="!canCreate" :loading="store.modal.creating" @click="handleCreate" />
+            </div>
+        </footer>
+    </MaxModal>
 </template>
 
 <script setup lang="ts">
     import { computed, ref } from 'vue';
+    import { MaxButton, MaxIcon, MaxInputTextArea, MaxModal } from '@maxvue/max-components-ui';
     import ArtisanParamsBuilder from '@/components/quick-commands/ArtisanParamsBuilder.vue';
     import ArtisanPhpPreview from '@/components/quick-commands/ArtisanPhpPreview.vue';
     import ArtisanSchedulePicker from '@/components/quick-commands/ArtisanSchedulePicker.vue';
@@ -176,10 +158,6 @@
 
     function onPromptsChange(ev: Event): void {
         setPromptsForMissingInput((ev.target as HTMLInputElement).checked);
-    }
-
-    function onObjectiveInput(ev: Event): void {
-        setObjective((ev.target as HTMLTextAreaElement).value);
     }
 
     function handleClose(): void {

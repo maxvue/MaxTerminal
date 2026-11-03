@@ -8,14 +8,14 @@
                     <span class="issue-comments__author">@{{ comment.authorLogin }}</span>
                     <span v-if="comment.containsActivePlan" class="issue-comments__plan-tag">Contém Plano de Implementação</span>
                 </header>
-                <!-- eslint-disable-next-line vue/no-v-html -->
-                <div class="issue-comments__body" v-html="renderSafeMarkdown(comment.bodyMarkdown)" />
+                <MaxMarkdownViewer :source="comment.bodyMarkdown" :render-markdown="renderSafeMarkdown" class="issue-comments__body" />
             </article>
         </div>
     </section>
 </template>
 
 <script setup lang="ts">
+    import { MaxMarkdownViewer } from '@maxvue/max-components-ui';
     import { renderSafeMarkdown } from '@/composables/useMarkdownRenderer';
     import type { IssueComment } from '@/types/bindings';
 

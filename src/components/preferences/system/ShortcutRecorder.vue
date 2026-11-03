@@ -5,22 +5,17 @@
                 <span v-if="recording" class="shortcut-recorder__prompt">Pressione a combinação desejada (Esc para cancelar)…</span>
                 <span v-else class="shortcut-recorder__value">{{ props.modelValue }}</span>
             </div>
-            <button v-if="!recording" type="button" class="shortcut-recorder__btn" :disabled="props.disabled" @click="beginCapture">
-                Gravar atalho
-            </button>
-            <button v-else type="button" class="shortcut-recorder__btn shortcut-recorder__btn--secondary" @click="cancelRecording">
-                Cancelar
-            </button>
-            <button type="button" class="shortcut-recorder__btn shortcut-recorder__btn--secondary" :disabled="props.disabled || props.modelValue === DEFAULT_ACCELERATOR" @click="resetDefault">
-                Padrão
-            </button>
+            <MaxButton v-if="!recording" type="button" label="Gravar atalho" :disabled="props.disabled" size="small" class="shortcut-recorder__btn" @click="beginCapture" />
+            <MaxButton v-else type="button" label="Cancelar" variant="outlined" size="small" class="shortcut-recorder__btn shortcut-recorder__btn--secondary" @click="cancelRecording" />
+            <MaxButton type="button" label="Padrão" variant="outlined" size="small" :disabled="props.disabled || props.modelValue === DEFAULT_ACCELERATOR" class="shortcut-recorder__btn shortcut-recorder__btn--secondary" @click="resetDefault" />
         </div>
-        <p v-if="validationError" class="shortcut-recorder__error" role="alert">{{ validationError }}</p>
+        <MaxAlert v-if="validationError" :message="validationError" severity="error" class="shortcut-recorder__error" />
     </div>
 </template>
 
 <script setup lang="ts">
     import { nextTick, ref } from 'vue';
+    import { MaxAlert, MaxButton } from '@maxvue/max-components-ui';
     import { useShortcutRecorder } from '@/composables/useShortcutRecorder';
 
     export interface ShortcutRecorderProps {
