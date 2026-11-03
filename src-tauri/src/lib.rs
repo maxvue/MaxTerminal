@@ -147,6 +147,7 @@ pub fn run() {
     );
 
     let specta_builder = specta::builder();
+    let invoke_handler = specta_builder.invoke_handler();
     let pty_for_setup = Arc::clone(&pty_manager);
     let pty_for_run = Arc::clone(&pty_manager);
     let shutdown_complete = Arc::new(AtomicBool::new(false));
@@ -159,6 +160,8 @@ pub fn run() {
         .manage(FrontendLogState::default())
         .manage(pty_manager)
         .setup(move |app| {
+            let _rt_guard = tauri::async_runtime::handle().inner().enter();
+            specta_builder.mount_events(app);
             let listener = Arc::new(TauriEventListener::new(app.handle().clone()));
             pty_for_setup.add_listener(listener);
 
@@ -512,7 +515,7 @@ pub fn run() {
             }
             _ => {}
         })
-        .invoke_handler(specta_builder.invoke_handler())
+        .invoke_handler(invoke_handler)
         .build(tauri::generate_context!())
     {
         Ok(app) => app,

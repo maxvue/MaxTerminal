@@ -116,7 +116,7 @@ authors.workspace = true
 
 [lib]
 name = "maxterminal_lib"
-crate-type = ["staticlib", "cdylib", "rlib"]
+crate-type = ["rlib"]
 
 [features]
 default = ["custom-protocol"]
