@@ -98,8 +98,8 @@
         gap: 0.25rem;
         padding: 0.1875rem;
         border-radius: 0.375rem;
-        background: var(--background-950);
-        border: 1px solid var(--background-800);
+        background: var(--mt-ui-surface, var(--background-0));
+        border: 1px solid var(--mt-ui-border, var(--background-100));
     }
 
     .theme-picker__filter-btn {
@@ -107,13 +107,13 @@
         border: none;
         border-radius: 0.25rem;
         background: transparent;
-        color: var(--background-300);
+        color: var(--mt-ui-text-secondary, var(--background-600));
         font-size: 0.75rem;
         font-weight: 500;
         cursor: pointer;
 
         &:hover {
-            color: var(--background-100);
+            color: var(--mt-ui-text-strong, var(--background-950));
         }
 
         &.is-active {
@@ -128,9 +128,9 @@
         min-width: 14rem;
         padding: 0 0.625rem;
         border-radius: 0.375rem;
-        border: 1px solid var(--background-700);
-        background: var(--background-950);
-        color: var(--background-100);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface, var(--background-0));
+        color: var(--mt-ui-text, var(--background-800));
         font-size: 0.8125rem;
     }
 
@@ -144,7 +144,7 @@
         margin: 0;
         padding: 1rem;
         text-align: center;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
         font-size: 0.8125rem;
     }
 </style>

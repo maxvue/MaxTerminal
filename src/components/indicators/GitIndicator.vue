@@ -136,9 +136,9 @@
             max-width: 140px;
             padding: 1px 6px;
             font-size: 0.6875rem;
-            color: var(--background-200);
-            background: var(--background-800);
-            border: 1px solid var(--background-700);
+            color: var(--mt-ui-text-secondary, var(--background-600));
+            background: var(--mt-ui-surface-elevated, var(--background-50));
+            border: 1px solid var(--mt-ui-border, var(--background-100));
             border-radius: 4px;
             cursor: pointer;
 
@@ -194,8 +194,8 @@
             z-index: 40;
             min-width: 220px;
             padding: 8px 10px;
-            background: var(--background-800);
-            border: 1px solid var(--background-600);
+            background: var(--mt-ui-surface-panel, var(--background-25));
+            border: 1px solid var(--mt-ui-border, var(--background-100));
             border-radius: 6px;
         }
 
@@ -210,7 +210,7 @@
         &__popover-title {
             font-size: 0.75rem;
             font-weight: 600;
-            color: var(--background-100);
+            color: var(--mt-ui-text-strong, var(--background-950));
         }
 
         &__refresh-btn {
@@ -219,9 +219,9 @@
             gap: 4px;
             padding: 2px 6px;
             font-size: 0.6875rem;
-            color: var(--background-200);
-            background: var(--background-700);
-            border: 1px solid var(--background-600);
+            color: var(--mt-ui-text-secondary, var(--background-600));
+            background: var(--mt-ui-surface-elevated, var(--background-50));
+            border: 1px solid var(--mt-ui-border, var(--background-100));
             border-radius: 4px;
             cursor: pointer;
         }
@@ -231,7 +231,7 @@
             flex-wrap: wrap;
             gap: 6px;
             font-size: 0.6875rem;
-            color: var(--background-200);
+            color: var(--mt-ui-text-muted, var(--background-400));
         }
 
         &__stat--conflict {

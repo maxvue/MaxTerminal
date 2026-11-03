@@ -74,7 +74,7 @@
 
         &:hover:not(:disabled) {
             background: color-mix(in srgb, var(--max-danger-500) 28%, transparent);
-            color: var(--background-50);
+            color: var(--max-danger-300);
         }
     }
 

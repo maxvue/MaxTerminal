@@ -49,7 +49,7 @@ const mockSummaries: ThemeSummary[] = [
     }
 ];
 
-function makeResolved(id: string, name: string): ResolvedTheme {
+function makeResolved(id: string, name: string, polarity: 'dark' | 'light' = 'dark'): ResolvedTheme {
     const palette = [
         '#0d1b2a',
         '#ef4444',
@@ -73,9 +73,9 @@ function makeResolved(id: string, name: string): ResolvedTheme {
             id,
             name,
             origin: 'builtin',
-            polarity: 'dark',
-            foreground: '#e2e8f0',
-            background: '#0f1c2e',
+            polarity,
+            foreground: polarity === 'dark' ? '#e2e8f0' : '#1e293b',
+            background: polarity === 'dark' ? '#0f1c2e' : '#ffffff',
             cursor: '#2ea4bc',
             cursorAccent: '#0f1c2e',
             cursorStyle: 'block',
@@ -111,8 +111,8 @@ function makeResolved(id: string, name: string): ResolvedTheme {
             }
         },
         xterm: {
-            foreground: '#e2e8f0',
-            background: '#0f1c2e',
+            foreground: polarity === 'dark' ? '#e2e8f0' : '#1e293b',
+            background: polarity === 'dark' ? '#0f1c2e' : '#ffffff',
             cursor: '#2ea4bc',
             cursorAccent: '#0f1c2e',
             selectionBackground: '#00768e66',
@@ -136,7 +136,10 @@ function makeResolved(id: string, name: string): ResolvedTheme {
             brightWhite: palette[15]!,
             extendedAnsi: null
         },
-        uiTokens: FALLBACK_MAX_NAVY_TEAL_TOKENS
+        uiTokens: {
+            ...FALLBACK_MAX_NAVY_TEAL_TOKENS,
+            polarity
+        }
     };
 }
 
@@ -258,5 +261,27 @@ describe('useThemeStore', () => {
         await store.deleteTheme('dracula', 'max-navy-teal');
         store.dispose();
         expect(store.initialized).toBe(false);
+    });
+
+    it('sincroniza polaridade ao trocar para tema claro e persiste snapshot v2', async () => {
+        const store = useThemeStore();
+        await store.init();
+
+        expect(store.effectiveResolved?.uiTokens.polarity).toBe('dark');
+
+        // Mock para resolver max-light com polaridade clara
+        const ipc = await import('@/ipc/themes');
+        vi.mocked(ipc.themeSetActive).mockImplementationOnce(async (id: string) =>
+            makeResolved(id, 'Max Light', 'light')
+        );
+        vi.mocked(ipc.themeGet).mockImplementationOnce(async (id: string) =>
+            makeResolved(id, 'Max Light', 'light')
+        );
+
+        await store.setActiveTheme('max-light', { kind: 'global' });
+        expect(store.effectiveThemeId).toBe('max-light');
+        expect(store.effectiveResolved?.uiTokens.polarity).toBe('light');
+        expect(document.documentElement.classList.contains('dark')).toBe(false);
+        expect(document.documentElement.dataset.themePolarity).toBe('light');
     });
 });

@@ -102,7 +102,7 @@
     @use '@/styles/params' as *;
 
     .app-error-code {
-        background: var(--background-800);
+        background: var(--mt-ui-surface-elevated, var(--background-50));
         color: var(--max-danger-400);
         border: 1px solid var(--max-danger-500);
         font-family: var(--mt-font-mono);
@@ -110,7 +110,7 @@
 
     .app-retry-btn {
         background: var(--max-primary-600);
-        color: var(--background-50);
+        color: var(--max-primary-content);
         border: 1px solid var(--max-primary-500);
 
         &:hover {

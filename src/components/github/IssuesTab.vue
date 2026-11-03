@@ -270,7 +270,7 @@
         min-width: 0;
         min-height: 0;
         overflow: hidden;
-        background: var(--background-900);
+        background: var(--mt-ui-surface, var(--background-0));
     }
 
     .issues-tab__toolbar {
@@ -279,8 +279,8 @@
         justify-content: space-between;
         gap: 0.75rem;
         padding: 0.5rem 0.875rem;
-        background: var(--background-850, var(--background-800));
-        border-bottom: 1px solid var(--background-700);
+        background: var(--mt-ui-surface-panel, var(--background-25));
+        border-bottom: 1px solid var(--mt-ui-border, var(--background-100));
     }
 
     .issues-tab__repo-info {
@@ -289,7 +289,7 @@
         gap: 0.5rem;
         font-size: 0.8125rem;
         font-weight: 700;
-        color: var(--background-100);
+        color: var(--mt-ui-text-strong, var(--background-950));
     }
 
     .issues-tab__open-badge {
@@ -314,9 +314,9 @@
         height: 1.75rem;
         padding: 0 0.625rem;
         border-radius: 0.3125rem;
-        border: 1px solid var(--background-600);
-        background: var(--background-800);
-        color: var(--background-100);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        color: var(--mt-ui-text, var(--background-800));
         font-size: 0.75rem;
         font-weight: 600;
         cursor: pointer;
@@ -335,7 +335,7 @@
         &--cycle {
             border-color: var(--max-purple-500, #a855f7);
             background: rgb(168 85 247 / 20%);
-            color: var(--background-50);
+            color: var(--max-purple-300, #d8b4fe);
         }
     }
 

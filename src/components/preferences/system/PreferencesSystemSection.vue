@@ -302,15 +302,15 @@
         gap: 0.75rem;
         padding: 0.875rem;
         border-radius: 0.5rem;
-        border: 1px solid var(--background-800);
-        background: var(--background-900);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-panel, var(--background-25));
     }
 
     .prefs-system__heading {
         margin: 0;
         font-size: 0.875rem;
         font-weight: 600;
-        color: var(--background-50);
+        color: var(--mt-ui-text-strong, var(--background-950));
     }
 
     .prefs-system__toggles {
@@ -324,7 +324,7 @@
         align-items: center;
         gap: 0.5rem;
         font-size: 0.8125rem;
-        color: var(--background-200);
+        color: var(--mt-ui-text-secondary, var(--background-600));
         cursor: pointer;
 
         input {
@@ -354,7 +354,7 @@
     .prefs-system__label {
         font-size: 0.75rem;
         font-weight: 600;
-        color: var(--background-300);
+        color: var(--mt-ui-text-secondary, var(--background-600));
     }
 
     .prefs-system__select,
@@ -362,9 +362,9 @@
         height: 2rem;
         padding: 0 0.625rem;
         border-radius: 0.375rem;
-        border: 1px solid var(--background-700);
-        background: var(--background-950);
-        color: var(--background-100);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface, var(--background-0));
+        color: var(--mt-ui-text, var(--background-800));
         font-size: 0.8125rem;
 
         &:disabled {
@@ -395,9 +395,9 @@
     .prefs-system__btn {
         padding: 0.3125rem 0.625rem;
         border-radius: 0.375rem;
-        border: 1px solid var(--background-700);
-        background: var(--background-800);
-        color: var(--background-100);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        color: var(--mt-ui-text, var(--background-800));
         font-size: 0.75rem;
         font-weight: 600;
         cursor: pointer;
@@ -411,7 +411,7 @@
     .prefs-system__btn--primary {
         border-color: var(--max-primary-500);
         background: color-mix(in srgb, var(--max-primary-500) 18%, transparent);
-        color: var(--max-primary-300);
+        color: var(--max-primary-400);
     }
 
     .prefs-system__feedback {
@@ -436,8 +436,8 @@
         gap: 0.5rem;
         padding: 0.375rem 0.625rem;
         border-radius: 0.375rem;
-        border: 1px solid var(--background-800);
-        background: var(--background-950);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface, var(--background-0));
         font-size: 0.75rem;
     }
 
@@ -445,6 +445,6 @@
         display: flex;
         align-items: center;
         gap: 0.625rem;
-        color: var(--background-300);
+        color: var(--mt-ui-text-muted, var(--background-400));
     }
 </style>

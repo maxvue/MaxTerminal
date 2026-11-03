@@ -34,7 +34,7 @@
         text-align: center;
         padding: 1.5rem 1rem;
         gap: 0.625rem;
-        color: var(--background-300);
+        color: var(--mt-ui-text-muted, var(--background-400));
     }
 
     .project-empty-state__icon-box {
@@ -44,9 +44,9 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        background: var(--background-800);
+        background: var(--mt-ui-surface-elevated, var(--background-50));
         color: var(--max-primary-400);
-        border: 1px solid var(--background-700);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
     }
 
     .project-empty-state__icon {
@@ -57,14 +57,14 @@
         margin: 0;
         font-size: 0.875rem;
         font-weight: 600;
-        color: var(--background-100);
+        color: var(--mt-ui-text-strong, var(--background-950));
     }
 
     .project-empty-state__desc {
         margin: 0;
         font-size: 0.75rem;
         line-height: 1.4;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
     }
 
     .project-empty-state__actions {
@@ -90,7 +90,7 @@
 
     .project-empty-state__btn--primary {
         background: var(--max-primary-600);
-        color: var(--background-50);
+        color: var(--max-primary-content);
         border: 1px solid var(--max-primary-500);
 
         &:hover {
@@ -99,12 +99,12 @@
     }
 
     .project-empty-state__btn--secondary {
-        background: var(--background-800);
-        color: var(--background-100);
-        border: 1px solid var(--background-600);
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        color: var(--mt-ui-text, var(--background-800));
+        border: 1px solid var(--mt-ui-border, var(--background-100));
 
         &:hover {
-            background: var(--background-700);
+            background: var(--mt-ui-surface-hover, var(--background-75));
         }
     }
 </style>

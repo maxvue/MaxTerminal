@@ -112,12 +112,12 @@
         transition: background-color 120ms ease, border-color 120ms ease;
 
         &:hover {
-            background: var(--background-700);
+            background: var(--mt-ui-surface-hover, var(--background-75));
         }
     }
 
     .project-item--selected {
-        background: var(--background-700);
+        background: var(--mt-ui-surface-elevated, var(--background-50));
         border-color: var(--mt-project-color, var(--max-primary-500));
     }
 
@@ -135,7 +135,7 @@
         padding: 0.5rem 0.625rem;
         border: none;
         background: transparent;
-        color: var(--background-100);
+        color: var(--mt-ui-text, var(--background-800));
         text-align: left;
         cursor: pointer;
         border-radius: 0.5rem;
@@ -180,7 +180,7 @@
     .project-item__title {
         font-size: 0.875rem;
         font-weight: 600;
-        color: var(--background-50);
+        color: var(--mt-ui-text-strong, var(--background-950));
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -191,7 +191,7 @@
         font-weight: 500;
         padding: 0.0625rem 0.375rem;
         border-radius: 9999px;
-        background: var(--background-800);
+        background: var(--mt-ui-surface-elevated, var(--background-50));
         color: var(--max-warning-400);
         border: 1px solid var(--max-warning-500);
         white-space: nowrap;
@@ -199,7 +199,7 @@
 
     .project-item__path {
         font-size: 0.75rem;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
         font-family: var(--mt-font-mono);
         white-space: nowrap;
         overflow: hidden;
@@ -219,15 +219,15 @@
         border-radius: 0.375rem;
         border: none;
         background: transparent;
-        color: var(--background-300);
+        color: var(--mt-ui-text-muted, var(--background-400));
         display: inline-flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
 
         &:hover {
-            background: var(--background-600);
-            color: var(--background-50);
+            background: var(--mt-ui-surface-hover, var(--background-75));
+            color: var(--mt-ui-text-strong, var(--background-950));
         }
 
         &:focus-visible {
@@ -243,8 +243,8 @@
         min-width: 13rem;
         padding: 0.25rem;
         border-radius: 0.5rem;
-        background: var(--background-800);
-        border: 1px solid var(--background-600);
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        border: 1px solid var(--mt-ui-border, var(--background-100));
         box-shadow: 0 8px 24px rgb(0 0 0 / 45%);
         display: flex;
         flex-direction: column;
@@ -260,13 +260,13 @@
         border: none;
         border-radius: 0.375rem;
         background: transparent;
-        color: var(--background-100);
+        color: var(--mt-ui-text, var(--background-800));
         font-size: 0.8125rem;
         text-align: left;
         cursor: pointer;
 
         &:hover {
-            background: var(--background-700);
+            background: var(--mt-ui-surface-hover, var(--background-75));
         }
 
         &:focus-visible {
@@ -278,7 +278,7 @@
         color: var(--max-danger-400);
 
         &:hover {
-            background: color-mix(in srgb, var(--max-danger-500) 15%, var(--background-700));
+            background: color-mix(in srgb, var(--max-danger-500) 15%, var(--mt-ui-surface-hover, var(--background-75)));
         }
     }
 </style>

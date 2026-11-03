@@ -111,8 +111,8 @@
         height: 100%;
         min-width: 0;
         min-height: 0;
-        background: var(--background-950);
-        border: 1px solid var(--background-800);
+        background: var(--mt-ui-surface, var(--background-0));
+        border: 1px solid var(--mt-ui-border, var(--background-100));
         overflow: hidden;
 
         &.is-focused {
@@ -127,15 +127,15 @@
         gap: 0.5rem;
         height: 1.5rem;
         padding: 0 0.5rem;
-        background: var(--background-900);
-        border-bottom: 1px solid var(--background-800);
+        background: var(--mt-ui-surface-panel, var(--background-25));
+        border-bottom: 1px solid var(--mt-ui-border, var(--background-100));
         flex-shrink: 0;
     }
 
     .pane-view__cwd {
         font-size: 0.6875rem;
         font-family: var(--mt-font-mono);
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -157,7 +157,7 @@
         border: none;
         border-radius: 0.25rem;
         background: transparent;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
         cursor: pointer;
 
         &:disabled {
@@ -166,8 +166,8 @@
         }
 
         &:hover:not(:disabled) {
-            background: var(--background-700);
-            color: var(--background-100);
+            background: var(--mt-ui-surface-hover, var(--background-75));
+            color: var(--mt-ui-text, var(--background-800));
         }
 
         &--danger:hover:not(:disabled) {
@@ -193,13 +193,13 @@
         gap: 0.75rem;
         padding: 1.5rem;
         text-align: center;
-        background: var(--background-950);
+        background: var(--mt-ui-surface, var(--background-0));
     }
 
     .pane-view__exited-title {
         margin: 0;
         font-size: 0.8125rem;
-        color: var(--background-200);
+        color: var(--mt-ui-text, var(--background-800));
     }
 
     .pane-view__exited-actions {
@@ -221,9 +221,9 @@
     .pane-view__close-btn {
         padding: 0.375rem 0.75rem;
         border-radius: 0.3125rem;
-        border: 1px solid var(--background-600);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
         background: transparent;
-        color: var(--background-300);
+        color: var(--mt-ui-text-muted, var(--background-400));
         font-size: 0.75rem;
         font-weight: 600;
         cursor: pointer;

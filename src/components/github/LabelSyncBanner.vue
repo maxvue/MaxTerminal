@@ -51,7 +51,7 @@
         padding: 0.5rem 0.875rem;
         background: rgb(168 85 247 / 12%);
         border-bottom: 1px solid rgb(168 85 247 / 35%);
-        color: var(--background-100);
+        color: var(--mt-ui-text-strong, var(--background-950));
         font-size: 0.7813rem;
     }
 
@@ -75,7 +75,7 @@
         border-radius: 0.3125rem;
         border: 1px solid var(--max-purple-500, #a855f7);
         background: rgb(168 85 247 / 20%);
-        color: var(--background-50);
+        color: var(--max-purple-100, #f3e8ff);
         font-size: 0.75rem;
         font-weight: 600;
         cursor: pointer;
@@ -89,9 +89,9 @@
     .label-sync-banner__dismiss {
         padding: 0.1875rem 0.5rem;
         border-radius: 0.25rem;
-        border: 1px solid var(--background-600);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
         background: transparent;
-        color: var(--background-200);
+        color: var(--mt-ui-text-secondary, var(--background-600));
         font-size: 0.7188rem;
         cursor: pointer;
     }

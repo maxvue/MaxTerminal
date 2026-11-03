@@ -57,10 +57,10 @@
         height: 2.125rem;
         padding: 0 0.625rem;
         border-radius: 0.375rem 0.375rem 0 0;
-        background: var(--background-800);
-        border: 1px solid var(--background-700);
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        border: 1px solid var(--mt-ui-border, var(--background-100));
         border-bottom: none;
-        color: var(--background-300);
+        color: var(--mt-ui-text-muted, var(--background-400));
         font-size: 0.7813rem;
         font-weight: 500;
         cursor: pointer;
@@ -70,13 +70,13 @@
         flex-shrink: 0;
 
         &:hover {
-            background: var(--background-700);
-            color: var(--background-100);
+            background: var(--mt-ui-surface-hover, var(--background-75));
+            color: var(--mt-ui-text, var(--background-800));
         }
 
         &.is-active {
-            background: var(--background-900);
-            color: var(--background-50);
+            background: var(--mt-ui-surface, var(--background-0));
+            color: var(--mt-ui-text-strong, var(--background-950));
             border-color: var(--max-primary-500);
             font-weight: 600;
         }
@@ -104,8 +104,8 @@
         border-radius: 999px;
         font-size: 0.65rem;
         font-weight: 600;
-        background: var(--background-700);
-        color: var(--background-200);
+        background: var(--mt-ui-surface-hover, var(--background-75));
+        color: var(--mt-ui-text-secondary, var(--background-600));
     }
 
     .tab-bar-item__close {
@@ -118,12 +118,12 @@
         border: none;
         border-radius: 0.25rem;
         background: transparent;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
         cursor: pointer;
         flex-shrink: 0;
 
         &:hover {
-            background: var(--background-600);
+            background: var(--mt-ui-surface-hover, var(--background-75));
             color: var(--max-danger-400);
         }
     }

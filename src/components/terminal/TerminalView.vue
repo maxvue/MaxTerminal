@@ -58,6 +58,6 @@
         height: 100%;
         overflow: hidden;
         contain: strict;
-        background: var(--background-950);
+        background: var(--mt-ui-surface, var(--background-0));
     }
 </style>

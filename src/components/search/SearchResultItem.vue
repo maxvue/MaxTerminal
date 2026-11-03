@@ -94,12 +94,12 @@
         padding: 8px 12px;
         border-radius: 6px;
         cursor: pointer;
-        color: var(--background-100);
+        color: var(--mt-ui-text, var(--background-800));
         transition: background-color 120ms ease;
 
         &:hover,
         &.is-selected {
-            background: var(--background-800);
+            background: var(--mt-ui-surface-hover, var(--background-75));
         }
 
         &.is-selected {
@@ -134,7 +134,7 @@
     .search-result-item__title {
         font-size: 13px;
         font-weight: 600;
-        color: var(--background-50);
+        color: var(--mt-ui-text-strong, var(--background-950));
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -144,7 +144,7 @@
     .search-result-item__badge {
         padding: 1px 6px;
         border-radius: 4px;
-        background: var(--background-700);
+        background: var(--mt-ui-surface-elevated, var(--background-50));
         color: var(--max-warning-400);
         font-size: 10px;
         font-weight: 600;
@@ -153,13 +153,13 @@
 
     .search-result-item__time {
         font-size: 11px;
-        color: var(--background-300);
+        color: var(--mt-ui-text-muted, var(--background-400));
         flex-shrink: 0;
     }
 
     .search-result-item__excerpt {
         font-size: 12px;
-        color: var(--background-200);
+        color: var(--mt-ui-text-secondary, var(--background-600));
         font-family: var(--mt-font-mono);
         line-height: 1.4;
         display: -webkit-box;
@@ -171,10 +171,10 @@
     .search-result-item__hint {
         align-self: center;
         padding: 2px 6px;
-        border: 1px solid var(--background-700);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
         border-radius: 4px;
-        background: var(--background-900);
-        color: var(--background-300);
+        background: var(--mt-ui-surface, var(--background-0));
+        color: var(--mt-ui-text-muted, var(--background-400));
         font-size: 10px;
         flex-shrink: 0;
     }

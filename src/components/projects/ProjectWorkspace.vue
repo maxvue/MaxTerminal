@@ -98,8 +98,8 @@
         height: 100%;
         min-width: 0;
         min-height: 0;
-        background: var(--background-900);
-        color: var(--background-100);
+        background: var(--mt-ui-surface, var(--background-0));
+        color: var(--mt-ui-text, var(--background-800));
     }
 
     .project-workspace__header {
@@ -107,13 +107,13 @@
         align-items: center;
         gap: 0.75rem;
         padding: 0.625rem 1rem;
-        border-bottom: 1px solid var(--background-700);
-        background: var(--background-800);
+        border-bottom: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-panel, var(--background-25));
     }
 
     .project-workspace__header--empty {
         min-height: 2.75rem;
-        background: var(--background-800);
+        background: var(--mt-ui-surface-panel, var(--background-25));
     }
 
     .project-workspace__actions {
@@ -129,24 +129,24 @@
         align-items: center;
         gap: 0.375rem;
         padding: 0.25rem 0.625rem;
-        border: 1px solid var(--background-700);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
         border-radius: 0.375rem;
-        background: var(--background-900);
-        color: var(--background-200);
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        color: var(--mt-ui-text, var(--background-800));
         font-size: 0.75rem;
         cursor: pointer;
 
         &:hover {
             border-color: var(--max-primary-500);
-            color: var(--background-50);
+            color: var(--mt-ui-text-strong, var(--background-950));
         }
     }
 
     .project-workspace__kbd {
         padding: 0.0625rem 0.25rem;
         border-radius: 0.25rem;
-        background: var(--background-800);
-        color: var(--background-300);
+        background: var(--mt-ui-surface-hover, var(--background-75));
+        color: var(--mt-ui-text-muted, var(--background-400));
         font-family: var(--mt-font-mono);
         font-size: 0.625rem;
     }
@@ -158,15 +158,15 @@
         width: 1.5rem;
         height: 1.5rem;
         padding: 0;
-        border: 1px solid var(--background-700);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
         border-radius: 0.25rem;
-        background: var(--background-900);
-        color: var(--background-300);
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        color: var(--mt-ui-text-muted, var(--background-400));
         cursor: pointer;
 
         &:hover {
             border-color: var(--max-primary-500);
-            color: var(--background-50);
+            color: var(--mt-ui-text-strong, var(--background-950));
         }
     }
 
@@ -205,10 +205,10 @@
     .project-workspace__settings-btn {
         margin-left: auto;
         flex-shrink: 0;
-        color: var(--background-300);
+        color: var(--mt-ui-text-muted, var(--background-400));
 
         &:hover {
-            color: var(--background-50);
+            color: var(--mt-ui-text-strong, var(--background-950));
         }
     }
 
@@ -216,7 +216,7 @@
         margin: 0;
         font-size: 0.9375rem;
         font-weight: 600;
-        color: var(--background-50);
+        color: var(--mt-ui-text-strong, var(--background-950));
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -227,8 +227,8 @@
         font-weight: 600;
         padding: 0.0625rem 0.4375rem;
         border-radius: 9999px;
-        background: var(--background-700);
-        color: var(--background-200);
+        background: var(--mt-ui-surface-hover, var(--background-75));
+        color: var(--mt-ui-text-secondary, var(--background-600));
     }
 
     .project-workspace__missing {
@@ -236,14 +236,14 @@
         font-weight: 600;
         padding: 0.0625rem 0.5rem;
         border-radius: 9999px;
-        background: var(--background-900);
+        background: var(--mt-ui-surface, var(--background-0));
         color: var(--max-warning-400);
         border: 1px solid var(--max-warning-500);
     }
 
     .project-workspace__path {
         font-size: 0.75rem;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
         font-family: var(--mt-font-mono);
         white-space: nowrap;
         overflow: hidden;
@@ -274,13 +274,13 @@
         margin: 0;
         font-size: 1rem;
         font-weight: 600;
-        color: var(--background-100);
+        color: var(--mt-ui-text-strong, var(--background-950));
     }
 
     .project-workspace__placeholder-desc {
         margin: 0;
         font-size: 0.8125rem;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
         max-width: 28rem;
     }
 

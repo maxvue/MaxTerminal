@@ -236,8 +236,8 @@
         height: 100%;
         min-width: 0;
         min-height: 0;
-        background: var(--background-800);
-        border-right: 1px solid var(--background-700);
+        background: var(--mt-ui-surface-panel, var(--background-25));
+        border-right: 1px solid var(--mt-ui-border, var(--background-100));
         user-select: none;
     }
 
@@ -247,7 +247,7 @@
         justify-content: space-between;
         gap: 0.5rem;
         padding: 0.625rem 0.75rem;
-        border-bottom: 1px solid var(--background-700);
+        border-bottom: 1px solid var(--mt-ui-border, var(--background-100));
     }
 
     .project-list__heading {
@@ -255,7 +255,7 @@
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.04em;
-        color: var(--background-300);
+        color: var(--mt-ui-text-secondary, var(--background-600));
     }
 
     .project-list__toolbar {
@@ -270,15 +270,15 @@
         gap: 0.25rem;
         padding: 0.25rem 0.5rem;
         border-radius: 0.375rem;
-        border: 1px solid var(--background-600);
-        background: var(--background-700);
-        color: var(--background-100);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        color: var(--mt-ui-text, var(--background-800));
         font-size: 0.75rem;
         font-weight: 600;
         cursor: pointer;
 
         &:hover {
-            background: var(--background-600);
+            background: var(--mt-ui-surface-hover, var(--background-75));
         }
 
         &:focus-visible {
@@ -295,7 +295,7 @@
         padding: 0.5rem;
         border-radius: 0.375rem;
         border: 1px solid var(--max-danger-500);
-        background: var(--background-900);
+        background: var(--mt-ui-surface, var(--background-0));
         color: var(--max-danger-400);
         font-size: 0.75rem;
         display: flex;
@@ -309,7 +309,7 @@
         border-radius: 0.25rem;
         border: 1px solid var(--max-primary-500);
         background: var(--max-primary-600);
-        color: var(--background-50);
+        color: var(--max-primary-content);
         font-size: 0.6875rem;
         cursor: pointer;
     }
@@ -338,8 +338,8 @@
         display: flex;
         align-items: center;
         padding: 0.5rem 0.75rem;
-        border-top: 1px solid var(--background-700);
-        background: var(--background-800);
+        border-top: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-panel, var(--background-25));
     }
 
     .project-list__settings-btn {
@@ -349,16 +349,16 @@
         width: 100%;
         padding: 0.375rem 0.5rem;
         border-radius: 0.375rem;
-        border: 1px solid var(--background-600);
-        background: var(--background-700);
-        color: var(--background-100);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        color: var(--mt-ui-text, var(--background-800));
         font-size: 0.8125rem;
         font-weight: 500;
         cursor: pointer;
 
         &:hover {
-            background: var(--background-600);
-            color: var(--background-50);
+            background: var(--mt-ui-surface-hover, var(--background-75));
+            color: var(--mt-ui-text-strong, var(--background-950));
         }
 
         &:focus-visible {

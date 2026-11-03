@@ -90,7 +90,7 @@
     :deep(.mt-columns.splitpanes) {
         width: 100%;
         height: 100%;
-        background: var(--background-900);
+        background: var(--mt-ui-surface, var(--background-0));
     }
 
     :deep(.mt-columns .splitpanes__pane) {
@@ -102,7 +102,7 @@
 
     :deep(.mt-columns > .splitpanes__splitter) {
         width: 4px;
-        background: var(--background-700);
+        background: var(--mt-ui-border, var(--background-100));
         border: none;
         transition: background-color 120ms ease;
 

@@ -63,7 +63,7 @@
     .project-discovery {
         border: 1px solid var(--max-info-500);
         border-radius: 0.5rem;
-        background: var(--background-800);
+        background: var(--mt-ui-surface-panel, var(--background-25));
         margin: 0.5rem;
         overflow: hidden;
     }
@@ -74,7 +74,7 @@
         justify-content: space-between;
         gap: 0.5rem;
         padding: 0.4375rem 0.625rem;
-        background: var(--background-700);
+        background: var(--mt-ui-surface-hover, var(--background-75));
     }
 
     .project-discovery__toggle {
@@ -83,7 +83,7 @@
         gap: 0.375rem;
         border: none;
         background: transparent;
-        color: var(--background-50);
+        color: var(--mt-ui-text-strong, var(--background-950));
         font-size: 0.75rem;
         font-weight: 600;
         cursor: pointer;
@@ -96,7 +96,7 @@
     .project-discovery__accept-all {
         border: 1px solid var(--max-primary-500);
         background: var(--max-primary-600);
-        color: var(--background-50);
+        color: var(--max-primary-content);
         border-radius: 0.375rem;
         padding: 0.1875rem 0.5rem;
         font-size: 0.6875rem;
@@ -129,7 +129,7 @@
         gap: 0.5rem;
         padding: 0.375rem 0.5rem;
         border-radius: 0.375rem;
-        background: var(--background-900);
+        background: var(--mt-ui-surface, var(--background-0));
     }
 
     .project-discovery__avatar {
@@ -154,7 +154,7 @@
     .project-discovery__title {
         font-size: 0.75rem;
         font-weight: 600;
-        color: var(--background-100);
+        color: var(--mt-ui-text-strong, var(--background-950));
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -162,7 +162,7 @@
 
     .project-discovery__path {
         font-size: 0.6875rem;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
         font-family: var(--mt-font-mono);
         white-space: nowrap;
         overflow: hidden;
@@ -190,21 +190,21 @@
 
     .project-discovery__btn--accept {
         border: 1px solid var(--max-success-500);
-        background: var(--background-800);
+        background: var(--mt-ui-surface-elevated, var(--background-50));
         color: var(--max-success-400);
 
         &:hover {
-            background: var(--background-700);
+            background: var(--mt-ui-surface-hover, var(--background-75));
         }
     }
 
     .project-discovery__btn--dismiss {
-        border: 1px solid var(--background-600);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
         background: transparent;
-        color: var(--background-300);
+        color: var(--mt-ui-text-muted, var(--background-400));
 
         &:hover {
-            background: var(--background-700);
+            background: var(--mt-ui-surface-hover, var(--background-75));
         }
     }
 </style>

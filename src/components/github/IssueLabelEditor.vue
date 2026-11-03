@@ -123,8 +123,8 @@
         gap: 0.5rem;
         padding: 0.625rem 0.875rem;
         border-radius: 0.375rem;
-        border: 1px solid var(--background-700);
-        background: var(--background-850, var(--background-800));
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-panel, var(--background-25));
     }
 
     .issue-label-editor__row {
@@ -142,16 +142,16 @@
     .issue-label-editor__field-label {
         font-size: 0.75rem;
         font-weight: 600;
-        color: var(--background-300);
+        color: var(--mt-ui-text-secondary, var(--background-600));
     }
 
     .issue-label-editor__select {
         height: 1.75rem;
         padding: 0 0.5rem;
         border-radius: 0.3125rem;
-        border: 1px solid var(--background-600);
-        background: var(--background-900);
-        color: var(--background-100);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface, var(--background-0));
+        color: var(--mt-ui-text, var(--background-800));
         font-size: 0.75rem;
     }
 
@@ -167,7 +167,7 @@
         align-items: center;
         gap: 0.25rem;
         font-size: 0.75rem;
-        color: var(--background-200);
+        color: var(--mt-ui-text-secondary, var(--background-600));
         cursor: pointer;
     }
 </style>

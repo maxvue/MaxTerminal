@@ -83,45 +83,45 @@ export const FALLBACK_MAX_NAVY_TEAL_TOKENS: MaxUiTokens = {
         content: '#0a1220'
     },
     background: {
-        b0: '#ffffff',
-        b25: '#fbfcfd',
-        b50: '#f8fafc',
-        b75: '#f3f6fa',
-        b100: '#e8eef8',
-        b125: '#dfe7f4',
-        b150: '#d5e0ef',
-        b175: '#cdd9eb',
-        b200: '#c5d1e6',
-        b225: '#b5c4dc',
-        b250: '#a5b7d1',
-        b275: '#9caecb',
-        b300: '#94a6c4',
-        b325: '#879bb9',
-        b350: '#7a90af',
-        b375: '#6f84a4',
-        b400: '#64799e',
-        b425: '#596e92',
-        b450: '#4e6387',
-        b475: '#45597e',
-        b500: '#3d5278',
-        b525: '#36496e',
-        b550: '#304164',
-        b575: '#2c3e60',
-        b600: '#283b5c',
-        b625: '#243452',
-        b650: '#202e48',
-        b675: '#1d2a42',
-        b700: '#1b2a44',
-        b725: '#18243c',
-        b750: '#152036',
-        b775: '#131e33',
-        b800: '#111c30',
-        b825: '#0f182b',
-        b850: '#0d1527',
-        b875: '#0c1424',
-        b900: '#0b1322',
-        b925: '#080f1b',
-        b950: '#060b14'
+        b0: '#17293d',
+        b25: '#233549',
+        b50: '#2f4155',
+        b75: '#3b4d61',
+        b100: '#47596d',
+        b125: '#526478',
+        b150: '#5e7084',
+        b175: '#6a7c90',
+        b200: '#76889c',
+        b225: '#8294a8',
+        b250: '#8e9fb4',
+        b275: '#99abc0',
+        b300: '#a3b2c4',
+        b325: '#acbacb',
+        b350: '#b6c3d2',
+        b375: '#bfcbd9',
+        b400: '#c9d4e0',
+        b425: '#cbd5e1',
+        b450: '#d1dae5',
+        b475: '#d7dfe8',
+        b500: '#dde4ec',
+        b525: '#e2e8f0',
+        b550: '#e5eaf1',
+        b575: '#e8edf3',
+        b600: '#ebf0f5',
+        b625: '#eef2f7',
+        b650: '#f1f5f9',
+        b675: '#f3f6fa',
+        b700: '#f4f7fa',
+        b725: '#f6f9fb',
+        b750: '#f8fafc',
+        b775: '#f9fbfc',
+        b800: '#fbfcfd',
+        b825: '#fafbfc',
+        b850: '#ffffff',
+        b875: '#ffffff',
+        b900: '#ffffff',
+        b925: '#ffffff',
+        b950: '#ffffff'
     },
     terminal: {
         bg: '#0f1c2e',
@@ -151,7 +151,7 @@ export function saveThemeBootstrapSnapshot(
     }
     try {
         const snapshot: ThemeBootstrapSnapshot = {
-            version: 1,
+            version: 2,
             themeId,
             polarity: tokens.polarity,
             cssVars: buildCssVarsRecord(tokens)
@@ -176,7 +176,7 @@ export function loadThemeBootstrapSnapshot(): ThemeBootstrapSnapshot | null {
         }
         const parsed = JSON.parse(raw) as Partial<ThemeBootstrapSnapshot>;
         if (
-            parsed.version !== 1 ||
+            parsed.version !== 2 ||
             typeof parsed.themeId !== 'string' ||
             (parsed.polarity !== 'dark' && parsed.polarity !== 'light') ||
             typeof parsed.cssVars !== 'object' ||
@@ -211,7 +211,7 @@ export function applyThemeBootstrapSync(rootEl?: HTMLElement | null): ThemeBoots
         applyCssVarsRecordToElement(target, 'dark', fallbackVars);
     }
     return {
-        version: 1,
+        version: 2,
         themeId: DEFAULT_DARK_THEME_ID,
         polarity: 'dark',
         cssVars: fallbackVars

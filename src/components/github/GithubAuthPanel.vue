@@ -113,9 +113,9 @@
         width: 100%;
         max-width: 34rem;
         border-radius: 0.5rem;
-        border: 1px solid var(--background-600);
-        background: var(--background-850, var(--background-800));
-        color: var(--background-100);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface, var(--background-0));
+        color: var(--mt-ui-text-strong, var(--background-950));
         overflow: hidden;
     }
 
@@ -124,7 +124,7 @@
         align-items: center;
         justify-content: space-between;
         padding: 0.75rem 1rem;
-        border-bottom: 1px solid var(--background-700);
+        border-bottom: 1px solid var(--mt-ui-border, var(--background-100));
     }
 
     .github-auth-panel__title {
@@ -136,7 +136,7 @@
     .github-auth-panel__close {
         border: none;
         background: transparent;
-        color: var(--background-300);
+        color: var(--mt-ui-text-secondary, var(--background-600));
         cursor: pointer;
     }
 
@@ -155,11 +155,11 @@
     }
 
     .github-auth-panel__label {
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
     }
 
     .github-auth-panel__value {
-        color: var(--background-100);
+        color: var(--mt-ui-text-strong, var(--background-950));
         text-align: right;
     }
 
@@ -169,13 +169,13 @@
         gap: 0.375rem;
         margin-top: 0.5rem;
         padding-top: 0.75rem;
-        border-top: 1px solid var(--background-700);
+        border-top: 1px solid var(--mt-ui-border, var(--background-100));
     }
 
     .github-auth-panel__input-label {
         font-size: 0.75rem;
         font-weight: 600;
-        color: var(--background-200);
+        color: var(--mt-ui-text-secondary, var(--background-600));
     }
 
     .github-auth-panel__input-group {
@@ -188,9 +188,9 @@
         height: 2rem;
         padding: 0 0.625rem;
         border-radius: 0.3125rem;
-        border: 1px solid var(--background-600);
-        background: var(--background-900);
-        color: var(--background-100);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-panel, var(--background-25));
+        color: var(--mt-ui-text-strong, var(--background-950));
         font-size: 0.8125rem;
     }
 
@@ -198,9 +198,9 @@
         height: 2rem;
         padding: 0 0.75rem;
         border-radius: 0.3125rem;
-        border: 1px solid var(--background-600);
-        background: var(--background-700);
-        color: var(--background-100);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        color: var(--mt-ui-text-secondary, var(--background-600));
         font-size: 0.75rem;
         font-weight: 600;
         cursor: pointer;

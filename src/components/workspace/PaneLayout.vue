@@ -103,7 +103,7 @@
     :deep(.pane-layout__splitpanes.splitpanes) {
         width: 100%;
         height: 100%;
-        background: var(--background-950);
+        background: var(--mt-ui-surface, var(--background-0));
     }
 
     :deep(.pane-layout__splitpanes .splitpanes__pane) {
@@ -114,7 +114,7 @@
     }
 
     :deep(.pane-layout__splitpanes > .splitpanes__splitter) {
-        background: var(--background-700);
+        background: var(--mt-ui-border, var(--background-100));
         border: none;
         transition: background-color 120ms ease;
 

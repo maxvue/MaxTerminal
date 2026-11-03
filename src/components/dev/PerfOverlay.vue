@@ -112,8 +112,8 @@
     padding: 10px 12px;
     border: 1px solid var(--max-primary-500);
     border-radius: 8px;
-    background: var(--background-900);
-    color: var(--background-100);
+    background: var(--mt-ui-surface, var(--background-0));
+    color: var(--mt-ui-text-strong, var(--background-950));
     font-size: 11px;
     box-shadow: 0 8px 24px rgb(0 0 0 / 45%);
 
@@ -137,10 +137,10 @@
 
     &__btn {
         padding: 2px 6px;
-        border: 1px solid var(--background-700);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
         border-radius: 4px;
-        background: var(--background-800);
-        color: var(--background-100);
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        color: var(--mt-ui-text, var(--background-800));
         font-size: 10px;
         cursor: pointer;
 
@@ -152,7 +152,7 @@
     &__section {
         margin-top: 6px;
         padding-top: 6px;
-        border-top: 1px solid var(--background-800);
+        border-top: 1px solid var(--mt-ui-border, var(--background-100));
     }
 
     &__heading {
@@ -171,7 +171,7 @@
 
     &__subgrid {
         margin-top: 4px;
-        color: var(--background-300);
+        color: var(--mt-ui-text-secondary, var(--background-600));
     }
 
     &__export {
@@ -180,7 +180,7 @@
         padding: 6px;
         overflow: auto;
         border-radius: 4px;
-        background: var(--background-950);
+        background: var(--mt-ui-surface-panel, var(--background-25));
         font-size: 10px;
     }
 }

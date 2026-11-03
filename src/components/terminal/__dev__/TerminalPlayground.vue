@@ -506,8 +506,8 @@
         flex-direction: column;
         width: 100%;
         height: 100%;
-        background: var(--background-950);
-        color: var(--background-100);
+        background: var(--mt-ui-surface, var(--background-0));
+        color: var(--mt-ui-text-strong, var(--background-950));
     }
 
     .playground-toolbar {
@@ -517,8 +517,8 @@
         justify-content: space-between;
         gap: 8px;
         padding: 8px 12px;
-        background: var(--background-900);
-        border-bottom: 1px solid var(--background-700);
+        background: var(--mt-ui-surface-panel, var(--background-25));
+        border-bottom: 1px solid var(--mt-ui-border, var(--background-100));
     }
 
     .toolbar-group {
@@ -529,16 +529,16 @@
 
     .toolbar-label {
         font-size: 12px;
-        color: var(--background-300);
+        color: var(--mt-ui-text-secondary, var(--background-600));
     }
 
     .toolbar-select,
     .pg-btn {
         padding: 4px 8px;
-        background: var(--background-800);
-        border: 1px solid var(--background-700);
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        border: 1px solid var(--mt-ui-border, var(--background-100));
         border-radius: 4px;
-        color: var(--background-100);
+        color: var(--mt-ui-text, var(--background-800));
         font-size: 12px;
         cursor: pointer;
 
@@ -552,13 +552,13 @@
     .pg-btn.is-active {
         background: var(--max-primary-600);
         border-color: var(--max-primary-500);
-        color: var(--background-50);
+        color: var(--max-primary-content, #fff);
     }
 
     .pg-btn-danger {
         background: var(--max-danger-600);
         border-color: var(--max-danger-500);
-        color: var(--background-50);
+        color: #fff;
     }
 
     .pg-tab-btn {
@@ -580,18 +580,18 @@
         flex-wrap: wrap;
         gap: 6px;
         padding: 6px 12px;
-        background: var(--background-900);
-        border-bottom: 1px solid var(--background-800);
+        background: var(--mt-ui-surface-panel, var(--background-25));
+        border-bottom: 1px solid var(--mt-ui-border, var(--background-100));
         font-family: var(--mt-font-mono);
         font-size: 11px;
     }
 
     .telemetry-chip {
         padding: 2px 6px;
-        background: var(--background-800);
-        border: 1px solid var(--background-700);
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        border: 1px solid var(--mt-ui-border, var(--background-100));
         border-radius: 4px;
-        color: var(--background-200);
+        color: var(--mt-ui-text-secondary, var(--background-600));
     }
 
     .playground-stage {

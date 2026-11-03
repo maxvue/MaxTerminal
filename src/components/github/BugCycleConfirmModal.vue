@@ -93,9 +93,9 @@
         display: flex;
         flex-direction: column;
         border-radius: 0.5rem;
-        border: 1px solid var(--background-600);
-        background: var(--background-850, var(--background-800));
-        color: var(--background-100);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface, var(--background-0));
+        color: var(--mt-ui-text-strong, var(--background-950));
         overflow: hidden;
     }
 
@@ -104,7 +104,7 @@
         align-items: center;
         justify-content: space-between;
         padding: 0.75rem 1rem;
-        border-bottom: 1px solid var(--background-700);
+        border-bottom: 1px solid var(--mt-ui-border, var(--background-100));
     }
 
     .bug-cycle-confirm-modal__title {
@@ -116,7 +116,7 @@
     .bug-cycle-confirm-modal__close {
         border: none;
         background: transparent;
-        color: var(--background-300);
+        color: var(--mt-ui-text-secondary, var(--background-600));
         cursor: pointer;
     }
 
@@ -140,12 +140,12 @@
         margin: 0;
         font-size: 0.8125rem;
         font-weight: 700;
-        color: var(--background-200);
+        color: var(--mt-ui-text-strong, var(--background-950));
     }
 
     .bug-cycle-confirm-modal__empty {
         margin: 0;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
     }
 
     .bug-cycle-confirm-modal__list {
@@ -163,8 +163,8 @@
         gap: 0.5rem;
         padding: 0.375rem 0.625rem;
         border-radius: 0.3125rem;
-        border: 1px solid var(--background-700);
-        background: var(--background-900);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-panel, var(--background-25));
     }
 
     .bug-cycle-confirm-modal__num {
@@ -183,7 +183,7 @@
     .bug-cycle-confirm-modal__stage,
     .bug-cycle-confirm-modal__reason {
         font-size: 0.6875rem;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
     }
 
     .bug-cycle-confirm-modal__footer {
@@ -191,7 +191,7 @@
         justify-content: flex-end;
         gap: 0.5rem;
         padding: 0.75rem 1rem;
-        border-top: 1px solid var(--background-700);
+        border-top: 1px solid var(--mt-ui-border, var(--background-100));
     }
 
     .bug-cycle-confirm-modal__btn {
@@ -201,9 +201,9 @@
         height: 2rem;
         padding: 0 0.875rem;
         border-radius: 0.3125rem;
-        border: 1px solid var(--background-600);
-        background: var(--background-700);
-        color: var(--background-100);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        color: var(--mt-ui-text-secondary, var(--background-600));
         font-size: 0.75rem;
         font-weight: 600;
         cursor: pointer;

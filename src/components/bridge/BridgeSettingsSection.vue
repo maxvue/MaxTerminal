@@ -176,13 +176,13 @@
         margin: 0;
         font-size: 0.9375rem;
         font-weight: 600;
-        color: var(--background-50);
+        color: var(--mt-ui-text-strong, var(--background-950));
     }
 
     .bridge-settings__subtitle {
         margin: 0.25rem 0 0;
         font-size: 0.75rem;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
     }
 
     .bridge-settings__badge {
@@ -207,8 +207,8 @@
         }
 
         &.is-neutral {
-            background: var(--background-800);
-            color: var(--background-400);
+            background: var(--mt-ui-surface-elevated, var(--background-50));
+            color: var(--mt-ui-text-muted, var(--background-400));
         }
     }
 
@@ -225,8 +225,8 @@
         gap: 1rem;
         padding: 0.625rem 0.75rem;
         border-radius: 0.375rem;
-        border: 1px solid var(--background-800);
-        background: var(--background-900);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-panel, var(--background-25));
     }
 
     .bridge-settings__row-info {
@@ -238,21 +238,21 @@
     .bridge-settings__row-title {
         font-size: 0.8125rem;
         font-weight: 500;
-        color: var(--background-100);
+        color: var(--mt-ui-text-strong, var(--background-950));
     }
 
     .bridge-settings__row-desc {
         font-size: 0.75rem;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
     }
 
     .bridge-settings__select,
     .bridge-settings__input {
         padding: 0.25rem 0.5rem;
         border-radius: 0.25rem;
-        border: 1px solid var(--background-700);
-        background: var(--background-950);
-        color: var(--background-100);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface, var(--background-0));
+        color: var(--mt-ui-text, var(--background-800));
         font-size: 0.75rem;
     }
 
@@ -268,19 +268,19 @@
         gap: 0.125rem;
         padding: 0.5rem 0.625rem;
         border-radius: 0.375rem;
-        border: 1px solid var(--background-800);
-        background: var(--background-900);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-panel, var(--background-25));
     }
 
     .bridge-settings__stat-label {
         font-size: 0.6875rem;
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
     }
 
     .bridge-settings__stat-value {
         font-size: 0.75rem;
         font-family: var(--mt-font-mono);
-        color: var(--background-100);
+        color: var(--mt-ui-text-strong, var(--background-950));
     }
 
     .bridge-settings__actions {
@@ -297,7 +297,7 @@
         border-radius: 0.375rem;
         border: 1px solid var(--max-primary-500);
         background: var(--max-primary-600);
-        color: var(--background-50);
+        color: var(--max-primary-content, #fff);
         font-size: 0.75rem;
         font-weight: 500;
         cursor: pointer;

@@ -132,8 +132,8 @@
         justify-content: space-between;
         gap: 0.5rem;
         padding: 0.375rem 0.75rem 0;
-        background: var(--background-800);
-        border-bottom: 1px solid var(--background-700);
+        background: var(--mt-ui-surface-panel, var(--background-25));
+        border-bottom: 1px solid var(--mt-ui-border, var(--background-100));
         min-height: 2.5rem;
     }
 
@@ -165,9 +165,9 @@
         height: 1.75rem;
         padding: 0 0.5625rem;
         border-radius: 0.3125rem;
-        border: 1px solid var(--background-600);
-        background: var(--background-850, var(--background-900));
-        color: var(--background-200);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        color: var(--mt-ui-text-secondary, var(--background-600));
         font-size: 0.75rem;
         font-weight: 600;
         cursor: pointer;
@@ -179,8 +179,8 @@
         }
 
         &:hover:not(:disabled) {
-            background: var(--background-700);
-            color: var(--background-50);
+            background: var(--mt-ui-surface-hover, var(--background-75));
+            color: var(--mt-ui-text-strong, var(--background-950));
         }
 
         &--primary {

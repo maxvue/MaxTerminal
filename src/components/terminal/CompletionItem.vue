@@ -48,14 +48,14 @@
         min-height: 32px;
         padding: 4px 10px;
         border-radius: 4px;
-        color: var(--background-100);
+        color: var(--mt-ui-text, var(--background-800));
         font-size: 12px;
         cursor: pointer;
         user-select: none;
 
         &.is-active {
             background: var(--max-primary-700);
-            color: var(--background-50);
+            color: var(--max-primary-content, #fff);
         }
 
         &.is-disabled {
@@ -90,7 +90,7 @@
     }
 
     .item-description {
-        color: var(--background-300);
+        color: var(--mt-ui-text-muted, var(--background-400));
         font-size: 11px;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -100,10 +100,10 @@
     .item-detail {
         flex-shrink: 0;
         padding: 1px 6px;
-        background: var(--background-800);
-        border: 1px solid var(--background-700);
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        border: 1px solid var(--mt-ui-border, var(--background-100));
         border-radius: 4px;
-        color: var(--background-300);
+        color: var(--mt-ui-text-secondary, var(--background-600));
         font-family: var(--mt-font-mono);
         font-size: 11px;
     }

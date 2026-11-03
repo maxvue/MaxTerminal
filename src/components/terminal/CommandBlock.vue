@@ -98,8 +98,8 @@
     .command-block {
         pointer-events: auto;
         width: 100%;
-        background: var(--mt-block-background, var(--background-900));
-        border: 1px solid var(--mt-block-border, var(--background-700));
+        background: var(--mt-block-background, var(--mt-ui-surface-panel, var(--background-25)));
+        border: 1px solid var(--mt-block-border, var(--mt-ui-border, var(--background-100)));
         border-radius: 6px;
         overflow: hidden;
 
@@ -118,9 +118,9 @@
         justify-content: space-between;
         gap: 10px;
         padding: 4px 10px;
-        background: var(--mt-block-header-background, var(--background-800));
+        background: var(--mt-block-header-background, var(--mt-ui-surface-elevated, var(--background-50)));
         font-size: 11px;
-        color: var(--background-100);
+        color: var(--mt-ui-text-strong, var(--background-950));
     }
 
     .block-meta-left,
@@ -181,14 +181,14 @@
 
     .block-command {
         font-family: var(--mt-font-mono);
-        color: var(--background-50);
+        color: var(--mt-ui-text-strong, var(--background-950));
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
     }
 
     .block-cwd {
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
         font-family: var(--mt-font-mono);
         white-space: nowrap;
         overflow: hidden;
@@ -196,7 +196,7 @@
     }
 
     .block-duration {
-        color: var(--background-300);
+        color: var(--mt-ui-text-secondary, var(--background-600));
         font-family: var(--mt-font-mono);
         white-space: nowrap;
     }
@@ -216,16 +216,16 @@
         align-items: center;
         gap: 4px;
         padding: 2px 6px;
-        background: var(--background-900);
-        border: 1px solid var(--background-700);
+        background: var(--mt-ui-surface, var(--background-0));
+        border: 1px solid var(--mt-ui-border, var(--background-100));
         border-radius: 4px;
-        color: var(--background-200);
+        color: var(--mt-ui-text-secondary, var(--background-600));
         font-size: 11px;
         cursor: pointer;
 
         &:hover {
-            background: var(--background-700);
-            color: var(--background-50);
+            background: var(--mt-ui-surface-hover, var(--background-75));
+            color: var(--mt-ui-text-strong, var(--background-950));
         }
     }
 

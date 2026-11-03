@@ -60,7 +60,7 @@ vi.mock('@/ipc/projects', () => ({
 
 vi.mock('@/ipc/db', () => ({
     getSettings: vi.fn().mockResolvedValue({}),
-    setSetting: vi.fn().mockResolvedValue(undefined),
+    setSetting: vi.fn().mockResolvedValue({ ok: true, data: { revision: 1, value: null } }),
     getSettingSnapshot: vi.fn().mockResolvedValue({ revision: 1, values: {} })
 }));
 

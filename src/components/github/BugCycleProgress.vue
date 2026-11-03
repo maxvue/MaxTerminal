@@ -55,7 +55,7 @@
         padding: 0.5rem 0.875rem;
         background: rgb(20 184 166 / 12%);
         border-bottom: 1px solid rgb(20 184 166 / 35%);
-        color: var(--background-100);
+        color: var(--mt-ui-text-strong, var(--background-950));
         font-size: 0.7813rem;
     }
 
@@ -76,7 +76,7 @@
     }
 
     .bug-cycle-progress__current {
-        color: var(--background-300);
+        color: var(--mt-ui-text-secondary, var(--background-600));
     }
 
     .bug-cycle-progress__actions {
@@ -89,9 +89,9 @@
         height: 1.625rem;
         padding: 0 0.625rem;
         border-radius: 0.25rem;
-        border: 1px solid var(--background-600);
-        background: var(--background-800);
-        color: var(--background-100);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        color: var(--mt-ui-text-secondary, var(--background-600));
         font-size: 0.7188rem;
         font-weight: 600;
         cursor: pointer;

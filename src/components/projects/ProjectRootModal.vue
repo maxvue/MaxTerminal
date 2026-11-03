@@ -243,9 +243,9 @@
         width: 100%;
         max-width: 30rem;
         border-radius: 0.625rem;
-        background: var(--background-800);
-        border: 1px solid var(--background-600);
-        color: var(--background-100);
+        background: var(--mt-ui-surface, var(--background-0));
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        color: var(--mt-ui-text, var(--background-800));
         box-shadow: 0 16px 40px rgb(0 0 0 / 55%);
         overflow: hidden;
     }
@@ -255,27 +255,27 @@
         align-items: center;
         justify-content: space-between;
         padding: 0.875rem 1.125rem;
-        border-bottom: 1px solid var(--background-700);
+        border-bottom: 1px solid var(--mt-ui-border, var(--background-100));
     }
 
     .project-root-modal__title {
         margin: 0;
         font-size: 1rem;
         font-weight: 600;
-        color: var(--background-50);
+        color: var(--mt-ui-text-strong, var(--background-950));
     }
 
     .project-root-modal__close {
         border: none;
         background: transparent;
-        color: var(--background-300);
+        color: var(--mt-ui-text-muted, var(--background-400));
         cursor: pointer;
         padding: 0.25rem;
         border-radius: 0.375rem;
 
         &:hover {
-            background: var(--background-700);
-            color: var(--background-50);
+            background: var(--mt-ui-surface-hover, var(--background-75));
+            color: var(--mt-ui-text-strong, var(--background-950));
         }
     }
 
@@ -295,7 +295,7 @@
     .project-root-modal__label {
         font-size: 0.75rem;
         font-weight: 600;
-        color: var(--background-200);
+        color: var(--mt-ui-text, var(--background-800));
     }
 
     .project-root-modal__path-row {
@@ -308,25 +308,25 @@
         min-width: 0;
         padding: 0.4375rem 0.625rem;
         border-radius: 0.375rem;
-        border: 1px solid var(--background-600);
-        background: var(--background-900);
-        color: var(--background-50);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-panel, var(--background-25));
+        color: var(--mt-ui-text-strong, var(--background-950));
         font-size: 0.8125rem;
     }
 
     .project-root-modal__pick-btn {
         padding: 0.4375rem 0.75rem;
         border-radius: 0.375rem;
-        border: 1px solid var(--background-600);
-        background: var(--background-700);
-        color: var(--background-100);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        color: var(--mt-ui-text, var(--background-800));
         font-size: 0.75rem;
         font-weight: 600;
         cursor: pointer;
     }
 
     .project-root-modal__fieldset {
-        border: 1px solid var(--background-700);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
         border-radius: 0.375rem;
         padding: 0.5rem 0.75rem;
         display: flex;
@@ -340,7 +340,7 @@
         align-items: center;
         gap: 0.5rem;
         font-size: 0.8125rem;
-        color: var(--background-100);
+        color: var(--mt-ui-text, var(--background-800));
         cursor: pointer;
     }
 
@@ -353,7 +353,7 @@
     .project-root-modal__error {
         padding: 0.5rem 0.75rem;
         border-radius: 0.375rem;
-        background: color-mix(in srgb, var(--max-danger-500) 15%, var(--background-900));
+        background: color-mix(in srgb, var(--max-danger-500) 15%, var(--mt-ui-surface, var(--background-0)));
         border: 1px solid var(--max-danger-500);
         color: var(--max-danger-400);
         font-size: 0.75rem;
@@ -378,9 +378,9 @@
     }
 
     .project-root-modal__btn--secondary {
-        border: 1px solid var(--background-600);
-        background: var(--background-700);
-        color: var(--background-100);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        color: var(--mt-ui-text, var(--background-800));
     }
 
     .project-root-modal__btn--danger {
@@ -390,14 +390,14 @@
     }
 
     .project-root-modal__btn--cancel {
-        border: 1px solid var(--background-600);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
         background: transparent;
-        color: var(--background-200);
+        color: var(--mt-ui-text, var(--background-800));
     }
 
     .project-root-modal__btn--submit {
         border: 1px solid var(--max-primary-500);
         background: var(--max-primary-600);
-        color: var(--background-50);
+        color: var(--max-primary-content);
     }
 </style>

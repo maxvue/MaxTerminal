@@ -43,11 +43,11 @@ export const DEFAULT_DARK_THEME_ID = 'max-navy-teal' as const;
 export const DEFAULT_LIGHT_THEME_ID = 'max-light' as const;
 
 /** Chave do `localStorage` para bootstrap síncrono sem FOUC. */
-export const BOOTSTRAP_STORAGE_KEY = 'maxterminal.theme.bootstrap.v1' as const;
+export const BOOTSTRAP_STORAGE_KEY = 'maxterminal.theme.bootstrap.v2' as const;
 
 /** Estrutura mínima persistida no `localStorage` para hidratação síncrona antes de `app.mount()`. */
 export interface ThemeBootstrapSnapshot {
-    version: 1;
+    version: 2;
     themeId: string;
     polarity: 'dark' | 'light';
     cssVars: Record<string, string>;

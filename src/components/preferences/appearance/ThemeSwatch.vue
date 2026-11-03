@@ -74,8 +74,8 @@
         display: flex;
         flex-direction: column;
         border-radius: 0.5rem;
-        border: 1px solid var(--background-700);
-        background: var(--background-950);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        background: var(--mt-ui-surface, var(--background-0));
         overflow: hidden;
         cursor: pointer;
         transition: border-color 0.15s ease, transform 0.15s ease;
@@ -146,8 +146,8 @@
         justify-content: space-between;
         gap: 0.5rem;
         padding: 0.5rem 0.625rem;
-        background: var(--background-900);
-        border-top: 1px solid var(--background-800);
+        background: var(--mt-ui-surface-panel, var(--background-25));
+        border-top: 1px solid var(--mt-ui-border, var(--background-100));
     }
 
     .theme-swatch__meta {
@@ -160,7 +160,7 @@
     .theme-swatch__name {
         font-size: 0.75rem;
         font-weight: 600;
-        color: var(--background-100);
+        color: var(--mt-ui-text-strong, var(--background-950));
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -169,8 +169,8 @@
     .theme-swatch__badge {
         padding: 0.0625rem 0.375rem;
         border-radius: 0.25rem;
-        background: var(--background-800);
-        color: var(--background-300);
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        color: var(--mt-ui-text-muted, var(--background-400));
         font-size: 0.6875rem;
     }
 
@@ -198,12 +198,12 @@
         border: none;
         border-radius: 0.25rem;
         background: transparent;
-        color: var(--background-300);
+        color: var(--mt-ui-text-secondary, var(--background-600));
         cursor: pointer;
 
         &:hover {
-            background: var(--background-800);
-            color: var(--background-50);
+            background: var(--mt-ui-surface-hover, var(--background-75));
+            color: var(--mt-ui-text-strong, var(--background-950));
         }
 
         &--danger:hover {
