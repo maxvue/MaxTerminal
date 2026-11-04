@@ -1,5 +1,5 @@
 <template>
-    <MaxBadgeButton v-if="store.isAvailable" :model-value="store.isModalOpen" label="HORIZON" :overlay="overlays" :title="buttonTitle" :aria-label="buttonAriaLabel" size="sm" class="horizon-badge-btn" @click="handleClick" @update:model-value="handleModelValueUpdate" />
+    <MaxBadgeButton v-if="store.isAvailable" :model-value="store.isModalOpen" label="HORIZON" :overlay="overlays" :title="buttonTitle" :aria-label="buttonAriaLabel" size="sm" class="horizon-badge-btn" @click="handleClick" @update:model-value="handleUpdateModelValue" />
 </template>
 
 <script setup lang="ts">
@@ -13,7 +13,7 @@
         store.openModal();
     }
 
-    function handleModelValueUpdate(val: boolean): void {
+    function handleUpdateModelValue(val: boolean | number): void {
         if (val) {
             store.openModal();
         } else {
