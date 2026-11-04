@@ -174,6 +174,34 @@ describe('AppearancePreferences e subcomponentes', () => {
         expect(wrapper.emitted('update')!.length).toBeGreaterThanOrEqual(7);
     });
 
+    it('TerminalFontSettings normaliza números localizados em pt-BR e respeita limites e passos', async () => {
+        const wrapper = mount(TerminalFontSettings, {
+            props: {
+                appearance: { ...sampleAppearance }
+            }
+        });
+
+        const inputs = wrapper.findAllComponents({ name: 'MaxInputNumber' });
+        expect(inputs.length).toBe(3);
+
+        // 1. fontSize: clamp de 5 para 8
+        inputs[0]!.vm.$emit('update:modelValue', 5);
+        // 2. fontSize: clamp de 45 para 36
+        inputs[0]!.vm.$emit('update:modelValue', 45);
+        // 3. lineHeight com vírgula pt-BR: '1,35' -> 1.35
+        inputs[1]!.vm.$emit('update:modelValue', '1,35');
+        // 4. contrastRatio com vírgula pt-BR: '4,5' -> 4.5
+        inputs[2]!.vm.$emit('update:modelValue', '4,5');
+
+        const updates = wrapper.emitted('update') as Array<[Partial<AppearanceSettings>]>;
+        expect(updates).toBeDefined();
+
+        expect(updates[0]![0]).toEqual({ fontSize: 8 });
+        expect(updates[1]![0]).toEqual({ fontSize: 36 });
+        expect(updates[2]![0]).toEqual({ lineHeight: 1.35 });
+        expect(updates[3]![0]).toEqual({ minimumContrastRatio: 4.5 });
+    });
+
     it('ProjectThemeOverrides emite escopo por projeto e limpeza de override', async () => {
         const wrapper = mount(ProjectThemeOverrides, {
             props: {
@@ -212,6 +240,21 @@ describe('AppearancePreferences e subcomponentes', () => {
             'max-navy-teal',
             { kind: 'clear_project', projectId: 'proj-1' }
         ]);
+    });
+
+    it('ProjectThemeOverrides exibe MaxEmptyDiv com label quando a lista de projetos estiver vazia', () => {
+        const wrapper = mount(ProjectThemeOverrides, {
+            props: {
+                projects: [],
+                themes: [sampleSummary],
+                overrides: {}
+            }
+        });
+
+        const emptyDiv = wrapper.findComponent({ name: 'MaxEmptyDiv' });
+        expect(emptyDiv.exists()).toBe(true);
+        expect(emptyDiv.props('label')).toBe('Nenhum projeto cadastrado até o momento.');
+        expect(emptyDiv.text()).toContain('Nenhum projeto cadastrado até o momento.');
     });
 
     it('ThemeImportReport exibe contadores, avisos, erros e emite close', async () => {

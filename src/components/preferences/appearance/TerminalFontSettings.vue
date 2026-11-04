@@ -14,12 +14,12 @@
 
             <div class="font-settings__field">
                 <label class="font-settings__label" for="mt-font-size">Tamanho da fonte ({{ appearance.fontSize }}px)</label>
-                <MaxInputNumber id="mt-font-size" :model-value="appearance.fontSize" :min="8" :max="36" :step="1" :disabled="disabled" class="font-settings__input" @update:model-value="onFontSizeChange" @change="onFontSizeChange" />
+                <MaxInputNumber id="mt-font-size" :model-value="appearance.fontSize" :min="8" :max="36" :step="1" :disabled="disabled" class="font-settings__input" @update:model-value="onFontSizeChange" />
             </div>
 
             <div class="font-settings__field">
                 <label class="font-settings__label" for="mt-line-height">Altura da linha ({{ appearance.lineHeight }})</label>
-                <MaxInputNumber id="mt-line-height" :model-value="appearance.lineHeight" :min="0.8" :max="2.5" :step="0.05" :disabled="disabled" class="font-settings__input" @update:model-value="onLineHeightChange" @change="onLineHeightChange" />
+                <MaxInputNumber id="mt-line-height" :model-value="appearance.lineHeight" :min="0.8" :max="2.5" :step="0.05" :disabled="disabled" class="font-settings__input" @update:model-value="onLineHeightChange" />
             </div>
 
             <div class="font-settings__field">
@@ -29,7 +29,7 @@
 
             <div class="font-settings__field">
                 <label class="font-settings__label" for="mt-contrast-ratio">Contraste mínimo ({{ appearance.minimumContrastRatio }}:1)</label>
-                <MaxInputNumber id="mt-contrast-ratio" :model-value="appearance.minimumContrastRatio" :min="1" :max="21" :step="0.5" :disabled="disabled" class="font-settings__input" @update:model-value="onMinimumContrastChange" @change="onMinimumContrastChange" />
+                <MaxInputNumber id="mt-contrast-ratio" :model-value="appearance.minimumContrastRatio" :min="1" :max="21" :step="0.5" :disabled="disabled" class="font-settings__input" @update:model-value="onMinimumContrastChange" />
             </div>
         </div>
 
@@ -113,18 +113,44 @@
         emit('update', { fontFamily: value });
     }
 
+    function parseLocalizedNumber(valOrEv: unknown): number | null {
+        if (typeof valOrEv === 'number') {
+            return Number.isFinite(valOrEv) ? valOrEv : null;
+        }
+        const rawStr = typeof valOrEv === 'string'
+            ? valOrEv
+            : ((valOrEv as { target?: HTMLInputElement })?.target?.value ?? String(valOrEv ?? ''));
+        const trimmed = rawStr.trim();
+        if (!trimmed) {
+            return null;
+        }
+
+        let sanitized = trimmed;
+        if (sanitized.includes(',') && sanitized.includes('.')) {
+            sanitized = sanitized.replace(/\./g, '').replace(',', '.');
+        } else if (sanitized.includes(',')) {
+            sanitized = sanitized.replace(',', '.');
+        }
+
+        const parsed = Number.parseFloat(sanitized);
+        return Number.isFinite(parsed) ? parsed : null;
+    }
+
     function onFontSizeChange(valOrEv: unknown): void {
-        const raw = typeof valOrEv === 'number' ? valOrEv : Number.parseInt((valOrEv as { target?: HTMLInputElement })?.target?.value ?? String(valOrEv), 10);
-        if (Number.isFinite(raw)) {
-            const fontSize = Math.min(36, Math.max(8, raw));
+        const raw = parseLocalizedNumber(valOrEv);
+        if (raw !== null) {
+            const rounded = Math.round(raw);
+            const fontSize = Math.min(36, Math.max(8, rounded));
             emit('update', { fontSize });
         }
     }
 
     function onLineHeightChange(valOrEv: unknown): void {
-        const raw = typeof valOrEv === 'number' ? valOrEv : Number.parseFloat((valOrEv as { target?: HTMLInputElement })?.target?.value ?? String(valOrEv));
-        if (Number.isFinite(raw)) {
-            const lineHeight = Math.min(2.5, Math.max(0.8, Number(raw.toFixed(2))));
+        const raw = parseLocalizedNumber(valOrEv);
+        if (raw !== null) {
+            const clamped = Math.min(2.5, Math.max(0.8, raw));
+            const snapped = Math.round(clamped / 0.05) * 0.05;
+            const lineHeight = Number(snapped.toFixed(2));
             emit('update', { lineHeight });
         }
     }
@@ -139,9 +165,11 @@
     }
 
     function onMinimumContrastChange(valOrEv: unknown): void {
-        const raw = typeof valOrEv === 'number' ? valOrEv : Number.parseFloat((valOrEv as { target?: HTMLInputElement })?.target?.value ?? String(valOrEv));
-        if (Number.isFinite(raw)) {
-            const minimumContrastRatio = Math.min(21, Math.max(1, raw));
+        const raw = parseLocalizedNumber(valOrEv);
+        if (raw !== null) {
+            const clamped = Math.min(21, Math.max(1, raw));
+            const snapped = Math.round(clamped / 0.5) * 0.5;
+            const minimumContrastRatio = Number(snapped.toFixed(1));
             emit('update', { minimumContrastRatio });
         }
     }

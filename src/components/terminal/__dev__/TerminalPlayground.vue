@@ -3,13 +3,7 @@
         <header class="playground-toolbar">
             <div class="toolbar-group">
                 <label class="toolbar-label" for="pg-shell-select">Shell:</label>
-                <select id="pg-shell-select" v-model="selectedShell" class="toolbar-select">
-                    <option value="">Padrão ($SHELL)</option>
-                    <option value="/bin/zsh">zsh (/bin/zsh)</option>
-                    <option value="/bin/bash">bash (/bin/bash)</option>
-                    <option value="/usr/bin/fish">fish (/usr/bin/fish)</option>
-                    <option value="/bin/sh">sh (/bin/sh)</option>
-                </select>
+                <MaxInputSelect id="pg-shell-select" v-model="selectedShell" :options="shellOptions" option-label="label" option-value="value" option-name="label" class="toolbar-select" />
                 <MaxButton label="Iniciar (Spawn)" size="small" class="pg-btn pg-btn-primary" @click="spawnActiveSlot" />
                 <MaxButton label="Reiniciar" severity="secondary" size="small" class="pg-btn" :disabled="!activeSlot.ptyId" @click="restartActiveSlot" />
                 <MaxButton label="Encerrar (Kill)" severity="danger" size="small" class="pg-btn pg-btn-danger" :disabled="!activeSlot.ptyId" @click="killActiveSlot" />
@@ -32,9 +26,7 @@
                 <MaxButton label="+ Bloco Abort (null)" severity="secondary" size="small" class="pg-btn" @click="simulateBlock('aborted')" />
             </div>
         </header>
-        <div v-if="cleanupAlertMessage" class="playground-alert" role="alert">
-            {{ cleanupAlertMessage }}
-        </div>
+        <MaxAlert v-if="cleanupAlertMessage" severity="info" role="alert" :message="cleanupAlertMessage" class="playground-alert" />
         <section class="playground-telemetry" aria-label="Telemetria em tempo real">
             <span class="telemetry-chip">Spawn: {{ activeSlot.spawnLatencyMs }} ms</span>
             <span class="telemetry-chip">Mount: {{ activeSlot.mountLatencyMs }} ms</span>
@@ -65,7 +57,7 @@
 
 <script setup lang="ts">
     import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
-    import { MaxButton } from '@maxvue/max-components-ui';
+    import { MaxAlert, MaxButton, MaxInputSelect } from '@maxvue/max-components-ui';
     import type { UnlistenFn } from '@tauri-apps/api/event';
     import type { TabStatus } from '@/types/bindings';
     import type { Disposable } from '@/types/terminal';
@@ -98,6 +90,13 @@
     const shellHistoryStore = useShellHistoryStore();
 
     const selectedShell = ref<string>('');
+    const shellOptions = [
+        { label: 'Padrão ($SHELL)', value: '' },
+        { label: 'zsh (/bin/zsh)', value: '/bin/zsh' },
+        { label: 'bash (/bin/bash)', value: '/bin/bash' },
+        { label: 'fish (/usr/bin/fish)', value: '/usr/bin/fish' },
+        { label: 'sh (/bin/sh)', value: '/bin/sh' }
+    ];
     const activeSlotIndex = ref<0 | 1>(0);
     const demoTriggersEnabled = ref<boolean>(false);
     const cleanupAlertMessage = ref<string | null>(null);

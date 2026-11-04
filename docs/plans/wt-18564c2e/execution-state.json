@@ -1,0 +1,90 @@
+{
+  "version": 2,
+  "planRevision": "a5636b5eac5a6b777584f17133f0b524c7051fa0181b98d0a2f199390911347b",
+  "tasks": [
+    {
+      "id": "T1",
+      "status": "completed",
+      "files": [
+        "src/components/workspace/TemplateEditorModal.vue",
+        "src/components/projects/ProjectIdentityForm.vue",
+        "src/components/terminal/__dev__/TerminalPlayground.vue"
+      ],
+      "revision": "bc14ef9bfd38296d78c0b92f431a47e7b66d0c748e8395c072c510202b6fb678",
+      "validations": []
+    },
+    {
+      "id": "T2",
+      "status": "completed",
+      "files": [
+        "src/components/shell/DbRecoveryPanel.vue",
+        "src/components/preferences/appearance/ThemePicker.vue",
+        "src/components/preferences/appearance/ProjectThemeOverrides.vue",
+        "src/components/preferences/appearance/ThemeEditorDialog.vue",
+        "src/components/preferences/appearance/TerminalFontSettings.vue",
+        "src/components/horizon/HorizonBadgeButton.vue",
+        "src/components/preferences/system/PreferencesSystemSection.vue",
+        "src-tauri/crates/mt-commands/src/horizon/probe.rs"
+      ],
+      "revision": "bc14ef9bfd38296d78c0b92f431a47e7b66d0c748e8395c072c510202b6fb678",
+      "validations": []
+    },
+    {
+      "id": "T3",
+      "status": "completed",
+      "files": [
+        "tests/components/horizon/HorizonBadgeButton.spec.ts",
+        "tests/components/preferences/appearance/AppearancePreferences.spec.ts",
+        "tests/components/preferences/appearance/ThemeEditorDialog.spec.ts",
+        "tests/components/preferences/appearance/ThemePicker.spec.ts",
+        "tests/components/preferences/system/PreferencesSystemSection.spec.ts",
+        "tests/stores/settings.spec.ts"
+      ],
+      "revision": "bc14ef9bfd38296d78c0b92f431a47e7b66d0c748e8395c072c510202b6fb678",
+      "validations": []
+    }
+  ],
+  "verification": {
+    "revision": "bc14ef9bfd38296d78c0b92f431a47e7b66d0c748e8395c072c510202b6fb678",
+    "checks": [
+      {
+        "command": "npm run typecheck",
+        "revision": "bc14ef9bfd38296d78c0b92f431a47e7b66d0c748e8395c072c510202b6fb678",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run typecheck:vue",
+        "revision": "bc14ef9bfd38296d78c0b92f431a47e7b66d0c748e8395c072c510202b6fb678",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run lint",
+        "revision": "bc14ef9bfd38296d78c0b92f431a47e7b66d0c748e8395c072c510202b6fb678",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run lint:style",
+        "revision": "bc14ef9bfd38296d78c0b92f431a47e7b66d0c748e8395c072c510202b6fb678",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm test",
+        "revision": "bc14ef9bfd38296d78c0b92f431a47e7b66d0c748e8395c072c510202b6fb678",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run build",
+        "revision": "bc14ef9bfd38296d78c0b92f431a47e7b66d0c748e8395c072c510202b6fb678",
+        "result": "passed",
+        "exitCode": 0
+      }
+    ]
+  },
+  "updatedAt": 1793827850000,
+  "nextAction": "Aguardar confirmação do usuário para integração Git."
+}

@@ -24,7 +24,7 @@
                 </div>
                 <div class="prefs-system__field">
                     <label class="prefs-system__label" for="mt-quake-height">Altura no modo Quake ({{ settings.quake.dropDownHeightPct }}%)</label>
-                    <MaxInputNumber id="mt-quake-height" :model-value="settings.quake.dropDownHeightPct" :min="20" :max="100" :disabled="osSettingsStore.saving" class="prefs-system__input" @update:model-value="onQuakeHeightChange" @change="onQuakeHeightChange" />
+                    <MaxInputNumber id="mt-quake-height" :model-value="settings.quake.dropDownHeightPct" :min="20" :max="100" :disabled="osSettingsStore.saving" class="prefs-system__input" @update:model-value="onQuakeHeightChange" />
                 </div>
             </div>
             <div class="prefs-system__toggles">
@@ -47,7 +47,7 @@
             </div>
             <div class="prefs-system__field prefs-system__field--inline">
                 <label class="prefs-system__label" for="mt-long-cmd-secs">Tempo mínimo para comando longo (segundos)</label>
-                <MaxInputNumber id="mt-long-cmd-secs" :model-value="settings.notifications.longCommandThresholdSecs" :min="3" :max="3600" :disabled="osSettingsStore.saving || !settings.notifications.enabled" class="prefs-system__input prefs-system__input--short" @update:model-value="onThresholdSecsChange" @change="onThresholdSecsChange" />
+                <MaxInputNumber id="mt-long-cmd-secs" :model-value="settings.notifications.longCommandThresholdSecs" :min="3" :max="3600" :disabled="osSettingsStore.saving || !settings.notifications.enabled" class="prefs-system__input prefs-system__input--short" @update:model-value="onThresholdSecsChange" />
             </div>
         </section>
 
@@ -167,9 +167,21 @@
         }
     }
 
+    function parseIntegerInput(valOrEv: unknown): number | null {
+        if (typeof valOrEv === 'number') {
+            return Number.isFinite(valOrEv) ? Math.round(valOrEv) : null;
+        }
+        const rawStr = typeof valOrEv === 'string'
+            ? valOrEv
+            : ((valOrEv as { target?: HTMLInputElement })?.target?.value ?? String(valOrEv ?? ''));
+        const trimmed = rawStr.trim().replace(',', '.');
+        const parsed = Number.parseFloat(trimmed);
+        return Number.isFinite(parsed) ? Math.round(parsed) : null;
+    }
+
     function onQuakeHeightChange(valOrEv: unknown): void {
-        const raw = typeof valOrEv === 'number' ? valOrEv : Number.parseInt((valOrEv as { target?: HTMLInputElement })?.target?.value ?? String(valOrEv), 10);
-        if (Number.isFinite(raw)) {
+        const raw = parseIntegerInput(valOrEv);
+        if (raw !== null) {
             const dropDownHeightPct = Math.min(100, Math.max(20, raw));
             void osSettingsStore.update({ quake: { dropDownHeightPct } }).catch(() => {});
         }
@@ -209,8 +221,8 @@
     }
 
     function onThresholdSecsChange(valOrEv: unknown): void {
-        const raw = typeof valOrEv === 'number' ? valOrEv : Number.parseInt((valOrEv as { target?: HTMLInputElement })?.target?.value ?? String(valOrEv), 10);
-        if (Number.isFinite(raw)) {
+        const raw = parseIntegerInput(valOrEv);
+        if (raw !== null) {
             const longCommandThresholdSecs = Math.min(3600, Math.max(3, raw));
             void osSettingsStore
                 .update({ notifications: { longCommandThresholdSecs } })
