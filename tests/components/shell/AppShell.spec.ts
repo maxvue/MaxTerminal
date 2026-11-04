@@ -5,7 +5,6 @@ import { nextTick } from 'vue';
 import { beforeEach, describe, expect, it } from 'vitest';
 import App from '@/app/App.vue';
 import AppEmptyState from '@/components/shell/AppEmptyState.vue';
-import AppShell from '@/components/shell/AppShell.vue';
 import AppTitleBar from '@/components/shell/AppTitleBar.vue';
 import type { AppInfo } from '@/types/bindings';
 
@@ -26,51 +25,9 @@ const mockAppInfo: AppInfo = {
     }
 };
 
-describe('Shell Visual - AppShell, AppTitleBar, AppEmptyState e App.vue', () => {
+describe('Shell Visual - AppTitleBar, AppEmptyState e App.vue (sem AppShell)', () => {
     beforeEach(() => {
         setActivePinia(createPinia());
-    });
-
-    describe('AppShell', () => {
-        it('renderiza os slots obrigatórios e omite sidebar e statusbar quando vazios', () => {
-            const wrapper = mount(AppShell, {
-                slots: {
-                    titlebar: '<div class="test-title">Barra</div>',
-                    workspace: '<div class="test-work">Workspace</div>'
-                }
-            });
-
-            expect(wrapper.find('.test-title').exists()).toBe(true);
-            expect(wrapper.find('.test-work').exists()).toBe(true);
-            expect(wrapper.find('.app-shell__sidebar').exists()).toBe(false);
-            expect(wrapper.find('.app-shell__statusbar').exists()).toBe(false);
-        });
-
-        it('renderiza sidebar e statusbar quando os respectivos slots são fornecidos', () => {
-            const wrapper = mount(AppShell, {
-                slots: {
-                    titlebar: 'Barra',
-                    sidebar: '<nav class="test-side">Sidebar</nav>',
-                    workspace: 'Workspace',
-                    statusbar: '<span class="test-status">Status</span>'
-                }
-            });
-
-            expect(wrapper.find('.app-shell__sidebar').exists()).toBe(true);
-            expect(wrapper.find('.test-side').exists()).toBe(true);
-            expect(wrapper.find('.app-shell__statusbar').exists()).toBe(true);
-            expect(wrapper.find('.test-status').exists()).toBe(true);
-        });
-
-        it('reflete o atributo data-loading de acordo com a prop loading', async () => {
-            const wrapper = mount(AppShell, {
-                props: { loading: true }
-            });
-            expect(wrapper.find('.app-shell').attributes('data-loading')).toBe('true');
-
-            await wrapper.setProps({ loading: false });
-            expect(wrapper.find('.app-shell').attributes('data-loading')).toBe('false');
-        });
     });
 
     describe('AppTitleBar', () => {
@@ -135,6 +92,9 @@ describe('Shell Visual - AppShell, AppTitleBar, AppEmptyState e App.vue', () => 
             await new Promise((resolve) => setTimeout(resolve, 30));
             await nextTick();
 
+            expect(wrapper.find('.app-shell').exists()).toBe(false);
+            expect(wrapper.find('.app-viewport').exists()).toBe(true);
+            expect(wrapper.find('.app-viewport').attributes('data-loading')).toBe('false');
             expect(wrapper.find('.app-title-bar').exists()).toBe(false);
             expect(wrapper.text()).not.toContain('MaxTerminal v0.1.0');
             expect(wrapper.text()).toContain('Nenhum projeto selecionado');

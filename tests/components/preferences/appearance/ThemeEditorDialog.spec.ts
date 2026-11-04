@@ -1,8 +1,14 @@
+import axios from 'axios';
+import { createApp, defineComponent } from 'vue';
 import { flushPromises, mount } from '@vue/test-utils';
 import { createMaxPinia } from '@maxvue/max-pinia';
 import { createPinia, setActivePinia, type PiniaPlugin } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ThemeEditorDialog from '@/components/preferences/appearance/ThemeEditorDialog.vue';
+import {
+    clearLastThemeSchemeSaveState,
+    installThemeMaxPiniaAdapter
+} from '@/ipc/themeMaxPiniaAdapter';
 import { FALLBACK_MAX_NAVY_TEAL_TOKENS } from '@/theme/bootstrap';
 import { useThemeEditorStore } from '@/stores/themeEditor';
 import type { ResolvedTheme, ThemeDraftInput } from '@/types/theme';
@@ -80,19 +86,36 @@ function makeFakeResolved(id: string, name: string): ResolvedTheme {
     };
 }
 
+type MaxPiniaAxios = NonNullable<NonNullable<Parameters<typeof createMaxPinia>[0]>['axios']>;
+
 describe('ThemeEditorDialog.vue', () => {
+    let pinia: ReturnType<typeof createPinia>;
+
     beforeEach(() => {
-        const pinia = createPinia();
-        pinia.use(createMaxPinia() as unknown as PiniaPlugin);
-        setActivePinia(pinia);
         vi.clearAllMocks();
+        clearLastThemeSchemeSaveState();
+        const client = axios.create();
+        installThemeMaxPiniaAdapter(client);
+        pinia = createPinia();
+        pinia.use(
+            createMaxPinia({
+                axios: client as unknown as MaxPiniaAxios
+            }) as unknown as PiniaPlugin
+        );
+        const app = createApp(defineComponent({ render: () => null }));
+        app.use(pinia);
+        setActivePinia(pinia);
     });
 
     it('abre em modo criação, edita cores e opacidade de seleção e salva via MaxPinia', async () => {
         const editorStore = useThemeEditorStore();
         editorStore.openCreate(null);
 
-        const wrapper = mount(ThemeEditorDialog);
+        const wrapper = mount(ThemeEditorDialog, {
+            global: {
+                plugins: [pinia]
+            }
+        });
         expect(wrapper.text()).toContain('Criar Novo Tema Customizado');
         expect(wrapper.text()).toContain('Paleta ANSI de 16 Cores');
 
@@ -126,7 +149,11 @@ describe('ThemeEditorDialog.vue', () => {
         const existing = makeFakeResolved('tema-nebulosa', 'Tema Nebulosa');
         editorStore.openEdit(existing);
 
-        const wrapper = mount(ThemeEditorDialog);
+        const wrapper = mount(ThemeEditorDialog, {
+            global: {
+                plugins: [pinia]
+            }
+        });
         expect(wrapper.text()).toContain('Editar Tema: Tema Nebulosa');
         expect(wrapper.text()).toContain('2 cores indexadas (16–255) preservadas');
 

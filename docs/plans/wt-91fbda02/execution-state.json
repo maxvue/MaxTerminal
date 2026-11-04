@@ -1,0 +1,168 @@
+{
+  "version": 2,
+  "planRevision": "9fed24a776076a33cb67cc79847f5ac128d9772669ac5ceaed203a11c67982c0",
+  "tasks": [
+    {
+      "id": "T1",
+      "status": "completed",
+      "files": [
+        "scripts/sync-local-libs.mjs"
+      ],
+      "validations": [
+        {
+          "command": "node scripts/sync-local-libs.mjs --check",
+          "revision": "55930685b3169c489224b0eda417d7fcb903848c73ca2f6980439a317be700d1",
+          "result": "passed"
+        }
+      ],
+      "revision": "55930685b3169c489224b0eda417d7fcb903848c73ca2f6980439a317be700d1"
+    },
+    {
+      "id": "T2",
+      "status": "completed",
+      "files": [
+        "src/stores/themeCatalog.ts",
+        "src/stores/theme.ts",
+        "src/stores/themeEditor.ts",
+        "src/components/preferences/appearance/AppearancePreferences.vue"
+      ],
+      "validations": [
+        {
+          "command": "npx --no-install vitest run tests/stores/themeCatalog.spec.ts tests/stores/themeEditor.spec.ts tests/stores/theme.spec.ts",
+          "revision": "55930685b3169c489224b0eda417d7fcb903848c73ca2f6980439a317be700d1",
+          "result": "passed"
+        }
+      ],
+      "revision": "55930685b3169c489224b0eda417d7fcb903848c73ca2f6980439a317be700d1"
+    },
+    {
+      "id": "T3",
+      "status": "completed",
+      "files": [
+        "src/app/App.vue",
+        "src/components/shell/AppShell.vue",
+        "tests/components/shell/AppShell.spec.ts"
+      ],
+      "validations": [
+        {
+          "command": "npx --no-install vitest run tests/components/shell/AppShell.spec.ts",
+          "revision": "55930685b3169c489224b0eda417d7fcb903848c73ca2f6980439a317be700d1",
+          "result": "passed"
+        }
+      ],
+      "revision": "55930685b3169c489224b0eda417d7fcb903848c73ca2f6980439a317be700d1"
+    },
+    {
+      "id": "T4",
+      "status": "completed",
+      "files": [
+        "tests/components/preferences/appearance/AppearancePreferences.spec.ts",
+        "tests/components/preferences/appearance/ThemeEditorDialog.spec.ts",
+        "tests/stores/themeCatalog.spec.ts",
+        "tests/stores/themeEditor.spec.ts",
+        "tests/stores/theme.spec.ts"
+      ],
+      "validations": [
+        {
+          "command": "npx --no-install vitest run tests/stores/themeCatalog.spec.ts tests/stores/themeEditor.spec.ts tests/stores/theme.spec.ts tests/components/shell/AppShell.spec.ts tests/components/preferences/appearance/AppearancePreferences.spec.ts tests/components/preferences/appearance/ThemeEditorDialog.spec.ts tests/components/preferences/appearance/ThemePicker.spec.ts tests/components/preferences/appearance/ThemeSwatch.spec.ts tests/ipc/themeMaxPiniaAdapter.spec.ts",
+          "revision": "55930685b3169c489224b0eda417d7fcb903848c73ca2f6980439a317be700d1",
+          "result": "passed"
+        }
+      ],
+      "revision": "55930685b3169c489224b0eda417d7fcb903848c73ca2f6980439a317be700d1"
+    },
+    {
+      "id": "T5",
+      "status": "completed",
+      "files": [
+        "src/stores/themeCatalog.ts",
+        "src/stores/theme.ts",
+        "src/stores/themeEditor.ts",
+        "src/components/preferences/appearance/AppearancePreferences.vue",
+        "src/app/App.vue"
+      ],
+      "validations": [
+        {
+          "command": "npm run typecheck",
+          "revision": "55930685b3169c489224b0eda417d7fcb903848c73ca2f6980439a317be700d1",
+          "result": "passed"
+        },
+        {
+          "command": "npm run typecheck:vue",
+          "revision": "55930685b3169c489224b0eda417d7fcb903848c73ca2f6980439a317be700d1",
+          "result": "passed"
+        },
+        {
+          "command": "npm run lint",
+          "revision": "55930685b3169c489224b0eda417d7fcb903848c73ca2f6980439a317be700d1",
+          "result": "passed"
+        },
+        {
+          "command": "npm run lint:style",
+          "revision": "55930685b3169c489224b0eda417d7fcb903848c73ca2f6980439a317be700d1",
+          "result": "passed"
+        },
+        {
+          "command": "npm run build",
+          "revision": "55930685b3169c489224b0eda417d7fcb903848c73ca2f6980439a317be700d1",
+          "result": "passed"
+        },
+        {
+          "command": "npm test",
+          "revision": "55930685b3169c489224b0eda417d7fcb903848c73ca2f6980439a317be700d1",
+          "result": "passed"
+        }
+      ],
+      "revision": "55930685b3169c489224b0eda417d7fcb903848c73ca2f6980439a317be700d1"
+    }
+  ],
+  "verification": {
+    "revision": "55930685b3169c489224b0eda417d7fcb903848c73ca2f6980439a317be700d1",
+    "checks": [
+      {
+        "command": "npx --no-install vitest run tests/stores/themeCatalog.spec.ts tests/stores/themeEditor.spec.ts tests/stores/theme.spec.ts tests/components/shell/AppShell.spec.ts tests/components/preferences/appearance/AppearancePreferences.spec.ts tests/components/preferences/appearance/ThemeEditorDialog.spec.ts tests/components/preferences/appearance/ThemePicker.spec.ts tests/components/preferences/appearance/ThemeSwatch.spec.ts tests/ipc/themeMaxPiniaAdapter.spec.ts",
+        "revision": "55930685b3169c489224b0eda417d7fcb903848c73ca2f6980439a317be700d1",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run typecheck",
+        "revision": "55930685b3169c489224b0eda417d7fcb903848c73ca2f6980439a317be700d1",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run typecheck:vue",
+        "revision": "55930685b3169c489224b0eda417d7fcb903848c73ca2f6980439a317be700d1",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run lint",
+        "revision": "55930685b3169c489224b0eda417d7fcb903848c73ca2f6980439a317be700d1",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run lint:style",
+        "revision": "55930685b3169c489224b0eda417d7fcb903848c73ca2f6980439a317be700d1",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run build",
+        "revision": "55930685b3169c489224b0eda417d7fcb903848c73ca2f6980439a317be700d1",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm test",
+        "revision": "55930685b3169c489224b0eda417d7fcb903848c73ca2f6980439a317be700d1",
+        "result": "passed",
+        "exitCode": 0
+      }
+    ]
+  },
+  "updatedAt": 1793828443597,
+  "nextAction": "Aguardando confirmação do usuário para integração git."
+}
