@@ -298,7 +298,7 @@ use crate::commands::tab_state::{
 use crate::commands::tabs::{tab_close, tab_focus, tab_list, tab_open, tab_reorder};
 use crate::commands::templates::{
     template_create, template_delete, template_get, template_list, template_set_default,
-    template_update,
+    template_test_connection, template_update,
 };
 use crate::commands::themes::{
     theme_appearance_get, theme_appearance_update, theme_delete, theme_export, theme_get,
@@ -417,6 +417,7 @@ macro_rules! register_all_commands {
             template_update,
             template_delete,
             template_set_default,
+            template_test_connection,
             tab_list,
             tab_open,
             tab_close,

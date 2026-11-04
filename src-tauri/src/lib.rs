@@ -24,6 +24,7 @@ pub mod ai_state;
 pub mod bridge;
 pub mod command_groups;
 pub mod credentials;
+pub mod devtools;
 pub mod events;
 pub mod github;
 pub mod horizon;
@@ -541,6 +542,10 @@ pub fn run() {
 
             let workspace_manager_bg = workspace_manager.clone();
             app.manage(workspace_manager);
+
+            if let Some(main_window) = app.get_webview_window("main") {
+                crate::devtools::setup_devtools(&main_window, &paths_for_db.config_dir);
+            }
 
             tracing::info!(
                 target: "maxterminal",

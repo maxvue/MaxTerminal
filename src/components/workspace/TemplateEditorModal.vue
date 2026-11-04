@@ -47,8 +47,13 @@
 
             <label class="template-modal__field">
                 <span class="template-modal__label">Pasta personalizada (opcional)</span>
-                <input v-model="cwd" type="text" class="template-modal__input" placeholder="Relativa à raiz do projeto ou caminho absoluto">
+                <input v-model="cwd" type="text" class="template-modal__input" :placeholder="origin === 'remote' ? 'Pasta no servidor, ex.: ~/htdocs/engeapp.com.br/current' : 'Relativa à raiz do projeto ou caminho absoluto'">
             </label>
+            <div v-if="origin === 'remote'" class="template-modal__connection-test">
+                <MaxButton type="button" :label="testingConnection ? 'Testando conexão...' : 'Testar Conexão'" icon="lucide:plug-zap" :disabled="testingConnection || props.saving" :loading="testingConnection" @click="handleTestConnection" />
+                <p v-if="connectionTestSuccess" class="template-modal__success" role="status">{{ connectionTestSuccess }}</p>
+                <p v-if="connectionTestError" class="template-modal__error" role="alert">{{ connectionTestError }}</p>
+            </div>
             <label class="template-modal__field">
                 <span class="template-modal__label">Comando Inicial (opcional)</span>
                 <input v-model="initialCommand" type="text" class="template-modal__input template-modal__input--mono" placeholder="Ex.: npm run dev">
@@ -99,8 +104,10 @@
         MaxInputSelect,
         MaxModal
     } from '@maxvue/max-components-ui';
+    import { templateTestConnection } from '@/ipc/templates';
     import type {
         EnvValue,
+        ProjectId,
         TabTemplate_Serialize,
         TabTemplateInput_Deserialize,
         TemplateConnectionInput_Deserialize
@@ -114,6 +121,7 @@
 
     export interface TemplateEditorModalProps {
         open: boolean;
+        projectId: ProjectId;
         template: TabTemplate_Serialize | null;
         saving?: boolean;
         errorMessage?: string | null;
@@ -150,6 +158,16 @@
     const sshIdentityFile = ref<string>('');
     const sshPassword = ref<string>('');
     const hasExistingPassword = ref<boolean>(false);
+    const testingConnection = ref(false);
+    const connectionTestSuccess = ref<string | null>(null);
+    const connectionTestError = ref<string | null>(null);
+    let connectionTestVersion = 0;
+
+    watch([origin, sshHost, sshUser, sshUseKey, sshIdentityFile, sshPassword, cwd, () => props.open, () => props.template, () => props.projectId], () => {
+        connectionTestVersion++;
+        connectionTestSuccess.value = null;
+        connectionTestError.value = null;
+    });
 
     const modalTitle = computed<string>(() =>
         props.template ? `Editar Template: ${props.template.config.name}` : 'Novo Template de Aba'
@@ -232,29 +250,21 @@
         envRows.value.splice(idx, 1);
     }
 
-    function handleSubmit(): void {
-        localError.value = null;
-        const trimmedName = name.value.trim();
-        if (!trimmedName) {
-            localError.value = 'Informe o nome do template.';
-            return;
-        }
-
-        let connectionInput: TemplateConnectionInput_Deserialize;
+    function buildConnectionInput(): TemplateConnectionInput_Deserialize | null {
         if (origin.value === 'remote') {
             const trimmedHost = sshHost.value.trim();
             const trimmedUser = sshUser.value.trim();
             if (!trimmedHost) {
                 localError.value = 'Informe o endereço IP ou host do servidor SSH.';
-                return;
+                return null;
             }
             if (!trimmedUser) {
                 localError.value = 'Informe o usuário para login SSH.';
-                return;
+                return null;
             }
 
             if (sshUseKey.value) {
-                connectionInput = {
+                return {
                     kind: 'ssh',
                     host: trimmedHost,
                     user: trimmedUser,
@@ -265,7 +275,7 @@
                 };
             } else {
                 if (sshPassword.value) {
-                    connectionInput = {
+                    return {
                         kind: 'ssh',
                         host: trimmedHost,
                         user: trimmedUser,
@@ -278,7 +288,7 @@
                         }
                     };
                 } else if (hasExistingPassword.value) {
-                    connectionInput = {
+                    return {
                         kind: 'ssh',
                         host: trimmedHost,
                         user: trimmedUser,
@@ -291,13 +301,54 @@
                     };
                 } else {
                     localError.value = 'Informe a senha para autenticação SSH ou marque Utilizar Chave SSH.';
-                    return;
+                    return null;
                 }
             }
         } else {
-            connectionInput = {
+            return {
                 kind: 'local'
             };
+        }
+    }
+
+    async function handleTestConnection(): Promise<void> {
+        if (testingConnection.value || props.saving) {
+            return;
+        }
+        localError.value = null;
+        connectionTestSuccess.value = null;
+        connectionTestError.value = null;
+        const connection = buildConnectionInput();
+        if (!connection || connection.kind !== 'ssh') {
+            return;
+        }
+        testingConnection.value = true;
+        const version = connectionTestVersion;
+        try {
+            const remoteCwd = await templateTestConnection(props.projectId, props.template?.id ?? null, connection, cwd.value.trim() || null);
+            if (version === connectionTestVersion) {
+                connectionTestSuccess.value = `Conexão SSH estabelecida. Pasta remota acessível: ${remoteCwd}`;
+            }
+        } catch (error: unknown) {
+            if (version === connectionTestVersion) {
+                connectionTestError.value = error instanceof Error ? error.message : 'Não foi possível testar a conexão SSH.';
+            }
+        } finally {
+            testingConnection.value = false;
+        }
+    }
+
+    function handleSubmit(): void {
+        localError.value = null;
+        const trimmedName = name.value.trim();
+        if (!trimmedName) {
+            localError.value = 'Informe o nome do template.';
+            return;
+        }
+
+        const connectionInput = buildConnectionInput();
+        if (!connectionInput) {
+            return;
         }
 
         const envVars: Record<string, EnvValue> = {};
@@ -368,6 +419,13 @@
         border: 1px solid var(--max-danger-500);
         color: var(--max-danger-300);
         font-size: 0.7813rem;
+    }
+
+    .template-modal__success {
+        color: var(--max-success-300);
+        font-size: 0.8125rem;
+        margin: 0.5rem 0 0;
+        overflow-wrap: anywhere;
     }
 
     .template-modal__row {

@@ -10,7 +10,9 @@ use mt_core::shell::{
     BlockEndReason, BlockStatus, CommandTextQuality, IntegrationMode, ObservationConfidence,
     ObservationSource, OutputKind, ShellKind,
 };
-use mt_core::workspace::{ScrollbackChunkKind, TabTemplateInput, TemplateEnvironment};
+use mt_core::workspace::{
+    ScrollbackChunkKind, TabTemplateInput, TemplateConnectionInput, TemplateEnvironment,
+};
 use mt_db::{
     Db, DbConfig, FinishCommandBlock, NewSession, ProjectMutation, ScrollbackRecord,
     StoredNewProject, StoredProject,
@@ -74,6 +76,7 @@ async fn setup_seeded_engine() -> (TempDir, Db, SearchEngine, ProjectId, TabId, 
                 environment: TemplateEnvironment::default(),
                 env_vars: BTreeMap::new(),
                 make_default: false,
+                connection: TemplateConnectionInput::default(),
             },
             1_500,
         )

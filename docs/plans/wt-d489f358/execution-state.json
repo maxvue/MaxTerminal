@@ -1,0 +1,157 @@
+{
+  "version": 2,
+  "planRevision": "c8d643379b1f57451f05fb715f83dbb814dfbff4fe0ee0de6545e1bd29e74db6",
+  "tasks": [
+    {
+      "id": "T1",
+      "status": "completed",
+      "files": [
+        "src-tauri/Cargo.toml",
+        "src-tauri/Cargo.lock"
+      ],
+      "validations": [
+        {
+          "command": "node scripts/sync-local-libs.mjs --check",
+          "revision": "cf3c33c59aa6fad1bf0c19fac632b1164d2b80f892acd1cd35e700d54c24a39e",
+          "result": "passed"
+        }
+      ],
+      "revision": "cf3c33c59aa6fad1bf0c19fac632b1164d2b80f892acd1cd35e700d54c24a39e",
+      "nextAction": "Preflight concluído; dependências Linux e contratos nativos validados."
+    },
+    {
+      "id": "T2",
+      "status": "completed",
+      "files": [
+        "src-tauri/src/devtools.rs"
+      ],
+      "validations": [
+        {
+          "command": "cargo test --manifest-path src-tauri/Cargo.toml --lib -- devtools",
+          "revision": "cf3c33c59aa6fad1bf0c19fac632b1164d2b80f892acd1cd35e700d54c24a39e",
+          "result": "passed"
+        }
+      ],
+      "revision": "cf3c33c59aa6fad1bf0c19fac632b1164d2b80f892acd1cd35e700d54c24a39e",
+      "nextAction": "Modelo e persistência local implementados com testes unitários puros."
+    },
+    {
+      "id": "T3",
+      "status": "completed",
+      "files": [
+        "src-tauri/src/devtools.rs",
+        "src-tauri/src/lib.rs"
+      ],
+      "validations": [
+        {
+          "command": "cargo test --manifest-path src-tauri/Cargo.toml --lib -- devtools",
+          "revision": "cf3c33c59aa6fad1bf0c19fac632b1164d2b80f892acd1cd35e700d54c24a39e",
+          "result": "passed"
+        }
+      ],
+      "revision": "cf3c33c59aa6fad1bf0c19fac632b1164d2b80f892acd1cd35e700d54c24a39e",
+      "nextAction": "Atalho F12 nativo e ciclo WebKit integrados ao setup do Tauri."
+    },
+    {
+      "id": "T4",
+      "status": "completed",
+      "files": [
+        "src-tauri/src/devtools.rs",
+        "src-tauri/src/lib.rs",
+        "src-tauri/tests/capabilities.rs",
+        "src-tauri/crates/mt-db/tests/migrations.rs"
+      ],
+      "validations": [
+        {
+          "command": "cargo clippy --manifest-path src-tauri/Cargo.toml --locked --workspace --all-targets -- -D warnings",
+          "revision": "cf3c33c59aa6fad1bf0c19fac632b1164d2b80f892acd1cd35e700d54c24a39e",
+          "result": "passed"
+        },
+        {
+          "command": "cargo test --manifest-path src-tauri/Cargo.toml --workspace --locked",
+          "revision": "cf3c33c59aa6fad1bf0c19fac632b1164d2b80f892acd1cd35e700d54c24a39e",
+          "result": "passed"
+        },
+        {
+          "command": "npm run test",
+          "revision": "cf3c33c59aa6fad1bf0c19fac632b1164d2b80f892acd1cd35e700d54c24a39e",
+          "result": "passed"
+        },
+        {
+          "command": "npm run build",
+          "revision": "cf3c33c59aa6fad1bf0c19fac632b1164d2b80f892acd1cd35e700d54c24a39e",
+          "result": "passed"
+        }
+      ],
+      "revision": "cf3c33c59aa6fad1bf0c19fac632b1164d2b80f892acd1cd35e700d54c24a39e",
+      "nextAction": "Validação agrupada concluída com sucesso em todos os checks unitários, de tipos, clippy, build e testes Rust e Vitest."
+    }
+  ],
+  "verification": {
+    "revision": "cf3c33c59aa6fad1bf0c19fac632b1164d2b80f892acd1cd35e700d54c24a39e",
+    "checks": [
+      {
+        "command": "cargo test --manifest-path src-tauri/Cargo.toml --lib -- devtools",
+        "revision": "cf3c33c59aa6fad1bf0c19fac632b1164d2b80f892acd1cd35e700d54c24a39e",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check",
+        "revision": "cf3c33c59aa6fad1bf0c19fac632b1164d2b80f892acd1cd35e700d54c24a39e",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "cargo clippy --manifest-path src-tauri/Cargo.toml --locked --workspace --all-targets -- -D warnings",
+        "revision": "cf3c33c59aa6fad1bf0c19fac632b1164d2b80f892acd1cd35e700d54c24a39e",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "cargo test --manifest-path src-tauri/Cargo.toml --workspace --locked",
+        "revision": "cf3c33c59aa6fad1bf0c19fac632b1164d2b80f892acd1cd35e700d54c24a39e",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "node scripts/sync-local-libs.mjs --check",
+        "revision": "cf3c33c59aa6fad1bf0c19fac632b1164d2b80f892acd1cd35e700d54c24a39e",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run typecheck",
+        "revision": "cf3c33c59aa6fad1bf0c19fac632b1164d2b80f892acd1cd35e700d54c24a39e",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run lint",
+        "revision": "cf3c33c59aa6fad1bf0c19fac632b1164d2b80f892acd1cd35e700d54c24a39e",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run lint:style",
+        "revision": "cf3c33c59aa6fad1bf0c19fac632b1164d2b80f892acd1cd35e700d54c24a39e",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run test",
+        "revision": "cf3c33c59aa6fad1bf0c19fac632b1164d2b80f892acd1cd35e700d54c24a39e",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run build",
+        "revision": "cf3c33c59aa6fad1bf0c19fac632b1164d2b80f892acd1cd35e700d54c24a39e",
+        "result": "passed",
+        "exitCode": 0
+      }
+    ]
+  },
+  "updatedAt": 1793803200000,
+  "nextAction": "Implementação e validações automatizadas concluídas com 100% de sucesso. Worktree pronta para integração Git via MaxCode."
+}

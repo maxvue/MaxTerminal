@@ -7,6 +7,7 @@ import {
     type TabTemplateInput_Deserialize,
     type TemplateChangedPayload,
     type TemplateId,
+    type TemplateConnectionInput_Deserialize,
     type WorkspaceEvent
 } from '@/types/bindings';
 
@@ -60,4 +61,14 @@ export function onTemplateChanged(
     return listen<WorkspaceEvent<TemplateChangedPayload>>('template://changed', (ev) => {
         cb(ev.payload);
     });
+}
+
+/** Testa autenticação SSH e acesso ao diretório remoto sem salvar o template. */
+export function templateTestConnection(
+    projectId: ProjectId,
+    templateId: TemplateId | null,
+    connection: TemplateConnectionInput_Deserialize,
+    cwd: string | null
+): Promise<string> {
+    return unwrap(commands.templateTestConnection(projectId, templateId, connection, cwd), 'template_test_connection');
 }

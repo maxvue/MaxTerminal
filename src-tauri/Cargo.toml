@@ -74,7 +74,7 @@ signal-hook = "0.3"
 rusqlite = { version = "0.40", features = ["bundled", "backup", "functions", "serde_json"] }
 r2d2 = "0.8"
 r2d2_sqlite = "0.35"
-tokio = { version = "1", features = ["sync", "rt", "time", "macros", "rt-multi-thread", "net", "io-util"] }
+tokio = { version = "1", features = ["sync", "rt", "time", "macros", "rt-multi-thread", "net", "io-util", "process"] }
 regex = "1"
 include_dir = "0.7"
 tempfile = "3"
@@ -167,6 +167,12 @@ tauri-build.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+gtk = { version = "0.18", default-features = false }
+gdk = { version = "0.18", default-features = false }
+glib = { version = "0.18", default-features = false }
+webkit2gtk = { version = "2.0", default-features = false }
 
 [lints]
 workspace = true

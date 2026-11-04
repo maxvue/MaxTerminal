@@ -5,7 +5,7 @@
 use std::collections::BTreeMap;
 
 use mt_core::ids::ProjectId;
-use mt_core::workspace::{TabTemplateInput, TemplateEnvironment};
+use mt_core::workspace::{TabTemplateInput, TemplateConnectionInput, TemplateEnvironment};
 use mt_db::{
     Db, DbConfig, ProjectMutation, StoredNewProject, StoredProject,
     sanitizer::SanitizedText,
@@ -56,6 +56,7 @@ async fn stats_and_rebuild_keep_counts_aligned_and_sanitized() {
                 environment: TemplateEnvironment::default(),
                 env_vars: BTreeMap::new(),
                 make_default: false,
+                connection: TemplateConnectionInput::default(),
             },
             1_500,
         )

@@ -1,6 +1,6 @@
 //! Testes de integração do runner e registro de migrations (`mt-db`).
 
-#![allow(clippy::unwrap_used, clippy::too_many_lines)]
+#![allow(clippy::unwrap_used, clippy::too_many_lines, clippy::similar_names)]
 
 use std::fs;
 
@@ -16,8 +16,8 @@ async fn fresh_db_applies_base() {
     let cfg = DbConfig::for_path(tmp.path().join("maxterminal.db"));
     let db = Db::open(cfg).unwrap();
 
-    assert_eq!(db.schema_version(), 11);
-    assert_eq!(db.applied_migrations().len(), 11);
+    assert_eq!(db.schema_version(), 12);
+    assert_eq!(db.applied_migrations().len(), 12);
 
     let applied = db
         .read_blocking(|conn| {
@@ -101,16 +101,23 @@ async fn fresh_db_applies_base() {
                     |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
                 )
                 .unwrap();
+            let (v12, name12, checksum12): (i64, String, String) = conn
+                .query_row(
+                    "SELECT version, name, checksum FROM _schema_migrations WHERE version = 12;",
+                    [],
+                    |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+                )
+                .unwrap();
             Ok((
                 count, version, name, checksum, v2, name2, checksum2, v3, name3, checksum3, v4,
                 name4, checksum4, v5, name5, checksum5, v6, name6, checksum6, v7, name7, checksum7,
                 v8, name8, checksum8, v9, name9, checksum9, v10, name10, checksum10, v11, name11,
-                checksum11,
+                checksum11, v12, name12, checksum12,
             ))
         })
         .unwrap();
 
-    assert_eq!(applied.0, 11);
+    assert_eq!(applied.0, 12);
     assert_eq!(applied.1, 1);
     assert_eq!(applied.2, "0001_03_base");
     assert_eq!(applied.3.len(), 64);
@@ -144,6 +151,9 @@ async fn fresh_db_applies_base() {
     assert_eq!(applied.31, 11);
     assert_eq!(applied.32, "0011_17_search");
     assert_eq!(applied.33.len(), 64);
+    assert_eq!(applied.34, 12);
+    assert_eq!(applied.35, "0012_18_remote_credentials_vault");
+    assert_eq!(applied.36.len(), 64);
 
     db.shutdown().await.unwrap();
 }
@@ -155,14 +165,14 @@ async fn idempotent_reopen() {
 
     {
         let db = Db::open(cfg.clone()).unwrap();
-        assert_eq!(db.schema_version(), 11);
-        assert_eq!(db.applied_migrations().len(), 11);
+        assert_eq!(db.schema_version(), 12);
+        assert_eq!(db.applied_migrations().len(), 12);
         db.shutdown().await.unwrap();
     }
 
     {
         let db = Db::open(cfg.clone()).unwrap();
-        assert_eq!(db.schema_version(), 11);
+        assert_eq!(db.schema_version(), 12);
         assert_eq!(db.applied_migrations().len(), 0);
         db.shutdown().await.unwrap();
     }
@@ -179,7 +189,7 @@ fn checksum_mismatch() {
     let outcome = runner
         .run(&mut conn, &cfg.db_path, &cfg.backup_dir, 7)
         .unwrap();
-    assert_eq!(outcome.schema_version, 11);
+    assert_eq!(outcome.schema_version, 12);
 
     conn.execute(
         "UPDATE _schema_migrations SET checksum = '0000000000000000000000000000000000000000000000000000000000000000' WHERE version = 1;",
@@ -204,7 +214,7 @@ fn failed_migration_rolls_back() {
 
     let bad_sql =
         "CREATE TABLE test_partial (id INTEGER PRIMARY KEY) STRICT;\nTHIS IS INVALID SQL;";
-    let entry = MigrationEntry::from_sql("0012_03_bad_migration.sql", bad_sql).unwrap();
+    let entry = MigrationEntry::from_sql("0013_03_bad_migration.sql", bad_sql).unwrap();
     let registry = MigrationRegistry::builtin()
         .unwrap()
         .with_entry(entry)
@@ -215,7 +225,7 @@ fn failed_migration_rolls_back() {
         .run(&mut conn, &cfg.db_path, &cfg.backup_dir, 7)
         .unwrap_err();
     match err {
-        DbError::MigrationFailed { version, .. } => assert_eq!(version, 12),
+        DbError::MigrationFailed { version, .. } => assert_eq!(version, 13),
         other => panic!("esperava MigrationFailed, obteve: {other:?}"),
     }
 
@@ -226,7 +236,7 @@ fn failed_migration_rolls_back() {
             |r| r.get(0),
         )
         .unwrap();
-    assert_eq!(current_ver, 11);
+    assert_eq!(current_ver, 12);
 
     let table_exists: i64 = conn
         .query_row(
@@ -261,7 +271,7 @@ fn schema_too_new() {
             app_max_version,
         } => {
             assert_eq!(db_version, 99);
-            assert_eq!(app_max_version, 11);
+            assert_eq!(app_max_version, 12);
         }
         other => panic!("esperava SchemaNewerThanApp, obteve: {other:?}"),
     }
@@ -299,31 +309,31 @@ fn code_migration_runs_and_premigration_backup_created() {
     let first = MigrationRunner::new(base_registry)
         .run(&mut conn, &cfg.db_path, &cfg.backup_dir, 7)
         .unwrap();
-    assert_eq!(first.schema_version, 11);
+    assert_eq!(first.schema_version, 12);
     assert!(first.pre_migration_backup.is_none());
 
-    let code_mig = CodeMigration::new(12, 3, "0012_03_with_code", "code-mig-seed-v1", |tx| {
+    let code_mig = CodeMigration::new(13, 3, "0013_03_with_code", "code-mig-seed-v1", |tx| {
         tx.execute(
             "INSERT INTO _db_meta (key, value_text, updated_at) VALUES ('code_mig', 'ok', 12345);",
             [],
         )
         .map_err(|e| DbError::MigrationFailed {
-            version: 12,
-            name: "0012_03_with_code".to_owned(),
+            version: 13,
+            name: "0013_03_with_code".to_owned(),
             reason: e.to_string(),
         })?;
         Ok(())
     });
 
-    let v12_registry = MigrationRegistry::builtin()
+    let v13_registry = MigrationRegistry::builtin()
         .unwrap()
         .with_code_migration(code_mig)
         .unwrap();
 
-    let second = MigrationRunner::new(v12_registry)
+    let second = MigrationRunner::new(v13_registry)
         .run(&mut conn, &cfg.db_path, &cfg.backup_dir, 7)
         .unwrap();
-    assert_eq!(second.schema_version, 12);
+    assert_eq!(second.schema_version, 13);
     assert_eq!(second.applied.len(), 1);
     assert!(second.pre_migration_backup.is_some());
 
@@ -358,7 +368,7 @@ fn foreign_key_check_after_migrate() {
         CREATE TABLE child_t (id INTEGER PRIMARY KEY, parent_id INTEGER NOT NULL REFERENCES parent_t(id)) STRICT;
         INSERT INTO child_t (id, parent_id) VALUES (1, 999);
     ";
-    let entry = MigrationEntry::from_sql("0012_03_fk_violation.sql", fk_sql).unwrap();
+    let entry = MigrationEntry::from_sql("0013_03_fk_violation.sql", fk_sql).unwrap();
     let registry = MigrationRegistry::builtin()
         .unwrap()
         .with_entry(entry)
@@ -367,7 +377,7 @@ fn foreign_key_check_after_migrate() {
     let err = MigrationRunner::new(registry)
         .run(&mut conn, &cfg.db_path, &cfg.backup_dir, 7)
         .unwrap_err();
-    assert!(matches!(err, DbError::MigrationFailed { version: 12, .. }));
+    assert!(matches!(err, DbError::MigrationFailed { version: 13, .. }));
 }
 
 #[tokio::test]
@@ -572,7 +582,8 @@ async fn migration_0004_07_backfill_templates_tabs_sessions_scrollback_and_casca
     use mt_core::shell::{IntegrationMode, ShellKind};
     use mt_core::workspace::{
         InitialDispatchState, LaunchSnapshot, ScrollbackChunkKind, SessionEndReason,
-        SplitDirection, TabOrigin, TabTemplateInput, TemplateEnvironment,
+        SplitDirection, TabOrigin, TabTemplateInput, TemplateConnection, TemplateConnectionInput,
+        TemplateEnvironment,
     };
     use mt_db::{
         NewSession, NewTabTxInput, ProjectMutation, ScrollbackRecord, SessionEnd, StoredNewProject,
@@ -636,6 +647,7 @@ async fn migration_0004_07_backfill_templates_tabs_sessions_scrollback_and_casca
                 environment: TemplateEnvironment::default(),
                 env_vars: BTreeMap::new(),
                 make_default: false,
+                connection: TemplateConnectionInput::default(),
             },
             2_000,
         )
@@ -690,6 +702,7 @@ async fn migration_0004_07_backfill_templates_tabs_sessions_scrollback_and_casca
                     continuous: true,
                     environment: TemplateEnvironment::default(),
                     env_vars: BTreeMap::new(),
+                    connection: TemplateConnection::default(),
                 },
                 initial_pane_id: pane1_id,
                 initial_cwd: SanitizedText::new("/tmp/maxterminal"),

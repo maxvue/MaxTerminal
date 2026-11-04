@@ -4,7 +4,9 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 use mt_core::error::{MtError, MtResult, codes};
-use mt_core::workspace::{EnvValue, EnvironmentKind, LaunchSnapshot, TemplateEnvironment};
+use mt_core::workspace::{
+    EnvValue, EnvironmentKind, LaunchSnapshot, TemplateConnection, TemplateEnvironment,
+};
 
 use crate::workspace::errors::template_agent_unsupported;
 
@@ -104,7 +106,20 @@ impl EnvironmentResolver {
         let effective_cwd_str = override_cwd
             .or(snapshot.configured_cwd.as_deref())
             .or(Some(snapshot.resolved_cwd.as_str()));
-        let cwd = Self::resolve_cwd(project_root, effective_cwd_str, allow_fallback_to_project)?;
+        let cwd = match snapshot.connection {
+            TemplateConnection::Local => {
+                Self::resolve_cwd(project_root, effective_cwd_str, allow_fallback_to_project)?
+            }
+            TemplateConnection::Ssh { .. } => {
+                let remote_cwd = override_cwd
+                    .or(snapshot.configured_cwd.as_deref())
+                    .map(str::trim)
+                    .filter(|cwd| !cwd.is_empty())
+                    .unwrap_or("~");
+                crate::remote::ssh::remote_cwd_expression(Some(remote_cwd))?;
+                PathBuf::from(remote_cwd)
+            }
+        };
 
         let mut env = BTreeMap::new();
         for (key, val) in &snapshot.env_vars {
@@ -132,5 +147,83 @@ impl EnvironmentResolver {
             env,
             environment: snapshot.environment.clone(),
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use mt_core::workspace::SshAuth;
+
+    fn remote_snapshot(cwd: Option<&str>) -> LaunchSnapshot {
+        LaunchSnapshot {
+            template_id: None,
+            title: String::from("Servidor"),
+            icon: String::from("lucide:server"),
+            resolved_cwd: String::from("/pasta/local/do/projeto"),
+            configured_cwd: cwd.map(String::from),
+            initial_command: None,
+            continuous: false,
+            environment: TemplateEnvironment::default(),
+            env_vars: BTreeMap::new(),
+            connection: TemplateConnection::Ssh {
+                host: String::from("192.168.3.31"),
+                user: String::from("engeapp"),
+                auth: SshAuth::Key {
+                    identity_file: None,
+                },
+            },
+        }
+    }
+
+    #[test]
+    fn remote_cwd_is_not_expanded_or_validated_locally() {
+        let snapshot = remote_snapshot(Some("~/htdocs/engeapp.com.br/current"));
+        let resolved = EnvironmentResolver::resolve_snapshot(
+            Path::new("/projeto/inexistente"),
+            &snapshot,
+            None,
+            false,
+        )
+        .unwrap();
+        assert_eq!(
+            resolved.cwd,
+            PathBuf::from("~/htdocs/engeapp.com.br/current")
+        );
+    }
+
+    #[test]
+    fn remote_default_directory_is_server_home() {
+        let snapshot = remote_snapshot(None);
+        let resolved = EnvironmentResolver::resolve_snapshot(
+            Path::new("/projeto/local"),
+            &snapshot,
+            None,
+            true,
+        )
+        .unwrap();
+        assert_eq!(resolved.cwd, PathBuf::from("~"));
+    }
+
+    #[test]
+    fn remote_override_stays_on_server_even_with_fallback() {
+        let snapshot = remote_snapshot(Some("~/htdocs"));
+        let resolved = EnvironmentResolver::resolve_snapshot(
+            Path::new("/tmp"),
+            &snapshot,
+            Some("/srv/app"),
+            true,
+        )
+        .unwrap();
+        assert_eq!(resolved.cwd, PathBuf::from("/srv/app"));
+    }
+
+    #[test]
+    fn local_directory_still_requires_existing_folder() {
+        let mut snapshot = remote_snapshot(Some("/pasta/inexistente/maxterminal-teste"));
+        snapshot.connection = TemplateConnection::Local;
+        let err = EnvironmentResolver::resolve_snapshot(Path::new("/tmp"), &snapshot, None, false)
+            .unwrap_err();
+        assert_eq!(err.code, codes::TEMPLATE_CWD_NOT_FOUND);
     }
 }
