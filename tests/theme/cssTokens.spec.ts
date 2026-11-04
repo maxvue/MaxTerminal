@@ -168,10 +168,10 @@ describe('cssTokens', () => {
         expect(vars['--background-0']).toBe('#ffffff');
         expect(vars['--background-950']).toBe('#00060e');
 
-        // Aliases semânticos de UI no tema claro
+        // Aliases semânticos de UI no tema claro revisados para contraste
         expect(vars['--mt-ui-surface']).toBe('#ffffff');
         expect(vars['--mt-ui-surface-panel']).toBe('#fafbfc');
-        expect(vars['--mt-ui-border']).toBe('#f8fafc');
+        expect(vars['--mt-ui-border']).toBe('#e5eaf1');
         expect(vars['--mt-ui-text-strong']).toBe('#00060e');
     });
 
@@ -213,5 +213,74 @@ describe('cssTokens', () => {
         expect(el.dataset.themePolarity).toBe('light');
         expect(el.style.getPropertyValue('--max-primary-500')).toBe('#0284c7');
         expect(el.style.getPropertyValue('--mt-term-selection-fg')).toBe('');
+    });
+
+    it('gera tokens do ecossistema MaxComponentsUi e controles de formulário/foco', () => {
+        const vars = buildCssVarsRecord(FALLBACK_MAX_NAVY_TEAL_TOKENS);
+
+        expect(vars['--max-inputtext-border-color']).toBe('#47596d');
+        expect(vars['--max-inputtext-focus-border-color']).toBe('#00768e');
+        expect(vars['--max-form-field-disabled-background']).toBe('#3b4d61');
+        expect(vars['--max-floatlabel-on-active-background']).toBe('#17293d');
+        expect(vars['--max-focus-ring-color']).toBe('#178da5');
+        expect(vars['--max-focus-ring']).toContain('0 0 0 2px');
+        expect(vars['--max-button-primary-border-color']).toBe('#00768e');
+        expect(vars['--max-button-help-border-color']).toBe('#a855f7');
+        expect(vars['--max-table-header-bg']).toBe('#2f4155');
+        expect(vars['--max-selection-background']).toBe('#00768e66');
+    });
+
+    it('deriva categoria de issues a partir do contexto ANSI (ou fallback canônico)', () => {
+        // 1. Fallback sem contexto
+        const fallbackVars = buildCssVarsRecord(FALLBACK_MAX_NAVY_TEAL_TOKENS);
+        expect(fallbackVars['--max-purple-500']).toBe('#a855f7');
+        expect(fallbackVars['--max-purple-400']).toBe('#c084fc');
+        expect(fallbackVars['--mt-ui-issue-category']).toBe('#a855f7');
+
+        // 2. Com paleta ANSI explícita (ex.: Dracula)
+        const draculaVars = buildCssVarsRecord(FALLBACK_MAX_NAVY_TEAL_TOKENS, {
+            scheme: {
+                ansi: {
+                    black: '#21222c',
+                    red: '#ff5555',
+                    green: '#50fa7b',
+                    yellow: '#f1fa8c',
+                    blue: '#bd93f9',
+                    magenta: '#ff79c6',
+                    cyan: '#8be9fd',
+                    white: '#f8f8f2',
+                    brightBlack: '#6272a4',
+                    brightRed: '#ff6e6e',
+                    brightGreen: '#69ff94',
+                    brightYellow: '#ffffa5',
+                    brightBlue: '#d6acff',
+                    brightMagenta: '#ff92df',
+                    brightCyan: '#a4ffff',
+                    brightWhite: '#ffffff'
+                }
+            }
+        });
+        expect(draculaVars['--max-purple-500']).toBe('#ff79c6');
+        expect(draculaVars['--max-purple-400']).toBe('#ff92df');
+        expect(draculaVars['--mt-ui-issue-category']).toBe('#ff79c6');
+    });
+
+    it('assegura contraste WCAG em pares essenciais (texto normal >= 4.5:1, texto mudo >= 3:1)', async () => {
+        const { getColorFromVar } = await import('@maxvue/max-use');
+        const darkVars = buildCssVarsRecord(FALLBACK_MAX_NAVY_TEAL_TOKENS);
+        const darkSurface = getColorFromVar(darkVars['--mt-ui-surface']!);
+        const darkText = getColorFromVar(darkVars['--mt-ui-text']!);
+        const darkMuted = getColorFromVar(darkVars['--mt-ui-text-muted']!);
+
+        expect(darkText.contrast(darkSurface)).toBeGreaterThanOrEqual(4.5);
+        expect(darkMuted.contrast(darkSurface)).toBeGreaterThanOrEqual(3.0);
+
+        const lightVars = buildCssVarsRecord(REAL_MAX_LIGHT_TOKENS);
+        const lightSurface = getColorFromVar(lightVars['--mt-ui-surface']!);
+        const lightText = getColorFromVar(lightVars['--mt-ui-text']!);
+        const lightMuted = getColorFromVar(lightVars['--mt-ui-text-muted']!);
+
+        expect(lightText.contrast(lightSurface)).toBeGreaterThanOrEqual(4.5);
+        expect(lightMuted.contrast(lightSurface)).toBeGreaterThanOrEqual(3.0);
     });
 });

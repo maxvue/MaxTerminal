@@ -59,8 +59,8 @@
         }
 
         &--selected {
-            background: rgb(168 85 247 / 14%);
-            border-left: 3px solid var(--max-purple-500, #a855f7);
+            background: var(--mt-ui-issue-subtle, color-mix(in srgb, var(--max-purple-500, #a855f7) 14%, transparent));
+            border-left: 3px solid var(--mt-ui-issue-category, var(--max-purple-500, #a855f7));
         }
     }
 
@@ -75,7 +75,7 @@
         font-family: var(--mt-font-mono, monospace);
         font-size: 0.75rem;
         font-weight: 700;
-        color: var(--max-purple-400, #c084fc);
+        color: var(--mt-ui-issue-category-hover, var(--max-purple-400, #c084fc));
         flex-shrink: 0;
     }
 
@@ -92,7 +92,7 @@
     .issue-list-item__plan-badge {
         padding: 0.0625rem 0.375rem;
         border-radius: 0.25rem;
-        background: rgb(14 165 233 / 20%);
+        background: var(--mt-ui-info-subtle, color-mix(in srgb, var(--max-info-500) 20%, transparent));
         color: var(--max-info-300);
         font-size: 0.625rem;
         font-weight: 700;

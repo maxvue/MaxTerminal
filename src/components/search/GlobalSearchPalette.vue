@@ -232,7 +232,7 @@
         align-items: flex-start;
         justify-content: center;
         padding-top: 6vh;
-        background: rgb(0 0 0 / 55%);
+        background: var(--mt-ui-overlay, rgb(0 0 0 / 55%));
     }
 
     .global-search-palette {
@@ -244,7 +244,7 @@
         border: 1px solid var(--mt-ui-border, var(--background-100));
         border-radius: 10px;
         color: var(--mt-ui-text-strong, var(--background-950));
-        box-shadow: 0 18px 48px rgb(0 0 0 / 55%);
+        box-shadow: var(--mt-ui-shadow-lg, 0 18px 48px rgb(0 0 0 / 55%));
         overflow: hidden;
     }
 

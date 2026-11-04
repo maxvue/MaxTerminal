@@ -266,7 +266,7 @@
         padding: 0.5rem 0.75rem;
         border-radius: 0.375rem;
         border: 1px solid var(--max-danger-500);
-        background: rgb(239 68 68 / 15%);
+        background: var(--mt-ui-danger-subtle, color-mix(in srgb, var(--max-danger-500) 15%, transparent));
         color: var(--max-danger-300);
         font-size: 0.8125rem;
     }
@@ -322,7 +322,7 @@
 
     .skills-sync-panel__btn--primary {
         border-color: var(--max-primary-500);
-        background: rgb(20 184 166 / 18%);
+        background: color-mix(in srgb, var(--max-primary-500) 18%, transparent);
         color: var(--max-primary-300);
     }
 
@@ -382,7 +382,7 @@
     .skills-sync-panel__warnings {
         padding: 0.375rem 0.5rem;
         border-radius: 0.25rem;
-        background: rgb(245 158 11 / 14%);
+        background: var(--mt-ui-warning-subtle, color-mix(in srgb, var(--max-warning-500) 14%, transparent));
         color: var(--max-warning-300);
         font-size: 0.75rem;
     }

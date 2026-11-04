@@ -35,6 +35,15 @@ export type {
     WarningCode,
     XtermThemePayload
 } from '@/types/bindings';
+import type { AnsiPalette } from '@/types/bindings';
+
+/** Contexto suplementar opcional para geração de variáveis CSS (ex.: paleta ANSI do tema). */
+export interface CssVarsContext {
+    scheme?: {
+        ansi?: AnsiPalette;
+    };
+    ansi?: AnsiPalette;
+}
 
 /** ID canônico do tema escuro padrão (Max Navy/Teal). */
 export const DEFAULT_DARK_THEME_ID = 'max-navy-teal' as const;

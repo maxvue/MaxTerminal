@@ -59,7 +59,7 @@
         font-weight: 600;
         line-height: 1.25;
         white-space: nowrap;
-        border: 1px solid rgb(255 255 255 / 12%);
+        border: 1px solid var(--mt-ui-border-subtle, rgb(255 255 255 / 12%));
 
         &--compact {
             padding: 0.0625rem 0.375rem;

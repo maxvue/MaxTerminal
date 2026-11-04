@@ -1,5 +1,5 @@
 // Mixins e parâmetros SCSS compartilhados (sem emitir CSS direto no escopo global).
 @mixin mt-focus-ring {
-    outline: 2px solid var(--max-primary-400);
+    outline: 2px solid var(--max-focus-ring-color, var(--max-primary-400));
     outline-offset: 2px;
 }

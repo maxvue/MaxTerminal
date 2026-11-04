@@ -73,7 +73,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: rgb(0 0 0 / 60%);
+        background: var(--mt-ui-overlay, rgb(0 0 0 / 60%));
     }
 
     .bug-cycle-confirm-modal__card {
@@ -160,7 +160,7 @@
     .bug-cycle-confirm-modal__num {
         font-family: var(--mt-font-mono, monospace);
         font-weight: 700;
-        color: var(--max-purple-400, #c084fc);
+        color: var(--mt-ui-issue-category-hover, var(--max-purple-400, #c084fc));
     }
 
     .bug-cycle-confirm-modal__name {
@@ -205,7 +205,7 @@
 
         &--primary {
             border-color: var(--max-primary-500);
-            background: rgb(20 184 166 / 20%);
+            background: color-mix(in srgb, var(--max-primary-500) 20%, transparent);
             color: var(--max-primary-400);
         }
     }

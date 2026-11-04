@@ -60,7 +60,7 @@
         align-items: center;
         gap: 0.375rem;
         padding: 0.375rem 0.75rem;
-        background: rgb(245 158 11 / 15%);
+        background: var(--mt-ui-warning-subtle, color-mix(in srgb, var(--max-warning-500) 15%, transparent));
         border-bottom: 1px solid var(--max-warning-500);
         color: var(--max-warning-300);
         font-size: 0.7188rem;

@@ -190,7 +190,7 @@
         align-items: center;
         justify-content: center;
         padding: 1.25rem;
-        background: rgb(0 0 0 / 65%);
+        background: var(--mt-ui-overlay, rgb(0 0 0 / 65%));
     }
 
     .artisan-modal {
@@ -198,10 +198,10 @@
         flex-direction: column;
         width: min(76rem, 96vw);
         max-height: 92vh;
-        border: 1px solid var(--background-700);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
         border-radius: 0.5rem;
-        background: var(--background-900);
-        color: var(--background-50);
+        background: var(--mt-ui-surface, var(--background-0));
+        color: var(--mt-ui-text-strong, var(--background-950));
         overflow: hidden;
 
         &__header {
@@ -209,8 +209,8 @@
             align-items: center;
             justify-content: space-between;
             padding: 0.75rem 1rem;
-            border-bottom: 1px solid var(--background-800);
-            background: var(--background-950);
+            border-bottom: 1px solid var(--mt-ui-border, var(--background-100));
+            background: var(--mt-ui-surface-panel, var(--background-25));
         }
 
         &__title-wrap {
@@ -224,13 +224,13 @@
             margin: 0;
             font-size: 0.9375rem;
             font-weight: 600;
-            color: var(--background-50);
+            color: var(--mt-ui-text-strong, var(--background-950));
         }
 
         &__root {
             font-family: var(--mt-font-mono);
             font-size: 0.75rem;
-            color: var(--background-400);
+            color: var(--mt-ui-text-muted, var(--background-400));
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -242,21 +242,21 @@
             justify-content: center;
             width: 1.75rem;
             height: 1.75rem;
-            border: 1px solid var(--background-700);
+            border: 1px solid var(--mt-ui-border, var(--background-100));
             border-radius: 0.25rem;
-            background: var(--background-800);
-            color: var(--background-200);
+            background: var(--mt-ui-surface-elevated, var(--background-50));
+            color: var(--mt-ui-text-secondary, var(--background-600));
             cursor: pointer;
 
             &:hover {
                 border-color: var(--max-primary-500);
-                color: var(--background-50);
+                color: var(--mt-ui-text-strong, var(--background-950));
             }
         }
 
         &__created-banner {
             padding: 0.5rem 1rem;
-            background: var(--background-800);
+            background: var(--mt-ui-surface-panel, var(--background-25));
             border-bottom: 1px solid var(--max-info-500);
             color: var(--max-info-400);
             font-size: 0.8125rem;
@@ -302,7 +302,7 @@
         &__label {
             font-size: 0.75rem;
             font-weight: 600;
-            color: var(--background-200);
+            color: var(--mt-ui-text-secondary, var(--background-600));
         }
 
         &__textarea {
@@ -313,10 +313,10 @@
         &__input,
         &__textarea {
             padding: 0.4375rem 0.625rem;
-            border: 1px solid var(--background-700);
+            border: 1px solid var(--mt-ui-border, var(--background-100));
             border-radius: 0.375rem;
-            background: var(--background-950);
-            color: var(--background-50);
+            background: var(--mt-ui-surface-panel, var(--background-25));
+            color: var(--mt-ui-text, var(--background-800));
             font-size: 0.8125rem;
             font-family: var(--mt-font-mono);
 
@@ -349,7 +349,7 @@
             align-items: center;
             gap: 0.375rem;
             font-size: 0.8125rem;
-            color: var(--background-100);
+            color: var(--mt-ui-text-secondary, var(--background-600));
             cursor: pointer;
         }
 
@@ -360,8 +360,8 @@
             flex-wrap: wrap;
             gap: 0.5rem;
             padding: 0.75rem 1rem;
-            border-top: 1px solid var(--background-800);
-            background: var(--background-950);
+            border-top: 1px solid var(--mt-ui-border, var(--background-100));
+            background: var(--mt-ui-surface-panel, var(--background-25));
         }
 
         &__footer-left,
@@ -389,19 +389,19 @@
             &--primary {
                 border: 1px solid var(--max-primary-500);
                 background: var(--max-primary-600);
-                color: var(--background-50);
+                color: var(--max-primary-content, #fff);
             }
 
             &--secondary {
-                border: 1px solid var(--background-700);
-                background: var(--background-800);
-                color: var(--background-100);
+                border: 1px solid var(--mt-ui-border, var(--background-100));
+                background: var(--mt-ui-surface-elevated, var(--background-50));
+                color: var(--mt-ui-text, var(--background-800));
             }
 
             &--ghost {
                 border: 1px solid transparent;
                 background: transparent;
-                color: var(--background-300);
+                color: var(--mt-ui-text-secondary, var(--background-600));
             }
         }
     }

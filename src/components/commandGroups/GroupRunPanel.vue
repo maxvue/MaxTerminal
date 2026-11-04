@@ -221,7 +221,7 @@
         padding: 0.5rem 0.75rem;
         border-radius: 0.375rem;
         border: 1px solid var(--max-warning-500);
-        background: rgb(245 158 11 / 14%);
+        background: var(--mt-ui-warning-subtle, color-mix(in srgb, var(--max-warning-500) 14%, transparent));
         color: var(--max-warning-300);
         font-size: 0.7813rem;
     }
@@ -239,7 +239,7 @@
         padding: 0.3125rem 0.625rem;
         border-radius: 0.3125rem;
         border: 1px solid var(--max-primary-500);
-        background: rgb(20 184 166 / 20%);
+        background: color-mix(in srgb, var(--max-primary-500) 20%, transparent);
         color: var(--max-primary-300);
         font-size: 0.75rem;
         font-weight: 600;
@@ -314,7 +314,7 @@
         padding: 0.25rem 0.5rem;
         border-radius: 0.25rem;
         border: 1px solid var(--max-warning-500);
-        background: rgb(245 158 11 / 16%);
+        background: var(--mt-ui-warning-subtle, color-mix(in srgb, var(--max-warning-500) 16%, transparent));
         color: var(--max-warning-300);
         font-size: 0.7188rem;
         font-weight: 600;
@@ -328,7 +328,7 @@
         padding: 0.25rem 0.625rem;
         border-radius: 0.25rem;
         border: 1px solid var(--max-danger-500);
-        background: rgb(239 68 68 / 15%);
+        background: var(--mt-ui-danger-subtle, color-mix(in srgb, var(--max-danger-500) 15%, transparent));
         color: var(--max-danger-300);
         font-size: 0.7188rem;
         font-weight: 600;
@@ -355,7 +355,7 @@
         padding: 0.375rem 0.625rem;
         border-radius: 0.3125rem;
         border: 1px solid var(--max-info-500);
-        background: rgb(14 165 233 / 12%);
+        background: var(--mt-ui-info-subtle, color-mix(in srgb, var(--max-info-500) 12%, transparent));
         color: var(--max-info-300);
         font-size: 0.75rem;
     }

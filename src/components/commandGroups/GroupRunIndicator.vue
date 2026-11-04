@@ -54,7 +54,7 @@
 
     .group-run-indicator.is-running {
         border-color: var(--max-info-500);
-        background: rgb(14 165 233 / 15%);
+        background: var(--mt-ui-info-subtle, color-mix(in srgb, var(--max-info-500) 15%, transparent));
         color: var(--max-info-400);
     }
 

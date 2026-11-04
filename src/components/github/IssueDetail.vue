@@ -124,7 +124,7 @@
         font-family: var(--mt-font-mono, monospace);
         font-size: 1rem;
         font-weight: 700;
-        color: var(--max-purple-400, #c084fc);
+        color: var(--mt-ui-issue-category-hover, var(--max-purple-400, #c084fc));
     }
 
     .issue-detail__title {
@@ -142,13 +142,13 @@
         font-weight: 700;
 
         &--open {
-            background: rgb(34 197 94 / 20%);
+            background: var(--mt-ui-success-subtle, color-mix(in srgb, var(--max-success-500) 20%, transparent));
             color: var(--max-success-400);
         }
 
         &--closed {
-            background: rgb(168 85 247 / 20%);
-            color: var(--max-purple-400, #c084fc);
+            background: var(--mt-ui-issue-subtle, color-mix(in srgb, var(--max-purple-500, #a855f7) 20%, transparent));
+            color: var(--mt-ui-issue-category-hover, var(--max-purple-400, #c084fc));
         }
     }
 

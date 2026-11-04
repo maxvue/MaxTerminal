@@ -221,7 +221,7 @@
         padding: 0.375rem 0.75rem;
         border-radius: 0.3125rem;
         border: 1px solid var(--max-primary-500);
-        background: rgb(20 184 166 / 15%);
+        background: var(--mt-ui-primary-subtle, color-mix(in srgb, var(--max-primary-500) 15%, transparent));
         color: var(--max-primary-400);
         font-size: 0.75rem;
         font-weight: 600;

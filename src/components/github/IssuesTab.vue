@@ -284,8 +284,8 @@
     .issues-tab__open-badge {
         padding: 0.125rem 0.5rem;
         border-radius: 9999px;
-        background: rgb(168 85 247 / 20%);
-        color: var(--max-purple-400, #c084fc);
+        background: var(--mt-ui-issue-subtle, color-mix(in srgb, var(--max-purple-500, #a855f7) 20%, transparent));
+        color: var(--mt-ui-issue-category-hover, var(--max-purple-400, #c084fc));
         font-size: 0.7188rem;
         font-weight: 700;
     }
@@ -317,13 +317,13 @@
 
         &--primary {
             border-color: var(--max-primary-500);
-            background: rgb(20 184 166 / 18%);
+            background: color-mix(in srgb, var(--max-primary-500) 18%, transparent);
             color: var(--max-primary-400);
         }
 
         &--cycle {
-            border-color: var(--max-purple-500, #a855f7);
-            background: rgb(168 85 247 / 20%);
+            border-color: var(--mt-ui-issue-category, var(--max-purple-500, #a855f7));
+            background: var(--mt-ui-issue-subtle, color-mix(in srgb, var(--max-purple-500, #a855f7) 20%, transparent));
             color: var(--max-purple-300, #d8b4fe);
         }
     }
@@ -333,7 +333,7 @@
         align-items: center;
         justify-content: space-between;
         padding: 0.375rem 0.875rem;
-        background: rgb(239 68 68 / 15%);
+        background: var(--mt-ui-danger-subtle, color-mix(in srgb, var(--max-danger-500) 15%, transparent));
         border-bottom: 1px solid var(--max-danger-500);
         color: var(--max-danger-300);
         font-size: 0.7813rem;

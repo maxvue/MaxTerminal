@@ -258,7 +258,7 @@
 
     .hybrid-gap-banner {
         padding: 4px 10px;
-        background: rgb(245 158 11 / 18%);
+        background: var(--mt-ui-warning-subtle, color-mix(in srgb, var(--max-warning-500) 18%, transparent));
         border-bottom: 1px solid var(--max-warning-500);
         color: var(--max-warning-300);
         font-family: var(--mt-font-mono);

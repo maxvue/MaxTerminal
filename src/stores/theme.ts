@@ -89,10 +89,11 @@ export const useThemeStore = defineStore('theme', () => {
         resolved: ResolvedTheme,
         persistBootstrap: boolean
     ): void {
-        applyMaxUiTokensToRoot(resolved.uiTokens);
+        const context = { scheme: resolved.scheme };
+        applyMaxUiTokensToRoot(resolved.uiTokens, null, context);
         applyThemeAndTypographyToTerminals(resolved, appearance.value);
         if (persistBootstrap) {
-            saveThemeBootstrapSnapshot(resolved.scheme.id, resolved.uiTokens);
+            saveThemeBootstrapSnapshot(resolved.scheme.id, resolved.uiTokens, context);
         }
     }
 

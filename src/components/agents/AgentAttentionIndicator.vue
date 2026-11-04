@@ -71,13 +71,13 @@
         font-weight: 600;
 
         &.is-awaiting {
-            background: rgb(239 68 68 / 18%);
+            background: var(--mt-ui-danger-subtle, color-mix(in srgb, var(--max-danger-500) 18%, transparent));
             border: 1px solid var(--max-danger-500);
             color: var(--max-danger-300);
         }
 
         &.is-suspected {
-            background: rgb(245 158 11 / 16%);
+            background: var(--mt-ui-warning-subtle, color-mix(in srgb, var(--max-warning-500) 16%, transparent));
             border: 1px solid var(--max-warning-500);
             color: var(--max-warning-300);
         }
@@ -116,7 +116,7 @@
         cursor: pointer;
 
         &:hover {
-            background: rgb(255 255 255 / 10%);
+            background: var(--mt-ui-surface-hover, var(--background-75));
         }
     }
 </style>

@@ -292,25 +292,25 @@
     }
 
     .badge-success {
-        background: rgb(34 197 94 / 15%);
+        background: var(--mt-ui-success-subtle, color-mix(in srgb, var(--max-success-500) 15%, transparent));
         border-color: var(--max-success-500);
         color: var(--max-success-400);
     }
 
     .badge-info {
-        background: rgb(14 165 233 / 15%);
+        background: var(--mt-ui-info-subtle, color-mix(in srgb, var(--max-info-500) 15%, transparent));
         border-color: var(--max-info-500);
         color: var(--max-info-400);
     }
 
     .badge-warning {
-        background: rgb(245 158 11 / 15%);
+        background: var(--mt-ui-warning-subtle, color-mix(in srgb, var(--max-warning-500) 15%, transparent));
         border-color: var(--max-warning-500);
         color: var(--max-warning-400);
     }
 
     .badge-danger {
-        background: rgb(239 68 68 / 15%);
+        background: var(--mt-ui-danger-subtle, color-mix(in srgb, var(--max-danger-500) 15%, transparent));
         border-color: var(--max-danger-500);
         color: var(--max-danger-400);
     }

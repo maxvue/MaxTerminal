@@ -88,6 +88,34 @@ describe('theme bootstrap sem FOUC', () => {
         expect(snap.themeId).toBe('max-navy-teal');
     });
 
+    it('hidrata snapshot v2 legado completando novos papéis ausentes sem quebras', () => {
+        // Simula snapshot v2 antigo gravado antes da introdução dos tokens de form/issues
+        window.localStorage.setItem(
+            BOOTSTRAP_STORAGE_KEY,
+            JSON.stringify({
+                version: 2,
+                themeId: 'max-navy-teal',
+                polarity: 'dark',
+                cssVars: {
+                    '--max-primary-500': '#00768e',
+                    '--background-0': '#17293d'
+                }
+            })
+        );
+
+        const loaded = loadThemeBootstrapSnapshot();
+        expect(loaded?.version).toBe(2);
+        expect(loaded?.themeId).toBe('max-navy-teal');
+        expect(loaded?.cssVars['--max-inputtext-border-color']).toBeDefined();
+        expect(loaded?.cssVars['--max-purple-500']).toBe('#a855f7');
+        expect(loaded?.cssVars['--max-primary-500']).toBe('#00768e');
+
+        const el = document.createElement('div');
+        const applied = applyThemeBootstrapSync(el);
+        expect(applied.cssVars['--max-purple-500']).toBe('#a855f7');
+        expect(el.style.getPropertyValue('--max-purple-500')).toBe('#a855f7');
+    });
+
     it('valida pilhas de fontes monoespaçadas seguras e rejeita CSS injection', () => {
         expect(MONOSPACE_FONT_PRESETS.length).toBeGreaterThanOrEqual(4);
         expect(isValidFontFamilyStack('JetBrains Mono, monospace')).toBe(true);

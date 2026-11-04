@@ -93,25 +93,25 @@
         }
 
         &.bucket-running {
-            background: rgb(34 197 94 / 15%);
+            background: var(--mt-ui-success-subtle, color-mix(in srgb, var(--max-success-500) 15%, transparent));
             color: var(--max-success-500);
             border: 1px solid var(--max-success-500);
         }
 
         &.bucket-continuous {
-            background: rgb(14 165 233 / 15%);
+            background: var(--mt-ui-info-subtle, color-mix(in srgb, var(--max-info-500) 15%, transparent));
             color: var(--max-info-500);
             border: 1px solid var(--max-info-500);
         }
 
         &.bucket-completed-unseen {
-            background: rgb(245 158 11 / 15%);
+            background: var(--mt-ui-warning-subtle, color-mix(in srgb, var(--max-warning-500) 15%, transparent));
             color: var(--max-warning-500);
             border: 1px solid var(--max-warning-500);
         }
 
         &.bucket-error-unseen {
-            background: rgb(239 68 68 / 15%);
+            background: var(--mt-ui-danger-subtle, color-mix(in srgb, var(--max-danger-500) 15%, transparent));
             color: var(--max-danger-500);
             border: 1px solid var(--max-danger-500);
         }

@@ -70,7 +70,7 @@
         padding: 0.75rem;
         border-radius: 0.375rem;
         border: 1px solid var(--max-warning-500);
-        background: rgb(245 158 11 / 10%);
+        background: var(--mt-ui-warning-subtle, color-mix(in srgb, var(--max-warning-500) 10%, transparent));
     }
 
     .skill-conflict-list__title {
@@ -142,7 +142,7 @@
 
     .skill-conflict-list__btn--active {
         border-color: var(--max-primary-500);
-        background: rgb(20 184 166 / 20%);
+        background: color-mix(in srgb, var(--max-primary-500) 20%, transparent);
         color: var(--max-primary-300);
     }
 </style>

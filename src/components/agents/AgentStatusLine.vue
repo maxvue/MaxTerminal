@@ -119,14 +119,14 @@
     }
 
     .agent-status-line__reset {
-        color: var(--background-400);
+        color: var(--mt-ui-text-muted, var(--background-400));
         font-size: 0.65rem;
     }
 
     .agent-status-line__stale {
         padding: 0 0.25rem;
         border-radius: 0.2rem;
-        background: rgb(245 158 11 / 16%);
+        background: var(--mt-ui-warning-subtle, color-mix(in srgb, var(--max-warning-500) 16%, transparent));
         border: 1px solid var(--max-warning-500);
         color: var(--max-warning-300);
         font-size: 0.625rem;
@@ -137,7 +137,7 @@
         width: 2.5rem;
         height: 0.3125rem;
         border-radius: 999px;
-        background: var(--background-700);
+        background: var(--mt-ui-border, var(--background-100));
         overflow: hidden;
     }
 
