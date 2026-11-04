@@ -87,6 +87,7 @@ pub struct WorkspaceTabStatusProvider {
     workspace: WorkspaceManager,
     shell: Arc<ShellService>,
     pty: Arc<PtyManager>,
+    horizon: Arc<RwLock<Option<Arc<crate::horizon::HorizonRuntimeService>>>>,
 }
 
 impl WorkspaceTabStatusProvider {
@@ -101,7 +102,13 @@ impl WorkspaceTabStatusProvider {
             workspace,
             shell,
             pty,
+            horizon: Arc::new(RwLock::new(None)),
         })
+    }
+
+    /// Vincula o serviço de runtime do Horizon para acompanhamento de daemons ativos.
+    pub fn attach_horizon(&self, horizon: Arc<crate::horizon::HorizonRuntimeService>) {
+        *self.horizon.write() = Some(horizon);
     }
 }
 
@@ -140,6 +147,14 @@ impl TabStatusProvider for WorkspaceTabStatusProvider {
                     active_panes = active_panes.saturating_add(1);
                 }
             }
+        }
+        let horizon_active = self
+            .horizon
+            .read()
+            .as_ref()
+            .is_some_and(|h| h.has_active_daemon());
+        if horizon_active {
+            active_panes = active_panes.saturating_add(1);
         }
         let supervised_busy = active_panes > 0;
         let _ = &self.pty;
@@ -383,6 +398,12 @@ impl<R: Runtime> ShutdownHooks for AppShutdownHooks<R> {
     }
 
     async fn shutdown_workspace(&self) -> MtResult<()> {
+        if let Some(horizon_svc) = self
+            .app
+            .try_state::<Arc<crate::horizon::HorizonRuntimeService>>()
+        {
+            horizon_svc.shutdown();
+        }
         if let Some(cg) = self
             .app
             .try_state::<crate::command_groups::AppCommandGroupState>()

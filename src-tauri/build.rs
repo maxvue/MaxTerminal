@@ -215,6 +215,11 @@ fn main() {
         "backup_restore_schedule",
         "app_update_check",
         "app_update_install_confirmed",
+        "horizon_snapshot",
+        "horizon_start",
+        "horizon_stop",
+        "horizon_clear_pending_preview",
+        "horizon_clear_pending",
     ]);
     let attributes = tauri_build::Attributes::new().app_manifest(app_manifest);
     if let Err(err) = tauri_build::try_build(attributes) {

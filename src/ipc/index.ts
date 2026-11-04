@@ -8,6 +8,7 @@ export { call, isMtIpcError, MtIpcError, unwrap, type IpcResult } from './core';
 export * as dbIpc from './db';
 export * as gitIpc from './git';
 export * as githubIpc from './github';
+export * as horizonIpc from './horizon';
 export * as memoryIpc from './memory';
 export * as osIpc from './os';
 export * as portsIpc from './ports';

@@ -26,6 +26,7 @@ pub mod command_groups;
 pub mod credentials;
 pub mod events;
 pub mod github;
+pub mod horizon;
 pub mod logging;
 pub mod remote;
 pub mod search;
@@ -357,7 +358,7 @@ pub fn run() {
             };
 
             let os_deps = OsDeps {
-                status: status_provider,
+                status: status_provider.clone(),
                 cwd: cwd_provider,
                 shutdown: shutdown_hooks,
                 settings_repo: Arc::new(db_arc.os_settings()),
@@ -520,6 +521,24 @@ pub fn run() {
             .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
             app.manage(github_state);
 
+            // Subsistema Laravel Horizon
+            let horizon_lookup: Arc<dyn mt_commands::ports::ProjectLookup> = Arc::new(
+                crate::commands::quick_commands::DbProjectLookup::new((*db_arc).clone()),
+            );
+            let horizon_domain = Arc::new(mt_commands::horizon::HorizonDomainService::new(
+                horizon_lookup,
+                Arc::new(mt_commands::ports::SystemClock),
+            ));
+            let horizon_runtime = crate::horizon::HorizonRuntimeService::new(
+                Arc::clone(&pty_for_setup),
+                horizon_domain,
+            );
+            status_provider.attach_horizon(Arc::clone(&horizon_runtime));
+            project_service.register_removal_hook(Arc::new(
+                crate::horizon::HorizonProjectRemovalHook::new(Arc::clone(&horizon_runtime)),
+            ));
+            app.manage(Arc::clone(&horizon_runtime));
+
             let workspace_manager_bg = workspace_manager.clone();
             app.manage(workspace_manager);
 
@@ -649,6 +668,10 @@ pub fn run() {
 
                     if let Some(ws_mgr) = handle.try_state::<WorkspaceManager>() {
                         tauri::async_runtime::block_on(ws_mgr.shutdown());
+                    }
+
+                    if let Some(horizon_svc) = handle.try_state::<Arc<crate::horizon::HorizonRuntimeService>>() {
+                        horizon_svc.shutdown();
                     }
 
                     if let Some(shell_svc) = handle.try_state::<Arc<ShellService>>() {

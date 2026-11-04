@@ -21,6 +21,8 @@ pub mod git;
 #[macro_use]
 pub mod github;
 #[macro_use]
+pub mod horizon;
+#[macro_use]
 pub mod memory;
 #[macro_use]
 pub mod os;
