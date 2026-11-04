@@ -161,9 +161,7 @@ pub fn encrypt_credential(
 
     let ciphertext = cipher
         .encrypt(XNonce::from_slice(&nonce), payload)
-        .map_err(|_| {
-            MtError::new(codes::INTERNAL, "Falha ao cifrar credencial no cofre.")
-        })?;
+        .map_err(|_| MtError::new(codes::INTERNAL, "Falha ao cifrar credencial no cofre."))?;
 
     Ok((ciphertext, nonce))
 }
@@ -197,12 +195,8 @@ pub fn decrypt_credential(
             )
         })?;
 
-    let plaintext = String::from_utf8(decrypted_bytes).map_err(|_| {
-        MtError::new(
-            codes::INTERNAL,
-            "Credencial decifrada não é UTF-8 válido.",
-        )
-    })?;
+    let plaintext = String::from_utf8(decrypted_bytes)
+        .map_err(|_| MtError::new(codes::INTERNAL, "Credencial decifrada não é UTF-8 válido."))?;
 
     Ok(Zeroizing::new(plaintext))
 }

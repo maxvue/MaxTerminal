@@ -115,7 +115,11 @@ pub fn build_ssh_spawn(
 
             let socket_str = server.socket_path().to_string_lossy();
             let token = server.token();
-            let script_path = server.socket_path().parent().unwrap_or(server.socket_path()).join("askpass_helper.sh");
+            let script_path = server
+                .socket_path()
+                .parent()
+                .unwrap_or(server.socket_path())
+                .join("askpass_helper.sh");
 
             let script_content = format!(
                 "#!/bin/sh\nexec \"{}\" --ssh-askpass-helper \"{}\" \"{}\" \"$@\"\n",
@@ -133,7 +137,10 @@ pub fn build_ssh_spawn(
 
             let _ = fs::set_permissions(&script_path, fs::Permissions::from_mode(0o700));
 
-            env.insert(String::from("SSH_ASKPASS"), script_path.to_string_lossy().into_owned());
+            env.insert(
+                String::from("SSH_ASKPASS"),
+                script_path.to_string_lossy().into_owned(),
+            );
             env.insert(String::from("SSH_ASKPASS_REQUIRE"), String::from("force"));
             // DISPLAY dummy para compatibilidade com versões do OpenSSH que exigem DISPLAY para askpass
             if std::env::var_os("DISPLAY").is_none() {
