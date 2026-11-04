@@ -1,0 +1,74 @@
+{
+    "version": 2,
+    "planRevision": "4b00d3786250ebab09a5512754a39872ff9529f4aec2a5ba983aa8121a59acde",
+    "tasks": [
+        {
+            "id": "T0",
+            "status": "blocked",
+            "files": [
+                "package.json",
+                "scripts/check.mjs",
+                "scripts/sync-local-libs.mjs",
+                "vite.config.ts",
+                "vitest.config.ts",
+                "tests/setup.ts"
+            ],
+            "validations": [],
+            "revision": "c55194a23d1b84c67125480a2177ff0cdc5cd962ebda043780c4ca5500f6a064",
+            "nextAction": "Resolver em demanda própria/autorizada a incompatibilidade declarada: app Pinia 3.0.1/Router 4.5.0 versus peers MaxComponentsUi 1.1.36 Pinia ^4.0.0/Router ^5.2.0. Não instalar nem alterar links/libs compartilhadas. Depois revalidar identidades no harness (Axios sem dedupe) e concluir prova de isolamento de DB/cache/storage/PTYs antes de T1. Nenhuma mudança de produção iniciada."
+        },
+        {
+            "id": "T1",
+            "status": "pending",
+            "files": [],
+            "validations": [],
+            "nextAction": "Aguardar aprovação de T0 para estabilizar contratos e implementar correções M1-M10."
+        },
+        {
+            "id": "T2",
+            "status": "pending",
+            "files": [],
+            "validations": [],
+            "nextAction": "Após T0 e estabilização em T1, executar lotes A-J e composições, preservando exceções funcionais."
+        },
+        {
+            "id": "T3",
+            "status": "pending",
+            "files": [],
+            "validations": [],
+            "nextAction": "Implementar testes de todo o escopo e guardrails com T1/T2, sem validar entre microalterações."
+        },
+        {
+            "id": "T4",
+            "status": "pending",
+            "files": [],
+            "validations": [],
+            "nextAction": "Executar npm run check somente após gates aprovados e implementação/testes completos; não contornar o preflight."
+        },
+        {
+            "id": "T5",
+            "status": "pending",
+            "files": [],
+            "validations": [],
+            "nextAction": "Realizar aceite desktop isolado após implementação e validações; manter manualPending se faltar ambiente autorizado."
+        }
+    ],
+    "verification": {
+        "revision": "c55194a23d1b84c67125480a2177ff0cdc5cd962ebda043780c4ca5500f6a064",
+        "checks": [
+            {
+                "command": "node scripts/sync-local-libs.mjs --check",
+                "revision": "c55194a23d1b84c67125480a2177ff0cdc5cd962ebda043780c4ca5500f6a064",
+                "result": "passed",
+                "exitCode": 0
+            },
+            {
+                "command": "node --input-type=module - <<'JS'\nimport fs from 'node:fs';\nconst lib=JSON.parse(fs.readFileSync('node_modules/@maxvue/max-components-ui/package.json','utf8'));\nconst expected={pinia:'^4.0.0','vue-router':'^5.2.0'};\nlet failed=false;\nfor(const [name,range] of Object.entries(expected)) {\n if(lib.peerDependencies[name]!==range) throw new Error('Contrato de peer mudou: reavaliar '+name);\n const installed=JSON.parse(fs.readFileSync('node_modules/'+name+'/package.json','utf8')).version;\n const actual=installed.split('.').map(Number);\n const minimum=range.slice(1).split('.').map(Number);\n const compatible=actual[0]===minimum[0]&&(actual[1]>minimum[1]||(actual[1]===minimum[1]&&actual[2]>=minimum[2]));\n console.log(name+': instalado '+installed+', exigido '+range+', '+(compatible?'compatível':'fora da faixa declarada'));\n if(!compatible) failed=true;\n}\nprocess.exitCode=failed?1:0;\nJS",
+                "revision": "c55194a23d1b84c67125480a2177ff0cdc5cd962ebda043780c4ca5500f6a064",
+                "result": "failed",
+                "exitCode": 1
+            }
+        ]
+    },
+    "nextAction": "T0 bloqueado por peers fora das faixas declaradas; integridade de links/artefatos passou, mas não comprova compatibilidade. Solicitar alinhamento autorizado/isolado ou evidência verificável de suporte às versões atuais. Não executar suíte/build/desktop nem implementar dependências de T0 enquanto não aprovado. Plano e spec preservados."
+}
