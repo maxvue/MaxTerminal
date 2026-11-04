@@ -4,26 +4,11 @@
             <div class="issue-open-tab-modal__section">
                 <span class="issue-open-tab-modal__label">Tipo de Aba:</span>
                 <div class="issue-open-tab-modal__targets" role="radiogroup" aria-label="Tipo de aba a abrir">
-                    <label class="issue-open-tab-modal__radio">
-                        <input v-model="selectedTarget" type="radio" value="terminal">
-                        <span>Terminal Padrão</span>
-                    </label>
-                    <label class="issue-open-tab-modal__radio">
-                        <input v-model="selectedTarget" type="radio" value="claude-code">
-                        <span>Claude Code</span>
-                    </label>
-                    <label class="issue-open-tab-modal__radio">
-                        <input v-model="selectedTarget" type="radio" value="codex">
-                        <span>Codex</span>
-                    </label>
-                    <label class="issue-open-tab-modal__radio">
-                        <input v-model="selectedTarget" type="radio" value="agy">
-                        <span>Antigravity (agy)</span>
-                    </label>
-                    <label class="issue-open-tab-modal__radio">
-                        <input v-model="selectedTarget" type="radio" value="opencode">
-                        <span>OpenCode</span>
-                    </label>
+                    <MaxInputRadio v-model="selectedTarget" name="issue-open-tab-target" value="terminal" label="Terminal Padrão" />
+                    <MaxInputRadio v-model="selectedTarget" name="issue-open-tab-target" value="claude-code" label="Claude Code" />
+                    <MaxInputRadio v-model="selectedTarget" name="issue-open-tab-target" value="codex" label="Codex" />
+                    <MaxInputRadio v-model="selectedTarget" name="issue-open-tab-target" value="agy" label="Antigravity (agy)" />
+                    <MaxInputRadio v-model="selectedTarget" name="issue-open-tab-target" value="opencode" label="OpenCode" />
                 </div>
             </div>
             <div v-if="props.resolution" class="issue-open-tab-modal__resolution">
@@ -37,21 +22,18 @@
                     Nova worktree sugerida: <code>{{ props.resolution.suggested_worktree_path }}</code> (branch <code>{{ props.resolution.suggested_branch }}</code>)
                 </p>
             </div>
-            <label class="issue-open-tab-modal__checkbox">
-                <input v-model="createWorktreeIfMissing" type="checkbox">
-                <span>Criar worktree isolada automaticamente caso ainda não exista</span>
-            </label>
+            <MaxInputCheckbox v-model="createWorktreeIfMissing" label="Criar worktree isolada automaticamente caso ainda não exista" />
         </div>
         <footer class="issue-open-tab-modal__footer">
-            <MaxButton label="Cancelar" variant="secondary" class="issue-open-tab-modal__btn" @click="emit('close')" />
-            <MaxButton :label="props.submitting ? 'Abrindo...' : 'Abrir Aba'" variant="primary" class="issue-open-tab-modal__btn issue-open-tab-modal__btn--primary" :disabled="props.submitting" :loading="props.submitting" @click="onConfirm" />
+            <MaxButton label="Cancelar" severity="secondary" class="issue-open-tab-modal__btn" @click="emit('close')" />
+            <MaxButton :label="props.submitting ? 'Abrindo...' : 'Abrir Aba'" class="issue-open-tab-modal__btn issue-open-tab-modal__btn--primary" :disabled="props.submitting" :loading="props.submitting" @click="onConfirm" />
         </footer>
     </MaxModal>
 </template>
 
 <script setup lang="ts">
     import { ref } from 'vue';
-    import { MaxButton, MaxModal } from '@maxvue/max-components-ui';
+    import { MaxButton, MaxInputCheckbox, MaxInputRadio, MaxModal } from '@maxvue/max-components-ui';
     import type {
         AgentKind,
         IssueSummary,

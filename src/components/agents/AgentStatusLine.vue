@@ -10,7 +10,8 @@
             <span class="agent-status-line__label">{{ context.label }}:</span>
             <span class="agent-status-line__value">{{ context.display }}</span>
             <div v-if="context.isAvailable && context.percent !== null" class="agent-status-line__bar">
-                <MaxProgressBar :value="context.percent" :max="100" :severity="contextSeverity" :aria-label="`${context.label}: ${context.display}`" class="agent-status-line__progress" />
+                <!-- eslint-disable-next-line vue/attribute-hyphenation -->
+                <MaxProgressBar :value="context.percent" :max="100" :severity="contextSeverity" :aria-label="`${context.label}: ${context.display}`" :ariaLabel="`${context.label}: ${context.display}`" class="agent-status-line__progress" />
             </div>
             <span v-if="context.isStale" class="agent-status-line__stale">desatualizado</span>
         </div>

@@ -18,16 +18,14 @@
         </div>
         <div class="issue-label-editor__categories" role="group" aria-label="Categorias MaxCode">
             <span class="issue-label-editor__field-label">Categorias:</span>
-            <label v-for="spec in categorySpecs" :key="spec.name" class="issue-label-editor__checkbox-label">
-                <input type="checkbox" :checked="selectedCategories.includes(spec.name)" :disabled="props.disabled" @change="onToggleCategory(spec.name)">
-                <span>{{ spec.name }}</span>
-            </label>
+            <MaxInputCheckbox v-for="spec in categorySpecs" :key="spec.name" :model-value="selectedCategories.includes(spec.name)" :label="spec.name" :disabled="props.disabled" class="issue-label-editor__checkbox-label" @update:model-value="onToggleCategory(spec.name)" />
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
     import { computed } from 'vue';
+    import { MaxInputCheckbox } from '@maxvue/max-components-ui';
     import {
         CANONICAL_CATEGORY_LABELS,
         CANONICAL_CLOSURE_LABELS,

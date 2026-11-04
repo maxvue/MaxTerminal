@@ -22,11 +22,14 @@
                 <code class="inline-diagnosis__fix-cmd" data-testid="diagnosis-fix-command">{{ diagnosis.fixCommand }}</code>
                 <RiskBadge v-if="diagnosis.fixRisk" :risk="diagnosis.fixRisk" compact />
 
-                <MaxButton type="button" variant="secondary" size="sm" icon="lucide:corner-down-left" title="Inserir comando corretivo no input" data-testid="btn-insert-fix" @click="onInsertFix">
+                <MaxButton type="button" severity="secondary" size="sm" icon="lucide:corner-down-left" title="Inserir comando corretivo no input" data-testid="btn-insert-fix" @click="onInsertFix">
                     <span>Inserir</span>
                 </MaxButton>
 
-                <MaxButton type="button" :variant="applyBtnVariant" size="sm" icon="lucide:play" data-testid="btn-apply-fix" @click="onApplyFixClick">
+                <MaxButton v-if="applyBtnSeverity" type="button" :severity="applyBtnSeverity" size="sm" icon="lucide:play" data-testid="btn-apply-fix" @click="onApplyFixClick">
+                    <span>{{ applyBtnLabel }}</span>
+                </MaxButton>
+                <MaxButton v-else type="button" size="sm" icon="lucide:play" data-testid="btn-apply-fix" @click="onApplyFixClick">
                     <span>{{ applyBtnLabel }}</span>
                 </MaxButton>
             </div>
@@ -37,8 +40,8 @@
         <div v-if="cautionOpen && diagnosis?.fixRisk?.level === 'caution'" class="inline-diagnosis__caution" role="alertdialog" data-testid="diagnosis-caution-popover">
             <span>Confirmar execução da correção sugerida?</span>
             <div class="inline-diagnosis__caution-actions">
-                <MaxButton type="button" variant="secondary" size="sm" data-testid="btn-cancel-caution-fix" @click="cautionOpen = false">Cancelar</MaxButton>
-                <MaxButton type="button" variant="warning" size="sm" data-testid="btn-confirm-caution-fix" @click="onConfirmCautionFix">Confirmar</MaxButton>
+                <MaxButton type="button" severity="secondary" size="sm" data-testid="btn-cancel-caution-fix" @click="cautionOpen = false">Cancelar</MaxButton>
+                <MaxButton type="button" severity="warning" size="sm" data-testid="btn-confirm-caution-fix" @click="onConfirmCautionFix">Confirmar</MaxButton>
             </div>
         </div>
 
@@ -87,7 +90,7 @@
     const cautionOpen = ref<boolean>(false);
     const destructiveOpen = ref<boolean>(false);
 
-    const applyBtnVariant = computed<'primary' | 'warning' | 'danger'>(() => {
+    const applyBtnSeverity = computed<'warning' | 'danger' | null>(() => {
         const level = diagnosis.value?.fixRisk?.level ?? 'safe';
         if (level === 'destructive') {
             return 'danger';
@@ -95,7 +98,7 @@
         if (level === 'caution') {
             return 'warning';
         }
-        return 'primary';
+        return null;
     });
 
     const applyBtnLabel = computed<string>(() => {

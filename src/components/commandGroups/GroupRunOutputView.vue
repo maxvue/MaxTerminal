@@ -11,7 +11,7 @@
                 <span v-if="output.ended.value" class="group-run-output-view__ended-tag" data-testid="group-run-output-ended">
                     Stream encerrado
                 </span>
-                <MaxButton label="Fechar" icon="lucide:x" variant="ghost" size="small" class="group-run-output-view__close-btn" data-testid="group-run-output-close" aria-label="Fechar visualização de saída" @click="onClose" />
+                <MaxButton label="Fechar" icon="lucide:x" variant="text" size="small" class="group-run-output-view__close-btn" data-testid="group-run-output-close" aria-label="Fechar visualização de saída" @click="onClose" />
             </div>
         </header>
 

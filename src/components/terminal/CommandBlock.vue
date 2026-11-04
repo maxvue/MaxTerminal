@@ -12,7 +12,7 @@
                     exit {{ block.exitCode }}
                 </span>
                 <div class="block-actions">
-                    <MaxButton v-for="act in actions" :key="act.id" :label="act.label" :icon="act.icon" variant="ghost" size="small" class="block-action-btn" :title="act.label" :aria-label="act.label" @click="emit('action', act.id)" />
+                    <MaxButton v-for="act in actions" :key="act.id" :label="act.label" :icon="act.icon" variant="text" severity="secondary" size="small" class="block-action-btn" :title="act.label" :aria-label="act.label" @click="emit('action', act.id)" />
                     <InspectButton :block="block" />
                     <slot name="actions" :block="block" />
                 </div>

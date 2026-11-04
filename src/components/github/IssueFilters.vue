@@ -1,40 +1,21 @@
 <template>
     <div class="issue-filters" role="search" aria-label="Filtros de Issues">
         <div class="issue-filters__row">
-            <div class="issue-filters__states" role="group" aria-label="Estado da issue">
-                <button type="button" class="issue-filters__state-btn" :class="{ 'issue-filters__state-btn--active': props.filter.state === 'open' }" @click="emit('set-state', 'open')">Abertas</button>
-                <button type="button" class="issue-filters__state-btn" :class="{ 'issue-filters__state-btn--active': props.filter.state === 'closed' }" @click="emit('set-state', 'closed')">Fechadas</button>
-                <button type="button" class="issue-filters__state-btn" :class="{ 'issue-filters__state-btn--active': props.filter.state === 'all' }" @click="emit('set-state', 'all')">Todas</button>
-            </div>
-            <div class="issue-filters__search">
-                <MaxIcon icon="lucide:search" />
-                <input type="search" class="issue-filters__search-input" :value="props.filter.searchText ?? ''" placeholder="Buscar por #número, título ou descrição..." aria-label="Buscar issues" @input="onSearchInput">
-            </div>
-            <select class="issue-filters__select" aria-label="Filtrar por label de estado" :value="selectedStateLabel" @change="onStateLabelSelect">
-                <option value="">Todos os Estados (15)</option>
-                <option v-for="spec in stateSpecs" :key="spec.name" :value="spec.name">{{ spec.name }}</option>
-            </select>
-            <select class="issue-filters__select" aria-label="Filtrar por categoria" :value="selectedCategoryLabel" @change="onCategoryLabelSelect">
-                <option value="">Todas as Categorias (6)</option>
-                <option v-for="spec in categorySpecs" :key="spec.name" :value="spec.name">{{ spec.name }}</option>
-            </select>
-            <button type="button" class="issue-filters__plan-btn" :class="{ 'issue-filters__plan-btn--active': props.filter.hasPlan === true }" @click="onToggleHasPlan">
-                <MaxIcon icon="lucide:file-check-2" />
-                <span>Com Plano</span>
-            </button>
-            <select class="issue-filters__select" aria-label="Ordenação das issues" :value="props.filter.sort ?? 'updated_desc'" @change="onSortChange">
-                <option value="updated_desc">Atualizadas recentemente</option>
-                <option value="created_desc">Mais recentes</option>
-                <option value="created_asc">Mais antigas</option>
-                <option value="comments_desc">Mais comentadas</option>
-            </select>
-            <button v-if="props.hasActiveFilters" type="button" class="issue-filters__reset-btn" title="Limpar filtros" @click="emit('reset')">Limpar</button>
+            <MaxSegmentedControl v-bind="{ ariaLabel: 'Estado da issue' }" :model-value="props.filter.state ?? 'open'" :options="stateFilterOptions" size="small" class="issue-filters__states" @update:model-value="onStateChange" />
+            <MaxInputText :model-value="props.filter.searchText ?? ''" placeholder="Buscar por #número, título ou descrição..." aria-label="Buscar issues" icon="lucide:search" class="issue-filters__search" @update:model-value="(val) => emit('set-search', String(val ?? ''))" />
+            <MaxInputSelect :model-value="selectedStateLabel" :options="stateSelectOptions" option-label="label" option-value="value" option-name="label" aria-label="Filtrar por label de estado" class="issue-filters__select" @change="onStateLabelChange" />
+            <MaxInputSelect :model-value="selectedCategoryLabel" :options="categorySelectOptions" option-label="label" option-value="value" option-name="label" aria-label="Filtrar por categoria" class="issue-filters__select" @change="onCategoryLabelChange" />
+            <MaxButton v-if="props.filter.hasPlan === true" type="button" size="sm" icon="lucide:file-check-2" label="Com Plano" class="issue-filters__plan-btn" @click="onToggleHasPlan" />
+            <MaxButton v-else type="button" severity="secondary" size="sm" icon="lucide:file-check-2" label="Com Plano" class="issue-filters__plan-btn" @click="onToggleHasPlan" />
+            <MaxInputSelect :model-value="props.filter.sort ?? 'updated_desc'" :options="sortOptions" option-label="label" option-value="value" option-name="label" aria-label="Ordenação das issues" class="issue-filters__select" @change="onSortSelectChange" />
+            <MaxButton v-if="props.hasActiveFilters" type="button" severity="secondary" size="sm" label="Limpar" title="Limpar filtros" class="issue-filters__reset-btn" @click="emit('reset')" />
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
     import { computed } from 'vue';
+    import { MaxButton, MaxInputSelect, MaxInputText, MaxSegmentedControl } from '@maxvue/max-components-ui';
     import { CANONICAL_CATEGORY_LABELS, CANONICAL_STATE_LABELS } from '@/constants/githubLabels';
     import type { IssueFilter, IssueSortOrder, IssueStateFilter } from '@/types/bindings';
 
@@ -60,17 +41,39 @@
     const stateSpecs = CANONICAL_STATE_LABELS;
     const categorySpecs = CANONICAL_CATEGORY_LABELS;
 
+    const stateFilterOptions = [
+        { label: 'Abertas', value: 'open' },
+        { label: 'Fechadas', value: 'closed' },
+        { label: 'Todas', value: 'all' }
+    ];
+
+    const stateSelectOptions = computed(() => [
+        { label: 'Todos os Estados (15)', value: '' },
+        ...stateSpecs.map((s) => ({ label: s.name, value: s.name }))
+    ]);
+
+    const categorySelectOptions = computed(() => [
+        { label: 'Todas as Categorias (6)', value: '' },
+        ...categorySpecs.map((s) => ({ label: s.name, value: s.name }))
+    ]);
+
+    const sortOptions = [
+        { label: 'Atualizadas recentemente', value: 'updated_desc' },
+        { label: 'Mais recentes', value: 'created_desc' },
+        { label: 'Mais antigas', value: 'created_asc' },
+        { label: 'Mais comentadas', value: 'comments_desc' }
+    ];
+
     const selectedStateLabel = computed<string>(() => props.filter.stateLabels?.[0] ?? '');
     const selectedCategoryLabel = computed<string>(() => props.filter.categoryLabels?.[0] ?? '');
 
-    function onSearchInput(event: Event): void {
-        const target = event.target as HTMLInputElement;
-        emit('set-search', target.value);
+    function onStateChange(valueOrEv: unknown): void {
+        const nextState = (typeof valueOrEv === 'string' ? valueOrEv : (valueOrEv as { value?: string })?.value ?? 'open') as IssueStateFilter;
+        emit('set-state', nextState);
     }
 
-    function onStateLabelSelect(event: Event): void {
-        const target = event.target as HTMLSelectElement;
-        const val = target.value;
+    function onStateLabelChange(valOrEv: unknown): void {
+        const val = typeof valOrEv === 'string' ? valOrEv : ((valOrEv as { target?: HTMLSelectElement })?.target?.value ?? '');
         if (!val && selectedStateLabel.value) {
             emit('toggle-state-label', selectedStateLabel.value);
             return;
@@ -83,9 +86,8 @@
         }
     }
 
-    function onCategoryLabelSelect(event: Event): void {
-        const target = event.target as HTMLSelectElement;
-        const val = target.value;
+    function onCategoryLabelChange(valOrEv: unknown): void {
+        const val = typeof valOrEv === 'string' ? valOrEv : ((valOrEv as { target?: HTMLSelectElement })?.target?.value ?? '');
         if (!val && selectedCategoryLabel.value) {
             emit('toggle-category-label', selectedCategoryLabel.value);
             return;
@@ -103,9 +105,9 @@
         emit('set-has-plan', next);
     }
 
-    function onSortChange(event: Event): void {
-        const target = event.target as HTMLSelectElement;
-        emit('set-sort', target.value as IssueSortOrder);
+    function onSortSelectChange(valOrEv: unknown): void {
+        const val = (typeof valOrEv === 'string' ? valOrEv : ((valOrEv as { target?: HTMLSelectElement })?.target?.value ?? 'updated_desc')) as IssueSortOrder;
+        emit('set-sort', val);
     }
 </script>
 

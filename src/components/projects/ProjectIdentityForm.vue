@@ -29,35 +29,23 @@
         </div>
 
         <div class="project-identity-form__reset-row">
-            <MaxButton type="button" variant="secondary" class="project-identity-form__reset-btn" :disabled="submitting" @click="handleResetIdentity">
-                Restaurar identidade automática
-            </MaxButton>
+            <MaxButton type="button" severity="secondary" class="project-identity-form__reset-btn" label="Restaurar identidade automática" :disabled="submitting" @click="handleResetIdentity" />
         </div>
 
-        <MaxAlert v-if="errorMessage" type="danger" role="alert" class="project-identity-form__error">
-            {{ errorMessage }}
-        </MaxAlert>
+        <MaxAlert v-if="errorMessage" severity="danger" role="alert" :message="errorMessage" class="project-identity-form__error" />
 
-        <MaxAlert v-if="successMessage" type="success" role="status" class="project-identity-form__success">
-            {{ successMessage }}
-        </MaxAlert>
+        <MaxAlert v-if="successMessage" severity="success" role="status" :message="successMessage" class="project-identity-form__success" />
 
         <footer class="project-identity-form__footer">
-            <MaxButton type="button" variant="secondary" class="project-identity-form__btn project-identity-form__btn--cancel" :disabled="submitting" @click="handleCancel">
-                Cancelar
-            </MaxButton>
-            <MaxButton type="submit" variant="primary" class="project-identity-form__btn project-identity-form__btn--submit" :disabled="submitting" :loading="submitting">
-                {{ submitting ? 'Salvando...' : 'Salvar alterações' }}
-            </MaxButton>
+            <MaxButton type="button" severity="secondary" class="project-identity-form__btn project-identity-form__btn--cancel" label="Cancelar" :disabled="submitting" @click="handleCancel" />
+            <MaxButton type="submit" class="project-identity-form__btn project-identity-form__btn--submit" :label="submitting ? 'Salvando...' : 'Salvar alterações'" :disabled="submitting" :loading="submitting" />
         </footer>
     </form>
 </template>
 
 <script setup lang="ts">
     import { computed, ref, watch } from 'vue';
-    import MaxAlert from '@maxvue/max-components-ui/components/MaxAlert';
-    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
-    import MaxInputText from '@maxvue/max-components-ui/components/MaxInputText';
+    import { MaxAlert, MaxButton, MaxInputText } from '@maxvue/max-components-ui';
     import { useIpcError } from '@/composables/useIpcError';
     import {
         isValidProjectColor,

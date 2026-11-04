@@ -21,10 +21,10 @@
                 <TemplateLaunchPopover :open="templatePopoverOpen" :templates="props.templates" @launch="onLaunchTemplate" @create-template="onCreateTemplate" @edit-template="onEditTemplate" @delete-template="emit('delete-template', $event)" @set-default="emit('set-default-template', $event)" />
             </div>
             <template v-if="props.activeTabId">
-                <MaxIconButton icon="lucide:columns-2" label="Dividir painel verticalmente" variant="ghost" class="tab-bar__btn" title="Dividir painel verticalmente (lado a lado)" :disabled="!props.canSplitActivePane" @click="emit('split-active-pane', 'vertical')" />
-                <MaxIconButton icon="lucide:rows-2" label="Dividir painel horizontalmente" variant="ghost" class="tab-bar__btn" title="Dividir painel horizontalmente (acima/abaixo)" :disabled="!props.canSplitActivePane" @click="emit('split-active-pane', 'horizontal')" />
-                <MaxButton label="Iniciar nova Sessão" icon="lucide:rotate-ccw" variant="secondary" size="small" class="tab-bar__btn" title="Iniciar nova Sessão limpa nesta aba" aria-label="Iniciar nova Sessão" @click="emit('new-session')" />
-                <MaxButton label="Sessões" icon="lucide:history" variant="secondary" size="small" class="tab-bar__btn" title="Histórico de Sessões da aba" aria-label="Histórico de Sessões" @click="emit('open-session-history')" />
+                <MaxIconButton icon="lucide:columns-2" label="Dividir painel verticalmente" variant="text" class="tab-bar__btn" title="Dividir painel verticalmente (lado a lado)" :disabled="!props.canSplitActivePane" @click="emit('split-active-pane', 'vertical')" />
+                <MaxIconButton icon="lucide:rows-2" label="Dividir painel horizontalmente" variant="text" class="tab-bar__btn" title="Dividir painel horizontalmente (acima/abaixo)" :disabled="!props.canSplitActivePane" @click="emit('split-active-pane', 'horizontal')" />
+                <MaxButton label="Iniciar nova Sessão" icon="lucide:rotate-ccw" severity="secondary" size="small" class="tab-bar__btn" title="Iniciar nova Sessão limpa nesta aba" aria-label="Iniciar nova Sessão" @click="emit('new-session')" />
+                <MaxButton label="Sessões" icon="lucide:history" severity="secondary" size="small" class="tab-bar__btn" title="Histórico de Sessões da aba" aria-label="Histórico de Sessões" @click="emit('open-session-history')" />
             </template>
             <slot name="bar-extra" />
         </div>

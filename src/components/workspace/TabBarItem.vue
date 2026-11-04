@@ -11,7 +11,7 @@
                 <TabStatusIndicator :status="effectiveStatus" :seen="props.active" :show-label="false" size="sm" />
             </div>
             <div class="tab-bar-close">
-                <MaxIconButton icon="lucide:x" :label="`Fechar aba ${props.tab.title}`" variant="ghost" class="tab-bar-item__close" title="Fechar aba" @click.stop="emit('close', props.tab.id)" />
+                <MaxIconButton icon="lucide:x" :label="`Fechar aba ${props.tab.title}`" variant="text" class="tab-bar-item__close" title="Fechar aba" @click.stop="emit('close', props.tab.id)" />
             </div>
         </div>
         <div class="tab-bar-bottom-line">

@@ -20,6 +20,7 @@
                     <PerfOverlay />
                     <VaultUnlockModal :visible="vaultStore.unlockModalOpen" @update:visible="vaultStore.unlockModalOpen = $event" @unlocked="vaultStore.handleUnlocked" />
                     <VaultSetupModal :visible="vaultStore.setupModalOpen" @update:visible="vaultStore.setupModalOpen = $event" @configured="vaultStore.handleConfigured" />
+                    <HorizonModal />
                 </template>
             </AppShell>
         </template>
@@ -39,6 +40,7 @@
     import VaultSetupModal from '@/components/credentials/VaultSetupModal.vue';
     import VaultUnlockModal from '@/components/credentials/VaultUnlockModal.vue';
     import AppLayout from '@/components/layout/AppLayout.vue';
+    import HorizonModal from '@/components/horizon/HorizonModal.vue';
     import PreferencesDialog from '@/components/preferences/PreferencesDialog.vue';
     import ProjectSettingsDialog from '@/components/projects/ProjectSettingsDialog.vue';
     import QuickCommandsHost from '@/components/quick-commands/QuickCommandsHost.vue';

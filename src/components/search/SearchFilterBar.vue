@@ -38,7 +38,7 @@
                 </select>
             </label>
 
-            <MaxButton v-if="hasActiveFilters" label="Limpar filtros" variant="ghost" size="small" class="search-filter-bar__clear" aria-label="Limpar filtros ativos" @click="clearFilters" />
+            <MaxButton v-if="hasActiveFilters" label="Limpar filtros" variant="text" severity="secondary" size="small" class="search-filter-bar__clear" aria-label="Limpar filtros ativos" @click="clearFilters" />
         </div>
 
         <div class="search-filter-bar__chips" role="group" aria-label="Fontes de busca">

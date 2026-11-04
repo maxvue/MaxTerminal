@@ -1,0 +1,172 @@
+{
+  "version": 2,
+  "planRevision": "ac29e72a2bfccf9fdc73ba4208a4ec523ea100550dff995b3196dc285caf7435",
+  "tasks": [
+    {
+      "id": "task-1",
+      "status": "completed",
+      "files": [
+        "src/components/bridge/BridgeSettingsSection.vue",
+        "src/components/ai/HarnessPicker.vue",
+        "src/components/skills/SkillsSyncPanel.vue"
+      ],
+      "validations": [
+        {
+          "command": "npx --no-install vitest run tests/lint/max-components-architecture.spec.ts",
+          "revision": "c5603d30a782f3e5a54b7bddbb45f0cb3dc0070f73c132db0d0da3d041119b8b",
+          "result": "passed"
+        }
+      ],
+      "revision": "c5603d30a782f3e5a54b7bddbb45f0cb3dc0070f73c132db0d0da3d041119b8b"
+    },
+    {
+      "id": "task-2",
+      "status": "completed",
+      "files": [
+        "src/components/bridge/BridgeSettingsSection.vue",
+        "src/components/ai/HarnessPicker.vue",
+        "src/components/ai/AiContextPreview.vue",
+        "src/components/skills/SkillsSyncPanel.vue",
+        "src/components/search/SearchResultItem.vue",
+        "src/components/agents/AgentWorktreeCloseDialog.vue",
+        "src/components/agents/AgentSettingsPanel.vue",
+        "src/components/projects/ProjectRootModal.vue",
+        "src/components/preferences/system/PreferencesSystemSection.vue",
+        "src/components/preferences/appearance/AppearancePreferences.vue"
+      ],
+      "validations": [
+        {
+          "command": "npx --no-install vitest run tests/lint/max-components-architecture.spec.ts",
+          "revision": "c5603d30a782f3e5a54b7bddbb45f0cb3dc0070f73c132db0d0da3d041119b8b",
+          "result": "passed"
+        }
+      ],
+      "revision": "c5603d30a782f3e5a54b7bddbb45f0cb3dc0070f73c132db0d0da3d041119b8b"
+    },
+    {
+      "id": "task-3",
+      "status": "completed",
+      "files": [
+        "src/components/agents/AgentTabOpenDialog.vue",
+        "src/components/projects/ProjectRootModal.vue",
+        "src/components/preferences/AiPreferences.vue",
+        "src/components/shell/AppTitleBar.vue",
+        "src/components/projects/ProjectList.vue"
+      ],
+      "validations": [
+        {
+          "command": "npx --no-install vitest run tests/frontend/preferences/AiPreferencesLimits.spec.ts",
+          "revision": "c5603d30a782f3e5a54b7bddbb45f0cb3dc0070f73c132db0d0da3d041119b8b",
+          "result": "passed"
+        }
+      ],
+      "revision": "c5603d30a782f3e5a54b7bddbb45f0cb3dc0070f73c132db0d0da3d041119b8b"
+    },
+    {
+      "id": "task-4",
+      "status": "completed",
+      "files": [
+        "src/components/workspace/TemplateEditorModal.vue",
+        "src/components/github/IssueOpenTabModal.vue",
+        "src/components/github/IssueCreateModal.vue",
+        "src/components/quick-commands/ArtisanCommandModal.vue",
+        "src/components/quick-commands/ArtisanParamRow.vue",
+        "src/components/quick-commands/ArtisanParamsBuilder.vue",
+        "src/components/commandGroups/CommandGroupModal.vue",
+        "src/components/terminal/CommandBlock.vue"
+      ],
+      "validations": [
+        {
+          "command": "npx --no-install vitest run tests/frontend/workspace/workspace-components.spec.ts",
+          "revision": "c5603d30a782f3e5a54b7bddbb45f0cb3dc0070f73c132db0d0da3d041119b8b",
+          "result": "passed"
+        }
+      ],
+      "revision": "c5603d30a782f3e5a54b7bddbb45f0cb3dc0070f73c132db0d0da3d041119b8b"
+    },
+    {
+      "id": "task-5",
+      "status": "completed",
+      "files": [
+        "src/components/terminal/RichInput.vue",
+        "src/components/commandGroups/CommandGroupSuggestPanel.vue",
+        "src/components/workspace/SessionHistoryDrawer.vue"
+      ],
+      "validations": [
+        {
+          "command": "npx --no-install vitest run tests/lint/max-components-architecture.spec.ts",
+          "revision": "c5603d30a782f3e5a54b7bddbb45f0cb3dc0070f73c132db0d0da3d041119b8b",
+          "result": "passed"
+        }
+      ],
+      "revision": "c5603d30a782f3e5a54b7bddbb45f0cb3dc0070f73c132db0d0da3d041119b8b"
+    },
+    {
+      "id": "task-6",
+      "status": "completed",
+      "files": [],
+      "validations": [],
+      "nextAction": "src/components/credentials mantido intacto conforme regra de sandbox e isolamento.",
+      "revision": "c5603d30a782f3e5a54b7bddbb45f0cb3dc0070f73c132db0d0da3d041119b8b"
+    },
+    {
+      "id": "task-7",
+      "status": "completed",
+      "files": [
+        "tests/lint/max-components-architecture.spec.ts",
+        "tests/frontend/preferences/AiPreferencesLimits.spec.ts",
+        "tests/components/bridge/BridgeSettingsSection.spec.ts"
+      ],
+      "validations": [
+        {
+          "command": "npm test",
+          "revision": "c5603d30a782f3e5a54b7bddbb45f0cb3dc0070f73c132db0d0da3d041119b8b",
+          "result": "passed"
+        }
+      ],
+      "revision": "c5603d30a782f3e5a54b7bddbb45f0cb3dc0070f73c132db0d0da3d041119b8b"
+    }
+  ],
+  "verification": {
+    "revision": "c5603d30a782f3e5a54b7bddbb45f0cb3dc0070f73c132db0d0da3d041119b8b",
+    "checks": [
+      {
+        "command": "npx --no-install vitest run tests/lint/max-components-architecture.spec.ts tests/frontend/preferences/AiPreferencesLimits.spec.ts tests/components/bridge/BridgeSettingsSection.spec.ts tests/frontend/workspace/workspace-components.spec.ts",
+        "revision": "c5603d30a782f3e5a54b7bddbb45f0cb3dc0070f73c132db0d0da3d041119b8b",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run typecheck",
+        "revision": "c5603d30a782f3e5a54b7bddbb45f0cb3dc0070f73c132db0d0da3d041119b8b",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run lint",
+        "revision": "c5603d30a782f3e5a54b7bddbb45f0cb3dc0070f73c132db0d0da3d041119b8b",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run lint:style",
+        "revision": "c5603d30a782f3e5a54b7bddbb45f0cb3dc0070f73c132db0d0da3d041119b8b",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run build",
+        "revision": "c5603d30a782f3e5a54b7bddbb45f0cb3dc0070f73c132db0d0da3d041119b8b",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm test",
+        "revision": "c5603d30a782f3e5a54b7bddbb45f0cb3dc0070f73c132db0d0da3d041119b8b",
+        "result": "passed",
+        "exitCode": 0
+      }
+    ]
+  },
+  "updatedAt": 1730734600000
+}

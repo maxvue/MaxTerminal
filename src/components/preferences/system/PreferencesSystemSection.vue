@@ -1,6 +1,6 @@
 <template>
     <div class="prefs-system">
-        <MaxAlert v-if="osSettingsStore.error" :message="osSettingsStore.error" severity="error" class="prefs-system__error" />
+        <MaxAlert v-if="osSettingsStore.error" :message="osSettingsStore.error" severity="danger" class="prefs-system__error" />
         <section v-if="settings" class="prefs-system__group">
             <h3 class="prefs-system__heading">Janela, Bandeja e Inicialização</h3>
             <CloseBehaviorSelector :model-value="settings.closeBehavior" :tray-available="windowStore.trayAvailable" :disabled="osSettingsStore.saving" @update:model-value="onCloseBehaviorChange" />
@@ -56,7 +56,7 @@
                 <h3 class="prefs-system__heading">Backups do Banco de Dados (SQLite) e Telemetria</h3>
                 <div class="prefs-system__actions">
                     <MaxButton type="button" label="Atualizar Lista" :disabled="backupBusy" data-testid="prefs-backup-refresh-btn" variant="outlined" size="small" @click="onRefreshBackups" />
-                    <MaxButton type="button" :label="backupBusy ? 'Processando...' : 'Criar Backup Manual'" severity="primary" :disabled="backupBusy" data-testid="prefs-backup-create-btn" size="small" @click="onCreateBackup" />
+                    <MaxButton type="button" :label="backupBusy ? 'Processando...' : 'Criar Backup Manual'" :disabled="backupBusy" data-testid="prefs-backup-create-btn" size="small" @click="onCreateBackup" />
                     <MaxButton type="button" :label="perfVisible ? 'Ocultar Telemetria Dev' : 'Exibir Telemetria Dev'" data-testid="prefs-perf-toggle-btn" variant="outlined" size="small" @click="perfVisible = !perfVisible" />
                 </div>
             </div>

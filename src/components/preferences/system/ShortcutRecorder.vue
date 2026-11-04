@@ -9,7 +9,7 @@
             <MaxButton v-else type="button" label="Cancelar" variant="outlined" size="small" class="shortcut-recorder__btn shortcut-recorder__btn--secondary" @click="cancelRecording" />
             <MaxButton type="button" label="Padrão" variant="outlined" size="small" :disabled="props.disabled || props.modelValue === DEFAULT_ACCELERATOR" class="shortcut-recorder__btn shortcut-recorder__btn--secondary" @click="resetDefault" />
         </div>
-        <MaxAlert v-if="validationError" :message="validationError" severity="error" class="shortcut-recorder__error" />
+        <MaxAlert v-if="validationError" :message="validationError" severity="danger" class="shortcut-recorder__error" />
     </div>
 </template>
 

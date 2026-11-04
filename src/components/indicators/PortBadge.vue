@@ -5,9 +5,7 @@
                 <span class="port-badge__dot" />
                 <span class="port-badge__number">:{{ item.port }}</span>
             </button>
-            <button type="button" class="port-badge__kill-btn" :disabled="Boolean(props.killingByPortId?.[item.id])" :aria-label="`Encerrar processo da porta :${item.port}`" :title="`Encerrar processo ${item.processName} (PID ${item.pid})`" @click.stop="requestKill(item)">
-                <MaxIcon icon="lucide:square" :size="0.625" />
-            </button>
+            <MaxIconButton icon="lucide:square" :size="0.625" :disabled="Boolean(props.killingByPortId?.[item.id])" :aria-label="`Encerrar processo da porta :${item.port}`" :title="`Encerrar processo ${item.processName} (PID ${item.pid})`" class="port-badge__kill-btn" @click.stop="requestKill(item)" />
         </div>
         <button v-if="overflowCount > 0" type="button" class="port-badge__overflow" :title="`Mais ${overflowCount} porta(s) ativa(s)`" @click.stop="popoverOpen = !popoverOpen">
             <span>+{{ overflowCount }}</span>
@@ -15,8 +13,8 @@
         <div v-if="confirmingPort" class="port-badge__confirm" role="alertdialog" aria-label="Confirmar encerramento da porta">
             <span class="port-badge__confirm-text">Encerrar {{ confirmingPort.processName }} (PID {{ confirmingPort.pid }}) na porta :{{ confirmingPort.port }}?</span>
             <div class="port-badge__confirm-actions">
-                <MaxButton type="button" size="sm" variant="danger" class="port-badge__confirm-yes" @click.stop="confirmKill">Encerrar processo da porta</MaxButton>
-                <MaxButton type="button" size="sm" variant="secondary" class="port-badge__confirm-no" @click.stop="confirmingPort = null">Cancelar</MaxButton>
+                <MaxButton type="button" size="sm" severity="danger" class="port-badge__confirm-yes" @click.stop="confirmKill">Encerrar processo da porta</MaxButton>
+                <MaxButton type="button" size="sm" severity="secondary" class="port-badge__confirm-no" @click.stop="confirmingPort = null">Cancelar</MaxButton>
             </div>
         </div>
         <div v-if="popoverOpen && overflowCount > 0" class="port-badge__list-popover" role="dialog" aria-label="Todas as portas ativas">
@@ -25,7 +23,7 @@
                     <strong>:{{ item.port }}</strong>
                     <span>{{ item.processName }} (PID {{ item.pid }})</span>
                 </button>
-                <MaxButton type="button" size="sm" variant="danger" @click.stop="requestKill(item)">Encerrar</MaxButton>
+                <MaxButton type="button" size="sm" severity="danger" @click.stop="requestKill(item)">Encerrar</MaxButton>
             </div>
         </div>
     </div>
@@ -33,8 +31,7 @@
 
 <script setup lang="ts">
     import { computed, ref } from 'vue';
-    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
-    import MaxIcon from '@maxvue/max-components-ui/components/MaxIcon';
+    import { MaxButton, MaxIconButton } from '@maxvue/max-components-ui';
     import type { ListeningPort_Serialize, PortId } from '@/types/bindings';
 
     export interface PortBadgeProps {

@@ -13,8 +13,8 @@
                 </p>
                 <pre class="qc-confirm__code" data-testid="shortcut-confirm-line"><code>{{ store.confirm.line }}</code></pre>
                 <footer class="qc-confirm__actions">
-                    <MaxButton label="Cancelar" variant="secondary" class="qc-confirm__btn qc-confirm__btn--cancel" data-testid="shortcut-confirm-cancel" @click="store.resolveConfirm(false)" />
-                    <MaxButton label="Inserir no terminal" variant="primary" class="qc-confirm__btn qc-confirm__btn--accept" data-testid="shortcut-confirm-accept" @click="store.resolveConfirm(true)" />
+                    <MaxButton label="Cancelar" severity="secondary" class="qc-confirm__btn qc-confirm__btn--cancel" data-testid="shortcut-confirm-cancel" @click="store.resolveConfirm(false)" />
+                    <MaxButton label="Inserir no terminal" class="qc-confirm__btn qc-confirm__btn--accept" data-testid="shortcut-confirm-accept" @click="store.resolveConfirm(true)" />
                 </footer>
             </div>
         </div>

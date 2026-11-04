@@ -13,7 +13,7 @@
                 <span class="ai-context-preview__label">Projeto</span>
                 <span class="ai-context-preview__value">
                     {{ context.projectName }}
-                    <MaxTag v-if="context.projectStack" size="sm" variant="secondary">{{ context.projectStack }}</MaxTag>
+                    <MaxTag v-if="context.projectStack" size="sm" severity="secondary" :value="context.projectStack" />
                 </span>
             </div>
             <div class="ai-context-preview__item">
@@ -27,7 +27,7 @@
             <ul class="ai-context-preview__commands">
                 <li v-for="(cmd, idx) in context.recentCommands" :key="idx" class="ai-context-preview__cmd">
                     <code class="ai-context-preview__cmd-text">{{ cmd.command }}</code>
-                    <MaxTag v-if="cmd.exitCode !== null && cmd.exitCode !== undefined" size="sm" :variant="cmd.exitCode === 0 ? 'success' : 'danger'" class="ai-context-preview__cmd-exit">exit {{ cmd.exitCode }}</MaxTag>
+                    <MaxTag v-if="cmd.exitCode !== null && cmd.exitCode !== undefined" size="sm" :severity="cmd.exitCode === 0 ? 'success' : 'danger'" :value="`exit ${cmd.exitCode}`" class="ai-context-preview__cmd-exit" />
                 </li>
             </ul>
         </div>
@@ -40,7 +40,7 @@
 </template>
 
 <script setup lang="ts">
-    import MaxTag from '@maxvue/max-components-ui/components/MaxTag';
+    import { MaxTag } from '@maxvue/max-components-ui';
     import type { AiContext_Serialize } from '@/types/bindings';
 
     export interface AiContextPreviewProps {

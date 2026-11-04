@@ -49,7 +49,24 @@
 
                 <main class="horizon-modal__body">
                     <div v-if="store.session" class="horizon-modal__terminal-container">
-                        <TerminalView :key="store.session.generation" :pane-id="store.session.paneId" :pty-id="store.session.ptyId" />
+                        <TerminalView :key="store.session.generation" :pane-id="store.session.paneId" :pty-id="store.session.ptyId" :visible="isOpen" />
+                    </div>
+                    <div v-else-if="store.status === 'external'" class="horizon-modal__external-panel">
+                        <div class="horizon-modal__external-card">
+                            <MaxIcon icon="lucide:activity" class="horizon-modal__external-icon" />
+                            <div class="horizon-modal__external-info">
+                                <h4 class="horizon-modal__external-title">Horizon em Execução Externa</h4>
+                                <p class="horizon-modal__external-desc">
+                                    O daemon do Laravel Horizon está em execução no sistema operacional (processo externo ao MaxTerminal). As métricas de filas, workers e tarefas acima estão sendo monitoradas e sincronizadas em tempo real.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="horizon-modal__external-actions">
+                            <p class="horizon-modal__external-hint">
+                                Para visualizar o fluxo do terminal diretamente aqui no MaxTerminal, você pode iniciar uma instância supervisionada.
+                            </p>
+                            <MaxButton label="Iniciar Terminal Supervisionado no MaxTerminal" icon="lucide:play" :loading="store.isStarting" :disabled="store.isBusy" @click="handleStart" />
+                        </div>
                     </div>
                     <div v-else class="horizon-modal__empty">
                         <MaxIcon icon="lucide:terminal" class="horizon-modal__empty-icon" />
@@ -143,7 +160,7 @@
             case 'error':
                 return 'Erro';
             case 'external':
-                return 'Externo';
+                return 'Externo (Ativo)';
             default:
                 return store.status;
         }
@@ -260,6 +277,15 @@
 
             .horizon-modal__status-dot {
                 background: var(--max-danger-500);
+            }
+        }
+
+        &.is-external {
+            color: var(--max-info-500);
+            background: var(--mt-ui-info-subtle, color-mix(in srgb, var(--max-info-500) 12%, transparent));
+
+            .horizon-modal__status-dot {
+                background: var(--max-info-500);
             }
         }
 
@@ -431,6 +457,60 @@
         color: var(--mt-ui-text-secondary, var(--background-600));
         max-width: 28rem;
         margin-bottom: 1.25rem;
+    }
+
+    .horizon-modal__external-panel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        background: var(--mt-ui-surface-panel, var(--background-25));
+        border-radius: 4px;
+        border: 1px solid var(--mt-ui-border, var(--background-100));
+        gap: 1.5rem;
+        text-align: center;
+    }
+
+    .horizon-modal__external-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+        max-width: 32rem;
+    }
+
+    .horizon-modal__external-icon {
+        font-size: 2.75rem;
+        color: var(--max-info-500);
+    }
+
+    .horizon-modal__external-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        margin: 0;
+        color: var(--mt-ui-text-strong, var(--background-900));
+    }
+
+    .horizon-modal__external-desc {
+        font-size: 0.875rem;
+        line-height: 1.5;
+        color: var(--mt-ui-text-secondary, var(--background-600));
+        margin: 0;
+    }
+
+    .horizon-modal__external-actions {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .horizon-modal__external-hint {
+        font-size: 0.8125rem;
+        color: var(--mt-ui-text-muted, var(--background-400));
+        margin: 0;
     }
 
     // Modal de Confirmação Secundário

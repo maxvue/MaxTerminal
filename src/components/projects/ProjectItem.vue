@@ -18,15 +18,15 @@
             <MaxButton class="project-item__visibility-btn" :label="props.hidden ? 'Mostrar' : 'Ocultar'" :loading="props.pending" :disabled="props.disabled || props.pending" size="small" slim variant="text" :title="props.hidden ? 'Mostrar projeto' : 'Ocultar projeto'" :aria-label="props.hidden ? 'Mostrar projeto' : 'Ocultar projeto'" @click.stop="handleVisibilityToggle" />
             <MaxPopoverMenu ref="popoverMenuRef" :items="menuItems" aria-label="Opções do projeto">
                 <template #trigger="slotProps">
-                    <button type="button" class="project-item__menu-trigger" v-bind="slotProps" aria-label="Opções do projeto" title="Opções do projeto">
+                    <button type="button" class="project-item__menu-trigger" v-bind="(slotProps as any)" aria-label="Opções do projeto" title="Opções do projeto">
                         <MaxIcon icon="mdi:dots-vertical" />
                     </button>
                 </template>
                 <template #item="{ data }">
-                    <button type="button" class="project-item__menu-btn" :class="{ 'project-item__menu-btn--danger': data.danger }" :data-action="data.actionKey" role="menuitem" @click.stop="data.action">
+                    <span class="project-item__menu-btn" :class="{ 'project-item__menu-btn--danger': data.danger }" :data-action="data.actionKey">
                         <MaxIcon :icon="data.icon" />
                         <span>{{ data.label }}</span>
-                    </button>
+                    </span>
                 </template>
             </MaxPopoverMenu>
         </div>

@@ -1,7 +1,7 @@
 <template>
     <div class="terminal-exit-banner" role="status" aria-live="polite">
         <span class="exit-message">{{ exitMessage }}</span>
-        <MaxButton label="Reiniciar" variant="secondary" size="small" class="restart-btn" @click="onRestartClick" />
+        <MaxButton label="Reiniciar" severity="secondary" size="small" class="restart-btn" @click="onRestartClick" />
     </div>
 </template>
 

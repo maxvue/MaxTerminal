@@ -1,7 +1,7 @@
 <template>
     <MaxModal :visible="props.open" :title="modalTitle" :no-button="true" max-width="38rem" class="template-modal" :dismissable="!props.saving" :close-on-escape="!props.saving" @update:visible="emit('close')">
         <form class="template-modal__form" @submit.prevent="handleSubmit">
-            <div v-if="localError || props.errorMessage" class="template-modal__error" role="alert">{{ localError || props.errorMessage }}</div>
+            <MaxAlert v-if="localError || props.errorMessage" severity="danger" role="alert" :message="localError || props.errorMessage" class="template-modal__error" />
             <div class="template-modal__row">
                 <label class="template-modal__field template-modal__field--grow">
                     <span class="template-modal__label">Nome do Template *</span>
@@ -51,31 +51,22 @@
             </label>
             <div v-if="origin === 'remote'" class="template-modal__connection-test">
                 <MaxButton type="button" :label="testingConnection ? 'Testando conexão...' : 'Testar Conexão'" icon="lucide:plug-zap" :disabled="testingConnection || props.saving" :loading="testingConnection" @click="handleTestConnection" />
-                <p v-if="connectionTestSuccess" class="template-modal__success" role="status">{{ connectionTestSuccess }}</p>
-                <p v-if="connectionTestError" class="template-modal__error" role="alert">{{ connectionTestError }}</p>
+                <MaxAlert v-if="connectionTestSuccess" severity="success" role="status" :message="connectionTestSuccess" class="template-modal__success" />
+                <MaxAlert v-if="connectionTestError" severity="danger" role="alert" :message="connectionTestError" class="template-modal__error" />
             </div>
             <label class="template-modal__field">
                 <span class="template-modal__label">Comando Inicial (opcional)</span>
                 <input v-model="initialCommand" type="text" class="template-modal__input template-modal__input--mono" placeholder="Ex.: npm run dev">
             </label>
             <div class="template-modal__checkboxes">
-                <label class="template-modal__checkbox">
-                    <input v-model="addToWorkspace" type="checkbox">
-                    <span>Adicionar ao Workspace (abrir ao iniciar)</span>
-                </label>
-                <label class="template-modal__checkbox">
-                    <input v-model="continuous" type="checkbox">
-                    <span>Execução Contínua (daemon / watcher)</span>
-                </label>
-                <label class="template-modal__checkbox">
-                    <input v-model="makeDefault" type="checkbox">
-                    <span>Definir como Template Padrão do projeto</span>
-                </label>
+                <MaxInputCheckbox v-model="addToWorkspace" label="Adicionar ao Workspace (abrir ao iniciar)" />
+                <MaxInputCheckbox v-model="continuous" label="Execução Contínua (daemon / watcher)" />
+                <MaxInputCheckbox v-model="makeDefault" label="Definir como Template Padrão do projeto" />
             </div>
             <div class="template-modal__env-section">
                 <div class="template-modal__env-header">
                     <span class="template-modal__label">Variáveis de Ambiente</span>
-                    <MaxButton label="Adicionar variável" icon="lucide:plus" variant="ghost" size="small" class="template-modal__add-env" @click="addEnvRow" />
+                    <MaxButton label="Adicionar variável" icon="lucide:plus" variant="text" severity="secondary" size="small" class="template-modal__add-env" @click="addEnvRow" />
                 </div>
                 <div v-for="(row, idx) in envRows" :key="idx" class="template-modal__env-row">
                     <input v-model="row.key" type="text" class="template-modal__input template-modal__input--mono" placeholder="NOME_VAR">
@@ -84,12 +75,12 @@
                         <option value="inherited">Herdar do sistema</option>
                     </select>
                     <input v-model="row.value" type="text" class="template-modal__input template-modal__input--mono" :placeholder="row.kind === 'inherited' ? 'VAR_HOST' : 'valor'">
-                    <MaxIconButton icon="lucide:trash-2" label="Remover variável" variant="danger" class="template-modal__remove-env" @click="removeEnvRow(idx)" />
+                    <MaxIconButton icon="lucide:trash-2" label="Remover variável" variant="text" severity="danger" class="template-modal__remove-env" @click="removeEnvRow(idx)" />
                 </div>
             </div>
             <footer class="template-modal__footer">
-                <MaxButton label="Cancelar" variant="ghost" class="template-modal__btn template-modal__btn--ghost" @click="emit('close')" />
-                <MaxButton type="submit" :label="props.saving ? 'Salvando...' : 'Salvar Template'" variant="primary" class="template-modal__btn template-modal__btn--primary" :disabled="props.saving" :loading="props.saving" />
+                <MaxButton label="Cancelar" variant="text" severity="secondary" class="template-modal__btn template-modal__btn--ghost" @click="emit('close')" />
+                <MaxButton type="submit" :label="props.saving ? 'Salvando...' : 'Salvar Template'" class="template-modal__btn template-modal__btn--primary" :disabled="props.saving" :loading="props.saving" />
             </footer>
         </form>
     </MaxModal>
@@ -98,6 +89,7 @@
 <script setup lang="ts">
     import { computed, ref, watch } from 'vue';
     import {
+        MaxAlert,
         MaxButton,
         MaxIconButton,
         MaxInputCheckbox,

@@ -2,7 +2,7 @@
     <div class="agent-launcher">
         <MaxPopover ref="popoverRef" :no-header="true" class="agent-launcher__popover-host">
             <template #trigger="slotProps">
-                <button type="button" class="agent-launcher__trigger" title="Abrir aba de Agente CLI" aria-label="Abrir Agente CLI" v-bind="slotProps">
+                <button type="button" class="agent-launcher__trigger" title="Abrir aba de Agente CLI" aria-label="Abrir Agente CLI" v-bind="(slotProps as any)">
                     <MaxIcon icon="lucide:bot" />
                     <span>Agentes CLI</span>
                     <MaxIcon icon="lucide:chevron-down" class="agent-launcher__caret" />
