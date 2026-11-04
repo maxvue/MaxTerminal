@@ -57,8 +57,6 @@ function countersEqual(a: ProjectStatusCounters, b: ProjectStatusCounters): bool
     );
 }
 
-const SELECT_PERSIST_DEBOUNCE_MS = 200;
-
 export const useProjectsStore = defineStore('projects', () => {
     const settingsStore = useSettingsStore();
     const tabStatusStore = useTabStatusStore();
@@ -85,7 +83,6 @@ export const useProjectsStore = defineStore('projects', () => {
     let dirtyResync = false;
     let targetRevision = 0;
     let targetEpoch: string | null = null;
-    let selectPersistTimer: ReturnType<typeof setTimeout> | null = null;
     let previousCountersMap = new Map<ProjectId, Readonly<ProjectStatusCounters>>();
 
     const projectsByIdMap = computed<Map<ProjectId, Project_Serialize>>(() => {
@@ -208,16 +205,6 @@ export const useProjectsStore = defineStore('projects', () => {
         return countersByProject.value.get(id) ?? ZERO_PROJECT_COUNTERS;
     }
 
-    function schedulePersistSelectedId(id: ProjectId | null): void {
-        if (selectPersistTimer !== null) {
-            clearTimeout(selectPersistTimer);
-        }
-        selectPersistTimer = setTimeout(() => {
-            selectPersistTimer = null;
-            void settingsStore.set('projects.selected_id', id);
-        }, SELECT_PERSIST_DEBOUNCE_MS);
-    }
-
     function applySnapshot(snapshot: ProjectSnapshot_Serialize): void {
         if (epoch.value !== null && epoch.value === snapshot.epoch && snapshot.revision < revision.value) {
             return;
@@ -279,7 +266,6 @@ export const useProjectsStore = defineStore('projects', () => {
                 );
                 selectedId.value = projects.value[fallbackIdx]?.id ?? null;
             }
-            schedulePersistSelectedId(selectedId.value);
         }
     }
 
@@ -344,19 +330,9 @@ export const useProjectsStore = defineStore('projects', () => {
 
         initPromise = (async () => {
             try {
-                const persistedSelected = settingsStore.get('projects.selected_id');
                 await resync();
                 if (token !== lifecycleToken) {
                     return;
-                }
-                if (
-                    typeof persistedSelected === 'string' &&
-                    persistedSelected.length > 0 &&
-                    projectsByIdMap.value.has(persistedSelected)
-                ) {
-                    selectedId.value = persistedSelected;
-                } else if (selectedId.value !== null && !projectsByIdMap.value.has(selectedId.value)) {
-                    selectedId.value = null;
                 }
                 initialized.value = true;
             } catch (err: unknown) {
@@ -383,7 +359,6 @@ export const useProjectsStore = defineStore('projects', () => {
             return;
         }
         selectedId.value = id;
-        schedulePersistSelectedId(id);
     }
 
     async function runMutationWithResync<T>(action: () => Promise<T>): Promise<T> {
@@ -437,7 +412,6 @@ export const useProjectsStore = defineStore('projects', () => {
                     ? neighborId
                     : (projects.value[0]?.id ?? null);
             selectedId.value = nextId;
-            schedulePersistSelectedId(nextId);
         }
     }
 
@@ -625,10 +599,6 @@ export const useProjectsStore = defineStore('projects', () => {
         resyncPromise = null;
         hiddenSavePromise = null;
         dirtyResync = false;
-        if (selectPersistTimer !== null) {
-            clearTimeout(selectPersistTimer);
-            selectPersistTimer = null;
-        }
         initialized.value = false;
         savingHidden.value = false;
     }

@@ -40,6 +40,7 @@ export const useTabsStore = defineStore('tabs', () => {
     const error = ref<string | null>(null);
 
     const dispatchedInitialKeys = new Set<string>();
+    let focusIntentSequence = 0;
 
     function syncTabToProjectsStore(tab: TabView_Serialize, makeActive = false): void {
         try {
@@ -376,6 +377,7 @@ export const useTabsStore = defineStore('tabs', () => {
 
     async function focusTab(tabId: TabId, paneId: PaneId | null = null): Promise<TabView_Serialize> {
         const current = byId.value[tabId];
+        const currentFocusSeq = ++focusIntentSequence;
         if (current) {
             try {
                 projectsStore.setActiveTab(current.projectId, tabId);
@@ -385,7 +387,8 @@ export const useTabsStore = defineStore('tabs', () => {
         }
         try {
             const updated = await tabsIpc.tabFocus(tabId, paneId);
-            applyTabUpsert(updated, true);
+            const isLatestFocusIntent = currentFocusSeq === focusIntentSequence;
+            applyTabUpsert(updated, isLatestFocusIntent);
             return updated;
         } catch (err: unknown) {
             error.value = ipcError.message(err);
@@ -556,6 +559,7 @@ export const useTabsStore = defineStore('tabs', () => {
 
     function resetForTests(): void {
         dispatchedInitialKeys.clear();
+        focusIntentSequence = 0;
         bootId.value = null;
         lastEventSeq.value = 0;
         restored.value = false;
