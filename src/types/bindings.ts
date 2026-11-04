@@ -119,6 +119,8 @@ export const commands = {
 	templateDelete: (templateId: TemplateId, expectedRevision: number) => typedError<null, MtError_Serialize>(__TAURI_INVOKE("template_delete", { templateId, expectedRevision })),
 	/**  Define um template como padrão do projeto (`template_set_default`). */
 	templateSetDefault: (templateId: TemplateId) => typedError<TabTemplate_Serialize[], MtError_Serialize>(__TAURI_INVOKE("template_set_default", { templateId })),
+	/**  Testa uma conexão SSH e a pasta remota antes de salvar o template. */
+	templateTestConnection: (projectId: ProjectId, templateId: TemplateId | null, connection: TemplateConnectionInput_Deserialize, cwd: string | null) => typedError<string, MtError_Serialize>(__TAURI_INVOKE("template_test_connection", { projectId, templateId, connection, cwd })),
 	/**  Lista as abas abertas de um projeto ordenadas por `position` (`tab_list`). */
 	tabList: (projectId: ProjectId) => typedError<TabView_Serialize[], MtError_Serialize>(__TAURI_INVOKE("tab_list", { projectId })),
 	/**  Abre uma nova aba no projeto a partir do template informado ou do template padrão (`tab_open`). */

@@ -1419,6 +1419,12 @@
           "markdownDescription": "Enables the template_set_default command without any pre-configured scope."
         },
         {
+          "description": "Enables the template_test_connection command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-template-test-connection",
+          "markdownDescription": "Enables the template_test_connection command without any pre-configured scope."
+        },
+        {
           "description": "Enables the template_update command without any pre-configured scope.",
           "type": "string",
           "const": "allow-template-update",
@@ -2725,6 +2731,12 @@
           "type": "string",
           "const": "deny-template-set-default",
           "markdownDescription": "Denies the template_set_default command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the template_test_connection command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-template-test-connection",
+          "markdownDescription": "Denies the template_test_connection command without any pre-configured scope."
         },
         {
           "description": "Denies the template_update command without any pre-configured scope.",
