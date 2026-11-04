@@ -1,4 +1,6 @@
-import { mount } from '@vue/test-utils';
+import axios from 'axios';
+import { createApp, defineComponent } from 'vue';
+import { flushPromises, mount } from '@vue/test-utils';
 import { MaxInputSelect } from '@maxvue/max-components-ui';
 import { createMaxPinia } from '@maxvue/max-pinia';
 import { createPinia, setActivePinia, type PiniaPlugin } from 'pinia';
@@ -7,8 +9,17 @@ import AppearancePreferences from '@/components/preferences/appearance/Appearanc
 import ProjectThemeOverrides from '@/components/preferences/appearance/ProjectThemeOverrides.vue';
 import TerminalFontSettings from '@/components/preferences/appearance/TerminalFontSettings.vue';
 import ThemeImportReport from '@/components/preferences/appearance/ThemeImportReport.vue';
+import { MtIpcError } from '@/ipc/core';
+import { installThemeMaxPiniaAdapter } from '@/ipc/themeMaxPiniaAdapter';
 import { FALLBACK_MAX_NAVY_TEAL_TOKENS } from '@/theme/bootstrap';
-import type { AppearanceSettings, ImportReport, ThemeSummary } from '@/types/theme';
+import type {
+    AppearanceSettings,
+    ImportReport,
+    ResolvedTheme,
+    ThemeSummary
+} from '@/types/theme';
+
+type MaxPiniaAxios = NonNullable<NonNullable<Parameters<typeof createMaxPinia>[0]>['axios']>;
 
 const sampleSummary: ThemeSummary = {
     id: 'max-navy-teal',
@@ -132,9 +143,19 @@ vi.mock('@/ipc/themes', () => ({
 }));
 
 describe('AppearancePreferences e subcomponentes', () => {
+    let pinia: ReturnType<typeof createPinia>;
+
     beforeEach(() => {
-        const pinia = createPinia();
-        pinia.use(createMaxPinia() as unknown as PiniaPlugin);
+        const client = axios.create();
+        installThemeMaxPiniaAdapter(client);
+        pinia = createPinia();
+        pinia.use(
+            createMaxPinia({
+                axios: client as unknown as MaxPiniaAxios
+            }) as unknown as PiniaPlugin
+        );
+        const app = createApp(defineComponent({ render: () => null }));
+        app.use(pinia);
         setActivePinia(pinia);
     });
 
@@ -172,6 +193,34 @@ describe('AppearancePreferences e subcomponentes', () => {
         await checkboxes[1]!.setValue(false);
 
         expect(wrapper.emitted('update')!.length).toBeGreaterThanOrEqual(7);
+    });
+
+    it('TerminalFontSettings normaliza números localizados em pt-BR e respeita limites e passos', async () => {
+        const wrapper = mount(TerminalFontSettings, {
+            props: {
+                appearance: { ...sampleAppearance }
+            }
+        });
+
+        const inputs = wrapper.findAllComponents({ name: 'MaxInputNumber' });
+        expect(inputs.length).toBe(3);
+
+        // 1. fontSize: clamp de 5 para 8
+        inputs[0]!.vm.$emit('update:modelValue', 5);
+        // 2. fontSize: clamp de 45 para 36
+        inputs[0]!.vm.$emit('update:modelValue', 45);
+        // 3. lineHeight com vírgula pt-BR: '1,35' -> 1.35
+        inputs[1]!.vm.$emit('update:modelValue', '1,35');
+        // 4. contrastRatio com vírgula pt-BR: '4,5' -> 4.5
+        inputs[2]!.vm.$emit('update:modelValue', '4,5');
+
+        const updates = wrapper.emitted('update') as Array<[Partial<AppearanceSettings>]>;
+        expect(updates).toBeDefined();
+
+        expect(updates[0]![0]).toEqual({ fontSize: 8 });
+        expect(updates[1]![0]).toEqual({ fontSize: 36 });
+        expect(updates[2]![0]).toEqual({ lineHeight: 1.35 });
+        expect(updates[3]![0]).toEqual({ minimumContrastRatio: 4.5 });
     });
 
     it('ProjectThemeOverrides emite escopo por projeto e limpeza de override', async () => {
@@ -214,6 +263,21 @@ describe('AppearancePreferences e subcomponentes', () => {
         ]);
     });
 
+    it('ProjectThemeOverrides exibe MaxEmptyDiv com label quando a lista de projetos estiver vazia', () => {
+        const wrapper = mount(ProjectThemeOverrides, {
+            props: {
+                projects: [],
+                themes: [sampleSummary],
+                overrides: {}
+            }
+        });
+
+        const emptyDiv = wrapper.findComponent({ name: 'MaxEmptyDiv' });
+        expect(emptyDiv.exists()).toBe(true);
+        expect(emptyDiv.props('label')).toBe('Nenhum projeto cadastrado até o momento.');
+        expect(emptyDiv.text()).toContain('Nenhum projeto cadastrado até o momento.');
+    });
+
     it('ThemeImportReport exibe contadores, avisos, erros e emite close', async () => {
         const report: ImportReport = {
             imported: [sampleSummary],
@@ -251,5 +315,159 @@ describe('AppearancePreferences e subcomponentes', () => {
 
         await wrapper.find('.import-report__close').trigger('click');
         expect(wrapper.emitted('close')).toHaveLength(1);
+    });
+
+    it('exibe impacto de exclusão informando que projetos passarão a seguir o tema global', async () => {
+        const customSummary: ThemeSummary = {
+            ...sampleSummary,
+            id: 'custom-solar',
+            name: 'Custom Solar',
+            origin: 'custom'
+        };
+
+        const ipc = await import('@/ipc/themes');
+        vi.mocked(ipc.themeList).mockResolvedValue([sampleSummary, customSummary]);
+        vi.mocked(ipc.themeAppearanceGet).mockResolvedValue({
+            ...sampleAppearance,
+            projectOverrides: { 'proj-1': 'custom-solar' }
+        });
+
+        const wrapper = mount(AppearancePreferences, {
+            global: {
+                plugins: [pinia]
+            }
+        });
+        const { useThemeStore } = await import('@/stores/theme');
+        const themeStore = useThemeStore();
+        await themeStore.init();
+        await flushPromises();
+
+        // Dispara exclusão do tema customizado
+        const picker = wrapper.findComponent({ name: 'ThemePicker' });
+        picker.vm.$emit('delete', 'custom-solar');
+        await wrapper.vm.$nextTick();
+
+        expect(wrapper.text()).toContain('Confirmar Exclusão de Tema');
+        expect(wrapper.text()).toContain('1 projeto(s) com override próprio passarão a seguir o tema global');
+    });
+
+    it('mantém o modal aberto e exibe erro inline se a exclusão falhar', async () => {
+        const customSummary: ThemeSummary = {
+            ...sampleSummary,
+            id: 'custom-solar',
+            name: 'Custom Solar',
+            origin: 'custom'
+        };
+
+        const ipc = await import('@/ipc/themes');
+        vi.mocked(ipc.themeList).mockResolvedValue([sampleSummary, customSummary]);
+        vi.mocked(ipc.themeDelete).mockRejectedValueOnce(
+            new MtIpcError(
+                {
+                    code: 'theme.delete_failed',
+                    message: 'Falha no banco ao remover tema customizado'
+                },
+                'theme_delete'
+            )
+        );
+
+        const wrapper = mount(AppearancePreferences, {
+            global: {
+                plugins: [pinia]
+            }
+        });
+        const { useThemeStore } = await import('@/stores/theme');
+        const themeStore = useThemeStore();
+        await themeStore.init();
+        await flushPromises();
+
+        const picker = wrapper.findComponent({ name: 'ThemePicker' });
+        picker.vm.$emit('delete', 'custom-solar');
+        await wrapper.vm.$nextTick();
+
+        const deleteModal = wrapper
+            .findAllComponents({ name: 'MaxModal' })
+            .find((m) => m.props('title') === 'Confirmar Exclusão de Tema')!;
+        expect(deleteModal?.exists()).toBe(true);
+        expect(deleteModal.props('visible')).toBe(true);
+
+        const confirmBtn = wrapper
+            .findAll('button')
+            .find((b) => b.text().includes('Confirmar exclusão'));
+        expect(confirmBtn?.exists()).toBe(true);
+
+        await confirmBtn!.trigger('click');
+        await flushPromises();
+
+        // Modal deve continuar aberto para permitir nova tentativa
+        expect(deleteModal.props('visible')).toBe(true);
+        expect(wrapper.text()).toContain('Falha no banco ao remover tema customizado');
+    });
+
+    it('fecha o modal após exclusão bem-sucedida', async () => {
+        const customSummary: ThemeSummary = {
+            ...sampleSummary,
+            id: 'custom-solar',
+            name: 'Custom Solar',
+            origin: 'custom'
+        };
+
+        const ipc = await import('@/ipc/themes');
+        vi.mocked(ipc.themeList).mockResolvedValue([sampleSummary, customSummary]);
+        vi.mocked(ipc.themeDelete).mockResolvedValueOnce(null);
+
+        const wrapper = mount(AppearancePreferences, {
+            global: {
+                plugins: [pinia]
+            }
+        });
+        const { useThemeStore } = await import('@/stores/theme');
+        const themeStore = useThemeStore();
+        await themeStore.init();
+        await flushPromises();
+
+        const picker = wrapper.findComponent({ name: 'ThemePicker' });
+        picker.vm.$emit('delete', 'custom-solar');
+        await wrapper.vm.$nextTick();
+
+        const deleteModal = wrapper
+            .findAllComponents({ name: 'MaxModal' })
+            .find((m) => m.props('title') === 'Confirmar Exclusão de Tema')!;
+        expect(deleteModal?.exists()).toBe(true);
+        expect(deleteModal.props('visible')).toBe(true);
+
+        const confirmBtn = wrapper
+            .findAll('button')
+            .find((b) => b.text().includes('Confirmar exclusão'));
+        await confirmBtn!.trigger('click');
+        await flushPromises();
+
+        expect(deleteModal.props('visible')).toBe(false);
+    });
+
+    it('onThemeSaved atualiza o catálogo via themeStore.refreshCatalog e não quebra se refresh falhar', async () => {
+        const wrapper = mount(AppearancePreferences, {
+            global: {
+                plugins: [pinia]
+            }
+        });
+        const { useThemeStore } = await import('@/stores/theme');
+        const themeStore = useThemeStore();
+        const refreshSpy = vi.spyOn(themeStore, 'refreshCatalog').mockRejectedValueOnce(
+            new Error('Timeout de rede virtual')
+        );
+
+        const editorDialog = wrapper.findComponent({ name: 'ThemeEditorDialog' });
+        const fakeResolved = {
+            scheme: { id: 'novo', name: 'Novo', origin: 'custom' }
+        } as unknown as ResolvedTheme;
+
+        editorDialog.vm.$emit('saved', fakeResolved);
+        await flushPromises();
+
+        expect(refreshSpy).toHaveBeenCalledTimes(1);
+        expect(wrapper.text()).toContain(
+            'Tema salvo com sucesso, mas ocorreu uma falha ao atualizar o catálogo'
+        );
     });
 });

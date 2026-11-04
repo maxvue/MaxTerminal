@@ -20,7 +20,7 @@
 
         <div class="project-identity-form__field">
             <div class="project-identity-form__color-row">
-                <input v-model="colorInput" type="color" class="project-identity-form__color-picker" aria-label="Selecionar cor" :disabled="submitting" @input="identityEdited = true">
+                <MaxColorPicker v-model="colorInput" aria-label="Selecionar cor" :disabled="submitting" @update:model-value="identityEdited = true" />
                 <MaxInputText v-model="colorInput" label="Cor (#RRGGBB)" maxlength="7" :disabled="submitting" class="project-identity-form__color-input" @input="identityEdited = true" />
             </div>
             <div class="project-identity-form__palette">
@@ -45,7 +45,7 @@
 
 <script setup lang="ts">
     import { computed, ref, watch } from 'vue';
-    import { MaxAlert, MaxButton, MaxInputText } from '@maxvue/max-components-ui';
+    import { MaxAlert, MaxButton, MaxColorPicker, MaxInputText } from '@maxvue/max-components-ui';
     import { useIpcError } from '@/composables/useIpcError';
     import {
         isValidProjectColor,

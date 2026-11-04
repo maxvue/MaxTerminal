@@ -1,5 +1,5 @@
 <template>
-    <MaxBadgeButton v-if="store.isAvailable" :model-value="store.isModalOpen" label="HORIZON" :overlay="overlays" :title="buttonTitle" :aria-label="buttonAriaLabel" size="sm" class="horizon-badge-btn" @update:model-value="handleUpdateModelValue" @click="handleClick" />
+    <MaxBadgeButton v-if="store.isAvailable" :model-value="store.isModalOpen" label="HORIZON" :overlay="overlays" :title="buttonTitle" :aria-label="buttonAriaLabel" size="sm" class="horizon-badge-btn" @update:model-value="handleUpdateModelValue" />
 </template>
 
 <script setup lang="ts">
@@ -8,10 +8,6 @@
     import { useHorizonStore } from '@/stores/horizon';
 
     const store = useHorizonStore();
-
-    function handleClick(): void {
-        store.openModal();
-    }
 
     function handleUpdateModelValue(val: boolean | number): void {
         if (val) {

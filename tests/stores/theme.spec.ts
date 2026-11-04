@@ -1,8 +1,12 @@
+import axios from 'axios';
+import { createApp, defineComponent } from 'vue';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia, type PiniaPlugin } from 'pinia';
 import { createMaxPinia } from '@maxvue/max-pinia';
+import { installThemeMaxPiniaAdapter } from '@/ipc/themeMaxPiniaAdapter';
 import { FALLBACK_MAX_NAVY_TEAL_TOKENS } from '@/theme/bootstrap';
 import { useThemeStore } from '@/stores/theme';
+import { useThemeCatalogStore } from '@/stores/themeCatalog';
 import {
     formatSelectionBackground,
     parseSelectionBackground,
@@ -206,10 +210,20 @@ vi.mock('@/ipc/themes', () => ({
     onThemeLibraryChanged: vi.fn(async () => () => {})
 }));
 
+type MaxPiniaAxios = NonNullable<NonNullable<Parameters<typeof createMaxPinia>[0]>['axios']>;
+
 describe('useThemeStore', () => {
     beforeEach(() => {
+        const client = axios.create();
+        installThemeMaxPiniaAdapter(client);
         const pinia = createPinia();
-        pinia.use(createMaxPinia() as unknown as PiniaPlugin);
+        pinia.use(
+            createMaxPinia({
+                axios: client as unknown as MaxPiniaAxios
+            }) as unknown as PiniaPlugin
+        );
+        const app = createApp(defineComponent({ render: () => null }));
+        app.use(pinia);
         setActivePinia(pinia);
         window.localStorage.clear();
         vi.clearAllMocks();
@@ -223,6 +237,21 @@ describe('useThemeStore', () => {
         expect(store.themes).toHaveLength(2);
         expect(store.effectiveThemeId).toBe('max-navy-teal');
         expect(store.activeResolved?.scheme.id).toBe('max-navy-teal');
+    });
+
+    it('delega coleção de temas para themeCatalogStore garantindo reatividade compartilhada', async () => {
+        const themeStore = useThemeStore();
+        const catalogStore = useThemeCatalogStore();
+
+        expect(themeStore.themes).toEqual(catalogStore.data);
+
+        catalogStore.replaceCatalog(mockSummaries);
+        expect(themeStore.themes).toHaveLength(2);
+        expect(themeStore.builtinThemes).toHaveLength(2);
+
+        const reloaded = await themeStore.refreshCatalog();
+        expect(reloaded).toHaveLength(2);
+        expect(themeStore.themes).toEqual(reloaded);
     });
 
     it('altera tema ativo globalmente e por projeto, além de suportar preview efêmero', async () => {

@@ -9,7 +9,7 @@
             <ThemeSwatch v-for="item in filteredThemes" :key="item.id" :summary="item" :active="item.id === activeThemeId" :previewing="item.id === previewingId" @select="onSelect" @hover="onHover" @leave="onLeave" @edit="onEdit" @duplicate="onDuplicate" @delete="onDelete" @export="emit('export', $event)" />
         </div>
 
-        <MaxEmptyDiv v-if="filteredThemes.length === 0" message="Nenhum esquema de cores corresponde ao filtro informado." class="theme-picker__empty" />
+        <MaxEmptyDiv v-if="filteredThemes.length === 0" label="Nenhum esquema de cores corresponde ao filtro informado." class="theme-picker__empty" />
     </div>
 </template>
 

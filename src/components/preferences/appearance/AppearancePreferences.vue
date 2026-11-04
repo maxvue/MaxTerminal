@@ -46,12 +46,12 @@
 
         <ThemeEditorDialog @saved="onThemeSaved" />
 
-        <MaxModal :visible="Boolean(pendingDeleteTheme)" title="Confirmar Exclusão de Tema" :no-button="true" width="30rem" @update:visible="onDeleteModalVisibilityChange">
+        <MaxModal :visible="Boolean(pendingDeleteTheme)" title="Confirmar Exclusão de Tema" :no-button="true" width="30rem" :closable="!isDeleting" @update:visible="onDeleteModalVisibilityChange">
             <div v-if="pendingDeleteTheme" class="prefs-appearance__delete-confirm">
                 <p class="prefs-appearance__delete-text">{{ deleteImpactSummary }}</p>
                 <footer class="prefs-appearance__delete-footer">
-                    <MaxButton type="button" label="Cancelar" variant="outlined" @click="pendingDeleteTheme = null" />
-                    <MaxButton type="button" label="Confirmar exclusão" severity="danger" @click="onConfirmDeleteTheme" />
+                    <MaxButton type="button" label="Cancelar" variant="outlined" :disabled="isDeleting" @click="pendingDeleteTheme = null" />
+                    <MaxButton type="button" label="Confirmar exclusão" severity="danger" :loading="isDeleting" :disabled="isDeleting" @click="onConfirmDeleteTheme" />
                 </footer>
             </div>
         </MaxModal>
@@ -75,7 +75,6 @@
     import ThemePicker from '@/components/preferences/appearance/ThemePicker.vue';
     import ThemePreview from '@/components/preferences/appearance/ThemePreview.vue';
     import { useIpcError } from '@/composables/useIpcError';
-    import { themeList } from '@/ipc/themes';
     import { useProjectsStore } from '@/stores/projects';
     import { useThemeStore } from '@/stores/theme';
     import { useThemeEditorStore } from '@/stores/themeEditor';
@@ -97,6 +96,8 @@
     const errorMsg = ref<string | null>(null);
     const exportedSnippet = ref<string | null>(null);
     const pendingDeleteTheme = ref<ThemeSummary | null>(null);
+    const isDeleting = ref(false);
+    const isDuplicating = ref(false);
 
     const deleteImpactSummary = computed(() => {
         const target = pendingDeleteTheme.value;
@@ -120,7 +121,7 @@
         ).filter((tid) => tid === target.id).length;
         if (affectedProjects > 0) {
             impacts.push(
-                `${affectedProjects} projeto(s) com override próprio voltarão para o tema padrão`
+                `${affectedProjects} projeto(s) com override próprio passarão a seguir o tema global`
             );
         }
         if (impacts.length === 0) {
@@ -171,12 +172,18 @@
     }
 
     async function onDuplicateTheme(id: ThemeId): Promise<void> {
+        if (isDuplicating.value) {
+            return;
+        }
+        isDuplicating.value = true;
         errorMsg.value = null;
         themeStore.cancelPreview();
         try {
             await themeStore.duplicateTheme(id);
         } catch (err: unknown) {
             errorMsg.value = ipcError.message(err);
+        } finally {
+            isDuplicating.value = false;
         }
     }
 
@@ -188,44 +195,32 @@
             errorMsg.value = 'Temas nativos não podem ser excluídos.';
             return;
         }
-        pendingDeleteTheme.value = found ?? {
-            id,
-            name: id,
-            origin: 'custom',
-            polarity: 'dark',
-            background: '#0b1420',
-            foreground: '#e2e8f0',
-            cursor: '#14b8a6',
-            accentSwatches: [
-                '#0b1420',
-                '#f43f5e',
-                '#10b981',
-                '#f59e0b',
-                '#3b82f6',
-                '#a855f7',
-                '#06b6d4',
-                '#e2e8f0'
-            ]
-        };
+        if (!found) {
+            return;
+        }
+        pendingDeleteTheme.value = found;
     }
 
     function onDeleteModalVisibilityChange(visible: boolean): void {
-        if (!visible) {
+        if (!visible && !isDeleting.value) {
             pendingDeleteTheme.value = null;
         }
     }
 
     async function onConfirmDeleteTheme(): Promise<void> {
         const target = pendingDeleteTheme.value;
-        if (!target) {
+        if (!target || isDeleting.value) {
             return;
         }
-        pendingDeleteTheme.value = null;
+        isDeleting.value = true;
         errorMsg.value = null;
         try {
             await themeStore.deleteTheme(target.id, DEFAULT_DARK_THEME_ID);
+            pendingDeleteTheme.value = null;
         } catch (err: unknown) {
             errorMsg.value = ipcError.message(err);
+        } finally {
+            isDeleting.value = false;
         }
     }
 
@@ -233,9 +228,9 @@
         errorMsg.value = null;
         themeStore.applySavedThemeFromEditor(resolved);
         try {
-            themeStore.themes = await themeList();
-        } catch {
-            // Catálogo também é atualizado pelo evento theme://library-changed
+            await themeStore.refreshCatalog();
+        } catch (err: unknown) {
+            errorMsg.value = `Tema salvo com sucesso, mas ocorreu uma falha ao atualizar o catálogo: ${ipcError.message(err)}`;
         }
     }
 

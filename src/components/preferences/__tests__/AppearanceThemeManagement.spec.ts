@@ -1,3 +1,5 @@
+import axios from 'axios';
+import { createApp, defineComponent } from 'vue';
 import { flushPromises, mount } from '@vue/test-utils';
 import { createMaxPinia } from '@maxvue/max-pinia';
 import { createPinia, setActivePinia, type PiniaPlugin } from 'pinia';
@@ -5,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AppearancePreferences from '@/components/preferences/appearance/AppearancePreferences.vue';
 import ThemeEditorDialog from '@/components/preferences/appearance/ThemeEditorDialog.vue';
 import ThemeSwatch from '@/components/preferences/appearance/ThemeSwatch.vue';
+import { installThemeMaxPiniaAdapter } from '@/ipc/themeMaxPiniaAdapter';
 import { useThemeStore } from '@/stores/theme';
 import { isThemeDraftValid, useThemeEditorStore } from '@/stores/themeEditor';
 import { FALLBACK_MAX_NAVY_TEAL_TOKENS } from '@/theme/bootstrap';
@@ -15,6 +18,8 @@ import {
     type ThemeDraftInput,
     type ThemeSummary
 } from '@/types/theme';
+
+type MaxPiniaAxios = NonNullable<NonNullable<Parameters<typeof createMaxPinia>[0]>['axios']>;
 
 const sampleBuiltinSummary: ThemeSummary = {
     id: 'max-navy-teal',
@@ -178,8 +183,16 @@ describe('Gestão de Temas — AppearanceThemeManagement', () => {
     let catalog: ThemeSummary[] = [];
 
     beforeEach(() => {
+        const client = axios.create();
+        installThemeMaxPiniaAdapter(client);
         const pinia = createPinia();
-        pinia.use(createMaxPinia() as unknown as PiniaPlugin);
+        pinia.use(
+            createMaxPinia({
+                axios: client as unknown as MaxPiniaAxios
+            }) as unknown as PiniaPlugin
+        );
+        const app = createApp(defineComponent({ render: () => null }));
+        app.use(pinia);
         setActivePinia(pinia);
         vi.clearAllMocks();
 
@@ -423,7 +436,7 @@ describe('Gestão de Temas — AppearanceThemeManagement', () => {
         await flushPromises();
 
         expect(wrapper.text()).toContain('Confirmar Exclusão de Tema');
-        expect(wrapper.text()).toContain('projeto(s) com override próprio voltarão para o tema padrão');
+        expect(wrapper.text()).toContain('projeto(s) com override próprio passarão a seguir o tema global');
 
         // Cancelar mantém o tema
         const cancelBtn = wrapper.findAll('button').find((b) => b.text() === 'Cancelar');

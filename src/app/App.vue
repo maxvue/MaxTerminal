@@ -2,7 +2,7 @@
     <!-- O host global de notificações <MaxToast /> é montado internamente por <MaxApp> -->
     <MaxApp blank-mode no-login controlled-theme :colors="maxAppColors">
         <template #blank>
-            <div class="app-workspace" :data-loading="appStore.status === 'loading' ? 'true' : 'false'">
+            <div class="app-viewport app-workspace" :data-loading="appStore.status === 'loading' ? 'true' : 'false'">
                 <AppEmptyState v-if="appStore.status === 'error'" icon="mdi:alert-circle-outline" title="Falha ao inicializar o MaxTerminal" :description="errorDescription">
                     <div flex flex-col items-center gap-2>
                         <span v-if="errorCode" class="app-error-code" text-xs px-2 py-0.5 rounded>{{ errorCode }}</span>
@@ -132,6 +132,7 @@
 <style lang="scss" scoped>
     @use '@/styles/params' as *;
 
+    .app-viewport,
     .app-workspace {
         display: flex;
         flex-direction: column;

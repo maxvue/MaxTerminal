@@ -12,7 +12,7 @@
             <label for="db-backup-select" class="db-recovery-panel__label">Backups disponíveis para restauração:</label>
             <MaxInputSelect id="db-backup-select" v-model="selectedBackup" :options="backupOptions" option-value="value" option-label="label" option-name="label" :disabled="settingsStore.loading" class="db-recovery-panel__select" />
         </div>
-        <MaxEmptyDiv v-else message="Nenhum backup anterior encontrado no diretório local." class="db-recovery-panel__empty-backups" />
+        <MaxEmptyDiv v-else label="Nenhum backup anterior encontrado no diretório local." class="db-recovery-panel__empty-backups" />
 
         <MaxAlert v-if="errorMessage" severity="danger" :message="errorMessage" class="db-recovery-panel__error" />
 
