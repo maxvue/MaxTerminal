@@ -55,7 +55,7 @@ pub struct RawQueueScope {
 }
 
 /// Script PHP constante e embarcado para inspeção estrita do Laravel Horizon.
-pub const EMBEDDED_HORIZON_PROBE_PHP: &str = r#"<?php
+pub const EMBEDDED_HORIZON_PROBE_PHP: &str = r#"
 declare(strict_types=1);
 
 error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED & ~E_NOTICE);

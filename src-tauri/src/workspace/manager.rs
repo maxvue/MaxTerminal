@@ -670,6 +670,8 @@ impl WorkspaceManager {
         }
 
         // Se a conexão for SSH com senha informada (Set), armazena no cofre e sanitiza o payload
+        #[allow(clippy::collapsible_match)]
+        #[allow(clippy::collapsible_match)]
         if let mt_core::workspace::TemplateConnectionInput::Ssh {
             ref host,
             ref user,
@@ -728,6 +730,7 @@ impl WorkspaceManager {
         }
 
         // Se a conexão for SSH com nova senha (Set), atualiza ou armazena no cofre
+        #[allow(clippy::collapsible_match)]
         if let mt_core::workspace::TemplateConnectionInput::Ssh {
             ref host,
             ref user,
