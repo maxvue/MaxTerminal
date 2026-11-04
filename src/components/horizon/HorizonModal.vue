@@ -233,11 +233,11 @@
         border-radius: 4px;
         font-size: 0.75rem;
         font-weight: 600;
-        background: rgb(255 255 255 / 5%);
+        background: var(--mt-ui-surface-elevated, var(--background-50));
 
         &.is-running {
             color: var(--max-success-500);
-            background: rgb(34 197 94 / 12%);
+            background: var(--mt-ui-success-subtle, color-mix(in srgb, var(--max-success-500) 12%, transparent));
 
             .horizon-modal__status-dot {
                 background: var(--max-success-500);
@@ -247,7 +247,7 @@
         &.is-starting,
         &.is-stopping {
             color: var(--max-warning-500);
-            background: rgb(234 179 8 / 12%);
+            background: var(--mt-ui-warning-subtle, color-mix(in srgb, var(--max-warning-500) 12%, transparent));
 
             .horizon-modal__status-dot {
                 background: var(--max-warning-500);
@@ -256,7 +256,7 @@
 
         &.is-error {
             color: var(--max-danger-500);
-            background: rgb(239 68 68 / 12%);
+            background: var(--mt-ui-danger-subtle, color-mix(in srgb, var(--max-danger-500) 12%, transparent));
 
             .horizon-modal__status-dot {
                 background: var(--max-danger-500);
@@ -264,10 +264,10 @@
         }
 
         &.is-stopped {
-            color: #94a3b8;
+            color: var(--mt-ui-text-muted, var(--background-400));
 
             .horizon-modal__status-dot {
-                background: #64748b;
+                background: var(--mt-ui-text-muted, var(--background-400));
             }
         }
     }
@@ -277,7 +277,7 @@
         align-items: center;
         gap: 0.375rem;
         font-size: 0.8125rem;
-        color: #94a3b8;
+        color: var(--mt-ui-text-muted, var(--background-400));
     }
 
     .horizon-modal__env-tag {
@@ -286,7 +286,8 @@
         font-size: 0.6875rem;
         font-weight: 500;
         text-transform: uppercase;
-        background: rgb(255 255 255 / 8%);
+        background: var(--mt-ui-surface-hover, var(--background-75));
+        color: var(--mt-ui-text-secondary, var(--background-600));
     }
 
     .horizon-modal__metrics {
@@ -297,7 +298,7 @@
 
     .horizon-modal__metric-label {
         font-size: 0.6875rem;
-        color: #94a3b8;
+        color: var(--mt-ui-text-muted, var(--background-400));
         text-transform: uppercase;
     }
 
@@ -315,19 +316,17 @@
         min-width: 4rem;
 
         &--pending {
-            /* stylelint-disable-next-line custom-property-pattern */
-            border-left: 3px solid var(--blue-b-500);
-            background: rgb(143 188 245 / 8%);
+            border-left: 3px solid var(--max-info-500);
+            background: var(--mt-ui-info-subtle, color-mix(in srgb, var(--max-info-500) 8%, transparent));
 
             .horizon-modal__metric-value {
-                /* stylelint-disable-next-line custom-property-pattern */
-                color: var(--blue-b-500);
+                color: var(--max-info-500);
             }
         }
 
         &--running {
             border-left: 3px solid var(--max-success-500);
-            background: rgb(34 197 94 / 8%);
+            background: var(--mt-ui-success-subtle, color-mix(in srgb, var(--max-success-500) 8%, transparent));
 
             .horizon-modal__metric-value {
                 color: var(--max-success-500);
@@ -336,7 +335,7 @@
 
         &--failed {
             border-left: 3px solid var(--max-danger-500);
-            background: rgb(239 68 68 / 8%);
+            background: var(--mt-ui-danger-subtle, color-mix(in srgb, var(--max-danger-500) 8%, transparent));
 
             .horizon-modal__metric-value {
                 color: var(--max-danger-500);
@@ -356,9 +355,9 @@
         font-size: 0.8125rem;
 
         &--danger {
-            background: rgb(239 68 68 / 15%);
+            background: var(--mt-ui-danger-subtle, color-mix(in srgb, var(--max-danger-500) 15%, transparent));
             color: var(--max-danger-500);
-            border: 1px solid rgb(239 68 68 / 30%);
+            border: 1px solid color-mix(in srgb, var(--max-danger-500) 30%, transparent);
         }
     }
 
@@ -371,7 +370,7 @@
     }
 
     .horizon-modal__queues-title {
-        color: #94a3b8;
+        color: var(--mt-ui-text-muted, var(--background-400));
         margin-right: 0.25rem;
     }
 
@@ -380,8 +379,8 @@
         border-radius: 3px;
         font-family: monospace;
         font-size: 0.6875rem;
-        background: rgb(255 255 255 / 6%);
-        color: #cbd5e1;
+        background: var(--mt-ui-surface-elevated, var(--background-50));
+        color: var(--mt-ui-text-secondary, var(--background-600));
     }
 
     .horizon-modal__body {
@@ -397,7 +396,7 @@
         width: 100%;
         height: 100%;
         min-height: 380px;
-        background: #000;
+        background: var(--mt-term-bg, var(--background-0));
         border-radius: 4px;
         overflow: hidden;
     }
@@ -410,14 +409,14 @@
         justify-content: center;
         padding: 2rem;
         text-align: center;
-        background: rgb(0 0 0 / 20%);
+        background: var(--mt-ui-surface-panel, var(--background-25));
         border-radius: 4px;
-        border: 1px dashed rgb(255 255 255 / 10%);
+        border: 1px dashed var(--mt-ui-border, var(--background-100));
     }
 
     .horizon-modal__empty-icon {
         font-size: 2.5rem;
-        color: #64748b;
+        color: var(--mt-ui-text-muted, var(--background-400));
         margin-bottom: 0.75rem;
     }
 
@@ -429,7 +428,7 @@
 
     .horizon-modal__empty-desc {
         font-size: 0.875rem;
-        color: #94a3b8;
+        color: var(--mt-ui-text-secondary, var(--background-600));
         max-width: 28rem;
         margin-bottom: 1.25rem;
     }
@@ -446,8 +445,8 @@
         gap: 0.75rem;
         padding: 0.75rem;
         border-radius: 6px;
-        background: rgb(234 179 8 / 12%);
-        border: 1px solid rgb(234 179 8 / 25%);
+        background: var(--mt-ui-warning-subtle, color-mix(in srgb, var(--max-warning-500) 12%, transparent));
+        border: 1px solid color-mix(in srgb, var(--max-warning-500) 25%, transparent);
     }
 
     .horizon-clear-modal__warning-icon {
@@ -459,7 +458,7 @@
     .horizon-clear-modal__warning-text {
         font-size: 0.8125rem;
         line-height: 1.4;
-        color: #f8fafc;
+        color: var(--mt-ui-text, var(--background-800));
 
         p {
             margin: 0 0 0.375rem;
@@ -476,7 +475,7 @@
 
     .horizon-clear-modal__summary-title {
         font-weight: 600;
-        color: #94a3b8;
+        color: var(--mt-ui-text-secondary, var(--background-600));
         margin-bottom: 0.375rem;
         display: block;
     }
@@ -494,7 +493,7 @@
         display: flex;
         justify-content: space-between;
         padding: 0.25rem 0.5rem;
-        background: rgb(255 255 255 / 5%);
+        background: var(--mt-ui-surface-elevated, var(--background-50));
         border-radius: 4px;
         font-family: monospace;
         font-size: 0.75rem;
@@ -505,6 +504,6 @@
         justify-content: flex-end;
         gap: 0.5rem;
         padding-top: 0.5rem;
-        border-top: 1px solid var(--mt-ui-border, rgb(255 255 255 / 8%));
+        border-top: 1px solid var(--mt-ui-border, var(--background-100));
     }
 </style>

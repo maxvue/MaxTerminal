@@ -571,7 +571,7 @@
         justify-content: space-between;
         gap: 0.75rem;
         padding: 0.375rem 0.875rem;
-        background: rgb(239 68 68 / 15%);
+        background: var(--mt-ui-danger-subtle, color-mix(in srgb, var(--max-danger-500) 15%, transparent));
         border-bottom: 1px solid var(--max-danger-500);
         color: var(--max-danger-300);
         font-size: 0.7813rem;
@@ -643,7 +643,7 @@
         padding: 0.4375rem 0.875rem;
         border-radius: 0.375rem;
         border: 1px solid var(--max-primary-500);
-        background: rgb(20 184 166 / 18%);
+        background: color-mix(in srgb, var(--max-primary-500) 18%, transparent);
         color: var(--max-primary-400);
         font-size: 0.8125rem;
         font-weight: 600;
@@ -688,15 +688,15 @@
 
         &--active {
             background: var(--mt-ui-surface, var(--background-0));
-            border-color: var(--max-purple-500, #a855f7);
-            color: var(--max-purple-400, #c084fc);
+            border-color: var(--mt-ui-issue-category, var(--max-purple-500, #a855f7));
+            color: var(--mt-ui-issue-category-hover, var(--max-purple-400, #c084fc));
         }
     }
 
     .tab-workspace__pinned-badge {
         padding: 0.0625rem 0.375rem;
         border-radius: 9999px;
-        background: rgb(168 85 247 / 22%);
+        background: var(--mt-ui-issue-subtle, color-mix(in srgb, var(--max-purple-500, #a855f7) 22%, transparent));
         color: var(--max-purple-300, #d8b4fe);
         font-size: 0.6875rem;
         font-weight: 700;

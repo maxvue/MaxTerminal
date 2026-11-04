@@ -51,7 +51,7 @@
         align-items: center;
         justify-content: center;
         padding: 1rem;
-        background: rgb(0 0 0 / 55%);
+        background: var(--mt-ui-overlay, rgb(0 0 0 / 55%));
     }
 
     .qc-confirm {
@@ -60,10 +60,10 @@
         gap: 0.75rem;
         width: min(32rem, 94vw);
         padding: 1rem;
-        border: 1px solid var(--background-700);
+        border: 1px solid var(--mt-ui-border, var(--background-100));
         border-radius: 0.5rem;
-        background: var(--background-900);
-        color: var(--background-50);
+        background: var(--mt-ui-surface, var(--background-0));
+        color: var(--mt-ui-text-strong, var(--background-950));
 
         &__header {
             display: flex;
@@ -76,21 +76,21 @@
             margin: 0;
             font-size: 0.9375rem;
             font-weight: 600;
-            color: var(--background-50);
+            color: var(--mt-ui-text-strong, var(--background-950));
         }
 
         &__desc {
             margin: 0;
             font-size: 0.8125rem;
-            color: var(--background-300);
+            color: var(--mt-ui-text-secondary, var(--background-600));
         }
 
         &__code {
             margin: 0;
             padding: 0.5rem 0.625rem;
-            border: 1px solid var(--background-800);
+            border: 1px solid var(--mt-ui-border, var(--background-100));
             border-radius: 0.375rem;
-            background: var(--background-950);
+            background: var(--mt-ui-surface-panel, var(--background-25));
             color: var(--max-primary-400);
             font-family: var(--mt-font-mono);
             font-size: 0.75rem;

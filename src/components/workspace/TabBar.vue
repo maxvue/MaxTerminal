@@ -176,11 +176,11 @@
 
         &--primary {
             border-color: var(--max-primary-500);
-            background: rgb(20 184 166 / 15%);
+            background: var(--mt-ui-primary-subtle, color-mix(in srgb, var(--max-primary-500) 15%, transparent));
             color: var(--max-primary-400);
 
             &:hover:not(:disabled) {
-                background: rgb(20 184 166 / 25%);
+                background: color-mix(in srgb, var(--max-primary-500) 25%, transparent);
             }
         }
     }

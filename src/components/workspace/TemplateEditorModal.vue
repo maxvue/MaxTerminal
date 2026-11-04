@@ -415,7 +415,7 @@
     .template-modal__error {
         padding: 0.5rem 0.75rem;
         border-radius: 0.375rem;
-        background: rgb(239 68 68 / 15%);
+        background: var(--mt-ui-danger-subtle, color-mix(in srgb, var(--max-danger-500) 15%, transparent));
         border: 1px solid var(--max-danger-500);
         color: var(--max-danger-300);
         font-size: 0.7813rem;

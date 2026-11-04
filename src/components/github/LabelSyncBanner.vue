@@ -47,8 +47,8 @@
         justify-content: space-between;
         gap: 0.75rem;
         padding: 0.5rem 0.875rem;
-        background: rgb(168 85 247 / 12%);
-        border-bottom: 1px solid rgb(168 85 247 / 35%);
+        background: var(--mt-ui-issue-subtle, color-mix(in srgb, var(--max-purple-500, #a855f7) 12%, transparent));
+        border-bottom: 1px solid color-mix(in srgb, var(--max-purple-500, #a855f7) 35%, transparent);
         color: var(--mt-ui-text-strong, var(--background-950));
         font-size: 0.7813rem;
     }
@@ -71,8 +71,8 @@
         gap: 0.375rem;
         padding: 0.25rem 0.625rem;
         border-radius: 0.3125rem;
-        border: 1px solid var(--max-purple-500, #a855f7);
-        background: rgb(168 85 247 / 20%);
+        border: 1px solid var(--mt-ui-issue-category, var(--max-purple-500, #a855f7));
+        background: var(--mt-ui-issue-subtle, color-mix(in srgb, var(--max-purple-500, #a855f7) 20%, transparent));
         color: var(--max-purple-100, #f3e8ff);
         font-size: 0.75rem;
         font-weight: 600;

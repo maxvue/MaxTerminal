@@ -35,7 +35,7 @@
         flex-direction: column;
         border-radius: 0.5rem;
         border: 1px solid var(--max-info-500);
-        background: rgb(14 165 233 / 8%);
+        background: var(--mt-ui-info-subtle, color-mix(in srgb, var(--max-info-500) 8%, transparent));
         overflow: hidden;
     }
 
@@ -45,8 +45,8 @@
         justify-content: space-between;
         gap: 0.5rem;
         padding: 0.625rem 0.875rem;
-        background: rgb(14 165 233 / 15%);
-        border-bottom: 1px solid rgb(14 165 233 / 30%);
+        background: color-mix(in srgb, var(--max-info-500) 15%, transparent);
+        border-bottom: 1px solid color-mix(in srgb, var(--max-info-500) 30%, transparent);
     }
 
     .issue-plan-section__title-group {
@@ -65,7 +65,7 @@
     .issue-plan-section__provisional {
         padding: 0.0625rem 0.375rem;
         border-radius: 0.25rem;
-        background: rgb(245 158 11 / 25%);
+        background: var(--mt-ui-warning-subtle, color-mix(in srgb, var(--max-warning-500) 25%, transparent));
         color: var(--max-warning-300);
         font-size: 0.6875rem;
         font-weight: 700;

@@ -81,7 +81,7 @@
     .issue-comments__plan-tag {
         padding: 0.0625rem 0.375rem;
         border-radius: 0.25rem;
-        background: rgb(14 165 233 / 20%);
+        background: var(--mt-ui-info-subtle, color-mix(in srgb, var(--max-info-500) 20%, transparent));
         color: var(--max-info-300);
         font-size: 0.6875rem;
         font-weight: 600;

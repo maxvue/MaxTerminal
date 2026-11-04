@@ -1,0 +1,108 @@
+{
+  "version": 2,
+  "planRevision": "99c68f76651ab3760717285227e9e0e7929b60c49446990f05cc4e3b00902b03",
+  "tasks": [
+    {
+      "id": "T1",
+      "status": "completed",
+      "files": [
+        "docs/plans/wt-bb0b4617/plan.md",
+        "docs/plans/wt-bb0b4617/spec.md"
+      ],
+      "validations": []
+    },
+    {
+      "id": "T2",
+      "status": "completed",
+      "files": [
+        "src/types/workspaceSelection.ts",
+        "src/types/projectSettings.ts",
+        "src/ipc/workspaceSelectionMaxPiniaAdapter.ts",
+        "src/stores/workspaceSelection.ts",
+        "src/app/plugins.ts",
+        "tests/stores/workspaceSelection.spec.ts",
+        "tests/ipc/workspaceSelectionMaxPiniaAdapter.spec.ts",
+        "tests/app/plugins.spec.ts"
+      ],
+      "validations": []
+    },
+    {
+      "id": "T3",
+      "status": "completed",
+      "files": [
+        "src/composables/workspace/useWorkspaceSelection.ts",
+        "src/stores/projects.ts",
+        "src/stores/tabs.ts",
+        "src/components/layout/AppLayout.vue",
+        "tests/frontend/workspace/useWorkspaceSelection.spec.ts",
+        "tests/frontend/projects/projects.store.spec.ts",
+        "tests/frontend/workspace/tabs.store.spec.ts"
+      ],
+      "validations": []
+    },
+    {
+      "id": "T4",
+      "status": "completed",
+      "files": [
+        "package.json"
+      ],
+      "validations": []
+    },
+    {
+      "id": "T5",
+      "status": "manualPending",
+      "files": [],
+      "validations": [],
+      "nextAction": "Aguardando homologação em ambiente gráfico interativo nativo para validar persistência e fechamento antes de 200ms."
+    }
+  ],
+  "verification": {
+    "revision": "b8f63c044d7133e8fcffc8b2d186eda1ce09ed307dbca2d6f65bac88d02e12fb",
+    "checks": [
+      {
+        "command": "node scripts/sync-local-libs.mjs --check",
+        "revision": "b8f63c044d7133e8fcffc8b2d186eda1ce09ed307dbca2d6f65bac88d02e12fb",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npx eslint src/types/workspaceSelection.ts src/types/projectSettings.ts src/ipc/workspaceSelectionMaxPiniaAdapter.ts src/stores/workspaceSelection.ts src/app/plugins.ts src/stores/projects.ts src/stores/tabs.ts src/components/layout/AppLayout.vue src/composables/workspace/useWorkspaceSelection.ts tests/stores/workspaceSelection.spec.ts tests/ipc/workspaceSelectionMaxPiniaAdapter.spec.ts tests/app/plugins.spec.ts tests/frontend/workspace/useWorkspaceSelection.spec.ts",
+        "revision": "b8f63c044d7133e8fcffc8b2d186eda1ce09ed307dbca2d6f65bac88d02e12fb",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run lint:style",
+        "revision": "b8f63c044d7133e8fcffc8b2d186eda1ce09ed307dbca2d6f65bac88d02e12fb",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run typecheck",
+        "revision": "b8f63c044d7133e8fcffc8b2d186eda1ce09ed307dbca2d6f65bac88d02e12fb",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run build",
+        "revision": "b8f63c044d7133e8fcffc8b2d186eda1ce09ed307dbca2d6f65bac88d02e12fb",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npx --no-install vitest run tests/stores/workspaceSelection.spec.ts tests/ipc/workspaceSelectionMaxPiniaAdapter.spec.ts tests/frontend/workspace/useWorkspaceSelection.spec.ts tests/app/plugins.spec.ts tests/frontend/projects/projects.store.spec.ts tests/frontend/workspace/tabs.store.spec.ts",
+        "revision": "b8f63c044d7133e8fcffc8b2d186eda1ce09ed307dbca2d6f65bac88d02e12fb",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run test:coverage",
+        "revision": "b8f63c044d7133e8fcffc8b2d186eda1ce09ed307dbca2d6f65bac88d02e12fb",
+        "result": "passed",
+        "exitCode": 0
+      }
+    ]
+  },
+  "updatedAt": 1793798000000,
+  "nextAction": "Aguardando validação manual e confirmação explícita do usuário para commit/merge."
+}

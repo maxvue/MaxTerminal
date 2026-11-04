@@ -284,4 +284,21 @@ describe('useThemeStore', () => {
         expect(document.documentElement.classList.contains('dark')).toBe(false);
         expect(document.documentElement.dataset.themePolarity).toBe('light');
     });
+
+    it('propaga contexto ANSI e aplica tokens correspondentes no DOM e snapshot', async () => {
+        const store = useThemeStore();
+        await store.init();
+
+        const ipc = await import('@/ipc/themes');
+        vi.mocked(ipc.themeSetActive).mockImplementationOnce(async (id: string) => {
+            const res = makeResolved(id, 'Dracula', 'dark');
+            res.scheme.ansi.magenta = '#ff79c6';
+            res.scheme.ansi.brightMagenta = '#ff92df';
+            return res;
+        });
+
+        await store.setActiveTheme('dracula', { kind: 'global' });
+        expect(document.documentElement.style.getPropertyValue('--max-purple-500')).toBe('#ff79c6');
+        expect(document.documentElement.style.getPropertyValue('--mt-ui-issue-category')).toBe('#ff79c6');
+    });
 });

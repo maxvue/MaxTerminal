@@ -27,6 +27,7 @@
     import { useProjectEvents } from '@/composables/useProjectEvents';
     import { useProjectTabFocus } from '@/composables/useProjectTabFocus';
     import { useWorkspaceEvents } from '@/composables/workspace/useWorkspaceEvents';
+    import { useWorkspaceSelection } from '@/composables/workspace/useWorkspaceSelection';
     import { useProjectsStore } from '@/stores/projects';
     import { useShellHistoryStore } from '@/stores/shellHistory';
     import { useTabStatusStore } from '@/stores/tabStatus';
@@ -43,6 +44,7 @@
     const projectEvents = useProjectEvents();
     const workspaceEvents = useWorkspaceEvents();
     const githubIssueEvents = useGithubIssueEvents();
+    const workspaceSelection = useWorkspaceSelection();
     useProjectTabFocus();
     useOsFocusTab();
 
@@ -56,18 +58,17 @@
             workspaceEvents.start().catch(() => {
                 // Em ambiente de teste sem mock de workspace_snapshot, mantém estado seguro.
             })
-        ]).then(() => {
+        ]).then(async () => {
             // Reconcilia vínculo de abas com projetos caso workspaceSnapshot tenha respondido antes de projectSnapshot.
             for (const tab of Object.values(tabsStore.byId)) {
                 try {
                     projectsStore.attachTab(tab.id, tab.projectId);
-                    if (!projectsStore.activeTabByProject[tab.projectId]) {
-                        projectsStore.setActiveTab(tab.projectId, tab.id);
-                    }
                 } catch {
                     // Ignora se projeto não pertencer ao catálogo atual.
                 }
             }
+            // Aplica a restauração coordenada da seleção de projeto e aba do workspace
+            await workspaceSelection.restoreSelection();
         });
         void githubIssueEvents.start().catch(() => {
             // Em ambiente de teste sem listeners GitHub, mantém estado seguro.

@@ -236,7 +236,7 @@
         align-items: center;
         justify-content: center;
         padding: 1.25rem;
-        background: rgb(0 0 0 / 65%);
+        background: var(--mt-ui-overlay, rgb(0 0 0 / 65%));
     }
 
     .command-group-modal {
@@ -313,7 +313,7 @@
             justify-content: space-between;
             gap: 1rem;
             padding: 0.625rem 1rem;
-            background: rgb(245 158 11 / 15%);
+            background: var(--mt-ui-warning-subtle, color-mix(in srgb, var(--max-warning-500) 15%, transparent));
             border-bottom: 1px solid var(--max-warning-500);
             color: var(--max-warning-300);
             font-size: 0.7813rem;
@@ -402,7 +402,7 @@
 
             &.is-active {
                 border-color: var(--max-primary-500);
-                background: rgb(20 184 166 / 18%);
+                background: color-mix(in srgb, var(--max-primary-500) 18%, transparent);
                 color: var(--max-primary-400);
                 font-weight: 600;
             }
@@ -466,7 +466,7 @@
             padding: 0.5rem 0.75rem;
             border: 1px solid var(--max-warning-500);
             border-radius: 0.375rem;
-            background: rgb(245 158 11 / 15%);
+            background: var(--mt-ui-warning-subtle, color-mix(in srgb, var(--max-warning-500) 15%, transparent));
             color: var(--max-warning-400);
             font-size: 0.7813rem;
         }
@@ -523,19 +523,19 @@
 
             &--primary {
                 border: 1px solid var(--max-primary-500);
-                background: rgb(20 184 166 / 18%);
+                background: color-mix(in srgb, var(--max-primary-500) 18%, transparent);
                 color: var(--max-primary-400);
             }
 
             &--warning {
                 border: 1px solid var(--max-warning-500);
-                background: rgb(245 158 11 / 18%);
+                background: var(--mt-ui-warning-subtle, color-mix(in srgb, var(--max-warning-500) 18%, transparent));
                 color: var(--max-warning-300);
             }
 
             &--danger {
                 border: 1px solid var(--max-danger-500);
-                background: rgb(239 68 68 / 18%);
+                background: var(--mt-ui-danger-subtle, color-mix(in srgb, var(--max-danger-500) 18%, transparent));
                 color: var(--max-danger-300);
             }
 

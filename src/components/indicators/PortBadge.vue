@@ -175,7 +175,7 @@
         &__confirm-yes {
             padding: 2px 8px;
             font-size: 0.6875rem;
-            color: #fff;
+            color: var(--max-danger-content, #fff);
             background: var(--max-danger-500);
             border: none;
             border-radius: 4px;

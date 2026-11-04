@@ -5,6 +5,7 @@ import {
 import {
     BOOTSTRAP_STORAGE_KEY,
     DEFAULT_DARK_THEME_ID,
+    type CssVarsContext,
     type MaxUiTokens,
     type ThemeBootstrapSnapshot
 } from '@/types/theme';
@@ -144,7 +145,8 @@ export const FALLBACK_MAX_NAVY_TEAL_TOKENS: MaxUiTokens = {
  */
 export function saveThemeBootstrapSnapshot(
     themeId: string,
-    tokens: MaxUiTokens
+    tokens: MaxUiTokens,
+    context?: CssVarsContext
 ): void {
     if (typeof window === 'undefined' || !window.localStorage) {
         return;
@@ -154,7 +156,7 @@ export function saveThemeBootstrapSnapshot(
             version: 2,
             themeId,
             polarity: tokens.polarity,
-            cssVars: buildCssVarsRecord(tokens)
+            cssVars: buildCssVarsRecord(tokens, context)
         };
         window.localStorage.setItem(BOOTSTRAP_STORAGE_KEY, JSON.stringify(snapshot));
     } catch {
@@ -164,6 +166,7 @@ export function saveThemeBootstrapSnapshot(
 
 /**
  * Lê o snapshot salvo no `localStorage` (retorna `null` se ausente ou corrompido).
+ * Para snapshots v2 legados com papéis ausentes, mescla defaults seguros sem quebras.
  */
 export function loadThemeBootstrapSnapshot(): ThemeBootstrapSnapshot | null {
     if (typeof window === 'undefined' || !window.localStorage) {
@@ -184,7 +187,22 @@ export function loadThemeBootstrapSnapshot(): ThemeBootstrapSnapshot | null {
         ) {
             return null;
         }
-        return parsed as ThemeBootstrapSnapshot;
+
+        const defaults = buildCssVarsRecord({
+            ...FALLBACK_MAX_NAVY_TEAL_TOKENS,
+            polarity: parsed.polarity
+        });
+        const completeCssVars: Record<string, string> = {
+            ...defaults,
+            ...(parsed.cssVars as Record<string, string>)
+        };
+
+        return {
+            version: 2,
+            themeId: parsed.themeId,
+            polarity: parsed.polarity,
+            cssVars: completeCssVars
+        };
     } catch {
         return null;
     }

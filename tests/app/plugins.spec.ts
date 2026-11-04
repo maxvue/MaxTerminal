@@ -109,4 +109,23 @@ describe('Registro de plugins da aplicação - registerAppPlugins', () => {
 
         app.unmount();
     });
+
+    it('compõe o adapter de workspaceSelection e horizon na instância do Axios do MaxPinia', async () => {
+        const app = createApp(defineComponent({ render: () => null }));
+        registerAppPlugins(app);
+
+        container = document.createElement('div');
+        document.body.appendChild(container);
+        app.mount(container);
+
+        const { createAppMaxPiniaAxiosInstance } = await import('@/app/plugins');
+        const axiosInstance = createAppMaxPiniaAxiosInstance();
+
+        // Testa que a rota /app/workspace/selection é interceptada pelo adapter sem erro de rede
+        const res = await axiosInstance.get('/app/workspace/selection');
+        expect(res.status).toBe(200);
+        expect(res.data).toHaveProperty('version', 1);
+
+        app.unmount();
+    });
 });

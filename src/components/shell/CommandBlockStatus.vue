@@ -116,13 +116,13 @@
         flex-shrink: 0;
 
         &.is-running {
-            background: rgb(34 197 94 / 15%);
+            background: var(--mt-ui-success-subtle, color-mix(in srgb, var(--max-success-500) 15%, transparent));
             color: var(--max-success-500);
             border: 1px solid var(--max-success-500);
         }
 
         &.is-continuous {
-            background: rgb(14 165 233 / 15%);
+            background: var(--mt-ui-info-subtle, color-mix(in srgb, var(--max-info-500) 15%, transparent));
             color: var(--max-info-500);
             border: 1px solid var(--max-info-500);
         }
@@ -134,13 +134,13 @@
         }
 
         &.is-error {
-            background: rgb(239 68 68 / 15%);
+            background: var(--mt-ui-danger-subtle, color-mix(in srgb, var(--max-danger-500) 15%, transparent));
             color: var(--max-danger-500);
             border: 1px solid var(--max-danger-500);
         }
 
         &.is-aborted {
-            background: rgb(245 158 11 / 15%);
+            background: var(--mt-ui-warning-subtle, color-mix(in srgb, var(--max-warning-500) 15%, transparent));
             color: var(--max-warning-500);
             border: 1px solid var(--max-warning-500);
         }
@@ -159,20 +159,21 @@
         font-weight: 600;
 
         &.cbs-chip-danger {
-            background: rgb(239 68 68 / 20%);
+            background: color-mix(in srgb, var(--max-danger-500) 20%, transparent);
             border: 1px solid var(--max-danger-500);
             color: var(--max-danger-400);
         }
 
         &.cbs-chip-warning {
-            background: rgb(245 158 11 / 20%);
+            background: color-mix(in srgb, var(--max-warning-500) 20%, transparent);
             border: 1px solid var(--max-warning-500);
             color: var(--max-warning-400);
         }
 
         &.cbs-chip-neutral {
-            background: var(--background-800);
-            border: 1px solid var(--background-600);
+            background: var(--mt-ui-surface-elevated, var(--background-50));
+            border: 1px solid var(--mt-ui-border, var(--background-100));
+            color: var(--mt-ui-text-secondary, var(--background-600));
             color: var(--background-300);
         }
     }

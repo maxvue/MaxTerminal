@@ -30,8 +30,8 @@
     .highlighted-text__mark {
         padding: 0 2px;
         border-radius: 3px;
-        background: rgb(0 188 212 / 24%);
-        color: var(--max-primary-300);
+        background: var(--mt-ui-highlight-bg, color-mix(in srgb, var(--max-primary-500) 24%, transparent));
+        color: var(--mt-ui-highlight-text, var(--max-primary-300));
         font-weight: 600;
     }
 </style>

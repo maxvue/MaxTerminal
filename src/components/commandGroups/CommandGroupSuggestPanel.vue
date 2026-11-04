@@ -237,13 +237,13 @@
 
         &--primary {
             border: 1px solid var(--max-primary-500);
-            background: rgb(20 184 166 / 18%);
+            background: color-mix(in srgb, var(--max-primary-500) 18%, transparent);
             color: var(--max-primary-400);
         }
 
         &--apply {
             border: 1px solid var(--max-success-500);
-            background: rgb(34 197 94 / 18%);
+            background: var(--mt-ui-success-subtle, color-mix(in srgb, var(--max-success-500) 18%, transparent));
             color: var(--max-success-300);
         }
 

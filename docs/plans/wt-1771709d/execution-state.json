@@ -1,0 +1,151 @@
+{
+  "version": 2,
+  "planRevision": "99c68f76651ab3760717285227e9e0e7929b60c49446990f05cc4e3b00902b03",
+  "tasks": [
+    {
+      "id": "T1",
+      "status": "completed",
+      "files": [
+        "docs/plans/wt-1771709d/plan.md",
+        "docs/plans/wt-1771709d/spec.md"
+      ],
+      "validations": [],
+      "revision": "99c68f76651ab3760717285227e9e0e7929b60c49446990f05cc4e3b00902b03"
+    },
+    {
+      "id": "T2",
+      "status": "completed",
+      "files": [
+        "src/types/theme.ts",
+        "src/theme/cssTokens.ts",
+        "src/theme/bootstrap.ts",
+        "src/styles/theme.scss",
+        "src/styles/params.scss",
+        "src/stores/theme.ts",
+        "src/terminal/theme/defaultTheme.ts",
+        "tests/theme/cssTokens.spec.ts",
+        "tests/theme/bootstrap.spec.ts",
+        "tests/stores/theme.spec.ts"
+      ],
+      "validations": [],
+      "revision": "99c68f76651ab3760717285227e9e0e7929b60c49446990f05cc4e3b00902b03"
+    },
+    {
+      "id": "T3",
+      "status": "completed",
+      "files": [
+        "src/components/shell/TabStatusIndicator.vue",
+        "src/components/shell/CommandBlockStatus.vue",
+        "src/components/shell/DbRecoveryPanel.vue",
+        "src/components/workspace/TabBar.vue",
+        "src/components/workspace/TemplateLaunchPopover.vue",
+        "src/components/workspace/TabWorkspaceView.vue",
+        "src/components/workspace/TemplateEditorModal.vue",
+        "src/components/workspace/SessionReadonlyViewer.vue",
+        "src/components/workspace/SessionHistoryDrawer.vue",
+        "src/components/workspace/PaneView.vue",
+        "src/components/search/HighlightedText.vue",
+        "src/components/search/GlobalSearchPalette.vue",
+        "src/components/indicators/PortBadge.vue"
+      ],
+      "validations": [],
+      "revision": "99c68f76651ab3760717285227e9e0e7929b60c49446990f05cc4e3b00902b03"
+    },
+    {
+      "id": "T4",
+      "status": "completed",
+      "files": [
+        "src/components/terminal/CommandBlock.vue",
+        "src/components/terminal/HybridTerminal.vue",
+        "src/components/terminal/__dev__/TerminalPlayground.vue",
+        "src/components/github/IssueLabelChip.vue",
+        "src/components/github/IssuesTab.vue",
+        "src/components/github/IssueListItem.vue",
+        "src/components/github/IssueDetail.vue",
+        "src/components/github/IssueCreateModal.vue",
+        "src/components/github/IssueOpenTabModal.vue",
+        "src/components/github/IssueComments.vue",
+        "src/components/github/IssueActionsMenu.vue",
+        "src/components/github/IssueFilters.vue",
+        "src/components/github/IssuePlanSection.vue",
+        "src/components/github/IssueList.vue",
+        "src/components/github/LabelSyncBanner.vue",
+        "src/components/github/GithubAuthPanel.vue",
+        "src/components/github/BugCycleProgress.vue",
+        "src/components/github/BugCycleConfirmModal.vue",
+        "src/components/commandGroups/CommandGroupModal.vue",
+        "src/components/commandGroups/CommandGroupSuggestPanel.vue",
+        "src/components/commandGroups/GroupRunPanel.vue",
+        "src/components/commandGroups/GroupRunItemRow.vue",
+        "src/components/commandGroups/GroupRunOutputView.vue",
+        "src/components/commandGroups/GroupRunIndicator.vue",
+        "src/components/agents/AgentAttentionIndicator.vue",
+        "src/components/agents/AgentSettingsPanel.vue",
+        "src/components/agents/AgentStatusLine.vue",
+        "src/components/skills/SkillsSyncPanel.vue",
+        "src/components/skills/SkillConflictList.vue",
+        "src/components/horizon/HorizonModal.vue",
+        "src/components/ai/DestructiveConfirm.vue",
+        "src/components/quick-commands/QuickCommandsHost.vue",
+        "src/components/quick-commands/ArtisanCommandModal.vue"
+      ],
+      "validations": [],
+      "revision": "99c68f76651ab3760717285227e9e0e7929b60c49446990f05cc4e3b00902b03"
+    },
+    {
+      "id": "T5",
+      "status": "completed",
+      "files": [
+        "tests/theme/themeCoverage.spec.ts",
+        "tests/theme/cssTokens.spec.ts",
+        "tests/theme/bootstrap.spec.ts",
+        "tests/stores/theme.spec.ts"
+      ],
+      "validations": [],
+      "revision": "99c68f76651ab3760717285227e9e0e7929b60c49446990f05cc4e3b00902b03"
+    }
+  ],
+  "verification": {
+    "revision": "99c68f76651ab3760717285227e9e0e7929b60c49446990f05cc4e3b00902b03",
+    "checks": [
+      {
+        "command": "npx --no-install vitest run tests/theme/cssTokens.spec.ts tests/theme/bootstrap.spec.ts tests/stores/theme.spec.ts tests/theme/themeCoverage.spec.ts",
+        "revision": "99c68f76651ab3760717285227e9e0e7929b60c49446990f05cc4e3b00902b03",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run typecheck",
+        "revision": "99c68f76651ab3760717285227e9e0e7929b60c49446990f05cc4e3b00902b03",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run build",
+        "revision": "99c68f76651ab3760717285227e9e0e7929b60c49446990f05cc4e3b00902b03",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run lint",
+        "revision": "99c68f76651ab3760717285227e9e0e7929b60c49446990f05cc4e3b00902b03",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run lint:style",
+        "revision": "99c68f76651ab3760717285227e9e0e7929b60c49446990f05cc4e3b00902b03",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm test",
+        "revision": "99c68f76651ab3760717285227e9e0e7929b60c49446990f05cc4e3b00902b03",
+        "result": "passed",
+        "exitCode": 0
+      }
+    ]
+  },
+  "updatedAt": 1793797100000,
+  "nextAction": "Aguardar confirmação explícita do usuário para ações Git."
+}

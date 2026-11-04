@@ -37,7 +37,7 @@ export function createMaxNavyTealTheme(): TerminalTheme {
         resolveCssToken('--max-success-500', '#22c55e'),
         resolveCssToken('--max-warning-500', '#f59e0b'),
         resolveCssToken('--max-info-500', '#0ea5e9'),
-        '#a855f7',
+        resolveCssToken('--max-purple-500', '#a855f7'),
         resolveCssToken('--max-primary-500', '#14b8a6'),
         resolveCssToken('--background-200', '#cbd5e1'),
         resolveCssToken('--background-600', '#475569'),
@@ -45,7 +45,7 @@ export function createMaxNavyTealTheme(): TerminalTheme {
         resolveCssToken('--max-success-400', '#4ade80'),
         resolveCssToken('--max-warning-400', '#fbbf24'),
         resolveCssToken('--max-info-400', '#38bdf8'),
-        '#c084fc',
+        resolveCssToken('--max-purple-400', '#c084fc'),
         resolveCssToken('--max-primary-400', '#2dd4bf'),
         resolveCssToken('--background-50', '#f8fafc')
     ];
