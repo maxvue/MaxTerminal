@@ -1,11 +1,7 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
-import { apiGetRoute } from '@maxvue/max-use';
 import type { UnlistenFn } from '@tauri-apps/api/event';
-import {
-    THEME_CATALOG_VIRTUAL_ROUTE,
-    installThemeMaxPiniaAdapter
-} from '@/ipc/themeMaxPiniaAdapter';
+import { installThemeMaxPiniaAdapter } from '@/ipc/themeMaxPiniaAdapter';
 import {
     onThemeChanged,
     onThemeLibraryChanged,
@@ -18,10 +14,10 @@ import {
     themeGet,
     themeImportDir,
     themeImportFile,
-    themeList,
     themeSetActive,
     themeUpdate
 } from '@/ipc/themes';
+import { useThemeCatalogStore } from '@/stores/themeCatalog';
 import { saveThemeBootstrapSnapshot } from '@/theme/bootstrap';
 import { applyMaxUiTokensToRoot } from '@/theme/cssTokens';
 import { applyThemeAndTypographyToTerminals } from '@/theme/terminalBridge';
@@ -59,7 +55,11 @@ const DEFAULT_APPEARANCE: AppearanceSettings = {
 export const useThemeStore = defineStore('theme', () => {
     installThemeMaxPiniaAdapter();
 
-    const themes = ref<ThemeSummary[]>([]);
+    const catalogStore = useThemeCatalogStore();
+    const themes = computed<ThemeSummary[]>({
+        get: () => catalogStore.data,
+        set: (val: ThemeSummary[]) => catalogStore.replaceCatalog(val)
+    });
     const appearance = ref<AppearanceSettings>({ ...DEFAULT_APPEARANCE });
     const activeResolved = ref<ResolvedTheme | null>(null);
     const previewResolved = ref<ResolvedTheme | null>(null);
@@ -102,26 +102,8 @@ export const useThemeStore = defineStore('theme', () => {
         themes.value.filter((t) => t.origin !== 'builtin')
     );
 
-    async function fetchCatalog(): Promise<ThemeSummary[]> {
-        try {
-            const response: unknown = await apiGetRoute<ThemeSummary[]>(
-                THEME_CATALOG_VIRTUAL_ROUTE
-            );
-            if (Array.isArray(response)) {
-                return response as ThemeSummary[];
-            }
-            if (
-                response &&
-                typeof response === 'object' &&
-                'data' in response &&
-                Array.isArray((response as { data?: unknown }).data)
-            ) {
-                return (response as { data: ThemeSummary[] }).data;
-            }
-        } catch {
-            // Fallback direto ao IPC quando chamado fora do adapter HTTP
-        }
-        return themeList();
+    async function refreshCatalog(): Promise<ThemeSummary[]> {
+        return catalogStore.refreshCatalog();
     }
 
     function applyResolvedToUiAndTerminals(
@@ -184,10 +166,12 @@ export const useThemeStore = defineStore('theme', () => {
         loading.value = true;
         try {
             const [list, appSettings] = await Promise.all([
-                fetchCatalog().catch(() => [] as ThemeSummary[]),
+                catalogStore.refreshCatalog().catch(() => [] as ThemeSummary[]),
                 themeAppearanceGet().catch(() => null)
             ]);
-            themes.value = Array.isArray(list) ? list : [];
+            if (Array.isArray(list) && list.length > 0) {
+                catalogStore.replaceCatalog(list);
+            }
             if (appSettings && typeof appSettings === 'object' && 'activeThemeId' in appSettings) {
                 appearance.value = appSettings;
             }
@@ -227,7 +211,7 @@ export const useThemeStore = defineStore('theme', () => {
 
             unlistenLibrary = await onThemeLibraryChanged((ev) => {
                 if (Array.isArray(ev?.themes)) {
-                    themes.value = ev.themes;
+                    catalogStore.replaceCatalog(ev.themes);
                     if (
                         previewResolved.value?.scheme?.id &&
                         !ev.themes.some((t) => t.id === previewResolved.value?.scheme.id)
@@ -339,7 +323,7 @@ export const useThemeStore = defineStore('theme', () => {
         const report = await themeImportFile(path, options);
         lastImportReport.value = report;
         if (!options.dryRun && report.imported.length > 0) {
-            themes.value = await fetchCatalog();
+            await catalogStore.refreshCatalog();
         }
         return report;
     }
@@ -351,7 +335,7 @@ export const useThemeStore = defineStore('theme', () => {
         const report = await themeImportDir(dirPath, options);
         lastImportReport.value = report;
         if (!options.dryRun && report.imported.length > 0) {
-            themes.value = await fetchCatalog();
+            await catalogStore.refreshCatalog();
         }
         return report;
     }
@@ -362,7 +346,7 @@ export const useThemeStore = defineStore('theme', () => {
     ): Promise<ResolvedTheme> {
         const created = await themeCreate(input);
         resolvedCache.set(created.scheme.id, created);
-        themes.value = await fetchCatalog();
+        await catalogStore.refreshCatalog();
         if (activateScope) {
             return setActiveTheme(created.scheme.id, activateScope);
         }
@@ -375,7 +359,7 @@ export const useThemeStore = defineStore('theme', () => {
     ): Promise<ResolvedTheme> {
         const updated = await themeUpdate(id, input);
         resolvedCache.set(updated.scheme.id, updated);
-        themes.value = await fetchCatalog();
+        await catalogStore.refreshCatalog();
 
         if (previewResolved.value?.scheme?.id === id) {
             previewResolved.value = updated;
@@ -397,7 +381,7 @@ export const useThemeStore = defineStore('theme', () => {
     ): Promise<ResolvedTheme> {
         const duplicated = await themeDuplicate(id);
         resolvedCache.set(duplicated.scheme.id, duplicated);
-        themes.value = await fetchCatalog();
+        await catalogStore.refreshCatalog();
         if (activateScope) {
             return setActiveTheme(duplicated.scheme.id, activateScope);
         }
@@ -413,7 +397,7 @@ export const useThemeStore = defineStore('theme', () => {
         }
         await themeDelete(id, fallbackId);
         resolvedCache.delete(id);
-        themes.value = await fetchCatalog();
+        await catalogStore.refreshCatalog();
         appearance.value = await themeAppearanceGet();
         await syncEffectiveTheme(!hasActiveProjectOverride.value);
     }
@@ -466,6 +450,7 @@ export const useThemeStore = defineStore('theme', () => {
         duplicateTheme,
         deleteTheme,
         exportTheme,
+        refreshCatalog,
         fetchAndCacheResolved,
         applySavedThemeFromEditor
     };
