@@ -241,7 +241,11 @@ impl VaultService {
     }
 
     /// Cifra e armazena uma senha SSH no cofre sob o projeto informado, retornando seu `credential_id`.
-    pub async fn store_credential(&self, project_id: ProjectId, password: &str) -> MtResult<String> {
+    pub async fn store_credential(
+        &self,
+        project_id: ProjectId,
+        password: &str,
+    ) -> MtResult<String> {
         let dek_opt = self.dek.read().clone();
         let Some(dek) = dek_opt else {
             return Err(MtError::new(

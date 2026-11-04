@@ -168,6 +168,12 @@ tauri-build.workspace = true
 [dev-dependencies]
 tempfile.workspace = true
 
+[target.'cfg(target_os = "linux")'.dependencies]
+gtk = { version = "0.18", default-features = false }
+gdk = { version = "0.18", default-features = false }
+glib = { version = "0.18", default-features = false }
+webkit2gtk = { version = "2.0", default-features = false }
+
 [lints]
 workspace = true
 

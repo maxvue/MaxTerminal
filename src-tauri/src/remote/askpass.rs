@@ -74,7 +74,12 @@ impl AskpassServer {
                     let prompt = lines.next().unwrap_or("").to_lowercase();
 
                     // Valida o token e confirma que é um prompt de password
-                    if received_token == srv_token && (prompt.contains("password") || prompt.contains("senha") || prompt.contains("passphrase") || prompt.is_empty()) {
+                    if received_token == srv_token
+                        && (prompt.contains("password")
+                            || prompt.contains("senha")
+                            || prompt.contains("passphrase")
+                            || prompt.is_empty())
+                    {
                         let _ = stream.write_all(srv_password.as_bytes());
                         let _ = stream.write_all(b"\n");
                         let _ = stream.flush();

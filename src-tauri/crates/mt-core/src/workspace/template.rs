@@ -550,6 +550,7 @@ pub fn validate_env_map(env_vars: &BTreeMap<String, EnvValue>) -> MtResult<()> {
 }
 
 /// Valida e normaliza um [`TabTemplateInput`], retornando o [`TemplateConfig`] higienizado.
+#[allow(clippy::too_many_lines)]
 pub fn validate_template_input(input: &TabTemplateInput) -> MtResult<TemplateConfig> {
     let trimmed_name = input.name.trim();
     let name_chars = trimmed_name.chars().count();
@@ -642,9 +643,11 @@ pub fn validate_template_input(input: &TabTemplateInput) -> MtResult<TemplateCon
                     identity_file: validate_ssh_identity_file(identity_file.as_deref())?,
                 },
                 SshAuthInput::Password { operation } => match operation {
-                    PasswordCredentialOperation::KeepExisting { credential_id } => SshAuth::Password {
-                        credential_id: credential_id.clone(),
-                    },
+                    PasswordCredentialOperation::KeepExisting { credential_id } => {
+                        SshAuth::Password {
+                            credential_id: credential_id.clone(),
+                        }
+                    }
                     _ => SshAuth::Password {
                         credential_id: String::new(),
                     },

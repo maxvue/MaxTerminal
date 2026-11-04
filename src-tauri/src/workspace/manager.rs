@@ -583,28 +583,26 @@ impl WorkspaceManager {
         if let mt_core::workspace::TemplateConnectionInput::Ssh {
             ref host,
             ref user,
-            ref auth,
+            auth:
+                mt_core::workspace::SshAuthInput::Password {
+                    operation: mt_core::workspace::PasswordCredentialOperation::Set { ref password },
+                },
         } = input.connection
         {
-            if let mt_core::workspace::SshAuthInput::Password {
-                operation: mt_core::workspace::PasswordCredentialOperation::Set { password },
-            } = auth
-            {
-                let credential_id = self
-                    .inner
-                    .vault_service
-                    .store_credential(project_id, &password)
-                    .await?;
-                input.connection = mt_core::workspace::TemplateConnectionInput::Ssh {
-                    host: host.clone(),
-                    user: user.clone(),
-                    auth: mt_core::workspace::SshAuthInput::Password {
-                        operation: mt_core::workspace::PasswordCredentialOperation::KeepExisting {
-                            credential_id,
-                        },
+            let credential_id = self
+                .inner
+                .vault_service
+                .store_credential(project_id, password)
+                .await?;
+            input.connection = mt_core::workspace::TemplateConnectionInput::Ssh {
+                host: host.clone(),
+                user: user.clone(),
+                auth: mt_core::workspace::SshAuthInput::Password {
+                    operation: mt_core::workspace::PasswordCredentialOperation::KeepExisting {
+                        credential_id,
                     },
-                };
-            }
+                },
+            };
         }
 
         let now_ms = mt_db::time::now_unix_ms();
@@ -640,39 +638,37 @@ impl WorkspaceManager {
         if let mt_core::workspace::TemplateConnectionInput::Ssh {
             ref host,
             ref user,
-            ref auth,
+            auth:
+                mt_core::workspace::SshAuthInput::Password {
+                    operation: mt_core::workspace::PasswordCredentialOperation::Set { ref password },
+                },
         } = input.connection
         {
-            if let mt_core::workspace::SshAuthInput::Password {
-                operation: mt_core::workspace::PasswordCredentialOperation::Set { password },
-            } = auth
+            let existing_cred_id = if let mt_core::workspace::TemplateConnection::Ssh {
+                auth: mt_core::workspace::SshAuth::Password { credential_id },
+                ..
+            } = &existing.config.connection
             {
-                let existing_cred_id = if let mt_core::workspace::TemplateConnection::Ssh {
-                    auth: mt_core::workspace::SshAuth::Password { credential_id },
-                    ..
-                } = &existing.config.connection
-                {
-                    Some(credential_id.as_str())
-                } else {
-                    None
-                };
+                Some(credential_id.as_str())
+            } else {
+                None
+            };
 
-                let credential_id = self
-                    .inner
-                    .vault_service
-                    .update_or_store_credential(existing.project_id, existing_cred_id, &password)
-                    .await?;
+            let credential_id = self
+                .inner
+                .vault_service
+                .update_or_store_credential(existing.project_id, existing_cred_id, password)
+                .await?;
 
-                input.connection = mt_core::workspace::TemplateConnectionInput::Ssh {
-                    host: host.clone(),
-                    user: user.clone(),
-                    auth: mt_core::workspace::SshAuthInput::Password {
-                        operation: mt_core::workspace::PasswordCredentialOperation::KeepExisting {
-                            credential_id,
-                        },
+            input.connection = mt_core::workspace::TemplateConnectionInput::Ssh {
+                host: host.clone(),
+                user: user.clone(),
+                auth: mt_core::workspace::SshAuthInput::Password {
+                    operation: mt_core::workspace::PasswordCredentialOperation::KeepExisting {
+                        credential_id,
                     },
-                };
-            }
+                },
+            };
         }
 
         let now_ms = mt_db::time::now_unix_ms();
@@ -707,7 +703,11 @@ impl WorkspaceManager {
             ..
         } = existing.config.connection
         {
-            let _ = self.inner.vault_service.delete_credential(credential_id).await;
+            let _ = self
+                .inner
+                .vault_service
+                .delete_credential(credential_id)
+                .await;
         }
 
         self.emit_template_changed(project_id, vec![template_id]);
@@ -1248,11 +1248,11 @@ impl WorkspaceManager {
                     tab_session_id: Some(tab_session_id),
                 };
 
-                let summary = match self
-                    .inner
-                    .shell_service
-                    .spawn_pty_with_session(spec, session_id, integration_req)
-                {
+                let summary = match self.inner.shell_service.spawn_pty_with_session(
+                    spec,
+                    session_id,
+                    integration_req,
+                ) {
                     Ok(s) => s,
                     Err(err) => {
                         for g in guards {
@@ -1269,9 +1269,13 @@ impl WorkspaceManager {
                     self.inner.spawn_guards.lock().insert(pty_id, guards);
                 }
 
-                self.inner
-                    .recorder
-                    .register_pty(tab_id, pane_id, session_id, tab_session_id, pty_id);
+                self.inner.recorder.register_pty(
+                    tab_id,
+                    pane_id,
+                    session_id,
+                    tab_session_id,
+                    pty_id,
+                );
 
                 let observers = self.inner.observers.read().clone();
                 for obs in observers {
@@ -1280,7 +1284,11 @@ impl WorkspaceManager {
 
                 Ok(pty_id)
             }
-            mt_core::workspace::TemplateConnection::Ssh { host: _, user: _, auth } => {
+            mt_core::workspace::TemplateConnection::Ssh {
+                host: _,
+                user: _,
+                auth,
+            } => {
                 let password_opt = match auth {
                     mt_core::workspace::SshAuth::Key { .. } => None,
                     mt_core::workspace::SshAuth::Password { credential_id } => {
@@ -1309,11 +1317,11 @@ impl WorkspaceManager {
                     tab_session_id: Some(tab_session_id),
                 };
 
-                let summary = match self
-                    .inner
-                    .shell_service
-                    .spawn_pty_with_session(spec, session_id, integration_req)
-                {
+                let summary = match self.inner.shell_service.spawn_pty_with_session(
+                    spec,
+                    session_id,
+                    integration_req,
+                ) {
                     Ok(s) => s,
                     Err(err) => {
                         return Err(MtError::new(
@@ -1326,9 +1334,13 @@ impl WorkspaceManager {
                 let pty_id = summary.id;
                 ssh_session.keep_alive_in_background(std::time::Duration::from_secs(20));
 
-                self.inner
-                    .recorder
-                    .register_pty(tab_id, pane_id, session_id, tab_session_id, pty_id);
+                self.inner.recorder.register_pty(
+                    tab_id,
+                    pane_id,
+                    session_id,
+                    tab_session_id,
+                    pty_id,
+                );
 
                 let observers = self.inner.observers.read().clone();
                 for obs in observers {
@@ -2783,10 +2795,8 @@ impl WorkspaceManager {
                 .await
             {
                 Ok(pty_id) => {
-                    pty_map_entries.push((
-                        pty_id,
-                        (tab_id, pane_id, session_id, pane_row.generation),
-                    ));
+                    pty_map_entries
+                        .push((pty_id, (tab_id, pane_id, session_id, pane_row.generation)));
                     live_panes.insert(
                         pane_id,
                         LivePaneEntry {

@@ -24,7 +24,7 @@ async fn upgrade_from_partial_versions_populates_search_metadata_and_restore_rec
     let cfg = DbConfig::for_path(&db_path);
 
     let db = Db::open(cfg.clone()).unwrap();
-    assert_eq!(db.schema_version(), 11);
+    assert_eq!(db.schema_version(), 12);
 
     let proj1 = ProjectId::new();
     db.projects()
@@ -106,7 +106,7 @@ async fn upgrade_from_partial_versions_populates_search_metadata_and_restore_rec
     //    O rollback a partir do backup PreRestore deve preservar os 2 projetos!
     let data_dir = cfg.db_path.parent().unwrap();
     let scheduled =
-        schedule_restore_with_dirs(data_dir, &cfg.backup_dir, &bkp.file_name, 11).unwrap();
+        schedule_restore_with_dirs(data_dir, &cfg.backup_dir, &bkp.file_name, 12).unwrap();
     assert_eq!(scheduled.backup_file_name, bkp.file_name);
     assert!(scheduled.requires_restart);
 
@@ -158,5 +158,5 @@ async fn upgrade_from_partial_versions_populates_search_metadata_and_restore_rec
     let out = MigrationRunner::new(reg)
         .run(&mut conn2, &cfg2.db_path, &cfg2.backup_dir, 7)
         .unwrap();
-    assert_eq!(out.schema_version, 11);
+    assert_eq!(out.schema_version, 12);
 }

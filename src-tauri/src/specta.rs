@@ -231,7 +231,6 @@ use crate::commands::command_groups::{
 use crate::commands::credentials::{
     vault_change_password, vault_get_state, vault_lock, vault_setup, vault_unlock,
 };
-use crate::credentials::VaultStatus;
 use crate::commands::db::{
     db_recover, db_setting_snapshot, db_settings_get, db_settings_set, db_status,
 };
@@ -307,6 +306,7 @@ use crate::commands::themes::{
 };
 use crate::commands::updater::{app_update_check, app_update_install_confirmed};
 use crate::commands::workspace::{workspace_initial_command_run, workspace_snapshot};
+use crate::credentials::VaultStatus;
 use crate::events::agents::{
     AgentAttentionTauriEvent, AgentInstallationsChangedTauriEvent, AgentLinkChangedTauriEvent,
     AgentSettingsChangedTauriEvent, AgentTelemetryTauriEvent, AgentWorktreeClosePendingTauriEvent,

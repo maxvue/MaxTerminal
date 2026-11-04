@@ -368,12 +368,11 @@ fn create_template_tx(
             key: String::from("tab_templates.env_json"),
             reason: format!("env_vars: {e}"),
         })?;
-    let connection_json = serde_json::to_string(&config.connection).map_err(|e| {
-        DbError::SettingInvalidValue {
+    let connection_json =
+        serde_json::to_string(&config.connection).map_err(|e| DbError::SettingInvalidValue {
             key: String::from("tab_templates.connection_json"),
             reason: format!("connection: {e}"),
-        }
-    })?;
+        })?;
 
     tx.execute(
         "INSERT INTO tab_templates (
@@ -453,12 +452,11 @@ fn update_template_tx(
             key: String::from("tab_templates.env_json"),
             reason: format!("env_vars: {e}"),
         })?;
-    let connection_json = serde_json::to_string(&config.connection).map_err(|e| {
-        DbError::SettingInvalidValue {
+    let connection_json =
+        serde_json::to_string(&config.connection).map_err(|e| DbError::SettingInvalidValue {
             key: String::from("tab_templates.connection_json"),
             reason: format!("connection: {e}"),
-        }
-    })?;
+        })?;
 
     let updated = tx
         .execute(
