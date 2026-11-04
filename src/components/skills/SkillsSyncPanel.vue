@@ -5,36 +5,19 @@
                 <h3 class="skills-sync-panel__title">Sincronização MaxSkills</h3>
                 <p class="skills-sync-panel__subtitle">{{ catalog ? `Fonte: ${catalog.sourceDir} (${catalog.skills.length} skills)` : 'Catálogo local de skills para Agentes CLI.' }}</p>
             </div>
-            <MaxButton type="button" variant="secondary" icon="lucide:folder-sync" :disabled="isScanning" data-testid="skills-scan-btn" @click="onScan">
-                <span>{{ isScanning ? 'Escaneando...' : 'Escanear MaxSkills' }}</span>
-            </MaxButton>
+            <MaxButton type="button" severity="secondary" icon="lucide:folder-sync" :disabled="isScanning" data-testid="skills-scan-btn" :label="isScanning ? 'Escaneando...' : 'Escanear MaxSkills'" @click="onScan" />
         </header>
 
-        <MaxAlert v-if="activeError" variant="danger" icon="lucide:alert-circle" data-testid="skills-sync-error">
-            <span>{{ activeError.message }}</span>
-        </MaxAlert>
+        <MaxAlert v-if="activeError" severity="danger" icon="lucide:alert-circle" :message="activeError.message" data-testid="skills-sync-error" />
 
         <section class="skills-sync-panel__new-target">
             <h4 class="skills-sync-panel__section-title">Configurar Alvo de Sincronização</h4>
             <div class="skills-sync-panel__form-row">
-                <select v-model="draftAgent" class="skills-sync-panel__select" aria-label="Agente CLI" data-testid="target-agent-select">
-                    <option value="claude-code">Claude Code</option>
-                    <option value="codex">Codex</option>
-                    <option value="agy">Antigravity (agy)</option>
-                    <option value="opencode">OpenCode</option>
-                </select>
-                <select v-model="draftScope" class="skills-sync-panel__select" aria-label="Escopo" data-testid="target-scope-select">
-                    <option v-if="props.projectId" value="project">Projeto Atual</option>
-                    <option value="global">Global (Usuário)</option>
-                </select>
-                <select v-model="draftMode" class="skills-sync-panel__select" aria-label="Modo de sincronização" data-testid="target-mode-select">
-                    <option value="symlink">Symlink</option>
-                    <option value="copy">Cópia com Manifesto</option>
-                </select>
-                <input v-if="draftAgent === 'agy'" v-model="draftDestOverride" type="text" class="skills-sync-panel__input" placeholder="Destino explícito (ex.: .agent/skills)" data-testid="target-dest-override">
-                <MaxButton type="button" variant="primary" icon="lucide:plus" data-testid="target-save-btn" @click="onSaveTarget">
-                    <span>Salvar Alvo</span>
-                </MaxButton>
+                <MaxInputSelect :model-value="draftAgent" :options="agentOptions" option-label="label" option-value="value" option-name="label" aria-label="Agente CLI" class="skills-sync-panel__select" data-testid="target-agent-select" @change="onAgentSelectChange" />
+                <MaxInputSelect :model-value="draftScope" :options="scopeOptions" option-label="label" option-value="value" option-name="label" aria-label="Escopo" class="skills-sync-panel__select" data-testid="target-scope-select" @change="onScopeSelectChange" />
+                <MaxInputSelect :model-value="draftMode" :options="modeOptions" option-label="label" option-value="value" option-name="label" aria-label="Modo de sincronização" class="skills-sync-panel__select" data-testid="target-mode-select" @change="onModeSelectChange" />
+                <MaxInputText v-if="draftAgent === 'agy'" :model-value="draftDestOverride" placeholder="Destino explícito (ex.: .agent/skills)" class="skills-sync-panel__input" data-testid="target-dest-override" @update:model-value="(val) => draftDestOverride = String(val ?? '')" />
+                <MaxButton type="button" icon="lucide:plus" label="Salvar Alvo" data-testid="target-save-btn" @click="onSaveTarget" />
             </div>
         </section>
 
@@ -43,13 +26,13 @@
                 <div class="skills-sync-panel__target-head">
                     <div class="skills-sync-panel__target-meta">
                         <strong>{{ target.agent }}</strong>
-                        <MaxTag size="sm" variant="secondary" class="skills-sync-panel__badge">{{ target.scope === 'project' ? 'Projeto' : 'Global' }}</MaxTag>
-                        <MaxTag size="sm" variant="secondary" class="skills-sync-panel__badge">{{ target.mode === 'symlink' ? 'Symlink' : 'Cópia' }}</MaxTag>
+                        <MaxTag size="sm" severity="secondary" :value="target.scope === 'project' ? 'Projeto' : 'Global'" class="skills-sync-panel__badge" />
+                        <MaxTag size="sm" severity="secondary" :value="target.mode === 'symlink' ? 'Symlink' : 'Cópia'" class="skills-sync-panel__badge" />
                         <code v-if="target.destDir" class="skills-sync-panel__dest">{{ target.destDir }}</code>
                     </div>
                     <div class="skills-sync-panel__target-actions">
-                        <MaxButton v-if="target.id !== null" type="button" size="sm" variant="secondary" :data-testid="`plan-target-${target.id}`" @click="onPlanTarget(target.id)">Simular (Dry-Run)</MaxButton>
-                        <MaxButton v-if="target.id !== null" type="button" size="sm" variant="danger" :data-testid="`remove-target-${target.id}`" @click="onRemoveTarget(target.id)">Remover</MaxButton>
+                        <MaxButton v-if="target.id !== null" type="button" size="sm" severity="secondary" :data-testid="`plan-target-${target.id}`" @click="onPlanTarget(target.id)">Simular (Dry-Run)</MaxButton>
+                        <MaxButton v-if="target.id !== null" type="button" size="sm" severity="danger" :data-testid="`remove-target-${target.id}`" @click="onRemoveTarget(target.id)">Remover</MaxButton>
                     </div>
                 </div>
 
@@ -60,7 +43,7 @@
                     <p class="skills-sync-panel__plan-summary">{{ formatPlanSummary(planFor(target.id)!) }}</p>
                     <SkillConflictList :conflicts="conflictsFor(planFor(target.id)!)" :model-value="resolutionsByTarget[target.id] ?? {}" @update:model-value="setResolutions(target.id, $event)" />
                     <div class="skills-sync-panel__apply-row">
-                        <MaxButton type="button" variant="primary" :data-testid="`apply-plan-${target.id}`" @click="onApplyPlan(target.id, planFor(target.id)!)">Aplicar Sincronização</MaxButton>
+                        <MaxButton type="button" label="Aplicar Sincronização" :data-testid="`apply-plan-${target.id}`" @click="onApplyPlan(target.id, planFor(target.id)!)" />
                     </div>
                 </div>
 
@@ -74,9 +57,13 @@
 
 <script setup lang="ts">
     import { computed, onMounted, ref } from 'vue';
-    import MaxAlert from '@maxvue/max-components-ui/components/MaxAlert';
-    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
-    import MaxTag from '@maxvue/max-components-ui/components/MaxTag';
+    import {
+        MaxAlert,
+        MaxButton,
+        MaxInputSelect,
+        MaxInputText,
+        MaxTag
+    } from '@maxvue/max-components-ui';
     import { useSkillsStore } from '@/stores/skills';
     import type {
         AgentKind,
@@ -105,6 +92,38 @@
     const draftMode = ref<SyncMode>('symlink');
     const draftDestOverride = ref<string>('');
     const resolutionsByTarget = ref<Record<number, Record<string, ConflictResolution>>>({});
+
+    const agentOptions = [
+        { label: 'Claude Code', value: 'claude-code' },
+        { label: 'Codex', value: 'codex' },
+        { label: 'Antigravity (agy)', value: 'agy' },
+        { label: 'OpenCode', value: 'opencode' }
+    ];
+
+    const scopeOptions = computed(() => [
+        ...(props.projectId ? [{ label: 'Projeto Atual', value: 'project' }] : []),
+        { label: 'Global (Usuário)', value: 'global' }
+    ]);
+
+    const modeOptions = [
+        { label: 'Symlink', value: 'symlink' },
+        { label: 'Cópia com Manifesto', value: 'copy' }
+    ];
+
+    function onAgentSelectChange(valOrEv: unknown): void {
+        const val = (typeof valOrEv === 'string' ? valOrEv : ((valOrEv as { target?: HTMLSelectElement })?.target?.value ?? 'claude-code')) as AgentKind;
+        draftAgent.value = val;
+    }
+
+    function onScopeSelectChange(valOrEv: unknown): void {
+        const val = (typeof valOrEv === 'string' ? valOrEv : ((valOrEv as { target?: HTMLSelectElement })?.target?.value ?? 'global')) as SyncScope;
+        draftScope.value = val;
+    }
+
+    function onModeSelectChange(valOrEv: unknown): void {
+        const val = (typeof valOrEv === 'string' ? valOrEv : ((valOrEv as { target?: HTMLSelectElement })?.target?.value ?? 'symlink')) as SyncMode;
+        draftMode.value = val;
+    }
 
     const catalog = computed<SkillCatalog | null>(() => skillsStore.catalogFor(props.projectId));
 

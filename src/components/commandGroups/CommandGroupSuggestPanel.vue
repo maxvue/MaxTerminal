@@ -7,9 +7,9 @@
             <textarea v-model="goalText" rows="3" class="group-suggest-panel__textarea" data-testid="suggest-goal-input" placeholder="Ex.: Subir servidor Vite, fila Horizon e acompanhar logs em desenvolvimento" :disabled="loading" />
 
             <div class="group-suggest-panel__actions">
-                <MaxButton :label="loading ? 'Gerando sugestão…' : 'Sugerir com IA'" icon="lucide:sparkles" variant="primary" class="group-suggest-panel__btn group-suggest-panel__btn--primary" data-testid="btn-suggest-ai" :disabled="loading || goalText.trim().length === 0" :loading="loading" @click="onRequestSuggestion" />
-                <MaxButton v-if="loading" label="Cancelar" icon="lucide:x" variant="ghost" class="group-suggest-panel__btn group-suggest-panel__btn--ghost" data-testid="btn-cancel-suggest-ai" @click="onCancelSuggestion" />
-                <MaxButton v-if="hasUndoSnapshot" label="Desfazer aplicação" icon="lucide:undo-2" variant="ghost" class="group-suggest-panel__btn group-suggest-panel__btn--ghost" data-testid="btn-undo-suggestion" @click="emit('undo-suggestion')" />
+                <MaxButton :label="loading ? 'Gerando sugestão…' : 'Sugerir com IA'" icon="lucide:sparkles" class="group-suggest-panel__btn group-suggest-panel__btn--primary" data-testid="btn-suggest-ai" :disabled="loading || goalText.trim().length === 0" :loading="loading" @click="onRequestSuggestion" />
+                <MaxButton v-if="loading" label="Cancelar" icon="lucide:x" variant="text" class="group-suggest-panel__btn group-suggest-panel__btn--ghost" data-testid="btn-cancel-suggest-ai" @click="onCancelSuggestion" />
+                <MaxButton v-if="hasUndoSnapshot" label="Desfazer aplicação" icon="lucide:undo-2" variant="text" class="group-suggest-panel__btn group-suggest-panel__btn--ghost" data-testid="btn-undo-suggestion" @click="emit('undo-suggestion')" />
             </div>
 
             <p v-if="errorMessage" class="group-suggest-panel__error" role="alert" data-testid="suggest-error">{{ errorMessage }}</p>
@@ -27,7 +27,7 @@
                         <code>{{ item.command }}</code>
                     </li>
                 </ul>
-                <MaxButton label="Aplicar ao rascunho" icon="lucide:check" variant="primary" class="group-suggest-panel__btn group-suggest-panel__btn--apply" data-testid="btn-apply-suggestion" @click="onApplyPreview" />
+                <MaxButton label="Aplicar ao rascunho" icon="lucide:check" class="group-suggest-panel__btn group-suggest-panel__btn--apply" data-testid="btn-apply-suggestion" @click="onApplyPreview" />
             </div>
         </div>
 

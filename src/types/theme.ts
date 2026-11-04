@@ -3,6 +3,7 @@
  */
 export type {
     AnsiPalette,
+    AnsiPaletteInput,
     AppearanceSettings,
     AppearanceSettingsPatch,
     BackgroundRamp,
@@ -24,6 +25,7 @@ export type {
     SkippedEntry,
     TerminalUiTokens,
     ThemeChangedEvent,
+    ThemeDraftInput,
     ThemeError,
     ThemeId,
     ThemeLibraryChangedEvent,

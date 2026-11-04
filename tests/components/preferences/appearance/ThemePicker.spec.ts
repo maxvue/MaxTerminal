@@ -46,6 +46,27 @@ const summaries: ThemeSummary[] = [
         ],
         author: 'Max',
         sourceFormat: 'tabby-scheme-yaml'
+    },
+    {
+        id: 'oceano-custom',
+        name: 'Oceano Custom',
+        origin: 'custom',
+        polarity: 'dark',
+        background: '#0b1420',
+        foreground: '#e2e8f0',
+        cursor: '#14b8a6',
+        accentSwatches: [
+            '#0b1420',
+            '#f43f5e',
+            '#10b981',
+            '#f59e0b',
+            '#3b82f6',
+            '#a855f7',
+            '#06b6d4',
+            '#e2e8f0'
+        ],
+        author: 'Equipe Max',
+        sourceFormat: null
     }
 ];
 
@@ -54,15 +75,15 @@ describe('ThemePicker.vue', () => {
         setActivePinia(createPinia());
     });
 
-    it('filtra temas por polaridade e busca textual e emite select', async () => {
+    it('filtra temas por polaridade e busca textual e emite select, edit, duplicate e delete', async () => {
         const wrapper = mount(ThemePicker, {
             props: {
                 themes: summaries,
-                activeThemeId: 'max-navy-teal'
+                activeThemeId: 'oceano-custom'
             }
         });
 
-        expect(wrapper.findAll('.theme-swatch')).toHaveLength(2);
+        expect(wrapper.findAll('.theme-swatch')).toHaveLength(3);
 
         const filterBtns = wrapper.findAll('[role="radio"]');
         await filterBtns[2]!.trigger('click');
@@ -73,7 +94,29 @@ describe('ThemePicker.vue', () => {
         await input.setValue('Navy');
         expect(wrapper.findAll('.theme-swatch')).toHaveLength(1);
 
+        // No tema builtin (Max Navy/Teal), o botão de editar está desabilitado, mas o de duplicar está habilitado
+        const builtinEditBtn = wrapper.find('[aria-label*="somente leitura"]');
+        expect(builtinEditBtn.exists()).toBe(true);
+        expect(builtinEditBtn.attributes('disabled')).toBeDefined();
+
+        const builtinDupBtn = wrapper.find('[aria-label="Duplicar tema Max Navy/Teal"]');
+        await builtinDupBtn.trigger('click');
+        expect(wrapper.emitted('duplicate')?.[0]).toEqual(['max-navy-teal']);
+
+        // Filtra pelo tema customizado ativo: permite editar, duplicar e excluir mesmo estando ativo
+        await input.setValue('Oceano');
+        expect(wrapper.findAll('.theme-swatch')).toHaveLength(1);
+
+        const customEditBtn = wrapper.find('[aria-label="Editar tema Oceano Custom"]');
+        await customEditBtn.trigger('click');
+        expect(wrapper.emitted('edit')?.[0]).toEqual(['oceano-custom']);
+
+        const customDeleteBtn = wrapper.find('[aria-label="Excluir tema Oceano Custom"]');
+        expect(customDeleteBtn.exists()).toBe(true);
+        await customDeleteBtn.trigger('click');
+        expect(wrapper.emitted('delete')?.[0]).toEqual(['oceano-custom']);
+
         await wrapper.find('.theme-swatch').trigger('click');
-        expect(wrapper.emitted('select')?.[0]).toEqual(['max-navy-teal']);
+        expect(wrapper.emitted('select')?.[0]).toEqual(['oceano-custom']);
     });
 });

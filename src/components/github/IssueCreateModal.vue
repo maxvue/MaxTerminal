@@ -2,32 +2,27 @@
     <MaxModal :visible="props.open" title="Criar Nova Issue" :no-button="true" max-width="36rem" class="issue-create-modal" :dismissable="!props.submitting" :close-on-escape="!props.submitting" @update:visible="emit('close')">
         <form class="issue-create-modal__card" @submit.prevent="onSubmit">
             <div class="issue-create-modal__body">
-                <label class="issue-create-modal__field">
+                <div class="issue-create-modal__field">
                     <span class="issue-create-modal__label">Título da Issue *</span>
-                    <input v-model="title" type="text" class="issue-create-modal__input" placeholder="Descreva sucintamente o bug ou funcionalidade..." required maxlength="256">
-                </label>
-                <label class="issue-create-modal__field">
+                    <MaxInputText v-model="title" class="issue-create-modal__input" placeholder="Descreva sucintamente o bug ou funcionalidade..." required maxlength="256" />
+                </div>
+                <div class="issue-create-modal__field">
                     <span class="issue-create-modal__label">Descrição (Markdown)</span>
                     <MaxInputTextArea v-model="bodyMarkdown" class="issue-create-modal__textarea" :rows="6" placeholder="Passos para reproduzir, comportamento esperado ou especificação..." />
-                </label>
-                <label class="issue-create-modal__field">
+                </div>
+                <div class="issue-create-modal__field">
                     <span class="issue-create-modal__label">Estado Inicial MaxCode</span>
-                    <select v-model="stateLabel" class="issue-create-modal__select">
-                        <option v-for="spec in stateSpecs" :key="spec.name" :value="spec.name">{{ spec.name }}</option>
-                    </select>
-                </label>
+                    <MaxInputSelect v-model="stateLabel" :options="stateOptions" option-label="label" option-value="value" option-name="label" class="issue-create-modal__select" />
+                </div>
                 <div class="issue-create-modal__categories" role="group" aria-label="Categorias da nova issue">
                     <span class="issue-create-modal__label">Categorias:</span>
-                    <label v-for="spec in categorySpecs" :key="spec.name" class="issue-create-modal__checkbox">
-                        <input type="checkbox" :checked="selectedCategories.includes(spec.name)" @change="onToggleCategory(spec.name)">
-                        <span>{{ spec.name }}</span>
-                    </label>
+                    <MaxInputCheckbox v-for="spec in categorySpecs" :key="spec.name" :model-value="selectedCategories.includes(spec.name)" :label="spec.name" @update:model-value="onToggleCategory(spec.name)" />
                 </div>
-                <p v-if="validationError" class="issue-create-modal__error" role="alert">{{ validationError }}</p>
+                <MaxAlert v-if="validationError" severity="danger" role="alert" :message="validationError" class="issue-create-modal__error" />
             </div>
             <footer class="issue-create-modal__footer">
-                <MaxButton label="Cancelar" variant="secondary" class="issue-create-modal__btn" @click="emit('close')" />
-                <MaxButton type="submit" :label="props.submitting ? 'Criando...' : 'Criar Issue'" variant="primary" class="issue-create-modal__btn issue-create-modal__btn--primary" :disabled="props.submitting" :loading="props.submitting" />
+                <MaxButton label="Cancelar" severity="secondary" class="issue-create-modal__btn" @click="emit('close')" />
+                <MaxButton type="submit" :label="props.submitting ? 'Criando...' : 'Criar Issue'" class="issue-create-modal__btn issue-create-modal__btn--primary" :disabled="props.submitting" :loading="props.submitting" />
             </footer>
         </form>
     </MaxModal>
@@ -35,7 +30,15 @@
 
 <script setup lang="ts">
     import { ref } from 'vue';
-    import { MaxButton, MaxInputTextArea, MaxModal } from '@maxvue/max-components-ui';
+    import {
+        MaxAlert,
+        MaxButton,
+        MaxInputCheckbox,
+        MaxInputSelect,
+        MaxInputText,
+        MaxInputTextArea,
+        MaxModal
+    } from '@maxvue/max-components-ui';
     import { CANONICAL_CATEGORY_LABELS, CANONICAL_STATE_LABELS } from '@/constants/githubLabels';
     import type { CreateIssueInput, ProjectId } from '@/types/bindings';
 
@@ -54,7 +57,7 @@
         create: [input: CreateIssueInput];
     }>();
 
-    const stateSpecs = CANONICAL_STATE_LABELS;
+    const stateOptions = CANONICAL_STATE_LABELS.map((s) => ({ label: s.name, value: s.name }));
     const categorySpecs = CANONICAL_CATEGORY_LABELS;
 
     const title = ref<string>('');

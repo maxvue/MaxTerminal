@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { MaxInputSelect } from '@maxvue/max-components-ui';
-import { createPinia, setActivePinia } from 'pinia';
+import { createMaxPinia } from '@maxvue/max-pinia';
+import { createPinia, setActivePinia, type PiniaPlugin } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AppearancePreferences from '@/components/preferences/appearance/AppearancePreferences.vue';
 import ProjectThemeOverrides from '@/components/preferences/appearance/ProjectThemeOverrides.vue';
@@ -119,6 +120,11 @@ vi.mock('@/ipc/themes', () => ({
         errors: [],
         skipped: []
     })),
+    themeCreate: vi.fn(async () => ({})),
+    themeUpdate: vi.fn(async () => ({})),
+    themeDuplicate: vi.fn(async () => ({
+        scheme: { id: 'max-navy-teal-copia', name: 'Max Navy/Teal (cópia)' }
+    })),
     themeDelete: vi.fn(async () => null),
     themeExport: vi.fn(async () => 'name: Exported\n'),
     onThemeChanged: vi.fn(async () => () => {}),
@@ -127,12 +133,15 @@ vi.mock('@/ipc/themes', () => ({
 
 describe('AppearancePreferences e subcomponentes', () => {
     beforeEach(() => {
-        setActivePinia(createPinia());
+        const pinia = createPinia();
+        pinia.use(createMaxPinia() as unknown as PiniaPlugin);
+        setActivePinia(pinia);
     });
 
-    it('renderiza as seções de pré-visualização, catálogo, tipografia e overrides', () => {
+    it('renderiza as seções de pré-visualização, catálogo, botão Novo Tema, tipografia e overrides', () => {
         const wrapper = mount(AppearancePreferences);
         expect(wrapper.text()).toContain('Catálogo de Temas e Importador Tabby');
+        expect(wrapper.text()).toContain('Novo Tema');
         expect(wrapper.text()).toContain('Tipografia e Cursor do Terminal');
         expect(wrapper.text()).toContain('Temas por Projeto');
     });

@@ -7,9 +7,9 @@
             <span v-if="props.cycle.currentIssue" class="bug-cycle-progress__current">Processando #{{ props.cycle.currentIssue }} ({{ props.cycle.currentStage }})</span>
         </div>
         <div class="bug-cycle-progress__actions">
-            <MaxButton v-if="props.cycle.status === 'running'" label="Pausar" variant="secondary" size="small" class="bug-cycle-progress__btn" @click="emit('control', 'pause')" />
-            <MaxButton v-if="props.cycle.status === 'paused'" label="Retomar" variant="success" size="small" class="bug-cycle-progress__btn bug-cycle-progress__btn--resume" @click="emit('control', 'resume')" />
-            <MaxButton v-if="props.cycle.status === 'running' || props.cycle.status === 'paused'" label="Cancelar" variant="danger" size="small" class="bug-cycle-progress__btn bug-cycle-progress__btn--cancel" @click="emit('control', 'cancel')" />
+            <MaxButton v-if="props.cycle.status === 'running'" label="Pausar" severity="secondary" size="small" class="bug-cycle-progress__btn" @click="emit('control', 'pause')" />
+            <MaxButton v-if="props.cycle.status === 'paused'" label="Retomar" severity="success" size="small" class="bug-cycle-progress__btn bug-cycle-progress__btn--resume" @click="emit('control', 'resume')" />
+            <MaxButton v-if="props.cycle.status === 'running' || props.cycle.status === 'paused'" label="Cancelar" severity="danger" size="small" class="bug-cycle-progress__btn bug-cycle-progress__btn--cancel" @click="emit('control', 'cancel')" />
         </div>
     </div>
 </template>

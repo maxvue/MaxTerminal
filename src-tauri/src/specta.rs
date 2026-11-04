@@ -188,13 +188,13 @@ use mt_pty::{
     PtySpawnedEvent, PtyStatus, PtySummary, SpawnSpec, U64Decimal,
 };
 use mt_themes::{
-    AnsiPalette, AppearanceSettings, AppearanceSettingsPatch, BackgroundRamp, ColorScale11,
-    ColorScheme, CursorStyle, ExportFormat, HexColor, ImportDirOptions, ImportFailure,
-    ImportFileOptions, ImportReport, ImportWarning, LibraryChangeReason, MaxUiTokens,
-    OverwritePolicy, ResolvedTheme, RgbaColor, SchemeFileFormat, SkipReason, SkippedEntry,
-    TerminalUiTokens, ThemeChangedEvent, ThemeError, ThemeId, ThemeLibraryChangedEvent,
-    ThemeMetadata, ThemeOrigin, ThemePolarity, ThemeScope, ThemeSummary, WarningCode,
-    XtermThemePayload,
+    AnsiPalette, AnsiPaletteInput, AppearanceSettings, AppearanceSettingsPatch, BackgroundRamp,
+    ColorScale11, ColorScheme, CursorStyle, ExportFormat, HexColor, ImportDirOptions,
+    ImportFailure, ImportFileOptions, ImportReport, ImportWarning, LibraryChangeReason,
+    MaxUiTokens, OverwritePolicy, ResolvedTheme, RgbaColor, SchemeFileFormat, SkipReason,
+    SkippedEntry, TerminalUiTokens, ThemeChangedEvent, ThemeDraftInput, ThemeError, ThemeId,
+    ThemeLibraryChangedEvent, ThemeMetadata, ThemeOrigin, ThemePolarity, ThemeScope, ThemeSummary,
+    WarningCode, XtermThemePayload,
 };
 use specta_typescript::Typescript;
 use tauri_specta::{Builder, ErrorHandlingMode, collect_commands, collect_events};
@@ -301,8 +301,9 @@ use crate::commands::templates::{
     template_test_connection, template_update,
 };
 use crate::commands::themes::{
-    theme_appearance_get, theme_appearance_update, theme_delete, theme_export, theme_get,
-    theme_import_dir, theme_import_file, theme_list, theme_set_active,
+    theme_appearance_get, theme_appearance_update, theme_create, theme_delete, theme_duplicate,
+    theme_export, theme_get, theme_import_dir, theme_import_file, theme_list, theme_set_active,
+    theme_update,
 };
 use crate::commands::updater::{app_update_check, app_update_install_confirmed};
 use crate::commands::workspace::{workspace_initial_command_run, workspace_snapshot};
@@ -469,6 +470,9 @@ macro_rules! register_all_commands {
             theme_set_active,
             theme_delete,
             theme_export,
+            theme_create,
+            theme_update,
+            theme_duplicate,
             bridge_status,
             bridge_get_settings,
             bridge_update_settings,
@@ -904,6 +908,8 @@ pub fn builder_for<R: tauri::Runtime>() -> Builder<R> {
         .typ::<RgbaColor>()
         .typ::<CursorStyle>()
         .typ::<AnsiPalette>()
+        .typ::<AnsiPaletteInput>()
+        .typ::<ThemeDraftInput>()
         .typ::<ThemeMetadata>()
         .typ::<ColorScheme>()
         .typ::<ColorScale11>()

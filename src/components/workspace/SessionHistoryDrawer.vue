@@ -6,13 +6,13 @@
                 <h3 class="session-drawer__title">Sessões da Aba</h3>
             </div>
             <div class="session-drawer__header-actions">
-                <MaxButton label="Iniciar nova Sessão" icon="lucide:rotate-ccw" variant="secondary" size="small" class="session-drawer__new-btn" @click="emit('new-session')" />
-                <MaxIconButton icon="lucide:x" label="Fechar histórico de sessões" variant="ghost" class="session-drawer__close-btn" @click="emit('close')" />
+                <MaxButton label="Iniciar nova Sessão" icon="lucide:rotate-ccw" severity="secondary" size="small" class="session-drawer__new-btn" @click="emit('new-session')" />
+                <MaxIconButton icon="lucide:x" label="Fechar histórico de sessões" variant="text" class="session-drawer__close-btn" @click="emit('close')" />
             </div>
         </header>
         <div class="session-drawer__search">
             <input v-model="searchQuery" type="search" class="session-drawer__search-input" placeholder="Buscar no histórico desta aba (FTS5)..." aria-label="Buscar no histórico desta aba" @keydown.enter.prevent="triggerSearch">
-            <MaxButton label="Buscar" variant="secondary" size="small" class="session-drawer__search-btn" @click="triggerSearch" />
+            <MaxButton label="Buscar" severity="secondary" size="small" class="session-drawer__search-btn" @click="triggerSearch" />
         </div>
         <div v-if="searchQuery.trim() && props.searchHits.length > 0" class="session-drawer__hits">
             <span class="session-drawer__section-label">Resultados da busca ({{ props.searchHits.length }})</span>

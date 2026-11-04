@@ -21,7 +21,8 @@ use crate::import::{
     SkippedEntry, ThemeSummary, collect_candidate_theme_files, parse_and_normalize_file,
 };
 use crate::mapping::ResolvedTheme;
-use crate::scheme::{ColorScheme, CursorStyle};
+use crate::normalize::normalize_draft_input;
+use crate::scheme::{ColorScheme, CursorStyle, ThemeDraftInput};
 
 /// Configurações globais de aparência e tipografia do terminal + overrides por projeto.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Type)]
@@ -134,6 +135,12 @@ pub enum LibraryChangeReason {
     Imported,
     /// Um tema foi excluído.
     Deleted,
+    /// Um tema customizado foi criado pelo editor.
+    Created,
+    /// Um tema existente (`imported` ou `custom`) foi atualizado pelo editor.
+    Updated,
+    /// Um tema foi duplicado a partir de um esquema existente.
+    Duplicated,
 }
 
 /// Evento emitido quando o catálogo de temas disponíveis muda (`theme://library-changed`).
@@ -168,6 +175,7 @@ pub struct ThemeService {
     repo: ThemesRepo,
     cache: ThemeCache,
     sink: Arc<dyn ThemeEventSink>,
+    mutation_lock: parking_lot::Mutex<()>,
 }
 
 impl std::fmt::Debug for ThemeService {
@@ -188,6 +196,7 @@ impl ThemeService {
             repo,
             cache: ThemeCache::new(),
             sink,
+            mutation_lock: parking_lot::Mutex::new(()),
         });
         svc.reload_from_db()?;
         Ok(svc)
@@ -449,6 +458,116 @@ impl ThemeService {
         Ok(effective_resolved)
     }
 
+    /// Cria um novo tema customizado (`origin = Custom`), persistindo no SQLite antes de atualizar
+    /// o cache em memória e emitir `theme://library-changed` (`Created`).
+    pub fn create_theme(&self, draft: ThemeDraftInput) -> Result<ResolvedTheme, ThemeError> {
+        let _guard = self.mutation_lock.lock();
+        let now_ms = mt_db::time::now_unix_ms();
+        let mut scheme = normalize_draft_input(draft, ThemeOrigin::Custom, None, now_ms)?.scheme;
+
+        if let Some(colliding_id) = self.find_id_by_name_ci(&scheme.name, None) {
+            return Err(ThemeError::Conflict {
+                id: colliding_id.to_string(),
+            });
+        }
+
+        scheme.id = self.allocate_unique_theme_id(&scheme.name, &scheme.background.to_hex_string());
+
+        let row = Self::scheme_to_row(&scheme)?;
+        self.repo.upsert_schemes_blocking(vec![row])?;
+        self.cache.put_custom_scheme(scheme.clone());
+        let resolved = self.cache.get_or_resolve(&scheme);
+
+        self.sink.emit_library_changed(ThemeLibraryChangedEvent {
+            themes: self.list_summaries(),
+            reason: LibraryChangeReason::Created,
+        });
+
+        Ok(resolved)
+    }
+
+    /// Atualiza um tema existente (`origin = Imported | Custom`) mantendo `id`, `origin`, `created_at`
+    /// e metadados de arquivo originais, invalidando o cache LRU do tema e emitindo `Updated`.
+    pub fn update_theme(
+        &self,
+        id: &ThemeId,
+        draft: ThemeDraftInput,
+    ) -> Result<ResolvedTheme, ThemeError> {
+        let _guard = self.mutation_lock.lock();
+
+        if is_builtin_theme_id(id) {
+            return Err(ThemeError::BuiltinReadOnly { id: id.to_string() });
+        }
+
+        let existing = self
+            .cache
+            .get_custom_scheme(id)
+            .ok_or_else(|| ThemeError::NotFound { id: id.to_string() })?;
+
+        let now_ms = mt_db::time::now_unix_ms().max(existing.metadata.updated_at.saturating_add(1));
+        let mut scheme =
+            normalize_draft_input(draft, existing.origin, Some(id.clone()), now_ms)?.scheme;
+
+        if let Some(colliding_id) = self.find_id_by_name_ci(&scheme.name, Some(id)) {
+            return Err(ThemeError::Conflict {
+                id: colliding_id.to_string(),
+            });
+        }
+
+        scheme.id = id.clone();
+        scheme.origin = existing.origin;
+        scheme.metadata.created_at = existing.metadata.created_at;
+        scheme.metadata.source_format = existing.metadata.source_format;
+        scheme.metadata.source_filename = existing.metadata.source_filename;
+        scheme.metadata.updated_at = now_ms;
+        scheme.metadata.sha256 = scheme.compute_content_sha256();
+
+        let row = Self::scheme_to_row(&scheme)?;
+        self.repo.upsert_schemes_blocking(vec![row])?;
+        self.cache.put_custom_scheme(scheme.clone());
+        let resolved = self.cache.get_or_resolve(&scheme);
+
+        self.sink.emit_library_changed(ThemeLibraryChangedEvent {
+            themes: self.list_summaries(),
+            reason: LibraryChangeReason::Updated,
+        });
+
+        Ok(resolved)
+    }
+
+    /// Duplica qualquer tema existente (`builtin`, `imported` ou `custom`), preservando todas as cores,
+    /// estilo de cursor, seleção com alfa e `indexed_colors`, com `origin = Custom` e nome/ID únicos.
+    pub fn duplicate_theme(&self, id: &ThemeId) -> Result<ResolvedTheme, ThemeError> {
+        let _guard = self.mutation_lock.lock();
+        let source = self.get_resolved(id)?.scheme;
+        let now_ms = mt_db::time::now_unix_ms();
+
+        let new_name = self.allocate_duplicate_name(&source.name);
+        let new_id = self.allocate_unique_theme_id(&new_name, &source.background.to_hex_string());
+
+        let mut duplicated = source;
+        duplicated.id = new_id;
+        duplicated.name = new_name;
+        duplicated.origin = ThemeOrigin::Custom;
+        duplicated.metadata.source_format = None;
+        duplicated.metadata.source_filename = None;
+        duplicated.metadata.created_at = now_ms;
+        duplicated.metadata.updated_at = now_ms;
+        duplicated.metadata.sha256 = duplicated.compute_content_sha256();
+
+        let row = Self::scheme_to_row(&duplicated)?;
+        self.repo.upsert_schemes_blocking(vec![row])?;
+        self.cache.put_custom_scheme(duplicated.clone());
+        let resolved = self.cache.get_or_resolve(&duplicated);
+
+        self.sink.emit_library_changed(ThemeLibraryChangedEvent {
+            themes: self.list_summaries(),
+            reason: LibraryChangeReason::Duplicated,
+        });
+
+        Ok(resolved)
+    }
+
     /// Remove um tema `imported` ou `custom`, revertendo o tema ativo para `fallback_id` (ou `max-navy-teal`)
     /// caso o tema removido estivesse ativo.
     pub fn delete_theme(
@@ -456,6 +575,7 @@ impl ThemeService {
         id: &ThemeId,
         fallback_id: Option<ThemeId>,
     ) -> Result<(), ThemeError> {
+        let _guard = self.mutation_lock.lock();
         if is_builtin_theme_id(id) {
             return Err(ThemeError::BuiltinReadOnly { id: id.to_string() });
         }
@@ -583,6 +703,7 @@ impl ThemeService {
         policy: OverwritePolicy,
         dry_run: bool,
     ) -> Result<ImportReport, ThemeError> {
+        let _guard = self.mutation_lock.lock();
         let mut existing_by_id: BTreeMap<ThemeId, ColorScheme> = BTreeMap::new();
         let mut existing_by_name_lower: BTreeMap<String, ThemeId> = BTreeMap::new();
         let mut existing_by_sha: BTreeMap<String, ThemeId> = BTreeMap::new();
@@ -738,6 +859,91 @@ impl ThemeService {
         };
         self.repo.save_appearance_blocking(row)?;
         Ok(())
+    }
+
+    fn find_id_by_name_ci(
+        &self,
+        candidate_name: &str,
+        exclude_id: Option<&ThemeId>,
+    ) -> Option<ThemeId> {
+        let needle = candidate_name.trim().to_lowercase();
+        for b in builtin_schemes() {
+            if exclude_id.is_some_and(|ex| ex == &b.id) {
+                continue;
+            }
+            if b.name.trim().to_lowercase() == needle {
+                return Some(b.id);
+            }
+        }
+        for c in self.cache.list_custom_schemes() {
+            if exclude_id.is_some_and(|ex| ex == &c.id) {
+                continue;
+            }
+            if c.name.trim().to_lowercase() == needle {
+                return Some(c.id);
+            }
+        }
+        None
+    }
+
+    fn allocate_unique_theme_id(&self, name: &str, fallback_hex: &str) -> ThemeId {
+        let base_id = ThemeId::slug_from_name(name, fallback_hex);
+        if !self.exists(&base_id) {
+            return base_id;
+        }
+
+        let base_str = base_id.as_str();
+        for n in 2u32..=99_999 {
+            let suffix = format!("-{n}");
+            let max_base_len = 64usize.saturating_sub(suffix.len());
+            let prefix = base_str[..base_str.len().min(max_base_len)].trim_end_matches('-');
+            let candidate_raw = format!("{prefix}{suffix}");
+            if let Ok(candidate_id) = ThemeId::parse(&candidate_raw) {
+                if !self.exists(&candidate_id) {
+                    return candidate_id;
+                }
+            }
+        }
+
+        base_id
+    }
+
+    fn allocate_duplicate_name(&self, source_name: &str) -> String {
+        let trimmed = source_name.trim();
+        for n in 1u32..=99_999 {
+            let suffix = if n == 1 {
+                " (cópia)".to_string()
+            } else {
+                format!(" (cópia {n})")
+            };
+            let max_base_chars = 80usize.saturating_sub(suffix.chars().count());
+            let base: String = trimmed.chars().take(max_base_chars).collect();
+            let candidate = format!("{}{suffix}", base.trim_end());
+            if self.find_id_by_name_ci(&candidate, None).is_none() {
+                return candidate;
+            }
+        }
+        format!("{} (cópia)", trimmed.chars().take(72).collect::<String>())
+    }
+
+    fn scheme_to_row(scheme: &ColorScheme) -> Result<StoredColorSchemeRow, ThemeError> {
+        let payload_json =
+            serde_json::to_string(scheme).map_err(|e| ThemeError::UnsupportedFormat {
+                reason: e.to_string(),
+            })?;
+        Ok(StoredColorSchemeRow {
+            id: scheme.id.as_str().to_string(),
+            name: scheme.name.clone(),
+            origin: scheme.origin.as_str().to_string(),
+            polarity: scheme.polarity.as_str().to_string(),
+            author: scheme.metadata.author.clone(),
+            source_format: scheme.metadata.source_format.clone(),
+            source_filename: scheme.metadata.source_filename.clone(),
+            sha256: scheme.metadata.sha256.clone(),
+            payload_json,
+            created_at: scheme.metadata.created_at,
+            updated_at: scheme.metadata.updated_at,
+        })
     }
 }
 

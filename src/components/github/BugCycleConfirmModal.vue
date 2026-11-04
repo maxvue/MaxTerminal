@@ -27,8 +27,8 @@
             </template>
         </div>
         <footer class="bug-cycle-confirm-modal__footer">
-            <MaxButton label="Cancelar" variant="secondary" class="bug-cycle-confirm-modal__btn" @click="emit('close')" />
-            <MaxButton :label="props.submitting ? 'Iniciando...' : `Iniciar Ciclo (${props.preview?.candidates.length ?? 0} Bugs)`" icon="lucide:play" variant="primary" class="bug-cycle-confirm-modal__btn bug-cycle-confirm-modal__btn--primary" :disabled="!props.preview || props.preview.candidates.length === 0 || props.submitting" :loading="props.submitting" @click="onStartCycle" />
+            <MaxButton label="Cancelar" severity="secondary" class="bug-cycle-confirm-modal__btn" @click="emit('close')" />
+            <MaxButton :label="props.submitting ? 'Iniciando...' : `Iniciar Ciclo (${props.preview?.candidates.length ?? 0} Bugs)`" icon="lucide:play" class="bug-cycle-confirm-modal__btn bug-cycle-confirm-modal__btn--primary" :disabled="!props.preview || props.preview.candidates.length === 0 || props.submitting" :loading="props.submitting" @click="onStartCycle" />
         </footer>
     </MaxModal>
 </template>

@@ -5,7 +5,7 @@
                 <h3 class="ai-preferences__title">Integração com MaxAiManager</h3>
                 <p class="ai-preferences__subtitle">Comando por linguagem natural (@ / ?), diagnóstico rápido inline de falhas e consulta RAG.</p>
             </div>
-            <MaxTag :value="aiStore.indicator.label" :class="`is-${aiStore.indicator.color}`" data-testid="ai-prefs-status-badge" />
+            <MaxTag :value="aiStore.indicator.label" :severity="aiStatusSeverity" :class="`is-${aiStore.indicator.color}`" data-testid="ai-prefs-status-badge" />
         </header>
 
         <div class="ai-preferences__grid">
@@ -87,7 +87,7 @@
             </label>
         </div>
 
-        <MaxAlert v-if="feedbackMsg" :message="feedbackMsg" severity="info" data-testid="ai-prefs-feedback" class="ai-preferences__feedback" />
+        <MaxAlert v-if="feedbackMsg" :message="feedbackMsg" :severity="feedbackSeverity" data-testid="ai-prefs-feedback" class="ai-preferences__feedback" />
 
         <footer class="ai-preferences__footer">
             <div class="ai-preferences__maintenance">
@@ -97,7 +97,7 @@
                 <MaxButton type="button" label="Limpar histórico" icon="lucide:trash-2" variant="outlined" data-testid="btn-clear-history" @click="onClearHistory" />
             </div>
 
-            <MaxButton type="button" label="Salvar preferências" icon="lucide:check" severity="primary" data-testid="btn-save-ai-settings" @click="onSave" />
+            <MaxButton type="button" label="Salvar preferências" icon="lucide:check" data-testid="btn-save-ai-settings" @click="onSave" />
         </footer>
     </section>
 </template>
@@ -137,6 +137,21 @@
 
     const draft = ref<AiSettings_Serialize>(cloneSettings(aiStore.settings));
     const feedbackMsg = ref<string | null>(null);
+    const feedbackSeverity = ref<'info' | 'success' | 'warning' | 'danger'>('info');
+
+    const aiStatusSeverity = computed<'success' | 'warning' | 'danger' | 'secondary'>(() => {
+        switch (aiStore.indicator.color) {
+            case 'success':
+                return 'success';
+            case 'warning':
+                return 'warning';
+            case 'danger':
+                return 'danger';
+            case 'neutral':
+            default:
+                return 'secondary';
+        }
+    });
 
     watch(
         () => aiStore.settings,
@@ -158,15 +173,54 @@
         draft.value.defaultSelection = selection;
     }
 
+    function validateNumberLimits(): string | null {
+        const debounce = draft.value.diagnosis.debounceMs;
+        if (debounce === null || debounce === undefined || debounce === ('' as unknown) || Number.isNaN(Number(debounce))) {
+            return 'O atraso de debounce do diagnóstico não pode ser vazio e deve ser um número inteiro entre 0 e 10000 ms.';
+        }
+        const debounceNum = Number(debounce);
+        if (!Number.isInteger(debounceNum)) {
+            return 'O atraso de debounce do diagnóstico deve ser um número inteiro (decimais não permitidos).';
+        }
+        if (debounceNum < 0 || debounceNum > 10000) {
+            return 'O atraso de debounce do diagnóstico deve estar entre 0 e 10000 ms.';
+        }
+
+        const topK = draft.value.rag.topK;
+        if (topK === null || topK === undefined || topK === ('' as unknown) || Number.isNaN(Number(topK))) {
+            return 'A quantidade de trechos RAG (topK) não pode ser vazia e deve ser um número inteiro entre 1 e 20.';
+        }
+        const topKNum = Number(topK);
+        if (!Number.isInteger(topKNum)) {
+            return 'A quantidade de trechos RAG (topK) deve ser um número inteiro (decimais não permitidos).';
+        }
+        if (topKNum < 1 || topKNum > 20) {
+            return 'A quantidade de trechos RAG (topK) deve estar entre 1 e 20.';
+        }
+
+        return null;
+    }
+
     async function onSave(): Promise<void> {
         feedbackMsg.value = null;
+        feedbackSeverity.value = 'info';
+
+        const validationErr = validateNumberLimits();
+        if (validationErr) {
+            feedbackMsg.value = validationErr;
+            feedbackSeverity.value = 'danger';
+            return;
+        }
+
         try {
             const saved = await aiStore.saveSettings(draft.value);
             feedbackMsg.value = 'Preferências de IA salvas com sucesso.';
+            feedbackSeverity.value = 'success';
             emit('saved', saved);
         } catch (err: unknown) {
             feedbackMsg.value =
                 err instanceof Error ? err.message : 'Falha ao salvar preferências de IA.';
+            feedbackSeverity.value = 'danger';
         }
     }
 

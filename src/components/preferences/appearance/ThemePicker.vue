@@ -1,12 +1,12 @@
 <template>
     <div class="theme-picker">
         <div class="theme-picker__toolbar">
-            <MaxSegmentedControl v-model="filter" :options="polarityOptions" aria-label="Filtrar temas por polaridade" class="theme-picker__filters" />
+            <MaxSegmentedControl v-model="filter" :options="polarityOptions" aria-label="Filtrar temas por polaridade" v-bind="{ ariaLabel: 'Filtrar temas por polaridade' }" class="theme-picker__filters" />
             <MaxInputSearch v-model="searchQuery" placeholder="Filtrar temas pelo nome..." aria-label="Filtrar temas pelo nome" class="theme-picker__search" />
         </div>
 
         <div class="theme-picker__grid">
-            <ThemeSwatch v-for="item in filteredThemes" :key="item.id" :summary="item" :active="item.id === activeThemeId" :previewing="item.id === previewingId" @select="emit('select', $event)" @hover="onHover" @leave="onLeave" @delete="emit('delete', $event)" @export="emit('export', $event)" />
+            <ThemeSwatch v-for="item in filteredThemes" :key="item.id" :summary="item" :active="item.id === activeThemeId" :previewing="item.id === previewingId" @select="onSelect" @hover="onHover" @leave="onLeave" @edit="onEdit" @duplicate="onDuplicate" @delete="onDelete" @export="emit('export', $event)" />
         </div>
 
         <MaxEmptyDiv v-if="filteredThemes.length === 0" message="Nenhum esquema de cores corresponde ao filtro informado." class="theme-picker__empty" />
@@ -23,19 +23,26 @@
     export interface ThemePickerProps {
         themes: ThemeSummary[];
         activeThemeId: ThemeId;
+        previewSuspended?: boolean;
     }
 
-    const props = defineProps<ThemePickerProps>();
+    const props = withDefaults(defineProps<ThemePickerProps>(), {
+        previewSuspended: false
+    });
 
     const emit = defineEmits<{
         select: [id: ThemeId];
+        edit: [id: ThemeId];
+        duplicate: [id: ThemeId];
         delete: [id: ThemeId];
         export: [id: ThemeId];
     }>();
 
     const filter = ref<'all' | 'dark' | 'light'>('all');
     const searchQuery = ref('');
-    const { previewingId, previewOnHover, stopPreview } = useThemePreview();
+    const { previewingId, previewOnHover, stopPreview } = useThemePreview(
+        () => props.previewSuspended
+    );
 
     const darkCount = computed(
         () => props.themes.filter((t) => t.polarity === 'dark').length
@@ -70,6 +77,26 @@
 
     function onLeave(): void {
         stopPreview();
+    }
+
+    function onSelect(id: ThemeId): void {
+        stopPreview();
+        emit('select', id);
+    }
+
+    function onEdit(id: ThemeId): void {
+        stopPreview();
+        emit('edit', id);
+    }
+
+    function onDuplicate(id: ThemeId): void {
+        stopPreview();
+        emit('duplicate', id);
+    }
+
+    function onDelete(id: ThemeId): void {
+        stopPreview();
+        emit('delete', id);
     }
 </script>
 

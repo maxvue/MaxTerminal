@@ -3,32 +3,28 @@
         <header class="project-list__header">
             <span class="project-list__heading">Projetos</span>
             <div class="project-list__toolbar">
-                <MaxButton type="button" variant="secondary" size="small" class="project-list__tool-btn" title="Adicionar projeto" aria-label="Adicionar projeto" @click="showAddModal = true">
+                <MaxButton type="button" severity="secondary" size="small" class="project-list__tool-btn" label="Adicionar projeto" title="Adicionar projeto" @click="showAddModal = true">
                     <MaxIcon icon="mdi:plus" />
                     <span>Adicionar projeto</span>
                 </MaxButton>
-                <MaxIconButton icon="mdi:folder-multiple-plus-outline" size="1.1" class="project-list__tool-btn project-list__tool-btn--icon" title="Adicionar pasta de projetos" aria-label="Adicionar pasta de projetos" @click="openNewRootModal" />
+                <MaxIconButton icon="mdi:folder-multiple-plus-outline" size="1.1" class="project-list__tool-btn project-list__tool-btn--icon" label="Adicionar pasta de projetos" title="Adicionar pasta de projetos" aria-label="Adicionar pasta de projetos" @click="openNewRootModal" />
             </div>
         </header>
 
         <ProjectDiscoveryPanel v-if="projectsStore.discovered.length > 0" :items="projectsStore.discovered" @accept="handleAcceptDiscovered" @dismiss="handleDismissDiscovered" />
 
-        <MaxAlert v-if="projectsStore.error && projectsStore.projects.length === 0" type="danger" role="alert" class="project-list__error">
+        <MaxAlert v-if="projectsStore.error && projectsStore.projects.length === 0" severity="danger" role="alert" class="project-list__error">
             <span>{{ projectsStore.error }}</span>
-            <MaxButton type="button" variant="primary" size="small" class="project-list__retry-btn" @click="handleRetry">
-                Tentar novamente
-            </MaxButton>
+            <MaxButton type="button" size="small" class="project-list__retry-btn" label="Tentar novamente" @click="handleRetry" />
         </MaxAlert>
 
-        <MaxAlert v-if="visibilityError" type="danger" role="alert" class="project-list__error">
+        <MaxAlert v-if="visibilityError" severity="danger" role="alert" class="project-list__error">
             <span>{{ visibilityError }}</span>
-            <MaxButton type="button" variant="primary" size="small" class="project-list__retry-btn" @click="visibilityError = null">
-                Fechar
-            </MaxButton>
+            <MaxButton type="button" size="small" class="project-list__retry-btn" label="Fechar" @click="visibilityError = null" />
         </MaxAlert>
 
         <div class="project-list__scroll">
-            <MaxQueryState :state="listState" :retryable="true" :message="projectsStore.error ?? undefined" @retry="handleRetry">
+            <MaxQueryState :state="listState" :retryable="true" :message="projectsStore.error ?? null" @retry="handleRetry">
                 <template #empty>
                     <ProjectEmptyState @add-project="showAddModal = true" @add-root="openNewRootModal" />
                 </template>
@@ -57,7 +53,7 @@
         </div>
 
         <footer class="project-list__footer">
-            <MaxButton type="button" variant="secondary" class="project-list__settings-btn" title="Configurações gerais" aria-label="Abrir configurações gerais" @click="handleOpenGeneralSettings">
+            <MaxButton type="button" severity="secondary" class="project-list__settings-btn" label="Configurações" title="Configurações gerais" @click="handleOpenGeneralSettings">
                 <MaxIcon icon="lucide:settings" />
                 <span>Configurações</span>
             </MaxButton>

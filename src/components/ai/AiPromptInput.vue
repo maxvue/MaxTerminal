@@ -11,7 +11,7 @@
 
         <input ref="inputEl" v-model="promptText" type="text" class="ai-prompt-input__field" :placeholder="placeholderText" autocomplete="off" data-testid="ai-prompt-field" @keydown.esc.prevent="onCancel">
 
-        <MaxButton type="submit" variant="primary" size="small" class="ai-prompt-input__submit" :disabled="!promptText.trim() || loading" :loading="loading" data-testid="ai-prompt-submit">
+        <MaxButton type="submit" size="small" class="ai-prompt-input__submit" :disabled="!promptText.trim() || loading" :loading="loading" data-testid="ai-prompt-submit">
             <MaxIcon :icon="loading ? 'lucide:loader-circle' : 'lucide:send'" />
             <span>{{ activeMode.kind === 'rag' ? 'Pesquisar' : 'Gerar Comando' }}</span>
         </MaxButton>
@@ -22,9 +22,7 @@
 
 <script setup lang="ts">
     import { computed, nextTick, ref, watch } from 'vue';
-    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
-    import MaxIcon from '@maxvue/max-components-ui/components/MaxIcon';
-    import MaxIconButton from '@maxvue/max-components-ui/components/MaxIconButton';
+    import { MaxButton, MaxIcon, MaxIconButton } from '@maxvue/max-components-ui';
     import { useAiSuggestion } from '@/composables/ai/useAiSuggestion';
     import { useRagSearch } from '@/composables/ai/useRagSearch';
     import { useAiStore } from '@/stores/ai';

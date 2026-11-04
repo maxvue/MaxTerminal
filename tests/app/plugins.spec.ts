@@ -128,4 +128,26 @@ describe('Registro de plugins da aplicação - registerAppPlugins', () => {
 
         app.unmount();
     });
+
+    it('configura MaxApp offline com rotas vazias e instala Vue Router com rotas nomeadas', async () => {
+        const { getMaxAppConfig } = await import('@maxvue/max-components-ui');
+        const { createAppRouter } = await import('@/app/router');
+
+        const app = createApp(defineComponent({ render: () => null }));
+        registerAppPlugins(app);
+
+        const cfg = getMaxAppConfig();
+        expect(cfg.routeUser).toBe('');
+        expect(cfg.routeUserSave).toBe('');
+        expect(cfg.routeMenus).toBe('');
+        expect(cfg.routeLogin).toBe('');
+        expect(cfg.routeProviders).toBe('');
+        expect(cfg.routeImpersonateStatus).toBe('');
+
+        const router = createAppRouter(undefined, '/');
+        expect(router.currentRoute.value.name).toBe('workspace-shell');
+
+        const fallbackRouter = createAppRouter(undefined, '/rota-desconhecida');
+        expect(fallbackRouter.currentRoute.value.name).toBe('workspace-fallback');
+    });
 });

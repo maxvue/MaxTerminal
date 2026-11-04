@@ -1,18 +1,26 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
+import { apiGetRoute } from '@maxvue/max-use';
 import type { UnlistenFn } from '@tauri-apps/api/event';
+import {
+    THEME_CATALOG_VIRTUAL_ROUTE,
+    installThemeMaxPiniaAdapter
+} from '@/ipc/themeMaxPiniaAdapter';
 import {
     onThemeChanged,
     onThemeLibraryChanged,
     themeAppearanceGet,
     themeAppearanceUpdate,
+    themeCreate,
     themeDelete,
+    themeDuplicate,
     themeExport,
     themeGet,
     themeImportDir,
     themeImportFile,
     themeList,
-    themeSetActive
+    themeSetActive,
+    themeUpdate
 } from '@/ipc/themes';
 import { saveThemeBootstrapSnapshot } from '@/theme/bootstrap';
 import { applyMaxUiTokensToRoot } from '@/theme/cssTokens';
@@ -27,6 +35,7 @@ import {
     type ImportFileOptions,
     type ImportReport,
     type ResolvedTheme,
+    type ThemeDraftInput,
     type ThemeId,
     type ThemeScope,
     type ThemeSummary
@@ -48,6 +57,8 @@ const DEFAULT_APPEARANCE: AppearanceSettings = {
 };
 
 export const useThemeStore = defineStore('theme', () => {
+    installThemeMaxPiniaAdapter();
+
     const themes = ref<ThemeSummary[]>([]);
     const appearance = ref<AppearanceSettings>({ ...DEFAULT_APPEARANCE });
     const activeResolved = ref<ResolvedTheme | null>(null);
@@ -60,6 +71,12 @@ export const useThemeStore = defineStore('theme', () => {
     const resolvedCache = new Map<string, ResolvedTheme>();
     let unlistenChanged: UnlistenFn | null = null;
     let unlistenLibrary: UnlistenFn | null = null;
+
+    const hasActiveProjectOverride = computed<boolean>(() => {
+        const pid = currentProjectId.value;
+        const overrides = appearance.value?.projectOverrides;
+        return Boolean(pid && overrides && overrides[pid]);
+    });
 
     const effectiveThemeId = computed<string>(() => {
         if (previewResolved.value?.scheme?.id) {
@@ -84,6 +101,28 @@ export const useThemeStore = defineStore('theme', () => {
     const customThemes = computed(() =>
         themes.value.filter((t) => t.origin !== 'builtin')
     );
+
+    async function fetchCatalog(): Promise<ThemeSummary[]> {
+        try {
+            const response: unknown = await apiGetRoute<ThemeSummary[]>(
+                THEME_CATALOG_VIRTUAL_ROUTE
+            );
+            if (Array.isArray(response)) {
+                return response as ThemeSummary[];
+            }
+            if (
+                response &&
+                typeof response === 'object' &&
+                'data' in response &&
+                Array.isArray((response as { data?: unknown }).data)
+            ) {
+                return (response as { data: ThemeSummary[] }).data;
+            }
+        } catch {
+            // Fallback direto ao IPC quando chamado fora do adapter HTTP
+        }
+        return themeList();
+    }
 
     function applyResolvedToUiAndTerminals(
         resolved: ResolvedTheme,
@@ -145,7 +184,7 @@ export const useThemeStore = defineStore('theme', () => {
         loading.value = true;
         try {
             const [list, appSettings] = await Promise.all([
-                themeList().catch(() => [] as ThemeSummary[]),
+                fetchCatalog().catch(() => [] as ThemeSummary[]),
                 themeAppearanceGet().catch(() => null)
             ]);
             themes.value = Array.isArray(list) ? list : [];
@@ -162,17 +201,44 @@ export const useThemeStore = defineStore('theme', () => {
                 if (ev.appearance) {
                     appearance.value = ev.appearance;
                 }
+                const pid = currentProjectId.value;
+                const projectOverrideId =
+                    pid && ev.appearance?.projectOverrides
+                        ? ev.appearance.projectOverrides[pid]
+                        : undefined;
+
+                if (
+                    ev.scope?.kind === 'global' &&
+                    projectOverrideId &&
+                    projectOverrideId !== ev.resolved.scheme.id
+                ) {
+                    void syncEffectiveTheme(false);
+                    return;
+                }
+
                 activeResolved.value = ev.resolved;
                 if (!previewResolved.value) {
-                    applyResolvedToUiAndTerminals(ev.resolved, true);
+                    applyResolvedToUiAndTerminals(
+                        ev.resolved,
+                        ev.scope?.kind === 'global' && !projectOverrideId
+                    );
                 }
             }).catch(() => null);
 
             unlistenLibrary = await onThemeLibraryChanged((ev) => {
                 if (Array.isArray(ev?.themes)) {
                     themes.value = ev.themes;
+                    if (
+                        previewResolved.value?.scheme?.id &&
+                        !ev.themes.some((t) => t.id === previewResolved.value?.scheme.id)
+                    ) {
+                        previewResolved.value = null;
+                    }
                 }
                 resolvedCache.clear();
+                if (ev?.reason === 'updated' || ev?.reason === 'deleted') {
+                    void syncEffectiveTheme(!hasActiveProjectOverride.value);
+                }
             }).catch(() => null);
 
             initialized.value = true;
@@ -273,7 +339,7 @@ export const useThemeStore = defineStore('theme', () => {
         const report = await themeImportFile(path, options);
         lastImportReport.value = report;
         if (!options.dryRun && report.imported.length > 0) {
-            themes.value = await themeList();
+            themes.value = await fetchCatalog();
         }
         return report;
     }
@@ -285,20 +351,71 @@ export const useThemeStore = defineStore('theme', () => {
         const report = await themeImportDir(dirPath, options);
         lastImportReport.value = report;
         if (!options.dryRun && report.imported.length > 0) {
-            themes.value = await themeList();
+            themes.value = await fetchCatalog();
         }
         return report;
+    }
+
+    async function createTheme(
+        input: ThemeDraftInput,
+        activateScope: ThemeScope | null = null
+    ): Promise<ResolvedTheme> {
+        const created = await themeCreate(input);
+        resolvedCache.set(created.scheme.id, created);
+        themes.value = await fetchCatalog();
+        if (activateScope) {
+            return setActiveTheme(created.scheme.id, activateScope);
+        }
+        return created;
+    }
+
+    async function updateTheme(
+        id: ThemeId,
+        input: ThemeDraftInput
+    ): Promise<ResolvedTheme> {
+        const updated = await themeUpdate(id, input);
+        resolvedCache.set(updated.scheme.id, updated);
+        themes.value = await fetchCatalog();
+
+        if (previewResolved.value?.scheme?.id === id) {
+            previewResolved.value = updated;
+            applyResolvedToUiAndTerminals(updated, false);
+        } else if (effectiveThemeId.value === id) {
+            activeResolved.value = updated;
+            applyResolvedToUiAndTerminals(
+                updated,
+                !hasActiveProjectOverride.value
+            );
+        }
+
+        return updated;
+    }
+
+    async function duplicateTheme(
+        id: ThemeId,
+        activateScope: ThemeScope | null = null
+    ): Promise<ResolvedTheme> {
+        const duplicated = await themeDuplicate(id);
+        resolvedCache.set(duplicated.scheme.id, duplicated);
+        themes.value = await fetchCatalog();
+        if (activateScope) {
+            return setActiveTheme(duplicated.scheme.id, activateScope);
+        }
+        return duplicated;
     }
 
     async function deleteTheme(
         id: ThemeId,
         fallbackId: ThemeId | null = null
     ): Promise<void> {
+        if (previewResolved.value?.scheme?.id === id) {
+            previewResolved.value = null;
+        }
         await themeDelete(id, fallbackId);
         resolvedCache.delete(id);
-        themes.value = await themeList();
+        themes.value = await fetchCatalog();
         appearance.value = await themeAppearanceGet();
-        await syncEffectiveTheme(true);
+        await syncEffectiveTheme(!hasActiveProjectOverride.value);
     }
 
     async function exportTheme(
@@ -306,6 +423,20 @@ export const useThemeStore = defineStore('theme', () => {
         format: ExportFormat
     ): Promise<string> {
         return themeExport(id, format);
+    }
+
+    function applySavedThemeFromEditor(resolved: ResolvedTheme): void {
+        resolvedCache.set(resolved.scheme.id, resolved);
+        if (previewResolved.value?.scheme?.id === resolved.scheme.id) {
+            previewResolved.value = resolved;
+            applyResolvedToUiAndTerminals(resolved, false);
+        } else if (effectiveThemeId.value === resolved.scheme.id) {
+            activeResolved.value = resolved;
+            applyResolvedToUiAndTerminals(
+                resolved,
+                !hasActiveProjectOverride.value
+            );
+        }
     }
 
     return {
@@ -330,8 +461,12 @@ export const useThemeStore = defineStore('theme', () => {
         cancelPreview,
         importFile,
         importDir,
+        createTheme,
+        updateTheme,
+        duplicateTheme,
         deleteTheme,
         exportTheme,
-        fetchAndCacheResolved
+        fetchAndCacheResolved,
+        applySavedThemeFromEditor
     };
 });

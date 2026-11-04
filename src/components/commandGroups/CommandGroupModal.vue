@@ -8,9 +8,9 @@
                     <span class="command-group-modal__scope-pill" data-testid="modal-scope-pill">{{ editor.draft.value.scope === 'local' ? 'Deste projeto' : 'Global' }}</span>
                 </div>
                 <div class="command-group-modal__header-actions">
-                    <MaxButton v-if="editor.isEditMode.value && editor.draft.value.scope === 'local'" label="Copiar para Global" icon="lucide:copy" variant="secondary" size="small" class="command-group-modal__copy-btn" data-testid="btn-copy-to-global" @click="editor.copyToScope('global', null)" />
-                    <MaxButton v-if="editor.isEditMode.value && editor.draft.value.scope === 'global' && projectId" label="Copiar para este Projeto" icon="lucide:copy" variant="secondary" size="small" class="command-group-modal__copy-btn" data-testid="btn-copy-to-local" @click="editor.copyToScope('local', projectId)" />
-                    <MaxIconButton icon="lucide:x" label="Fechar modal" variant="ghost" class="command-group-modal__close-btn" data-testid="btn-close-group-modal" @click="onClose" />
+                    <MaxButton v-if="editor.isEditMode.value && editor.draft.value.scope === 'local'" label="Copiar para Global" icon="lucide:copy" severity="secondary" size="small" class="command-group-modal__copy-btn" data-testid="btn-copy-to-global" @click="editor.copyToScope('global', null)" />
+                    <MaxButton v-if="editor.isEditMode.value && editor.draft.value.scope === 'global' && projectId" label="Copiar para este Projeto" icon="lucide:copy" severity="secondary" size="small" class="command-group-modal__copy-btn" data-testid="btn-copy-to-local" @click="editor.copyToScope('local', projectId)" />
+                    <MaxIconButton icon="lucide:x" label="Fechar modal" variant="text" class="command-group-modal__close-btn" data-testid="btn-close-group-modal" @click="onClose" />
                 </div>
             </header>
 
@@ -22,8 +22,8 @@
                     <span>Outro fluxo atualizou este grupo enquanto você editava. Suas alterações locais foram preservadas.</span>
                 </div>
                 <div class="command-group-modal__conflict-actions">
-                    <MaxButton label="Carregar versão mais recente em paralelo" variant="ghost" class="command-group-modal__btn command-group-modal__btn--ghost" data-testid="btn-conflict-load-latest" @click="editor.loadLatestOnConflict()" />
-                    <MaxButton label="Forçar salvamento sobre a revisão atual" variant="warning" class="command-group-modal__btn command-group-modal__btn--warning" data-testid="btn-conflict-force-save" @click="onForceSaveOverConflict" />
+                    <MaxButton label="Carregar versão mais recente em paralelo" variant="text" class="command-group-modal__btn command-group-modal__btn--ghost" data-testid="btn-conflict-load-latest" @click="editor.loadLatestOnConflict()" />
+                    <MaxButton label="Forçar salvamento sobre a revisão atual" severity="warning" class="command-group-modal__btn command-group-modal__btn--warning" data-testid="btn-conflict-force-save" @click="onForceSaveOverConflict" />
                 </div>
             </div>
 
@@ -100,7 +100,7 @@
 
                     <div class="command-group-modal__items-header">
                         <h3 class="command-group-modal__subtitle">Itens do Grupo ({{ editor.draft.value.items.length }})</h3>
-                        <MaxButton label="Adicionar Item" icon="lucide:plus" variant="ghost" class="command-group-modal__btn command-group-modal__btn--ghost" data-testid="btn-add-group-item" @click="editor.addItem()" />
+                        <MaxButton label="Adicionar Item" icon="lucide:plus" variant="text" class="command-group-modal__btn command-group-modal__btn--ghost" data-testid="btn-add-group-item" @click="editor.addItem()" />
                     </div>
 
                     <div class="command-group-modal__items-list">
@@ -117,11 +117,11 @@
 
             <footer class="command-group-modal__footer">
                 <div class="command-group-modal__footer-left">
-                    <MaxButton v-if="editor.isEditMode.value" :label="editor.deleting.value ? 'Excluindo…' : 'Excluir grupo'" icon="lucide:trash-2" variant="danger" class="command-group-modal__btn command-group-modal__btn--danger" data-testid="btn-delete-group" :disabled="editor.deleting.value || editor.saving.value" :loading="editor.deleting.value" @click="onDelete" />
+                    <MaxButton v-if="editor.isEditMode.value" :label="editor.deleting.value ? 'Excluindo…' : 'Excluir grupo'" icon="lucide:trash-2" severity="danger" class="command-group-modal__btn command-group-modal__btn--danger" data-testid="btn-delete-group" :disabled="editor.deleting.value || editor.saving.value" :loading="editor.deleting.value" @click="onDelete" />
                 </div>
                 <div class="command-group-modal__footer-right">
-                    <MaxButton label="Cancelar" variant="ghost" class="command-group-modal__btn command-group-modal__btn--ghost" data-testid="btn-cancel-group" @click="onClose" />
-                    <MaxButton :label="editor.saving.value ? 'Salvando…' : 'Salvar grupo'" icon="lucide:check" variant="primary" class="command-group-modal__btn command-group-modal__btn--primary" data-testid="btn-save-group" :disabled="editor.saving.value" :loading="editor.saving.value" @click="onSave" />
+                    <MaxButton label="Cancelar" variant="text" class="command-group-modal__btn command-group-modal__btn--ghost" data-testid="btn-cancel-group" @click="onClose" />
+                    <MaxButton :label="editor.saving.value ? 'Salvando…' : 'Salvar grupo'" icon="lucide:check" class="command-group-modal__btn command-group-modal__btn--primary" data-testid="btn-save-group" :disabled="editor.saving.value" :loading="editor.saving.value" @click="onSave" />
                 </div>
             </footer>
         </div>

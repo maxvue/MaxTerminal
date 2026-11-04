@@ -15,7 +15,7 @@
                     <strong>{{ currentInspection.aheadOfBase }}</strong>
                 </div>
             </div>
-            <MaxAlert v-if="blockerReasons.length > 0" type="warning" role="alert" class="agent-close-dialog__blockers">
+            <MaxAlert v-if="blockerReasons.length > 0" severity="warning" role="alert" class="agent-close-dialog__blockers">
                 <strong class="agent-close-dialog__blockers-title">Restrições de segurança detectadas:</strong>
                 <ul class="agent-close-dialog__blockers-list">
                     <li v-for="(reason, idx) in blockerReasons" :key="idx" class="agent-close-dialog__blocker-item">{{ reason }}</li>
@@ -27,21 +27,19 @@
                     <li v-for="file in currentInspection.changedFiles" :key="file"><code>{{ file }}</code></li>
                 </ul>
             </div>
-            <MaxAlert v-if="errorMessage" type="danger" role="alert" class="agent-close-dialog__error">{{ errorMessage }}</MaxAlert>
+            <MaxAlert v-if="errorMessage" severity="danger" role="alert" :message="errorMessage" class="agent-close-dialog__error" />
         </div>
         <footer class="agent-close-dialog__footer">
-            <MaxButton type="button" variant="primary" class="agent-close-dialog__btn agent-close-dialog__btn--keep" :disabled="submitting" @click="onResolve('keep')">Manter worktree</MaxButton>
-            <MaxButton type="button" variant="secondary" class="agent-close-dialog__btn agent-close-dialog__btn--remove" :disabled="submitting || !canRemoveWorktree" @click="onResolve('remove')">Remover worktree</MaxButton>
-            <MaxButton type="button" variant="danger" class="agent-close-dialog__btn agent-close-dialog__btn--delete-branch" :disabled="submitting || !canRemoveAndDeleteBranch" @click="onResolve('removeAndDeleteBranch')">Remover worktree e apagar branch</MaxButton>
+            <MaxButton type="button" label="Manter worktree" class="agent-close-dialog__btn agent-close-dialog__btn--keep" :disabled="submitting" @click="onResolve('keep')" />
+            <MaxButton type="button" severity="secondary" label="Remover worktree" class="agent-close-dialog__btn agent-close-dialog__btn--remove" :disabled="submitting || !canRemoveWorktree" @click="onResolve('remove')" />
+            <MaxButton type="button" severity="danger" label="Remover worktree e apagar branch" class="agent-close-dialog__btn agent-close-dialog__btn--delete-branch" :disabled="submitting || !canRemoveAndDeleteBranch" @click="onResolve('removeAndDeleteBranch')" />
         </footer>
     </MaxModal>
 </template>
 
 <script setup lang="ts">
     import { computed, ref, watch } from 'vue';
-    import MaxAlert from '@maxvue/max-components-ui/components/MaxAlert';
-    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
-    import MaxModal from '@maxvue/max-components-ui/components/MaxModal';
+    import { MaxAlert, MaxButton, MaxModal } from '@maxvue/max-components-ui';
     import { isMtIpcError } from '@/ipc/core';
     import { useAgentsStore } from '@/stores/agents';
     import type {

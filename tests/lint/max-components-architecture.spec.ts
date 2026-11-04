@@ -119,6 +119,25 @@ describe('Auditoria Arquitetural MaxComponentsUi (T6)', () => {
         }
     });
 
+    it('contratos de componentes de UI (MaxButton, MaxTag, MaxAlert) são respeitados', () => {
+        const nonCredentialVueFiles = vueFiles.filter((f) => !f.includes('/credentials/'));
+        for (const file of nonCredentialVueFiles) {
+            const content = fs.readFileSync(file, 'utf-8');
+            const relativePath = path.relative(workspaceRoot, file);
+
+            // MaxButton e MaxIconButton não devem usar variant="ghost" ou variant="primary"
+            expect(content, `${relativePath} contém variant="ghost"`).not.toMatch(/variant=["']ghost["']/);
+            expect(content, `${relativePath} contém variant="primary"`).not.toMatch(/<MaxButton[^>]*variant=["']primary["']/);
+
+            // MaxTag não deve usar variant nem severity inválida
+            expect(content, `${relativePath} contém MaxTag com variant`).not.toMatch(/<MaxTag[^>]*variant=/);
+
+            // MaxAlert não deve usar severity="error" nem atributo legado type=
+            expect(content, `${relativePath} contém MaxAlert com severity="error"`).not.toMatch(/<MaxAlert[^>]*severity=["']error["']/);
+            expect(content, `${relativePath} contém MaxAlert com type=`).not.toMatch(/<MaxAlert[^>]*\btype=["']/);
+        }
+    });
+
     it('nenhum componente desconhecido ou inválido é importado de @maxvue/max-components-ui', () => {
         const maxComponentsUiIndexPath = path.resolve(workspaceRoot, 'node_modules/@maxvue/max-components-ui/dist/index.d.ts');
         const indexDtsContent = fs.readFileSync(maxComponentsUiIndexPath, 'utf-8');

@@ -5,7 +5,7 @@
                 <label for="project-add-path" class="project-add-modal__label">Pasta do projeto</label>
                 <div class="project-add-modal__path-row">
                     <input id="project-add-path" v-model="pathInput" type="text" class="project-add-modal__input" placeholder="~/GitHub/meu-projeto" autocomplete="off" @input="onPathInputChanged">
-                    <MaxButton type="button" variant="secondary" class="project-add-modal__pick-btn" data-testid="pick-folder-btn" @click="handlePickFolder">
+                    <MaxButton type="button" severity="secondary" class="project-add-modal__pick-btn" data-testid="pick-folder-btn" @click="handlePickFolder">
                         Escolher pasta
                     </MaxButton>
                 </div>
@@ -40,17 +40,11 @@
                 <span>Stack detectada: <strong>{{ detectedStackLabel }}</strong></span>
             </div>
 
-            <MaxAlert v-if="errorMessage" type="danger" role="alert" class="project-add-modal__error">
-                {{ errorMessage }}
-            </MaxAlert>
+            <MaxAlert v-if="errorMessage" severity="danger" role="alert" :message="errorMessage" class="project-add-modal__error" />
 
             <footer class="project-add-modal__footer">
-                <MaxButton type="button" variant="secondary" class="project-add-modal__btn project-add-modal__btn--cancel" @click="handleClose">
-                    Cancelar
-                </MaxButton>
-                <MaxButton type="submit" variant="primary" class="project-add-modal__btn project-add-modal__btn--submit" :disabled="submitting" :loading="submitting" data-testid="submit-project-btn">
-                    {{ submitting ? 'Adicionando...' : 'Adicionar projeto' }}
-                </MaxButton>
+                <MaxButton type="button" severity="secondary" class="project-add-modal__btn project-add-modal__btn--cancel" label="Cancelar" @click="handleClose" />
+                <MaxButton type="submit" class="project-add-modal__btn project-add-modal__btn--submit" :disabled="submitting" :loading="submitting" data-testid="submit-project-btn" :label="submitting ? 'Adicionando...' : 'Adicionar projeto'" />
             </footer>
         </form>
     </MaxModal>
@@ -58,9 +52,11 @@
 
 <script setup lang="ts">
     import { computed, onScopeDispose, ref, watch } from 'vue';
-    import MaxAlert from '@maxvue/max-components-ui/components/MaxAlert';
-    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
-    import MaxModal from '@maxvue/max-components-ui/components/MaxModal';
+    import {
+        MaxAlert,
+        MaxButton,
+        MaxModal
+    } from '@maxvue/max-components-ui';
     import { useIpcError } from '@/composables/useIpcError';
     import {
         isValidProjectColor,

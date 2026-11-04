@@ -10,9 +10,9 @@
                     <option value="/usr/bin/fish">fish (/usr/bin/fish)</option>
                     <option value="/bin/sh">sh (/bin/sh)</option>
                 </select>
-                <MaxButton label="Iniciar (Spawn)" variant="primary" size="small" class="pg-btn pg-btn-primary" @click="spawnActiveSlot" />
-                <MaxButton label="Reiniciar" variant="secondary" size="small" class="pg-btn" :disabled="!activeSlot.ptyId" @click="restartActiveSlot" />
-                <MaxButton label="Encerrar (Kill)" variant="danger" size="small" class="pg-btn pg-btn-danger" :disabled="!activeSlot.ptyId" @click="killActiveSlot" />
+                <MaxButton label="Iniciar (Spawn)" size="small" class="pg-btn pg-btn-primary" @click="spawnActiveSlot" />
+                <MaxButton label="Reiniciar" severity="secondary" size="small" class="pg-btn" :disabled="!activeSlot.ptyId" @click="restartActiveSlot" />
+                <MaxButton label="Encerrar (Kill)" severity="danger" size="small" class="pg-btn pg-btn-danger" :disabled="!activeSlot.ptyId" @click="killActiveSlot" />
             </div>
             <div class="toolbar-group">
                 <button type="button" class="pg-btn pg-tab-btn" :class="{ 'is-active': activeSlotIndex === 0 }" @click="switchSlot(0)">
@@ -23,13 +23,13 @@
                     <span>Aba 2 (pane-2)</span>
                     <TabStatusIndicator :status="slotTabStatus(1)" size="sm" :show-label="true" />
                 </button>
-                <MaxButton label="Perder contexto WebGL" variant="secondary" size="small" class="pg-btn" @click="triggerWebglLoss" />
-                <MaxButton :label="demoTriggersEnabled ? 'Gatilhos Demo: ON' : 'Gatilhos Demo: OFF'" variant="secondary" size="small" class="pg-btn" :class="{ 'is-active': demoTriggersEnabled }" @click="toggleDemoTriggers" />
+                <MaxButton label="Perder contexto WebGL" severity="secondary" size="small" class="pg-btn" @click="triggerWebglLoss" />
+                <MaxButton :label="demoTriggersEnabled ? 'Gatilhos Demo: ON' : 'Gatilhos Demo: OFF'" severity="secondary" size="small" :class="demoTriggersEnabled ? 'pg-btn is-active' : 'pg-btn'" @click="toggleDemoTriggers" />
             </div>
             <div class="toolbar-group">
-                <MaxButton label="+ Bloco OK (0)" variant="secondary" size="small" class="pg-btn" @click="simulateBlock('success')" />
-                <MaxButton label="+ Bloco Erro (1)" variant="secondary" size="small" class="pg-btn" @click="simulateBlock('error')" />
-                <MaxButton label="+ Bloco Abort (null)" variant="secondary" size="small" class="pg-btn" @click="simulateBlock('aborted')" />
+                <MaxButton label="+ Bloco OK (0)" severity="secondary" size="small" class="pg-btn" @click="simulateBlock('success')" />
+                <MaxButton label="+ Bloco Erro (1)" severity="secondary" size="small" class="pg-btn" @click="simulateBlock('error')" />
+                <MaxButton label="+ Bloco Abort (null)" severity="secondary" size="small" class="pg-btn" @click="simulateBlock('aborted')" />
             </div>
         </header>
         <div v-if="cleanupAlertMessage" class="playground-alert" role="alert">

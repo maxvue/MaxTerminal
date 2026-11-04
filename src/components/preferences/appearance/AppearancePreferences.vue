@@ -1,6 +1,6 @@
 <template>
     <div class="prefs-appearance">
-        <MaxAlert v-if="errorMsg" :message="errorMsg" severity="error" class="prefs-appearance__error" />
+        <MaxAlert v-if="errorMsg" :message="errorMsg" severity="danger" class="prefs-appearance__error" />
 
         <section class="prefs-appearance__group">
             <div class="prefs-appearance__header">
@@ -14,15 +14,16 @@
             <div class="prefs-appearance__header">
                 <h3 class="prefs-appearance__heading">Catálogo de Temas e Importador Tabby</h3>
                 <div class="prefs-appearance__import-bar">
+                    <MaxButton type="button" label="Novo Tema" icon="lucide:plus" @click="onCreateThemeClick" />
                     <MaxInputText v-model="importPathInput" placeholder="Caminho de arquivo (.yaml/.json) ou pasta..." aria-label="Caminho para importar tema" class="prefs-appearance__input" />
-                    <MaxButton type="button" label="Importar Arquivo" :disabled="!importPathInput.trim()" @click="onImportFileClick" />
+                    <MaxButton type="button" label="Importar Arquivo" variant="outlined" :disabled="!importPathInput.trim()" @click="onImportFileClick" />
                     <MaxButton type="button" label="Importar Pasta" variant="outlined" :disabled="!importPathInput.trim()" @click="onImportDirClick" />
                 </div>
             </div>
 
             <ThemeImportReport :report="themeStore.lastImportReport" @close="themeStore.lastImportReport = null" />
 
-            <ThemePicker :themes="themeStore.themes" :active-theme-id="themeStore.appearance.activeThemeId" @select="onSelectTheme" @delete="onDeleteTheme" @export="onExportTheme" />
+            <ThemePicker :themes="themeStore.themes" :active-theme-id="themeStore.appearance.activeThemeId" :preview-suspended="editorStore.isOpen || Boolean(pendingDeleteTheme)" @select="onSelectTheme" @edit="onEditTheme" @duplicate="onDuplicateTheme" @delete="onRequestDeleteTheme" @export="onExportTheme" />
 
             <div v-if="exportedSnippet" class="prefs-appearance__exported">
                 <div class="prefs-appearance__exported-header">
@@ -42,33 +43,90 @@
             <h3 class="prefs-appearance__heading">Temas por Projeto</h3>
             <ProjectThemeOverrides :projects="projectsStore.projects" :themes="themeStore.themes" :overrides="themeStore.appearance.projectOverrides" @change="onProjectOverrideChange" />
         </section>
+
+        <ThemeEditorDialog @saved="onThemeSaved" />
+
+        <MaxModal :visible="Boolean(pendingDeleteTheme)" title="Confirmar Exclusão de Tema" :no-button="true" width="30rem" @update:visible="onDeleteModalVisibilityChange">
+            <div v-if="pendingDeleteTheme" class="prefs-appearance__delete-confirm">
+                <p class="prefs-appearance__delete-text">{{ deleteImpactSummary }}</p>
+                <footer class="prefs-appearance__delete-footer">
+                    <MaxButton type="button" label="Cancelar" variant="outlined" @click="pendingDeleteTheme = null" />
+                    <MaxButton type="button" label="Confirmar exclusão" severity="danger" @click="onConfirmDeleteTheme" />
+                </footer>
+            </div>
+        </MaxModal>
     </div>
 </template>
 
 <script setup lang="ts">
-    import { onMounted, ref } from 'vue';
-    import { MaxAlert, MaxButton, MaxCodeBlock, MaxInputCheckbox, MaxInputText } from '@maxvue/max-components-ui';
+    import { computed, onMounted, ref } from 'vue';
+    import {
+        MaxAlert,
+        MaxButton,
+        MaxCodeBlock,
+        MaxInputCheckbox,
+        MaxInputText,
+        MaxModal
+    } from '@maxvue/max-components-ui';
     import ProjectThemeOverrides from '@/components/preferences/appearance/ProjectThemeOverrides.vue';
     import TerminalFontSettings from '@/components/preferences/appearance/TerminalFontSettings.vue';
+    import ThemeEditorDialog from '@/components/preferences/appearance/ThemeEditorDialog.vue';
     import ThemeImportReport from '@/components/preferences/appearance/ThemeImportReport.vue';
     import ThemePicker from '@/components/preferences/appearance/ThemePicker.vue';
     import ThemePreview from '@/components/preferences/appearance/ThemePreview.vue';
     import { useIpcError } from '@/composables/useIpcError';
+    import { themeList } from '@/ipc/themes';
     import { useProjectsStore } from '@/stores/projects';
     import { useThemeStore } from '@/stores/theme';
+    import { useThemeEditorStore } from '@/stores/themeEditor';
     import type {
         AppearanceSettingsPatch,
+        ResolvedTheme,
         ThemeId,
-        ThemeScope
+        ThemeScope,
+        ThemeSummary
     } from '@/types/theme';
 
     const themeStore = useThemeStore();
+    const editorStore = useThemeEditorStore();
     const projectsStore = useProjectsStore();
     const ipcError = useIpcError();
 
     const importPathInput = ref('');
     const errorMsg = ref<string | null>(null);
     const exportedSnippet = ref<string | null>(null);
+    const pendingDeleteTheme = ref<ThemeSummary | null>(null);
+
+    const deleteImpactSummary = computed(() => {
+        const target = pendingDeleteTheme.value;
+        if (!target) {
+            return '';
+        }
+        const impacts: string[] = [];
+        if (themeStore.appearance.activeThemeId === target.id) {
+            impacts.push(
+                'ele está ativo globalmente e será revertido para o tema padrão Max Navy/Teal'
+            );
+        }
+        if (themeStore.appearance.preferredDarkThemeId === target.id) {
+            impacts.push('é o tema escuro preferido do sistema');
+        }
+        if (themeStore.appearance.preferredLightThemeId === target.id) {
+            impacts.push('é o tema claro preferido do sistema');
+        }
+        const affectedProjects = Object.values(
+            themeStore.appearance.projectOverrides ?? {}
+        ).filter((tid) => tid === target.id).length;
+        if (affectedProjects > 0) {
+            impacts.push(
+                `${affectedProjects} projeto(s) com override próprio voltarão para o tema padrão`
+            );
+        }
+        if (impacts.length === 0) {
+            return `Deseja realmente excluir o tema "${target.name}"? Esta ação não pode ser desfeita.`;
+        }
+        return `Deseja excluir o tema "${target.name}"? Atenção: ${impacts.join('; ')}.`;
+    });
 
     onMounted(() => {
         if (!themeStore.initialized) {
@@ -87,12 +145,87 @@
         }
     }
 
-    async function onDeleteTheme(id: ThemeId): Promise<void> {
+    function onCreateThemeClick(): void {
         errorMsg.value = null;
+        themeStore.cancelPreview();
+        editorStore.openCreate(themeStore.effectiveResolved?.scheme ?? null);
+    }
+
+    async function onEditTheme(id: ThemeId): Promise<void> {
+        errorMsg.value = null;
+        themeStore.cancelPreview();
         try {
-            await themeStore.deleteTheme(id);
+            const resolved = await themeStore.fetchAndCacheResolved(id);
+            if (resolved) {
+                editorStore.openEdit(resolved);
+            }
         } catch (err: unknown) {
             errorMsg.value = ipcError.message(err);
+        }
+    }
+
+    async function onDuplicateTheme(id: ThemeId): Promise<void> {
+        errorMsg.value = null;
+        themeStore.cancelPreview();
+        try {
+            await themeStore.duplicateTheme(id);
+        } catch (err: unknown) {
+            errorMsg.value = ipcError.message(err);
+        }
+    }
+
+    function onRequestDeleteTheme(id: ThemeId): void {
+        errorMsg.value = null;
+        themeStore.cancelPreview();
+        const found = themeStore.themes.find((t) => t.id === id) ?? {
+            id,
+            name: id,
+            origin: 'custom',
+            polarity: 'dark',
+            background: '#0b1420',
+            foreground: '#e2e8f0',
+            cursor: '#14b8a6',
+            accentSwatches: [
+                '#0b1420',
+                '#f43f5e',
+                '#10b981',
+                '#f59e0b',
+                '#3b82f6',
+                '#a855f7',
+                '#06b6d4',
+                '#e2e8f0'
+            ]
+        };
+        pendingDeleteTheme.value = found;
+    }
+
+    function onDeleteModalVisibilityChange(visible: boolean): void {
+        if (!visible) {
+            pendingDeleteTheme.value = null;
+        }
+    }
+
+    async function onConfirmDeleteTheme(): Promise<void> {
+        const target = pendingDeleteTheme.value;
+        if (!target) {
+            return;
+        }
+        pendingDeleteTheme.value = null;
+        errorMsg.value = null;
+        try {
+            await themeStore.deleteTheme(target.id);
+        } catch (err: unknown) {
+            errorMsg.value = ipcError.message(err);
+        }
+    }
+
+    async function onThemeSaved(resolved: ResolvedTheme): Promise<void> {
+        errorMsg.value = null;
+        themeStore.applySavedThemeFromEditor(resolved);
+        try {
+            themeStore.themes = await themeList();
+        } catch {
+            // Catálogo também é atualizado pelo evento theme://library-changed
         }
     }
 
@@ -106,7 +239,10 @@
     }
 
     async function onFollowSystemToggle(val: unknown): Promise<void> {
-        const followSystem = typeof val === 'boolean' ? val : Boolean((val as { target?: HTMLInputElement })?.target?.checked);
+        const followSystem =
+            typeof val === 'boolean'
+                ? val
+                : Boolean((val as { target?: HTMLInputElement })?.target?.checked);
         errorMsg.value = null;
         try {
             await themeStore.updateAppearance({ followSystem });
@@ -209,19 +345,6 @@
         color: var(--mt-ui-text-strong, var(--background-950));
     }
 
-    .prefs-appearance__checkbox {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 0.75rem;
-        color: var(--mt-ui-text-secondary, var(--background-600));
-        cursor: pointer;
-
-        input {
-            accent-color: var(--max-primary-500);
-        }
-    }
-
     .prefs-appearance__import-bar {
         display: flex;
         align-items: center;
@@ -240,29 +363,6 @@
         font-size: 0.75rem;
     }
 
-    .prefs-appearance__btn {
-        height: 2rem;
-        padding: 0 0.75rem;
-        border-radius: 0.375rem;
-        border: 1px solid var(--max-primary-500);
-        background: var(--max-primary-600);
-        color: var(--max-primary-content, #fff);
-        font-size: 0.75rem;
-        font-weight: 600;
-        cursor: pointer;
-
-        &:disabled {
-            opacity: 0.45;
-            cursor: not-allowed;
-        }
-
-        &--secondary {
-            border-color: var(--mt-ui-border, var(--background-100));
-            background: var(--mt-ui-surface-elevated, var(--background-50));
-            color: var(--mt-ui-text, var(--background-800));
-        }
-    }
-
     .prefs-appearance__exported {
         display: flex;
         flex-direction: column;
@@ -278,15 +378,22 @@
         color: var(--mt-ui-text-secondary, var(--background-600));
     }
 
-    .prefs-appearance__textarea {
-        width: 100%;
-        padding: 0.5rem;
-        border-radius: 0.375rem;
-        border: 1px solid var(--mt-ui-border, var(--background-100));
-        background: var(--mt-ui-surface, var(--background-0));
+    .prefs-appearance__delete-confirm {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .prefs-appearance__delete-text {
+        margin: 0;
+        font-size: 0.8125rem;
         color: var(--mt-ui-text, var(--background-800));
-        font-family: var(--mt-font-mono);
-        font-size: 0.75rem;
-        resize: vertical;
+    }
+
+    .prefs-appearance__delete-footer {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.5rem;
     }
 </style>

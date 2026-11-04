@@ -10,6 +10,7 @@ import {
     type ImportReport,
     type ResolvedTheme,
     type ThemeChangedEvent,
+    type ThemeDraftInput,
     type ThemeId,
     type ThemeLibraryChangedEvent,
     type ThemeScope,
@@ -76,6 +77,24 @@ export function themeExport(
     format: ExportFormat
 ): Promise<string> {
     return unwrap(commands.themeExport(id, format), 'theme_export');
+}
+
+/** Cria um novo tema customizado (`theme_create`). */
+export function themeCreate(input: ThemeDraftInput): Promise<ResolvedTheme> {
+    return unwrap(commands.themeCreate(input), 'theme_create');
+}
+
+/** Atualiza um tema customizado/importado existente (`theme_update`). */
+export function themeUpdate(
+    id: ThemeId,
+    input: ThemeDraftInput
+): Promise<ResolvedTheme> {
+    return unwrap(commands.themeUpdate(id, input), 'theme_update');
+}
+
+/** Duplica qualquer tema existente (`theme_duplicate`). */
+export function themeDuplicate(id: ThemeId): Promise<ResolvedTheme> {
+    return unwrap(commands.themeDuplicate(id), 'theme_duplicate');
 }
 
 /** Escuta o evento `theme://changed`. */
