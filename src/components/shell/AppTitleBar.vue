@@ -4,10 +4,12 @@
         <span class="app-title-bar__title" font-semibold>{{ props.title }}</span>
         <span v-if="props.version" class="app-title-bar__version" text-xs op-60>{{ props.version }}</span>
         <div ml-auto flex items-center gap-2>
-            <MaxButton type="button" class="app-title-bar__search-btn" title="Buscar em tudo… (Ctrl+K)" aria-label="Buscar em tudo… (Ctrl+K)" variant="outlined" size="small" @click="emit('open-global-search')">
-                <MaxIcon icon="lucide:search" />
-                <span>Buscar em tudo…</span>
-                <kbd class="app-title-bar__kbd">Ctrl+K</kbd>
+            <MaxButton type="button" class="app-title-bar__search-btn" label="Buscar em tudo…" title="Buscar em tudo… (Ctrl+K)" aria-label="Buscar em tudo… (Ctrl+K)" variant="outlined" size="small" @click="emit('open-global-search')">
+                <template #default>
+                    <MaxIcon icon="lucide:search" />
+                    <span>Buscar em tudo…</span>
+                    <kbd class="app-title-bar__kbd">Ctrl+K</kbd>
+                </template>
             </MaxButton>
             <slot name="actions" />
         </div>

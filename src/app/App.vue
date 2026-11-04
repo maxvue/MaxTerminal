@@ -4,7 +4,7 @@
             <AppEmptyState v-if="appStore.status === 'error'" icon="mdi:alert-circle-outline" title="Falha ao inicializar o MaxTerminal" :description="errorDescription">
                 <div flex flex-col items-center gap-2>
                     <span v-if="errorCode" class="app-error-code" text-xs px-2 py-0.5 rounded>{{ errorCode }}</span>
-                    <MaxButton type="button" class="app-retry-btn" label="Tentar novamente" severity="primary" @click="handleRetry" />
+                    <MaxButton type="button" class="app-retry-btn" label="Tentar novamente" @click="handleRetry" />
                 </div>
             </AppEmptyState>
             <DbRecoveryPanel v-else-if="settingsStore.isRecoveryRequired" />
@@ -17,6 +17,7 @@
             <PerfOverlay />
             <VaultUnlockModal :visible="vaultStore.unlockModalOpen" @update:visible="vaultStore.unlockModalOpen = $event" @unlocked="vaultStore.handleUnlocked" />
             <VaultSetupModal :visible="vaultStore.setupModalOpen" @update:visible="vaultStore.setupModalOpen = $event" @configured="vaultStore.handleConfigured" />
+            <HorizonModal />
         </template>
     </AppShell>
     <MaxToast />
@@ -30,6 +31,7 @@
     import VaultSetupModal from '@/components/credentials/VaultSetupModal.vue';
     import VaultUnlockModal from '@/components/credentials/VaultUnlockModal.vue';
     import AppLayout from '@/components/layout/AppLayout.vue';
+    import HorizonModal from '@/components/horizon/HorizonModal.vue';
     import PreferencesDialog from '@/components/preferences/PreferencesDialog.vue';
     import ProjectSettingsDialog from '@/components/projects/ProjectSettingsDialog.vue';
     import QuickCommandsHost from '@/components/quick-commands/QuickCommandsHost.vue';

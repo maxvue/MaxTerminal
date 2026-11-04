@@ -4,15 +4,15 @@
         <span class="agent-attention-indicator__badge">{{ badgeLabel }}</span>
         <span v-if="sourceLabel" class="agent-attention-indicator__source">({{ sourceLabel }})</span>
         <div class="agent-attention-indicator__actions">
-            <MaxButton type="button" variant="secondary" size="small" class="agent-attention-indicator__btn agent-attention-indicator__btn--focus" aria-label="Visualizar aba do agente" @click.stop="onFocus">Visualizar</MaxButton>
-            <MaxButton type="button" variant="secondary" size="small" class="agent-attention-indicator__btn agent-attention-indicator__btn--dismiss" aria-label="Dispensar aviso de atenção" @click.stop="onDismiss">Dispensar aviso</MaxButton>
+            <MaxButton type="button" severity="secondary" size="small" class="agent-attention-indicator__btn agent-attention-indicator__btn--focus" aria-label="Visualizar aba do agente" @click.stop="onFocus">Visualizar</MaxButton>
+            <MaxButton type="button" severity="secondary" size="small" class="agent-attention-indicator__btn agent-attention-indicator__btn--dismiss" aria-label="Dispensar aviso de atenção" @click.stop="onDismiss">Dispensar aviso</MaxButton>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
     import { computed } from 'vue';
-    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
+    import { MaxButton, MaxIcon } from '@maxvue/max-components-ui';
     import { useAgentAttention } from '@/composables/useAgentAttention';
     import type { TabId } from '@/types/bindings';
 

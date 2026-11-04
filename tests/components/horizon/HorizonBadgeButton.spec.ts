@@ -134,4 +134,16 @@ describe('HorizonBadgeButton.vue', () => {
         await badgeButton.vm.$emit('update:modelValue', false);
         expect(store.isModalOpen).toBe(false);
     });
+
+    it('chama openModal ao clicar no botão', async () => {
+        const store = useHorizonStore();
+        store.data = createMockSnapshot();
+        const openModalSpy = vi.spyOn(store, 'openModal');
+
+        const wrapper = mount(HorizonBadgeButton);
+        const badgeButton = wrapper.findComponent({ name: 'MaxBadgeButton' });
+        await badgeButton.trigger('click');
+
+        expect(openModalSpy).toHaveBeenCalled();
+    });
 });

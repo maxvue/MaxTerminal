@@ -1,5 +1,5 @@
 <template>
-    <MaxBadgeButton v-if="store.isAvailable" v-model="store.isModalOpen" label="HORIZON" :overlay="overlays" :title="buttonTitle" :aria-label="buttonAriaLabel" size="sm" class="horizon-badge-btn" />
+    <MaxBadgeButton v-if="store.isAvailable" v-model="store.isModalOpen" label="HORIZON" :overlay="overlays" :title="buttonTitle" :aria-label="buttonAriaLabel" size="sm" class="horizon-badge-btn" @click="handleClick" />
 </template>
 
 <script setup lang="ts">
@@ -8,6 +8,10 @@
     import { useHorizonStore } from '@/stores/horizon';
 
     const store = useHorizonStore();
+
+    function handleClick(): void {
+        store.openModal();
+    }
 
     function formatCount(val: number | null | undefined): string {
         if (val === null || val === undefined) {

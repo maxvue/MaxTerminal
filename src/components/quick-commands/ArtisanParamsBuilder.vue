@@ -3,8 +3,8 @@
         <div class="params-builder__header">
             <span class="params-builder__title">Argumentos e Flags (--options)</span>
             <div class="params-builder__buttons">
-                <MaxButton label="Adicionar argumento" icon="mdi:plus" variant="secondary" size="small" class="params-builder__add-btn" data-testid="add-argument-btn" @click="addArgument" />
-                <MaxButton label="Adicionar opção" icon="mdi:plus" variant="secondary" size="small" class="params-builder__add-btn" data-testid="add-option-btn" @click="addOption" />
+                <MaxButton label="Adicionar argumento" icon="mdi:plus" severity="secondary" size="small" class="params-builder__add-btn" data-testid="add-argument-btn" @click="addArgument" />
+                <MaxButton label="Adicionar opção" icon="mdi:plus" severity="secondary" size="small" class="params-builder__add-btn" data-testid="add-option-btn" @click="addOption" />
             </div>
         </div>
 

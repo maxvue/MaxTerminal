@@ -93,6 +93,27 @@ describe('HorizonModal.vue', () => {
         expect(wrapper.text()).toContain('Processo do Horizon Inativo');
     });
 
+    it('renderiza o painel de processo externo quando o status for external', () => {
+        const store = useHorizonStore();
+        store.data = createMockSnapshot({
+            status: 'external',
+            canStart: true,
+            canStop: false,
+            session: null
+        });
+        store.isModalOpen = true;
+
+        const wrapper = mount(HorizonModal, {
+            props: { modelValue: true }
+        });
+
+        expect(wrapper.find('.horizon-modal__external-panel').exists()).toBe(true);
+        expect(wrapper.findComponent({ name: 'TerminalView' }).exists()).toBe(false);
+        expect(wrapper.text()).toContain('Horizon em Execução Externa');
+        expect(wrapper.text()).toContain('Externo (Ativo)');
+        expect(wrapper.text()).toContain('Iniciar Terminal Supervisionado no MaxTerminal');
+    });
+
     it('dispara a ação de iniciar ao clicar no botão Iniciar Horizon', async () => {
         const store = useHorizonStore();
         store.data = createMockSnapshot({

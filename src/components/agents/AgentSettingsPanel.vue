@@ -6,49 +6,29 @@
                 <p class="agent-settings-panel__subtitle">Configure atalhos dedicados, injeção de integração, StatusLine e consulte capacidades verificadas por versão.</p>
             </div>
             <div class="agent-settings-panel__header-actions">
-                <MaxButton type="button" variant="secondary" :disabled="agentsStore.loading" data-testid="agent-refresh-btn" @click="onRefreshInstallations">
+                <MaxButton type="button" severity="secondary" :disabled="agentsStore.loading" data-testid="agent-refresh-btn" @click="onRefreshInstallations">
                     <MaxIcon icon="lucide:refresh-cw" />
                     <span>Redetectar CLIs</span>
                 </MaxButton>
-                <MaxButton type="button" variant="primary" :disabled="!draftSettings || saving" :loading="saving" data-testid="agent-save-settings-btn" @click="onSave">
+                <MaxButton type="button" :disabled="!draftSettings || saving" :loading="saving" data-testid="agent-save-settings-btn" @click="onSave">
                     <MaxIcon icon="lucide:check" />
                     <span>{{ saving ? 'Salvando...' : 'Salvar Alterações' }}</span>
                 </MaxButton>
             </div>
         </header>
 
-        <MaxAlert v-if="activeError" type="danger" role="alert" data-testid="agent-settings-error">
-            {{ activeError }}
-        </MaxAlert>
+        <MaxAlert v-if="activeError" severity="danger" role="alert" :message="activeError" data-testid="agent-settings-error" />
 
         <template v-if="draftSettings">
             <section class="agent-settings-panel__section">
                 <h3 class="agent-settings-panel__section-title">Preferências Globais</h3>
                 <div class="agent-settings-panel__toggles">
-                    <label class="agent-settings-panel__checkbox">
-                        <input v-model="draftSettings.shortcutsEnabled" type="checkbox" data-testid="toggle-shortcuts-enabled">
-                        <span>Habilitar atalhos dedicados de abertura rápida (`Ctrl+Alt+C/X/A/O`)</span>
-                    </label>
-                    <label class="agent-settings-panel__checkbox">
-                        <input v-model="draftSettings.telemetry.enabled" type="checkbox" data-testid="toggle-telemetry-enabled">
-                        <span>Exibir telemetria `StatusLine` na barra da aba</span>
-                    </label>
-                    <label class="agent-settings-panel__checkbox">
-                        <input v-model="draftSettings.telemetry.readSessionFiles" type="checkbox" data-testid="toggle-read-session-files">
-                        <span>Permitir leitura local de arquivos de sessão/transcript (`.claude/projects`, `.codex/sessions`)</span>
-                    </label>
-                    <label class="agent-settings-panel__checkbox">
-                        <input v-model="draftSettings.attention.enabled" type="checkbox" data-testid="toggle-attention-enabled">
-                        <span>Detectar pausas de aprovação/input e destacar aba</span>
-                    </label>
-                    <label class="agent-settings-panel__checkbox">
-                        <input v-model="draftSettings.attention.notify" type="checkbox" data-testid="toggle-attention-notify">
-                        <span>Disparar notificação nativa do sistema ao aguardar intervenção</span>
-                    </label>
-                    <label class="agent-settings-panel__checkbox">
-                        <input v-model="draftSettings.isolation.openIsolatedByDefault" type="checkbox" data-testid="toggle-isolation-default">
-                        <span>Sugerir isolamento em Git Worktree por padrão ao abrir agentes</span>
-                    </label>
+                    <MaxInputCheckbox v-model="draftSettings.shortcutsEnabled" label="Habilitar atalhos dedicados de abertura rápida (Ctrl+Alt+C/X/A/O)" data-testid="toggle-shortcuts-enabled" />
+                    <MaxInputCheckbox v-model="draftSettings.telemetry.enabled" label="Exibir telemetria StatusLine na barra da aba" data-testid="toggle-telemetry-enabled" />
+                    <MaxInputCheckbox v-model="draftSettings.telemetry.readSessionFiles" label="Permitir leitura local de arquivos de sessão/transcript (.claude/projects, .codex/sessions)" data-testid="toggle-read-session-files" />
+                    <MaxInputCheckbox v-model="draftSettings.attention.enabled" label="Detectar pausas de aprovação/input e destacar aba" data-testid="toggle-attention-enabled" />
+                    <MaxInputCheckbox v-model="draftSettings.attention.notify" label="Disparar notificação nativa do sistema ao aguardar intervenção" data-testid="toggle-attention-notify" />
+                    <MaxInputCheckbox v-model="draftSettings.isolation.openIsolatedByDefault" label="Sugerir isolamento em Git Worktree por padrão ao abrir agentes" data-testid="toggle-isolation-default" />
                 </div>
             </section>
 
@@ -62,10 +42,7 @@
                                 <strong>{{ info.descriptor.displayName }}</strong>
                                 <span class="agent-settings-panel__version">{{ info.installation.version ?? (info.installation.installed ? 'Instalado' : 'Não encontrado') }}</span>
                             </div>
-                            <label class="agent-settings-panel__switch">
-                                <input type="checkbox" :checked="isAgentEnabled(info.descriptor.kind)" :data-testid="`agent-enabled-${info.descriptor.kind}`" @change="onToggleAgentEnabled(info.descriptor.kind, $event)">
-                                <span>Ativo</span>
-                            </label>
+                            <MaxInputCheckbox :model-value="isAgentEnabled(info.descriptor.kind)" label="Ativo" :data-testid="`agent-enabled-${info.descriptor.kind}`" @update:model-value="onToggleAgentEnabledValue(info.descriptor.kind, $event)" />
                         </div>
 
                         <div class="agent-settings-panel__agent-row">
@@ -73,10 +50,7 @@
                             <input :id="`shortcut-${info.descriptor.kind}`" type="text" class="agent-settings-panel__input" data-shortcut-recorder="true" :value="shortcutFor(info.descriptor.kind, info.descriptor.shortcut)" :data-testid="`shortcut-input-${info.descriptor.kind}`" @input="onShortcutInput(info.descriptor.kind, $event)">
                         </div>
 
-                        <label class="agent-settings-panel__checkbox">
-                            <input type="checkbox" :checked="isInjectEnabled(info.descriptor.kind)" :data-testid="`agent-inject-${info.descriptor.kind}`" @change="onToggleInject(info.descriptor.kind, $event)">
-                            <span>Injetar hooks/statusLine observacionais</span>
-                        </label>
+                        <MaxInputCheckbox :model-value="isInjectEnabled(info.descriptor.kind)" label="Injetar hooks/statusLine observacionais" :data-testid="`agent-inject-${info.descriptor.kind}`" @update:model-value="onToggleInjectValue(info.descriptor.kind, $event)" />
                     </div>
                 </div>
             </section>
@@ -116,8 +90,7 @@
 
 <script setup lang="ts">
     import { computed, onMounted, ref, watch } from 'vue';
-    import MaxAlert from '@maxvue/max-components-ui/components/MaxAlert';
-    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
+    import { MaxAlert, MaxButton, MaxInputCheckbox } from '@maxvue/max-components-ui';
     import { normalizeAccelerator as normalizeShortcutCombo } from '@/composables/useAgentShortcuts';
     import { useAgentsStore } from '@/stores/agents';
     import type { AgentKind, AgentsSettings_Serialize, CapabilitySupport } from '@/types/bindings';
@@ -179,14 +152,13 @@
         return draftSettings.value?.enabled[kind] !== false;
     }
 
-    function onToggleAgentEnabled(kind: AgentKind, ev: Event): void {
+    function onToggleAgentEnabledValue(kind: AgentKind, checked: boolean): void {
         if (!draftSettings.value) {
             return;
         }
-        const checked = (ev.target as HTMLInputElement).checked;
         draftSettings.value.enabled = {
             ...draftSettings.value.enabled,
-            [kind]: checked
+            [kind]: Boolean(checked)
         };
     }
 
@@ -194,14 +166,13 @@
         return draftSettings.value?.inject[kind] !== false;
     }
 
-    function onToggleInject(kind: AgentKind, ev: Event): void {
+    function onToggleInjectValue(kind: AgentKind, checked: boolean): void {
         if (!draftSettings.value) {
             return;
         }
-        const checked = (ev.target as HTMLInputElement).checked;
         draftSettings.value.inject = {
             ...draftSettings.value.inject,
-            [kind]: checked
+            [kind]: Boolean(checked)
         };
     }
 

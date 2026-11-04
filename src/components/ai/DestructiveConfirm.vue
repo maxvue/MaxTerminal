@@ -1,7 +1,7 @@
 <template>
     <MaxModal :visible="open" title="Confirmar execução de comando destrutivo" :no-button="true" max-width="36rem" class="destructive-confirm" @update:visible="onCancel">
         <div class="destructive-confirm__body" data-testid="destructive-confirm-modal">
-            <p class="destructive-confirm__warning">Este comando pode causar perda irreversível de dados, remoção recursiva ou alteração crítica do sistema.</p>
+            <MaxAlert severity="warning" message="Este comando pode causar perda irreversível de dados, remoção recursiva ou alteração crítica do sistema." class="destructive-confirm__warning" />
 
             <div class="destructive-confirm__command-box">
                 <code class="destructive-confirm__command" data-testid="destructive-command-preview">{{ command }}</code>
@@ -21,10 +21,10 @@
         </div>
 
         <footer class="destructive-confirm__footer">
-            <MaxButton type="button" variant="secondary" size="sm" data-testid="btn-cancel-destructive" @click="onCancel">
+            <MaxButton type="button" severity="secondary" size="sm" data-testid="btn-cancel-destructive" @click="onCancel">
                 <span>Cancelar</span>
             </MaxButton>
-            <MaxButton type="button" variant="danger" size="sm" :disabled="!isConfirmed" data-testid="btn-confirm-destructive" @click="onConfirm">
+            <MaxButton type="button" severity="danger" size="sm" :disabled="!isConfirmed" data-testid="btn-confirm-destructive" @click="onConfirm">
                 <span>Executar comando destrutivo</span>
             </MaxButton>
         </footer>
@@ -33,8 +33,11 @@
 
 <script setup lang="ts">
     import { computed, ref, watch } from 'vue';
-    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
-    import MaxModal from '@maxvue/max-components-ui/components/MaxModal';
+    import {
+        MaxAlert,
+        MaxButton,
+        MaxModal
+    } from '@maxvue/max-components-ui';
     import type { RiskAssessment_Serialize } from '@/types/bindings';
 
     export interface DestructiveConfirmProps {

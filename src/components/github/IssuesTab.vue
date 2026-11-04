@@ -7,17 +7,17 @@
                 <span v-if="openCount !== null" class="issues-tab__open-badge">{{ openCount }} abertas</span>
             </div>
             <div class="issues-tab__actions">
-                <MaxButton label="Nova Issue" icon="lucide:plus" variant="primary" class="issues-tab__btn issues-tab__btn--primary" @click="createModalOpen = true" />
-                <MaxButton label="Corrigir todos os Bugs" icon="lucide:sparkles" variant="secondary" class="issues-tab__btn issues-tab__btn--cycle" @click="onOpenBugCycleModal" />
-                <MaxButton label="Autenticação" icon="lucide:key-round" variant="secondary" class="issues-tab__btn" title="Autenticação GitHub (`gh` CLI e REST)" @click="onOpenAuthPanel" />
-                <MaxButton label="Atualizar" icon="lucide:refresh-cw" variant="secondary" class="issues-tab__btn" :disabled="isLoadingList" :loading="isLoadingList" title="Sincronizar com o GitHub agora" @click="onRefresh" />
+                <MaxButton label="Nova Issue" icon="lucide:plus" class="issues-tab__btn issues-tab__btn--primary" @click="createModalOpen = true" />
+                <MaxButton label="Corrigir todos os Bugs" icon="lucide:sparkles" severity="secondary" class="issues-tab__btn issues-tab__btn--cycle" @click="onOpenBugCycleModal" />
+                <MaxButton label="Autenticação" icon="lucide:key-round" severity="secondary" class="issues-tab__btn" title="Autenticação GitHub (`gh` CLI e REST)" @click="onOpenAuthPanel" />
+                <MaxButton label="Atualizar" icon="lucide:refresh-cw" severity="secondary" class="issues-tab__btn" :disabled="isLoadingList" :loading="isLoadingList" title="Sincronizar com o GitHub agora" @click="onRefresh" />
             </div>
         </header>
         <LabelSyncBanner :missing-count="missingLabelsCount" @sync="onSyncCanonicalLabels" />
         <BugCycleProgress :cycle="activeCycle" @control="onControlCycle" />
         <div v-if="projectError" class="issues-tab__error" role="alert">
             <span>{{ projectError }}</span>
-            <MaxButton label="OK" variant="ghost" size="small" class="issues-tab__error-dismiss" @click="clearProjectError" />
+            <MaxButton label="OK" variant="text" severity="secondary" size="small" class="issues-tab__error-dismiss" @click="clearProjectError" />
         </div>
         <IssueFilters :filter="filter" :has-active-filters="hasActiveFilters" @set-state="setState" @toggle-state-label="toggleStateLabel" @toggle-category-label="toggleCategoryLabel" @set-search="setSearchText" @set-has-plan="setHasPlan" @set-sort="setSort" @reset="resetFilters" />
         <div class="issues-tab__split">

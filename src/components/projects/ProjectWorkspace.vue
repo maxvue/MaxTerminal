@@ -14,7 +14,7 @@
                 <span class="project-workspace__path">{{ props.project.path }}</span>
             </div>
             <div class="project-workspace__actions">
-                <MaxButton type="button" variant="secondary" size="small" class="project-workspace__search-btn" title="Buscar em tudo… (Ctrl+K)" aria-label="Buscar em tudo… (Ctrl+K)" @click="searchStore.show(undefined, props.project.id)">
+                <MaxButton type="button" severity="secondary" size="small" class="project-workspace__search-btn" title="Buscar em tudo… (Ctrl+K)" aria-label="Buscar em tudo… (Ctrl+K)" @click="searchStore.show(undefined, props.project.id)">
                     <MaxIcon icon="lucide:search" />
                     <span>Buscar em tudo…</span>
                     <kbd class="project-workspace__kbd">Ctrl+K</kbd>
@@ -28,7 +28,7 @@
         </header>
         <header v-else class="project-workspace__header project-workspace__header--empty">
             <div class="project-workspace__actions ml-auto">
-                <MaxButton type="button" variant="secondary" size="small" class="project-workspace__search-btn" title="Buscar em tudo… (Ctrl+K)" aria-label="Buscar em tudo… (Ctrl+K)" @click="searchStore.show()">
+                <MaxButton type="button" severity="secondary" size="small" class="project-workspace__search-btn" title="Buscar em tudo… (Ctrl+K)" aria-label="Buscar em tudo… (Ctrl+K)" @click="searchStore.show()">
                     <MaxIcon icon="lucide:search" />
                     <span>Buscar em tudo…</span>
                     <kbd class="project-workspace__kbd">Ctrl+K</kbd>
@@ -43,7 +43,6 @@
             <slot>
                 <TabWorkspaceView :project="props.project" />
             </slot>
-            <HorizonModal />
         </div>
         <div v-else class="project-workspace__empty">
             <slot>
@@ -60,7 +59,6 @@
     import AiStatusIndicator from '@/components/ai/AiStatusIndicator.vue';
     import BridgeStatusIndicator from '@/components/bridge/BridgeStatusIndicator.vue';
     import HorizonBadgeButton from '@/components/horizon/HorizonBadgeButton.vue';
-    import HorizonModal from '@/components/horizon/HorizonModal.vue';
     import ShortcutStatusBadge from '@/components/os/ShortcutStatusBadge.vue';
     import AppEmptyState from '@/components/shell/AppEmptyState.vue';
     import TabWorkspaceView from '@/components/workspace/TabWorkspaceView.vue';

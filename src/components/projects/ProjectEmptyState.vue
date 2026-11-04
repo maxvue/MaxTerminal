@@ -6,10 +6,10 @@
         <h3 class="project-empty-state__title">Nenhum projeto cadastrado</h3>
         <p class="project-empty-state__desc">Adicione um projeto individual ou cadastre uma pasta de projetos para descobrir subpastas automaticamente.</p>
         <div class="project-empty-state__actions">
-            <MaxButton variant="primary" class="project-empty-state__btn project-empty-state__btn--primary" @click="emit('add-project')">
+            <MaxButton class="project-empty-state__btn project-empty-state__btn--primary" @click="emit('add-project')">
                 Adicionar projeto
             </MaxButton>
-            <MaxButton variant="secondary" class="project-empty-state__btn project-empty-state__btn--secondary" @click="emit('add-root')">
+            <MaxButton severity="secondary" class="project-empty-state__btn project-empty-state__btn--secondary" @click="emit('add-root')">
                 Adicionar pasta de projetos
             </MaxButton>
         </div>
@@ -17,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
+    import { MaxButton, MaxIcon } from '@maxvue/max-components-ui';
 
     const emit = defineEmits<{
         'add-project': [];

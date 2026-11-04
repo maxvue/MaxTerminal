@@ -1,6 +1,6 @@
 <template>
     <div class="prefs-appearance">
-        <MaxAlert v-if="errorMsg" :message="errorMsg" severity="error" class="prefs-appearance__error" />
+        <MaxAlert v-if="errorMsg" :message="errorMsg" severity="danger" class="prefs-appearance__error" />
 
         <section class="prefs-appearance__group">
             <div class="prefs-appearance__header">

@@ -9,7 +9,7 @@
                 <span class="search-result-item__title">
                     <HighlightedText :segments="props.hit.title" />
                 </span>
-                <MaxBadge v-if="props.hit.sourceTruncated" value="Truncado" severity="warning" size="small" class="search-result-item__badge" title="Saída truncada na origem" />
+                <MaxTag v-if="props.hit.sourceTruncated" value="Truncado" severity="warning" size="small" class="search-result-item__badge" title="Saída truncada na origem" />
                 <time v-if="formattedDate" class="search-result-item__time" :datetime="isoTimestamp">
                     {{ formattedDate }}
                 </time>
@@ -28,7 +28,7 @@
 
 <script setup lang="ts">
     import { computed } from 'vue';
-    import { MaxBadge, MaxIcon } from '@maxvue/max-components-ui';
+    import { MaxIcon, MaxTag } from '@maxvue/max-components-ui';
     import HighlightedText from '@/components/search/HighlightedText.vue';
     import type { SearchNavigationAction } from '@/composables/search/useSearchNavigation';
     import type { SearchHit_Serialize, SearchSourceKind } from '@/types/bindings';

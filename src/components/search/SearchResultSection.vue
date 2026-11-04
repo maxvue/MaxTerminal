@@ -13,7 +13,7 @@
         </div>
 
         <div v-if="props.section.nextCursor" class="search-result-section__footer">
-            <MaxButton :label="props.loadingMore ? 'Carregando…' : 'Carregar mais'" variant="ghost" size="small" class="search-result-section__more" :disabled="props.loadingMore" :loading="props.loadingMore" :aria-label="`Carregar mais em ${sectionLabel}`" @click="emit('load-more', props.section.source)" />
+            <MaxButton :label="props.loadingMore ? 'Carregando…' : 'Carregar mais'" variant="text" severity="secondary" size="small" class="search-result-section__more" :disabled="props.loadingMore" :loading="props.loadingMore" :aria-label="`Carregar mais em ${sectionLabel}`" @click="emit('load-more', props.section.source)" />
         </div>
     </div>
 </template>

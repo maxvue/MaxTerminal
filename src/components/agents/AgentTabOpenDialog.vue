@@ -1,38 +1,30 @@
 <template>
     <MaxModal :visible="props.modelValue" title="Iniciar Agente CLI" :no-button="true" max-width="32rem" class="agent-open-dialog" :dismissable="!submitting" :close-on-escape="!submitting" @update:visible="emit('update:modelValue', $event)">
         <div class="agent-open-dialog__body">
-            <label class="agent-open-dialog__field">
+            <div class="agent-open-dialog__field">
                 <span class="agent-open-dialog__label">Agente CLI</span>
-                <select v-model="selectedAgent" class="agent-open-dialog__select">
-                    <option value="claude-code">Claude Code (claude)</option>
-                    <option value="codex">OpenAI Codex (codex)</option>
-                    <option value="agy">Google Antigravity (agy)</option>
-                    <option value="opencode">OpenCode (opencode)</option>
-                </select>
-            </label>
-            <label class="agent-open-dialog__field">
+                <MaxInputSelect v-model="selectedAgent" :options="agentOptions" option-label="label" option-value="value" option-name="label" class="agent-open-dialog__select" />
+            </div>
+            <div class="agent-open-dialog__field">
                 <span class="agent-open-dialog__label">Modelo CLI (opcional)</span>
-                <input v-model="modelInput" type="text" class="agent-open-dialog__input" placeholder="Padrão do agente (sem flag --model)" :disabled="!supportsModelSelection">
-            </label>
+                <MaxInputText v-model="modelInput" class="agent-open-dialog__input" placeholder="Padrão do agente (sem flag --model)" :disabled="!supportsModelSelection" />
+            </div>
             <fieldset class="agent-open-dialog__fieldset">
                 <legend class="agent-open-dialog__legend">Isolamento em Git Worktree</legend>
-                <MaxInputRadio v-model="isolationMode" value="none" label="Sem isolamento (executar na pasta do projeto)" />
-                <MaxInputRadio v-model="isolationMode" value="create" label="Criar nova Git Worktree isolada" />
-                <MaxInputRadio v-model="isolationMode" value="existing" label="Vincular uma worktree existente do repositório" />
+                <MaxInputRadio v-model="isolationMode" name="agent-isolation-mode" value="none" label="Sem isolamento (executar na pasta do projeto)" />
+                <MaxInputRadio v-model="isolationMode" name="agent-isolation-mode" value="create" label="Criar nova Git Worktree isolada" />
+                <MaxInputRadio v-model="isolationMode" name="agent-isolation-mode" value="existing" label="Vincular uma worktree existente do repositório" />
             </fieldset>
             <div v-if="isolationMode === 'create'" class="agent-open-dialog__worktree-box">
                 <div class="agent-open-dialog__row">
-                    <label class="agent-open-dialog__field">
+                    <div class="agent-open-dialog__field">
                         <span class="agent-open-dialog__label">Localização da Worktree</span>
-                        <select v-model="location" class="agent-open-dialog__select">
-                            <option value="project">.worktrees/ (MaxTerminal)</option>
-                            <option value="maxCode">.max-code-worktrees/ (MaxCode)</option>
-                        </select>
-                    </label>
-                    <label class="agent-open-dialog__field">
+                        <MaxInputSelect v-model="location" :options="locationOptions" option-label="label" option-value="value" option-name="label" class="agent-open-dialog__select" />
+                    </div>
+                    <div class="agent-open-dialog__field">
                         <span class="agent-open-dialog__label">Sugestão de Slug (opcional)</span>
-                        <input v-model="slugHint" type="text" class="agent-open-dialog__input" placeholder="Ex.: feat-login" @change="refreshProposal">
-                    </label>
+                        <MaxInputText v-model="slugHint" class="agent-open-dialog__input" placeholder="Ex.: feat-login" @change="refreshProposal" />
+                    </div>
                 </div>
                 <div v-if="proposal" class="agent-open-dialog__proposal">
                     <div class="agent-open-dialog__proposal-line">
@@ -43,7 +35,7 @@
                         <strong>Branch:</strong>
                         <code>{{ proposal.branch }}</code>
                     </div>
-                    <MaxAlert v-if="!proposal.rootIgnored || proposal.warnings.length > 0" type="warning" role="alert" class="agent-open-dialog__warning">
+                    <MaxAlert v-if="!proposal.rootIgnored || proposal.warnings.length > 0" severity="warning" role="alert" class="agent-open-dialog__warning">
                         <p v-if="!proposal.rootIgnored">A pasta de worktrees não está ignorada pelo Git neste repositório.</p>
                         <p v-for="(warn, idx) in proposal.warnings" :key="idx">{{ warn }}</p>
                         <MaxInputCheckbox v-model="ensureGitignore" label="Registrar pasta de worktrees na exclusão local do Git" />
@@ -51,28 +43,44 @@
                 </div>
             </div>
             <div v-if="isolationMode === 'existing'" class="agent-open-dialog__worktree-box">
-                <label class="agent-open-dialog__field">
+                <div class="agent-open-dialog__field">
                     <span class="agent-open-dialog__label">Caminho da Worktree Existente</span>
-                    <input v-model="existingPath" type="text" class="agent-open-dialog__input" placeholder="/caminho/para/worktree">
-                </label>
+                    <MaxInputText v-model="existingPath" class="agent-open-dialog__input" placeholder="/caminho/para/worktree" />
+                </div>
             </div>
-            <MaxAlert v-if="errorMessage" type="danger" role="alert" class="agent-open-dialog__error">{{ errorMessage }}</MaxAlert>
+            <MaxAlert v-if="errorMessage" severity="danger" role="alert" :message="errorMessage" class="agent-open-dialog__error" />
         </div>
         <footer class="agent-open-dialog__footer">
-            <MaxButton type="button" variant="secondary" class="agent-open-dialog__btn" @click="closeDialog">Cancelar</MaxButton>
-            <MaxButton type="button" variant="primary" class="agent-open-dialog__btn agent-open-dialog__btn--primary" :disabled="submitting" :loading="submitting" @click="onSubmit">Abrir Aba de Agente</MaxButton>
+            <MaxButton type="button" severity="secondary" label="Cancelar" class="agent-open-dialog__btn" @click="closeDialog" />
+            <MaxButton type="button" label="Abrir Aba de Agente" class="agent-open-dialog__btn agent-open-dialog__btn--primary" :disabled="submitting" :loading="submitting" @click="onSubmit" />
         </footer>
     </MaxModal>
 </template>
 
 <script setup lang="ts">
     import { computed, ref, watch } from 'vue';
-    import MaxAlert from '@maxvue/max-components-ui/components/MaxAlert';
-    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
-    import MaxInputCheckbox from '@maxvue/max-components-ui/components/MaxInputCheckbox';
-    import MaxInputRadio from '@maxvue/max-components-ui/components/MaxInputRadio';
-    import MaxModal from '@maxvue/max-components-ui/components/MaxModal';
+    import {
+        MaxAlert,
+        MaxButton,
+        MaxInputCheckbox,
+        MaxInputRadio,
+        MaxInputSelect,
+        MaxInputText,
+        MaxModal
+    } from '@maxvue/max-components-ui';
     import { useAgentsStore } from '@/stores/agents';
+
+    const agentOptions = [
+        { label: 'Claude Code (claude)', value: 'claude-code' },
+        { label: 'OpenAI Codex (codex)', value: 'codex' },
+        { label: 'Google Antigravity (agy)', value: 'agy' },
+        { label: 'OpenCode (opencode)', value: 'opencode' }
+    ];
+
+    const locationOptions = [
+        { label: '.worktrees/ (MaxTerminal)', value: 'project' },
+        { label: '.max-code-worktrees/ (MaxCode)', value: 'maxCode' }
+    ];
     import type {
         AgentKind,
         AgentTabOpened_Serialize,

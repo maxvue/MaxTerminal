@@ -414,8 +414,7 @@ pub fn build_snapshot_from_probe(
     };
 
     let can_start = availability == HorizonAvailability::Available
-        && matches!(status, HorizonStatus::Stopped | HorizonStatus::Error)
-        && !has_external_master;
+        && matches!(status, HorizonStatus::Stopped | HorizonStatus::Error | HorizonStatus::External);
 
     let can_stop = matches!(status, HorizonStatus::Running | HorizonStatus::Starting);
 
