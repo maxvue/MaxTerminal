@@ -54,7 +54,9 @@ export const useHorizonStore = defineStore('horizon', () => {
     const availability = computed<HorizonAvailability>(
         () => data.value?.availability ?? 'checking'
     );
-    const isAvailable = computed<boolean>(() => availability.value === 'available');
+    const isAvailable = computed<boolean>(
+        () => availability.value === 'available' || availability.value === 'error'
+    );
     const status = computed<HorizonStatus>(() => data.value?.status ?? 'stopped');
     const isRunning = computed<boolean>(() => status.value === 'running');
     const isStartingState = computed<boolean>(() => status.value === 'starting');
@@ -108,12 +110,36 @@ export const useHorizonStore = defineStore('horizon', () => {
             }
         } catch (err: unknown) {
             if (selectedProjectId.value === currentProject) {
-                // Em caso de erro transitório de comunicação, preserva dados anteriores com status de erro
+                const diagnosticMsg = err instanceof Error ? err.message : String(err);
                 if (data.value) {
                     data.value = {
                         ...data.value,
                         status: 'error',
-                        diagnostic: err instanceof Error ? err.message : String(err)
+                        diagnostic: diagnosticMsg
+                    };
+                } else {
+                    data.value = {
+                        context: {
+                            projectId: currentProject,
+                            root: '',
+                            contextRevision: '',
+                            scopeId: ''
+                        },
+                        availability: 'error',
+                        horizonVersion: null,
+                        queues: [],
+                        environment: null,
+                        status: 'error',
+                        pending: null,
+                        running: null,
+                        failed: null,
+                        sampledAtMs: Date.now(),
+                        revision: 0,
+                        diagnostic: diagnosticMsg,
+                        canStart: false,
+                        canStop: false,
+                        canClearPending: false,
+                        session: null
                     };
                 }
             }

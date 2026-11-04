@@ -91,11 +91,16 @@ impl CredentialsRepo {
 
     /// Busca uma credencial pelo seu ID.
     pub async fn get_credential(&self, id: String) -> DbResult<Option<StoredCredentialRow>> {
-        self.db.read(move |conn| get_credential_conn(conn, &id)).await
+        self.db
+            .read(move |conn| get_credential_conn(conn, &id))
+            .await
     }
 
     /// Lista todas as credenciais pertencentes a um projeto.
-    pub async fn list_by_project(&self, project_id: ProjectId) -> DbResult<Vec<StoredCredentialRow>> {
+    pub async fn list_by_project(
+        &self,
+        project_id: ProjectId,
+    ) -> DbResult<Vec<StoredCredentialRow>> {
         let proj_str = project_id.to_string();
         self.db
             .read(move |conn| list_credentials_by_project_conn(conn, &proj_str))
@@ -203,10 +208,7 @@ pub fn update_vault_metadata_tx(tx: &Transaction<'_>, meta: &StoredVaultMetadata
 }
 
 /// Busca uma credencial pelo seu ID.
-pub fn get_credential_conn(
-    conn: &Connection,
-    id: &str,
-) -> DbResult<Option<StoredCredentialRow>> {
+pub fn get_credential_conn(conn: &Connection, id: &str) -> DbResult<Option<StoredCredentialRow>> {
     let mut stmt = conn
         .prepare_cached(
             "SELECT id, project_id, nonce, ciphertext, version, created_at, updated_at
