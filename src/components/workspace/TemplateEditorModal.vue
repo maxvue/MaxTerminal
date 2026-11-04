@@ -1,5 +1,5 @@
 <template>
-    <MaxModal :visible="props.open" :title="modalTitle" :no-button="true" max-width="36rem" class="template-modal" :dismissable="!props.saving" :close-on-escape="!props.saving" @update:visible="emit('close')">
+    <MaxModal :visible="props.open" :title="modalTitle" :no-button="true" max-width="38rem" class="template-modal" :dismissable="!props.saving" :close-on-escape="!props.saving" @update:visible="emit('close')">
         <form class="template-modal__form" @submit.prevent="handleSubmit">
             <div v-if="localError || props.errorMessage" class="template-modal__error" role="alert">{{ localError || props.errorMessage }}</div>
             <div class="template-modal__row">
@@ -12,6 +12,39 @@
                     <input v-model="icon" type="text" class="template-modal__input" maxlength="64" placeholder="lucide:terminal">
                 </label>
             </div>
+
+            <div class="template-modal__field">
+                <span class="template-modal__label">Origem da Conexão</span>
+                <MaxInputSelect id="template-origin-select" v-model="origin" :options="originOptions" option-label="label" option-value="value" option-name="label" class="template-modal__select-input" />
+            </div>
+
+            <div v-if="origin === 'remote'" class="template-modal__remote-box">
+                <div class="template-modal__row">
+                    <label class="template-modal__field template-modal__field--grow">
+                        <span class="template-modal__label">IP / Servidor Remoto *</span>
+                        <input v-model="sshHost" type="text" class="template-modal__input template-modal__input--mono" placeholder="Ex.: 192.168.1.100 ou servidor.empresa.com" required>
+                    </label>
+                    <label class="template-modal__field">
+                        <span class="template-modal__label">Usuário SSH *</span>
+                        <input v-model="sshUser" type="text" class="template-modal__input template-modal__input--mono" placeholder="Ex.: ubuntu" required>
+                    </label>
+                </div>
+
+                <div class="template-modal__checkboxes">
+                    <MaxInputCheckbox v-model="sshUseKey" label="Utilizar Chave SSH (Autenticação por chave privada)" />
+                </div>
+
+                <div v-if="sshUseKey" class="template-modal__field">
+                    <span class="template-modal__label">Caminho da Chave SSH (opcional)</span>
+                    <input v-model="sshIdentityFile" type="text" class="template-modal__input template-modal__input--mono" placeholder="Ex.: ~/.ssh/id_ed25519 (deixe vazio para ~/.ssh/id_rsa)">
+                </div>
+
+                <div v-else class="template-modal__field">
+                    <span class="template-modal__label">Senha SSH</span>
+                    <input v-model="sshPassword" type="password" class="template-modal__input template-modal__input--mono" :placeholder="hasExistingPassword ? 'Deixe em branco para manter a senha atual' : 'Senha para login remoto...'">
+                </div>
+            </div>
+
             <label class="template-modal__field">
                 <span class="template-modal__label">Pasta personalizada (opcional)</span>
                 <input v-model="cwd" type="text" class="template-modal__input" placeholder="Relativa à raiz do projeto ou caminho absoluto">
@@ -59,8 +92,19 @@
 
 <script setup lang="ts">
     import { computed, ref, watch } from 'vue';
-    import { MaxButton, MaxIconButton, MaxModal } from '@maxvue/max-components-ui';
-    import type { EnvValue, TabTemplate_Serialize, TabTemplateInput_Deserialize } from '@/types/bindings';
+    import {
+        MaxButton,
+        MaxIconButton,
+        MaxInputCheckbox,
+        MaxInputSelect,
+        MaxModal
+    } from '@maxvue/max-components-ui';
+    import type {
+        EnvValue,
+        TabTemplate_Serialize,
+        TabTemplateInput_Deserialize,
+        TemplateConnectionInput_Deserialize
+    } from '@/types/bindings';
 
     interface EnvRowItem {
         key: string;
@@ -95,6 +139,18 @@
     const envRows = ref<EnvRowItem[]>([]);
     const localError = ref<string | null>(null);
 
+    const origin = ref<'local' | 'remote'>('local');
+    const originOptions = [
+        { label: 'Local (Shell do sistema operacional)', value: 'local' },
+        { label: 'Remoto (Conexão supervisionada via SSH)', value: 'remote' }
+    ];
+    const sshHost = ref<string>('');
+    const sshUser = ref<string>('');
+    const sshUseKey = ref<boolean>(false);
+    const sshIdentityFile = ref<string>('');
+    const sshPassword = ref<string>('');
+    const hasExistingPassword = ref<boolean>(false);
+
     const modalTitle = computed<string>(() =>
         props.template ? `Editar Template: ${props.template.config.name}` : 'Novo Template de Aba'
     );
@@ -119,6 +175,30 @@
                     kind: v.kind,
                     value: v.kind === 'literal' ? v.value : v.source
                 }));
+
+                const conn = tpl.config.connection;
+                if (conn && conn.kind === 'ssh') {
+                    origin.value = 'remote';
+                    sshHost.value = conn.host;
+                    sshUser.value = conn.user;
+                    if (conn.auth.kind === 'key') {
+                        sshUseKey.value = true;
+                        sshIdentityFile.value = conn.auth.identityFile ?? '';
+                        hasExistingPassword.value = false;
+                    } else {
+                        sshUseKey.value = false;
+                        hasExistingPassword.value = true;
+                        sshIdentityFile.value = '';
+                    }
+                } else {
+                    origin.value = 'local';
+                    sshHost.value = '';
+                    sshUser.value = '';
+                    sshUseKey.value = false;
+                    sshIdentityFile.value = '';
+                    hasExistingPassword.value = false;
+                }
+                sshPassword.value = '';
             } else {
                 name.value = '';
                 icon.value = 'lucide:terminal';
@@ -128,6 +208,13 @@
                 continuous.value = false;
                 makeDefault.value = false;
                 envRows.value = [];
+                origin.value = 'local';
+                sshHost.value = '';
+                sshUser.value = '';
+                sshUseKey.value = false;
+                sshIdentityFile.value = '';
+                sshPassword.value = '';
+                hasExistingPassword.value = false;
             }
         },
         { immediate: true }
@@ -151,6 +238,66 @@
         if (!trimmedName) {
             localError.value = 'Informe o nome do template.';
             return;
+        }
+
+        let connectionInput: TemplateConnectionInput_Deserialize;
+        if (origin.value === 'remote') {
+            const trimmedHost = sshHost.value.trim();
+            const trimmedUser = sshUser.value.trim();
+            if (!trimmedHost) {
+                localError.value = 'Informe o endereço IP ou host do servidor SSH.';
+                return;
+            }
+            if (!trimmedUser) {
+                localError.value = 'Informe o usuário para login SSH.';
+                return;
+            }
+
+            if (sshUseKey.value) {
+                connectionInput = {
+                    kind: 'ssh',
+                    host: trimmedHost,
+                    user: trimmedUser,
+                    auth: {
+                        kind: 'key',
+                        identityFile: sshIdentityFile.value.trim() ? sshIdentityFile.value.trim() : null
+                    }
+                };
+            } else {
+                if (sshPassword.value) {
+                    connectionInput = {
+                        kind: 'ssh',
+                        host: trimmedHost,
+                        user: trimmedUser,
+                        auth: {
+                            kind: 'password',
+                            operation: {
+                                action: 'set',
+                                password: sshPassword.value
+                            }
+                        }
+                    };
+                } else if (hasExistingPassword.value) {
+                    connectionInput = {
+                        kind: 'ssh',
+                        host: trimmedHost,
+                        user: trimmedUser,
+                        auth: {
+                            kind: 'password',
+                            operation: {
+                                action: 'keep'
+                            }
+                        }
+                    };
+                } else {
+                    localError.value = 'Informe a senha para autenticação SSH ou marque Utilizar Chave SSH.';
+                    return;
+                }
+            }
+        } else {
+            connectionInput = {
+                kind: 'local'
+            };
         }
 
         const envVars: Record<string, EnvValue> = {};
@@ -188,26 +335,16 @@
                 agentId: null
             },
             envVars,
-            makeDefault: makeDefault.value
+            makeDefault: makeDefault.value,
+            connection: connectionInput
         });
     }
 </script>
 
 <style lang="scss" scoped>
-    .template-modal-backdrop {
-        position: fixed;
-        inset: 0;
-        z-index: 90;
-        background: rgb(0 0 0 / 60%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 1rem;
-    }
-
     .template-modal {
         width: 100%;
-        max-width: 34rem;
+        max-width: 38rem;
         background: var(--mt-ui-surface, var(--background-0));
         border: 1px solid var(--mt-ui-border, var(--background-100));
         border-radius: 0.625rem;
@@ -215,35 +352,6 @@
         display: flex;
         flex-direction: column;
         overflow: hidden;
-    }
-
-    .template-modal__header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0.875rem 1.125rem;
-        border-bottom: 1px solid var(--mt-ui-border, var(--background-100));
-    }
-
-    .template-modal__title {
-        margin: 0;
-        font-size: 0.9375rem;
-        font-weight: 600;
-        color: var(--mt-ui-text-strong, var(--background-950));
-    }
-
-    .template-modal__close {
-        border: none;
-        background: transparent;
-        color: var(--mt-ui-text-muted, var(--background-400));
-        cursor: pointer;
-        padding: 0.25rem;
-        border-radius: 0.25rem;
-
-        &:hover {
-            background: var(--mt-ui-surface-hover, var(--background-75));
-            color: var(--mt-ui-text-strong, var(--background-950));
-        }
     }
 
     .template-modal__form {
@@ -275,6 +383,16 @@
         &--grow {
             flex: 1;
         }
+    }
+
+    .template-modal__remote-box {
+        display: flex;
+        flex-direction: column;
+        gap: 0.625rem;
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        background: var(--mt-ui-surface-hover, var(--background-50));
+        border: 1px dashed var(--mt-ui-border, var(--background-200));
     }
 
     .template-modal__label {

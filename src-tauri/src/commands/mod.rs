@@ -13,11 +13,15 @@ pub mod bridge;
 #[macro_use]
 pub mod command_groups;
 #[macro_use]
+pub mod credentials;
+#[macro_use]
 pub mod db;
 #[macro_use]
 pub mod git;
 #[macro_use]
 pub mod github;
+#[macro_use]
+pub mod horizon;
 #[macro_use]
 pub mod memory;
 #[macro_use]

@@ -91,6 +91,10 @@ use mt_commands::{
         ports::RecurringCommandEntry,
         suggest::{GroupSuggestRequest, GroupSuggestResponse, RecurringCommandsResponse},
     },
+    horizon::{
+        HorizonAvailability, HorizonClearPreview, HorizonClearResult, HorizonContext,
+        HorizonSessionDto, HorizonSnapshot, HorizonStatus, QueueClearCount, QueueScope,
+    },
     shortcuts::model::{
         DetectedManager, ManagerEvidence, PackageManager, PartSource, ResolvedShortcut, ShortcutId,
         ShortcutList, ShortcutPart,
@@ -116,11 +120,12 @@ use mt_core::{
     workspace::{
         CommandOverride, EnvValue, EnvironmentKind, InitialDispatchState, LaunchSnapshot,
         LayoutSizePatch, PaneCloseOutcome, PaneExitInfo, PaneLayoutNode, PaneRuntimeState,
-        PaneView, ScrollbackChunk, ScrollbackChunkKind, SessionDetail, SessionEndReason,
-        SessionPaneSummary, SessionSearchHit, SessionSummary, SplitDirection, TabLifecycle,
-        TabOpenOverrides, TabOpenRequest, TabOrigin, TabTemplate, TabTemplateInput, TabView,
-        TemplateConfig, TemplateEnvironment, WorkspaceRestoreFailure, WorkspaceRestoreReport,
-        WorkspaceSnapshot,
+        PaneView, PasswordCredentialOperation, ScrollbackChunk, ScrollbackChunkKind, SessionDetail,
+        SessionEndReason, SessionPaneSummary, SessionSearchHit, SessionSummary, SplitDirection,
+        SshAuth, SshAuthInput, TabLifecycle, TabOpenOverrides, TabOpenRequest, TabOrigin,
+        TabTemplate, TabTemplateInput, TabView, TemplateConfig, TemplateConnection,
+        TemplateConnectionInput, TemplateEnvironment, WorkspaceRestoreFailure,
+        WorkspaceRestoreReport, WorkspaceSnapshot,
     },
 };
 use mt_db::models::{
@@ -223,6 +228,10 @@ use crate::commands::command_groups::{
     command_group_run_item_detach, command_group_run_list, command_group_suggest,
     command_group_update,
 };
+use crate::commands::credentials::{
+    vault_change_password, vault_get_state, vault_lock, vault_setup, vault_unlock,
+};
+use crate::credentials::VaultStatus;
 use crate::commands::db::{
     db_recover, db_setting_snapshot, db_settings_get, db_settings_set, db_status,
 };
@@ -237,6 +246,10 @@ use crate::commands::github::{
     github_issue_send_maxcode, github_issue_worktree_create, github_issue_worktree_resolve,
     github_issues_list, github_labels_catalog, github_labels_ensure, github_refresh,
     github_repo_labels, github_repo_resolve,
+};
+use crate::commands::horizon::{
+    horizon_clear_pending, horizon_clear_pending_preview, horizon_snapshot, horizon_start,
+    horizon_stop,
 };
 use crate::commands::memory::{
     memory_forget, memory_hide, memory_list, memory_pin, memory_rebuild, memory_suggestions,
@@ -566,7 +579,17 @@ macro_rules! register_all_commands {
             backup_list,
             backup_restore_schedule,
             app_update_check,
-            app_update_install_confirmed
+            app_update_install_confirmed,
+            vault_get_state,
+            vault_setup,
+            vault_unlock,
+            vault_lock,
+            vault_change_password,
+            horizon_snapshot,
+            horizon_start,
+            horizon_stop,
+            horizon_clear_pending_preview,
+            horizon_clear_pending
             $(, $extra)*
         ])
     };
@@ -769,6 +792,12 @@ pub fn builder_for<R: tauri::Runtime>() -> Builder<R> {
         .typ::<TabOpenOverrides>()
         .typ::<TabOpenRequest>()
         .typ::<TemplateConfig>()
+        .typ::<TemplateConnection>()
+        .typ::<SshAuth>()
+        .typ::<PasswordCredentialOperation>()
+        .typ::<SshAuthInput>()
+        .typ::<TemplateConnectionInput>()
+        .typ::<VaultStatus>()
         .typ::<TabTemplateInput>()
         .typ::<TabTemplate>()
         .typ::<LaunchSnapshot>()
@@ -1182,6 +1211,15 @@ pub fn builder_for<R: tauri::Runtime>() -> Builder<R> {
         .typ::<PerfSnapshotDto>()
         .typ::<UpdateCapabilityDto>()
         .typ::<UpdateCheckResultDto>()
+        .typ::<HorizonContext>()
+        .typ::<HorizonAvailability>()
+        .typ::<HorizonStatus>()
+        .typ::<QueueScope>()
+        .typ::<HorizonSessionDto>()
+        .typ::<HorizonSnapshot>()
+        .typ::<HorizonClearPreview>()
+        .typ::<QueueClearCount>()
+        .typ::<HorizonClearResult>()
 }
 
 /// Constrói o `tauri_specta::Builder<tauri::Wry>` padrão da aplicação.

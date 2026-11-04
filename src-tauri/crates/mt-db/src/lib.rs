@@ -65,14 +65,14 @@ pub use repos::{
     CONSTRAINT_TEMPLATE_CONFLICT, CONSTRAINT_TEMPLATE_DEFAULT_REQUIRED,
     CONSTRAINT_TEMPLATE_INVALID, CONSTRAINT_TEMPLATE_NOT_FOUND, CONSTRAINT_TEMPLATE_SECRET_LITERAL,
     CONSTRAINT_WORKSPACE_OPERATION_INTERRUPTED, CONSTRAINT_WORKSPACE_REQUEST_CONFLICT, CatalogRows,
-    CommandBlocksRepo, DefaultTemplateContributor, FinishCommandBlock, MAX_SCROLLBACK_PAGE_BYTES,
+    CommandBlocksRepo, CredentialsRepo, DefaultTemplateContributor, FinishCommandBlock, MAX_SCROLLBACK_PAGE_BYTES,
     NewCommandBlock, NewSession, NewTabTxInput, OperationStage, OsSettingsRepo, OsSettingsRow,
     PanesRepo, PrepareOperationOutcome, ProjectCommit, ProjectMutation, ProjectsRepo,
     SESSION_SCROLLBACK_FTS_SPEC, SESSIONS_ARCHIVED_RETENTION_RULE, ScrollbackRecord,
     ScrollbackRepo, SessionDto, SessionEnd, SessionsRepo, StoredAppearanceRow,
-    StoredColorSchemeRow, StoredDismissed, StoredIdentityUpdate, StoredMissingUpdate,
+    StoredColorSchemeRow, StoredCredentialRow, StoredDismissed, StoredIdentityUpdate, StoredMissingUpdate,
     StoredNewProject, StoredPaneRow, StoredProject, StoredProjectThemeOverrideRow,
-    StoredReconcileBatch, StoredRoot, StoredRootEntry, StoredTabRow, TabSessionsRepo, TabsRepo,
+    StoredReconcileBatch, StoredRoot, StoredRootEntry, StoredTabRow, StoredVaultMetadata, TabSessionsRepo, TabsRepo,
     TemplatesRepo, ThemesRepo, WorkspaceOperationRow, WorkspaceOperationsRepo, close_session_tx,
     insert_session_tx,
 };
@@ -349,6 +349,12 @@ impl Db {
     #[must_use]
     pub fn templates(&self) -> TemplatesRepo {
         TemplatesRepo::new(self.clone())
+    }
+
+    /// Retorna o repositório tipado de credenciais cifradas e cofre (`CredentialsRepo`).
+    #[must_use]
+    pub fn credentials(&self) -> CredentialsRepo {
+        CredentialsRepo::new(self.clone())
     }
 
     /// Retorna o repositório tipado de abas (`TabsRepo`).

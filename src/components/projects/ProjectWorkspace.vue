@@ -19,6 +19,7 @@
                     <span>Buscar em tudo…</span>
                     <kbd class="project-workspace__kbd">Ctrl+K</kbd>
                 </MaxButton>
+                <HorizonBadgeButton />
                 <AiStatusIndicator />
                 <BridgeStatusIndicator />
                 <ShortcutStatusBadge />
@@ -42,6 +43,7 @@
             <slot>
                 <TabWorkspaceView :project="props.project" />
             </slot>
+            <HorizonModal />
         </div>
         <div v-else class="project-workspace__empty">
             <slot>
@@ -57,6 +59,8 @@
     import MaxIconButton from '@maxvue/max-components-ui/components/MaxIconButton';
     import AiStatusIndicator from '@/components/ai/AiStatusIndicator.vue';
     import BridgeStatusIndicator from '@/components/bridge/BridgeStatusIndicator.vue';
+    import HorizonBadgeButton from '@/components/horizon/HorizonBadgeButton.vue';
+    import HorizonModal from '@/components/horizon/HorizonModal.vue';
     import ShortcutStatusBadge from '@/components/os/ShortcutStatusBadge.vue';
     import AppEmptyState from '@/components/shell/AppEmptyState.vue';
     import TabWorkspaceView from '@/components/workspace/TabWorkspaceView.vue';

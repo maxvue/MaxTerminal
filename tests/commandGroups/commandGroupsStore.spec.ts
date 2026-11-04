@@ -573,7 +573,8 @@ describe('useCommandGroupsStore (Fase 15 — CA-11, CA-14, CA-26)', () => {
                     addToWorkspace: false,
                     continuous: false,
                     environment: { kind: 'shell', agentId: null },
-                    envVars: {}
+                    envVars: {},
+                    connection: { kind: 'local' }
                 },
                 isDefault: true,
                 position: 0,
@@ -592,7 +593,8 @@ describe('useCommandGroupsStore (Fase 15 — CA-11, CA-14, CA-26)', () => {
                     addToWorkspace: false,
                     continuous: true,
                     environment: { kind: 'shell', agentId: null },
-                    envVars: {}
+                    envVars: {},
+                    connection: { kind: 'local' }
                 },
                 isDefault: false,
                 position: 1,

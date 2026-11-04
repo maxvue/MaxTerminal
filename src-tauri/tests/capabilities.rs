@@ -263,6 +263,11 @@ fn capabilities_restrict_to_main_window_and_allowed_commands() {
             "allow-backup-restore-schedule",
             "allow-app-update-check",
             "allow-app-update-install-confirmed",
+            "allow-horizon-snapshot",
+            "allow-horizon-start",
+            "allow-horizon-stop",
+            "allow-horizon-clear-pending-preview",
+            "allow-horizon-clear-pending",
             "core:event:default",
             "core:window:allow-set-theme",
         ]
@@ -1188,6 +1193,23 @@ fn acl_runtime_allows_main_and_denies_unauthorized_window_or_command() {
             "allow-backup-restore-schedule",
             "backup_restore_schedule",
             "backup_restore_schedule.toml",
+        ),
+        (
+            "allow-horizon-snapshot",
+            "horizon_snapshot",
+            "horizon_snapshot.toml",
+        ),
+        ("allow-horizon-start", "horizon_start", "horizon_start.toml"),
+        ("allow-horizon-stop", "horizon_stop", "horizon_stop.toml"),
+        (
+            "allow-horizon-clear-pending-preview",
+            "horizon_clear_pending_preview",
+            "horizon_clear_pending_preview.toml",
+        ),
+        (
+            "allow-horizon-clear-pending",
+            "horizon_clear_pending",
+            "horizon_clear_pending.toml",
         ),
     ];
 

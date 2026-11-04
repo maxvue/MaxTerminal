@@ -19,5 +19,6 @@ pub mod artisan;
 pub mod error;
 pub mod fs_util;
 pub mod groups;
+pub mod horizon;
 pub mod ports;
 pub mod shortcuts;

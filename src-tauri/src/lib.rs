@@ -23,9 +23,12 @@ pub mod ai_context;
 pub mod ai_state;
 pub mod bridge;
 pub mod command_groups;
+pub mod credentials;
 pub mod events;
 pub mod github;
+pub mod horizon;
 pub mod logging;
+pub mod remote;
 pub mod search;
 pub mod security;
 pub mod specta;
@@ -90,6 +93,11 @@ use crate::workspace::{SessionRecorder, SpawnHookChain, WorkspaceManager};
 /// Executa o ciclo de vida completo do aplicativo desktop `MaxTerminal`.
 #[allow(clippy::too_many_lines)]
 pub fn run() {
+    let raw_args: Vec<String> = std::env::args().collect();
+    if raw_args.len() >= 2 && raw_args[1] == "--ssh-askpass-helper" {
+        remote::run_askpass_helper(&raw_args);
+    }
+
     let paths = match AppPaths::resolve(&SystemEnv) {
         Ok(paths) => paths,
         Err(err) => {
@@ -240,12 +248,18 @@ pub fn run() {
             let _recorder_tap =
                 pty_for_setup.add_output_tap(Arc::clone(&recorder) as Arc<dyn OutputTap>);
 
+            let vault_service = Arc::new(crate::credentials::service::VaultService::new(
+                (*db_arc).clone(),
+            ));
+            app.manage(Arc::clone(&vault_service));
+
             let workspace_manager = WorkspaceManager::new(
                 (*db_arc).clone(),
                 Arc::clone(&pty_for_setup),
                 Arc::clone(&shell_service),
                 recorder,
                 SpawnHookChain::new(),
+                Arc::clone(&vault_service),
             );
             workspace_manager.attach_app_handle(app.handle().clone());
             workspace_manager.install_pty_listener();
@@ -344,7 +358,7 @@ pub fn run() {
             };
 
             let os_deps = OsDeps {
-                status: status_provider,
+                status: status_provider.clone(),
                 cwd: cwd_provider,
                 shutdown: shutdown_hooks,
                 settings_repo: Arc::new(db_arc.os_settings()),
@@ -507,6 +521,24 @@ pub fn run() {
             .map_err(|err| -> Box<dyn std::error::Error> { Box::new(err) })?;
             app.manage(github_state);
 
+            // Subsistema Laravel Horizon
+            let horizon_lookup: Arc<dyn mt_commands::ports::ProjectLookup> = Arc::new(
+                crate::commands::quick_commands::DbProjectLookup::new((*db_arc).clone()),
+            );
+            let horizon_domain = Arc::new(mt_commands::horizon::HorizonDomainService::new(
+                horizon_lookup,
+                Arc::new(mt_commands::ports::SystemClock),
+            ));
+            let horizon_runtime = crate::horizon::HorizonRuntimeService::new(
+                Arc::clone(&pty_for_setup),
+                horizon_domain,
+            );
+            status_provider.attach_horizon(Arc::clone(&horizon_runtime));
+            project_service.register_removal_hook(Arc::new(
+                crate::horizon::HorizonProjectRemovalHook::new(Arc::clone(&horizon_runtime)),
+            ));
+            app.manage(Arc::clone(&horizon_runtime));
+
             let workspace_manager_bg = workspace_manager.clone();
             app.manage(workspace_manager);
 
@@ -638,11 +670,19 @@ pub fn run() {
                         tauri::async_runtime::block_on(ws_mgr.shutdown());
                     }
 
+                    if let Some(horizon_svc) = handle.try_state::<Arc<crate::horizon::HorizonRuntimeService>>() {
+                        horizon_svc.shutdown();
+                    }
+
                     if let Some(shell_svc) = handle.try_state::<Arc<ShellService>>() {
                         shell_svc.shutdown();
                     }
 
                     let report = mgr.shutdown(Duration::from_millis(3500));
+
+                    if let Some(vault_svc) = handle.try_state::<Arc<crate::credentials::service::VaultService>>() {
+                        vault_svc.lock();
+                    }
 
                     if let Some(db_svc) = handle.try_state::<DbService>() {
                         if let Err(err) = tauri::async_runtime::block_on(db_svc.db().shutdown()) {

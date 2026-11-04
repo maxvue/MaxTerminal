@@ -213,4 +213,9 @@ permissions = [
   "allow-backup-create",
   "allow-backup-list",
   "allow-backup-restore-schedule",
+  "allow-horizon-snapshot",
+  "allow-horizon-start",
+  "allow-horizon-stop",
+  "allow-horizon-clear-pending-preview",
+  "allow-horizon-clear-pending",
 ]

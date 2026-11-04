@@ -48,7 +48,7 @@
 
     const tabStatusStore = useTabStatusStore();
 
-    const paneCount = computed<number>(() => props.tab.panes.length);
+    const _paneCount = computed<number>(() => props.tab.panes.length);
 
     const effectiveStatus = computed<TabStatus>(() => {
         const snap = tabStatusStore.snapshotOf(props.tab.id);
@@ -107,17 +107,20 @@
         place-items: center;
         grid-template-columns: auto 1fr auto auto;
         gap: 10px;
+
         .tab-bar-left{
             width: 100%;
             height: 100%;
             display: grid;
             place-items: center;
         }
+
         .tab-bar-center{
             width: 100%;
             height: 100%;
             display: grid;
             place-items: center start;
+
             .tab-bar-item__title {
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -126,6 +129,7 @@
                 font-weight: 400;
             }
         }
+
         .tab-bar-right{
             width: 100%;
             height: 100%;
@@ -133,11 +137,13 @@
             place-items: center;
             padding-left: 10px;
         }
+
         .tab-bar-close{
             width: 100%;
             height: 100%;
             display: grid;
             place-items: center end;
+
             // padding-left: 10px;
         }
     }

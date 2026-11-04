@@ -218,6 +218,19 @@ pub mod codes {
     pub const OS_ACTIVATION_INVALID: ErrorCode = ErrorCode("os.activation_invalid");
     /// Subsistema de integração com o SO ainda não concluiu a inicialização.
     pub const OS_NOT_READY: ErrorCode = ErrorCode("os.not_ready");
+
+    /// Cofre de credenciais bloqueado exigindo senha mestra.
+    pub const VAULT_LOCKED: ErrorCode = ErrorCode("vault.locked");
+    /// Cofre não configurado (nenhuma senha mestra cadastrada).
+    pub const VAULT_UNCONFIGURED: ErrorCode = ErrorCode("vault.unconfigured");
+    /// Senha mestra incorreta para desbloqueio do cofre.
+    pub const VAULT_WRONG_PASSWORD: ErrorCode = ErrorCode("vault.wrong_password");
+    /// Credencial não encontrada no cofre.
+    pub const VAULT_CREDENTIAL_NOT_FOUND: ErrorCode = ErrorCode("vault.credential_not_found");
+    /// Conexão SSH falhou por erro de rede ou autenticação.
+    pub const SSH_CONNECTION_FAILED: ErrorCode = ErrorCode("ssh.connection_failed");
+    /// Autenticação SSH bloqueada aguardando desbloqueio do cofre.
+    pub const CREDENTIAL_LOCKED: ErrorCode = ErrorCode("credential.locked");
 }
 
 /// Erro único retornado por todos os comandos IPC do `MaxTerminal`.

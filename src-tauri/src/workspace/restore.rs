@@ -59,17 +59,49 @@ pub async fn run_boot_reconciliation_and_restore(
         .ensure_all_projects_have_default(now_ms)
         .await;
 
-    // Lista todos os templates marcados com add_to_workspace = true em projetos ativos
+    let mut opened_tabs = 0usize;
+    let mut failures = Vec::new();
+    let mut restored_templates = std::collections::HashSet::new();
+
+    // 1. Enumera e restaura todas as abas que estavam abertas no encerramento anterior
+    let open_tabs = db.tabs().list_all_open().await.map_err(map_db_error)?;
+    for stored_tab in open_tabs {
+        let project_id = stored_tab.project_id;
+        let template_id = stored_tab.template_id;
+        let tab_id = stored_tab.id;
+
+        match manager.restore_open_tab_entry(stored_tab).await {
+            Ok(_tab_view) => {
+                opened_tabs = opened_tabs.saturating_add(1);
+                if let Some(tid) = template_id {
+                    restored_templates.insert((project_id, tid));
+                }
+            }
+            Err(err) => {
+                failures.push(WorkspaceRestoreFailure {
+                    project_id,
+                    template_id,
+                    tab_id: Some(tab_id),
+                    code: err.code.0.to_string(),
+                    message: err.message.into_owned(),
+                });
+            }
+        }
+    }
+
+    // 2. Lista todos os templates marcados com add_to_workspace = true em projetos ativos
+    // e garante a abertura complementar daqueles que ainda não estão presentes no workspace
     let workspace_templates = db
         .templates()
         .list_workspace_templates()
         .await
         .map_err(map_db_error)?;
 
-    let mut opened_tabs = 0usize;
-    let mut failures = Vec::new();
-
     for template in workspace_templates {
+        if restored_templates.contains(&(template.project_id, template.id)) {
+            continue;
+        }
+
         let req = TabOpenRequest {
             request_id: format!("boot-{}-{}", boot_id, template.id),
             project_id: template.project_id,

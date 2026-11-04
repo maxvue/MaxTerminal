@@ -91,6 +91,103 @@ pub enum EnvValue {
     },
 }
 
+/// Configuração de autenticação SSH em template persistido.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum SshAuth {
+    /// Autenticação por senha referenciando credencial opaca cifrada no cofre.
+    #[serde(rename_all = "camelCase")]
+    Password {
+        /// Identificador da credencial no repositório seguro.
+        credential_id: String,
+    },
+    /// Autenticação por chave SSH (arquivo de identidade opcional).
+    #[serde(rename_all = "camelCase")]
+    Key {
+        /// Caminho opcional do arquivo de chave privada (ex.: `~/.ssh/id_ed25519`).
+        identity_file: Option<String>,
+    },
+}
+
+/// Configuração de conexão persistida do template (local ou SSH remoto).
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize, specta::Type)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum TemplateConnection {
+    /// Conexão shell local.
+    #[default]
+    #[serde(rename_all = "camelCase")]
+    Local,
+    /// Conexão SSH remota supervisionada.
+    #[serde(rename_all = "camelCase")]
+    Ssh {
+        /// Endereço IP (v4/v6) ou hostname do servidor remoto.
+        host: String,
+        /// Usuário de login no servidor remoto.
+        user: String,
+        /// Configuração de autenticação (senha cifrada ou chave).
+        auth: SshAuth,
+    },
+}
+
+/// Operação sobre a senha SSH no input do formulário.
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize, specta::Type)]
+#[serde(tag = "action", rename_all = "snake_case")]
+pub enum PasswordCredentialOperation {
+    /// Mantém a credencial de senha atualmente associada ao template (em edição).
+    #[default]
+    Keep,
+    /// Define ou substitui por uma nova senha informada em texto puro.
+    #[serde(rename_all = "camelCase")]
+    Set {
+        /// Senha em texto puro a ser cifrada nativamente antes da escrita em disco.
+        password: String,
+    },
+    /// Mantém uma credencial já associada por seu ID interno.
+    #[serde(rename_all = "camelCase")]
+    KeepExisting {
+        /// Identificador único da credencial salva no cofre.
+        credential_id: String,
+    },
+}
+
+/// Autenticação SSH informada no formulário de template.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum SshAuthInput {
+    /// Autenticação por senha com operação explícita.
+    #[serde(rename_all = "camelCase")]
+    Password {
+        /// Operação sobre a credencial de senha.
+        operation: PasswordCredentialOperation,
+    },
+    /// Autenticação por chave SSH.
+    #[serde(rename_all = "camelCase")]
+    Key {
+        /// Caminho opcional do arquivo de identidade.
+        identity_file: Option<String>,
+    },
+}
+
+/// Conexão informada no payload de criação/atualização de template.
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize, specta::Type)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum TemplateConnectionInput {
+    /// Execução local.
+    #[default]
+    #[serde(rename_all = "camelCase")]
+    Local,
+    /// Conexão SSH remota.
+    #[serde(rename_all = "camelCase")]
+    Ssh {
+        /// Endereço IP (v4/v6) ou hostname do host remoto.
+        host: String,
+        /// Usuário de login remoto.
+        user: String,
+        /// Configuração de autenticação.
+        auth: SshAuthInput,
+    },
+}
+
 /// Configuração persistida e compartilhada de um Template de Aba.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -111,6 +208,9 @@ pub struct TemplateConfig {
     pub environment: TemplateEnvironment,
     /// Variáveis de ambiente adicionais.
     pub env_vars: BTreeMap<String, EnvValue>,
+    /// Conexão configurada para o template (local ou SSH remoto).
+    #[serde(default)]
+    pub connection: TemplateConnection,
 }
 
 impl Default for TemplateConfig {
@@ -124,6 +224,7 @@ impl Default for TemplateConfig {
             continuous: false,
             environment: TemplateEnvironment::default(),
             env_vars: BTreeMap::new(),
+            connection: TemplateConnection::Local,
         }
     }
 }
@@ -150,6 +251,9 @@ pub struct TabTemplateInput {
     pub env_vars: BTreeMap<String, EnvValue>,
     /// Se `true`, promove este template a padrão do projeto na mesma transação.
     pub make_default: bool,
+    /// Conexão de execução (local ou remota SSH).
+    #[serde(default)]
+    pub connection: TemplateConnectionInput,
 }
 
 /// Representação completa de um Template de Aba persistido.
@@ -249,6 +353,9 @@ pub struct LaunchSnapshot {
     pub environment: TemplateEnvironment,
     /// Variáveis de ambiente declaradas (sem expandir `Inherited`).
     pub env_vars: BTreeMap<String, EnvValue>,
+    /// Conexão efetiva de lançamento da aba (local ou SSH remoto).
+    #[serde(default)]
+    pub connection: TemplateConnection,
 }
 
 /// Verifica se um identificador de ícone Iconify é válido (`prefixo:nome`, até 64 chars).
@@ -525,6 +632,32 @@ pub fn validate_template_input(input: &TabTemplateInput) -> MtResult<TemplateCon
 
     validate_env_map(&input.env_vars)?;
 
+    let clean_connection = match &input.connection {
+        TemplateConnectionInput::Local => TemplateConnection::Local,
+        TemplateConnectionInput::Ssh { host, user, auth } => {
+            let clean_host = validate_ssh_host(host)?;
+            let clean_user = validate_ssh_user(user)?;
+            let clean_auth = match auth {
+                SshAuthInput::Key { identity_file } => SshAuth::Key {
+                    identity_file: validate_ssh_identity_file(identity_file.as_deref())?,
+                },
+                SshAuthInput::Password { operation } => match operation {
+                    PasswordCredentialOperation::KeepExisting { credential_id } => SshAuth::Password {
+                        credential_id: credential_id.clone(),
+                    },
+                    _ => SshAuth::Password {
+                        credential_id: String::new(),
+                    },
+                },
+            };
+            TemplateConnection::Ssh {
+                host: clean_host,
+                user: clean_user,
+                auth: clean_auth,
+            }
+        }
+    };
+
     Ok(TemplateConfig {
         name: trimmed_name.to_string(),
         icon: trimmed_icon.to_string(),
@@ -534,5 +667,80 @@ pub fn validate_template_input(input: &TabTemplateInput) -> MtResult<TemplateCon
         continuous: input.continuous,
         environment: clean_env_kind,
         env_vars: input.env_vars.clone(),
+        connection: clean_connection,
     })
+}
+
+/// Valida endereço de host/IP para conexão SSH remota.
+pub fn validate_ssh_host(host: &str) -> MtResult<String> {
+    let trimmed = host.trim();
+    if trimmed.is_empty() || trimmed.len() > 255 {
+        return Err(MtError::new(
+            codes::TEMPLATE_INVALID,
+            "O host remoto deve conter entre 1 e 255 caracteres.",
+        ));
+    }
+    if trimmed.starts_with('-') {
+        return Err(MtError::new(
+            codes::TEMPLATE_INVALID,
+            "O host remoto não pode iniciar com traço (hífen).",
+        ));
+    }
+    if trimmed.chars().any(|c| {
+        c.is_control()
+            || c.is_whitespace()
+            || matches!(
+                c,
+                ';' | '&' | '|' | '`' | '$' | '\'' | '"' | '<' | '>' | '\\' | '\0'
+            )
+    }) {
+        return Err(MtError::new(
+            codes::TEMPLATE_INVALID,
+            "O host remoto contém caracteres inválidos ou inseguros.",
+        ));
+    }
+    Ok(trimmed.to_string())
+}
+
+/// Valida nome de usuário para login SSH remoto.
+pub fn validate_ssh_user(user: &str) -> MtResult<String> {
+    let trimmed = user.trim();
+    if trimmed.is_empty() || trimmed.len() > 64 {
+        return Err(MtError::new(
+            codes::TEMPLATE_INVALID,
+            "O usuário SSH deve conter entre 1 e 64 caracteres.",
+        ));
+    }
+    if trimmed.starts_with('-') {
+        return Err(MtError::new(
+            codes::TEMPLATE_INVALID,
+            "O usuário SSH não pode iniciar com traço (hífen).",
+        ));
+    }
+    let is_valid_char = |c: char| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.';
+    if !trimmed.chars().all(is_valid_char) {
+        return Err(MtError::new(
+            codes::TEMPLATE_INVALID,
+            "O usuário SSH deve conter apenas letras, números, sublinhado, hífen ou ponto.",
+        ));
+    }
+    Ok(trimmed.to_string())
+}
+
+/// Valida caminho de arquivo de chave de identidade SSH opcional.
+pub fn validate_ssh_identity_file(path: Option<&str>) -> MtResult<Option<String>> {
+    let Some(raw) = path else {
+        return Ok(None);
+    };
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return Ok(None);
+    }
+    if trimmed.contains('\0') || trimmed.chars().any(char::is_control) {
+        return Err(MtError::new(
+            codes::TEMPLATE_INVALID,
+            "O caminho do arquivo de chave SSH contém caracteres inválidos.",
+        ));
+    }
+    Ok(Some(trimmed.to_string()))
 }

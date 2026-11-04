@@ -15,6 +15,8 @@
             <QuickCommandsHost />
             <GlobalSearchPalette />
             <PerfOverlay />
+            <VaultUnlockModal :visible="vaultStore.unlockModalOpen" @update:visible="vaultStore.unlockModalOpen = $event" @unlocked="vaultStore.handleUnlocked" />
+            <VaultSetupModal :visible="vaultStore.setupModalOpen" @update:visible="vaultStore.setupModalOpen = $event" @configured="vaultStore.handleConfigured" />
         </template>
     </AppShell>
     <MaxToast />
@@ -25,6 +27,8 @@
     import { MaxButton, MaxToast } from '@maxvue/max-components-ui';
     import { DevTerminalPlaygroundComponent, isDevTerminalPlaygroundRoute } from '@/app/router';
     import PerfOverlay from '@/components/dev/PerfOverlay.vue';
+    import VaultSetupModal from '@/components/credentials/VaultSetupModal.vue';
+    import VaultUnlockModal from '@/components/credentials/VaultUnlockModal.vue';
     import AppLayout from '@/components/layout/AppLayout.vue';
     import PreferencesDialog from '@/components/preferences/PreferencesDialog.vue';
     import ProjectSettingsDialog from '@/components/projects/ProjectSettingsDialog.vue';
@@ -46,6 +50,7 @@
     import { useShellHistoryStore } from '@/stores/shellHistory';
     import { useSkillsStore } from '@/stores/skills';
     import { useTabStatusStore } from '@/stores/tabStatus';
+    import { useVaultStore } from '@/stores/vault';
     import { useWindowStore } from '@/stores/window';
     import { installShellIntegrationExtension } from '@/terminal/extensions/shellIntegration';
 
@@ -57,6 +62,7 @@
     const agentsStore = useAgentsStore();
     const skillsStore = useSkillsStore();
     const tabStatusStore = useTabStatusStore();
+    const vaultStore = useVaultStore();
     const shellHistoryStore = useShellHistoryStore();
     const ipcError = useIpcError();
     useThemeApplier();
@@ -81,6 +87,7 @@
         void shellHistoryStore.init().catch(() => {});
         void agentsStore.init().catch(() => {});
         void skillsStore.init().catch(() => {});
+        void vaultStore.fetchState().catch(() => {});
     }
 
     async function handleRetry(): Promise<void> {

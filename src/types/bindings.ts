@@ -461,6 +461,26 @@ export const commands = {
 	appUpdateCheck: () => typedError<UpdateCheckResultDto_Serialize, MtError_Serialize>(__TAURI_INVOKE("app_update_check")),
 	/**  Aplica uma atualização após confirmação explícita do usuário (`CA-40`). */
 	appUpdateInstallConfirmed: (expectedVersion: string) => typedError<UpdateCapabilityDto_Serialize, MtError_Serialize>(__TAURI_INVOKE("app_update_install_confirmed", { expectedVersion })),
+	/**  Consulta o estado operacional do cofre (`unconfigured`, `locked` ou `unlocked`). */
+	vaultGetState: () => typedError<VaultStatus, MtError_Serialize>(__TAURI_INVOKE("vault_get_state")),
+	/**  Configura a senha mestra inicial do cofre. */
+	vaultSetup: (masterPassword: string) => typedError<VaultStatus, MtError_Serialize>(__TAURI_INVOKE("vault_setup", { masterPassword })),
+	/**  Desbloqueia o cofre com a senha mestra. */
+	vaultUnlock: (masterPassword: string) => typedError<VaultStatus, MtError_Serialize>(__TAURI_INVOKE("vault_unlock", { masterPassword })),
+	/**  Bloqueia o cofre, removendo a chave DEK da memória. */
+	vaultLock: () => typedError<VaultStatus, MtError_Serialize>(__TAURI_INVOKE("vault_lock")),
+	/**  Troca a senha mestra do cofre. */
+	vaultChangePassword: (currentPassword: string, newPassword: string) => typedError<VaultStatus, MtError_Serialize>(__TAURI_INVOKE("vault_change_password", { currentPassword, newPassword })),
+	/**  Obtém o snapshot das métricas, configuração e status do Laravel Horizon para o projeto. */
+	horizonSnapshot: (projectId: ProjectId) => typedError<HorizonSnapshot_Serialize, MtError_Serialize>(__TAURI_INVOKE("horizon_snapshot", { projectId })),
+	/**  Inicia o daemon do Laravel Horizon em um PTY supervisionado e exclusivo. */
+	horizonStart: (projectId: ProjectId, expectedContextRevision: string, requestId: string) => typedError<HorizonSnapshot_Serialize, MtError_Serialize>(__TAURI_INVOKE("horizon_start", { projectId, expectedContextRevision, requestId })),
+	/**  Encerra graciosamente o processo master do Horizon supervisionado pelo MaxTerminal. */
+	horizonStop: (projectId: ProjectId, expectedGeneration: number, requestId: string) => typedError<HorizonSnapshot_Serialize, MtError_Serialize>(__TAURI_INVOKE("horizon_stop", { projectId, expectedGeneration, requestId })),
+	/**  Solicita a prévia e o token temporário de confirmação para limpeza de tarefas pendentes. */
+	horizonClearPendingPreview: (projectId: ProjectId) => typedError<HorizonClearPreview, MtError_Serialize>(__TAURI_INVOKE("horizon_clear_pending_preview", { projectId })),
+	/**  Executa a limpeza confirmada de tarefas pendentes (ready + delayed), preservando tarefas reservadas. */
+	horizonClearPending: (projectId: ProjectId, token: string, requestId: string) => typedError<HorizonClearResult_Serialize, MtError_Serialize>(__TAURI_INVOKE("horizon_clear_pending", { projectId, token, requestId })),
 	/**  Comando compilado e exposto SOMENTE em builds de desenvolvimento/debug. */
 	perfSnapshot: () => typedError<PerfSnapshotDto, MtError_Serialize>(__TAURI_INVOKE("perf_snapshot")),
 };
@@ -6544,6 +6564,172 @@ export type HighlightSegment = {
 	matched: boolean,
 };
 
+/**  Estado de disponibilidade do pacote Laravel Horizon no projeto. */
+export type HorizonAvailability = 
+/**  Verificação em andamento. */
+"checking" | 
+/**  Horizon não instalado ou não configurado na raiz Laravel. */
+"unavailable" | 
+/**  Horizon disponível e pronto para monitoramento. */
+"available" | 
+/**  Erro ao inspecionar a instalação ou ambiente. */
+"error";
+
+/**  Estimativa e token de confirmação para limpeza exclusiva de pendentes. */
+export type HorizonClearPreview = {
+	/**  Token opaco temporário de confirmação de uso único. */
+	token: string,
+	/**  Revisão do contexto esperada na confirmação. */
+	contextRevision: string,
+	/**  Impressão digital opaca do destino. */
+	scopeId: string,
+	/**  Filas que serão limpas. */
+	queues: QueueScope[],
+	/**  Estimativa de tarefas pendentes (ready + delayed) a serem removidas. */
+	estimatedPending: number,
+	/**  Timestamp Unix em milissegundos de expiração da confirmação (máx 30 s). */
+	expiresAtMs: number,
+};
+
+/**  Resultado consolidado da limpeza exclusiva de tarefas pendentes. */
+export type HorizonClearResult = HorizonClearResult_Serialize | HorizonClearResult_Deserialize;
+
+/**  Resultado consolidado da limpeza exclusiva de tarefas pendentes. */
+export type HorizonClearResult_Deserialize = {
+	/**  Detalhamento das remoções por fila. */
+	clearedPerQueue: QueueClearCount[],
+	/**  Quantidade total de tarefas retiradas. */
+	totalCleared: number,
+	/**  Indica se a operação foi parcial devido ao orçamento de tempo/quantidade. */
+	isPartial: boolean,
+	/**  Aviso sanitizado se ocorreu inconsistência de metadados em conexão secundária. */
+	warning?: string | null,
+};
+
+/**  Resultado consolidado da limpeza exclusiva de tarefas pendentes. */
+export type HorizonClearResult_Serialize = {
+	/**  Detalhamento das remoções por fila. */
+	clearedPerQueue: QueueClearCount[],
+	/**  Quantidade total de tarefas retiradas. */
+	totalCleared: number,
+	/**  Indica se a operação foi parcial devido ao orçamento de tempo/quantidade. */
+	isPartial: boolean,
+	/**  Aviso sanitizado se ocorreu inconsistência de metadados em conexão secundária. */
+	warning: string | null,
+};
+
+/**  Contexto de execução e escopo do Horizon para um projeto. */
+export type HorizonContext = {
+	/**  Identificador do projeto cadastrado no MaxTerminal. */
+	projectId: ProjectId,
+	/**  Raiz canônica do projeto no disco. */
+	root: string,
+	/**  Revisão monotônica do contexto gerada a partir dos parâmetros de configuração. */
+	contextRevision: string,
+	/**  Impressão digital opaca do destino efetivo (Redis/conexões/ambiente). */
+	scopeId: string,
+};
+
+/**  Identificação da sessão de PTY e painel do daemon Horizon. */
+export type HorizonSessionDto = {
+	/**  Identificador único do PTY no PtyManager. */
+	ptyId: PtyId,
+	/**  Identificador do painel reservado para a geração do terminal. */
+	paneId: PaneId,
+	/**  Número sequencial da geração de runtime. */
+	generation: number,
+};
+
+/**  Snapshot consolidado das métricas e estado do Laravel Horizon. */
+export type HorizonSnapshot = HorizonSnapshot_Serialize | HorizonSnapshot_Deserialize;
+
+/**  Snapshot consolidado das métricas e estado do Laravel Horizon. */
+export type HorizonSnapshot_Deserialize = {
+	/**  Contexto autorizado do projeto. */
+	context: HorizonContext,
+	/**  Disponibilidade do Horizon no projeto. */
+	availability: HorizonAvailability,
+	/**  Versão detectada do pacote `laravel/horizon`, se presente. */
+	horizonVersion?: string | null,
+	/**  Lista de pares únicos (conexão, fila) resolvidos dos supervisores ativos. */
+	queues: QueueScope[],
+	/**  Ambiente resolvido do Laravel (ex: "local", "production"). */
+	environment?: string | null,
+	/**  Estado atual do runtime. */
+	status: HorizonStatus,
+	/**  Total de tarefas pendentes (prontas + agendadas nas filas monitoradas). */
+	pending?: number | null,
+	/**  Total de tarefas reservadas/em execução nas filas monitoradas. */
+	running?: number | null,
+	/**  Total de falhas no namespace Horizon respeitando a retenção. */
+	failed?: number | null,
+	/**  Timestamp Unix em milissegundos da última medição. */
+	sampledAtMs: number,
+	/**  Número de revisão incremental do snapshot. */
+	revision: number,
+	/**  Diagnóstico sanitizado em caso de advertência ou falha parcial. */
+	diagnostic?: string | null,
+	/**  Indica se o comando de iniciar está habilitado. */
+	canStart: boolean,
+	/**  Indica se o comando de parar está habilitado. */
+	canStop: boolean,
+	/**  Indica se o comando de limpeza de pendentes está habilitado. */
+	canClearPending: boolean,
+	/**  Sessão de PTY supervisionada associada à geração atual, se houver. */
+	session?: HorizonSessionDto | null,
+};
+
+/**  Snapshot consolidado das métricas e estado do Laravel Horizon. */
+export type HorizonSnapshot_Serialize = {
+	/**  Contexto autorizado do projeto. */
+	context: HorizonContext,
+	/**  Disponibilidade do Horizon no projeto. */
+	availability: HorizonAvailability,
+	/**  Versão detectada do pacote `laravel/horizon`, se presente. */
+	horizonVersion: string | null,
+	/**  Lista de pares únicos (conexão, fila) resolvidos dos supervisores ativos. */
+	queues: QueueScope[],
+	/**  Ambiente resolvido do Laravel (ex: "local", "production"). */
+	environment: string | null,
+	/**  Estado atual do runtime. */
+	status: HorizonStatus,
+	/**  Total de tarefas pendentes (prontas + agendadas nas filas monitoradas). */
+	pending: number | null,
+	/**  Total de tarefas reservadas/em execução nas filas monitoradas. */
+	running: number | null,
+	/**  Total de falhas no namespace Horizon respeitando a retenção. */
+	failed: number | null,
+	/**  Timestamp Unix em milissegundos da última medição. */
+	sampledAtMs: number,
+	/**  Número de revisão incremental do snapshot. */
+	revision: number,
+	/**  Diagnóstico sanitizado em caso de advertência ou falha parcial. */
+	diagnostic: string | null,
+	/**  Indica se o comando de iniciar está habilitado. */
+	canStart: boolean,
+	/**  Indica se o comando de parar está habilitado. */
+	canStop: boolean,
+	/**  Indica se o comando de limpeza de pendentes está habilitado. */
+	canClearPending: boolean,
+	/**  Sessão de PTY supervisionada associada à geração atual, se houver. */
+	session: HorizonSessionDto | null,
+};
+
+/**  Estado do runtime do Horizon (supervisionado ou externo). */
+export type HorizonStatus = 
+/**  Daemon Horizon parado. */
+"stopped" | 
+/**  Daemon Horizon iniciando no PTY supervisionado. */
+"starting" | 
+/**  Daemon Horizon ativo e saudável. */
+"running" | 
+/**  Daemon Horizon em processo de encerramento supervisionado. */
+"stopping" | 
+/**  Horizon ativo via processo externo (iniciado fora do MaxTerminal). */
+"external" | 
+/**  Falha no daemon ou erro na sondagem. */
+"error";
+
 /**  Origem da identidade visual (`icon` e `color`) de um projeto. */
 export type IdentitySource = 
 /**  Definida automaticamente pela detecção de stack ou fallback determinístico. */
@@ -7639,6 +7825,8 @@ export type LaunchSnapshot_Deserialize = {
 	environment: TemplateEnvironment_Deserialize,
 	/**  Variáveis de ambiente declaradas (sem expandir `Inherited`). */
 	envVars: { [key in string]: EnvValue },
+	/**  Conexão efetiva de lançamento da aba (local ou SSH remoto). */
+	connection?: TemplateConnection_Deserialize,
 };
 
 /**
@@ -7665,6 +7853,8 @@ export type LaunchSnapshot_Serialize = {
 	environment: TemplateEnvironment_Serialize,
 	/**  Variáveis de ambiente declaradas (sem expandir `Inherited`). */
 	envVars: { [key in string]: EnvValue },
+	/**  Conexão efetiva de lançamento da aba (local ou SSH remoto). */
+	connection: TemplateConnection_Serialize,
 };
 
 /**  Patch de atualização de proporções de um nó `Split` específico. */
@@ -8948,6 +9138,19 @@ export type PartSource =
 /**  Override configurado em `config-trabalho.json` do `MaxCode`. */
 "max_code_config";
 
+/**  Operação sobre a senha SSH no input do formulário. */
+export type PasswordCredentialOperation = 
+/**  Mantém a credencial de senha atualmente associada ao template (em edição). */
+{ action: "keep" } | 
+/**  Define ou substitui por uma nova senha informada em texto puro. */
+{ action: "set"; 
+/**  Senha em texto puro a ser cifrada nativamente antes da escrita em disco. */
+password: string } | 
+/**  Mantém uma credencial já associada por seu ID interno. */
+{ action: "keep_existing"; 
+/**  Identificador único da credencial salva no cofre. */
+credentialId: string };
+
 /**  Papel da ponta na comunicação bidirecional. */
 export type PeerRole = 
 /**  Aplicativo desktop `MaxTerminal`. */
@@ -10048,6 +10251,24 @@ export type QuakeSettings_Serialize = {
 	hideOnBlur: boolean,
 	/**  Preferência de backend para registro do atalho global. */
 	preferredBackend: ShortcutBackendPreference,
+};
+
+/**  Contagem de tarefas removidas por fila. */
+export type QueueClearCount = {
+	/**  Conexão de fila. */
+	connection: string,
+	/**  Nome da fila. */
+	queue: string,
+	/**  Quantidade de tarefas retiradas. */
+	cleared: number,
+};
+
+/**  Identificação de conexão e fila monitorada pelo Horizon. */
+export type QueueScope = {
+	/**  Nome da conexão de fila (ex: "redis"). */
+	connection: string,
+	/**  Nome da fila (ex: "default"). */
+	queue: string,
 };
 
 /**  Desfecho retornado por `request_quit`. */
@@ -12233,6 +12454,56 @@ export type SplitDirection =
 /**  Divisor vertical: painéis lado a lado (esquerda/direita). */
 "vertical";
 
+/**  Configuração de autenticação SSH em template persistido. */
+export type SshAuth = SshAuth_Serialize | SshAuth_Deserialize;
+
+/**  Autenticação SSH informada no formulário de template. */
+export type SshAuthInput = SshAuthInput_Serialize | SshAuthInput_Deserialize;
+
+/**  Autenticação SSH informada no formulário de template. */
+export type SshAuthInput_Deserialize = 
+/**  Autenticação por senha com operação explícita. */
+{ kind: "password"; 
+/**  Operação sobre a credencial de senha. */
+operation: PasswordCredentialOperation } | 
+/**  Autenticação por chave SSH. */
+{ kind: "key"; 
+/**  Caminho opcional do arquivo de identidade. */
+identityFile?: string | null };
+
+/**  Autenticação SSH informada no formulário de template. */
+export type SshAuthInput_Serialize = 
+/**  Autenticação por senha com operação explícita. */
+{ kind: "password"; 
+/**  Operação sobre a credencial de senha. */
+operation: PasswordCredentialOperation } | 
+/**  Autenticação por chave SSH. */
+{ kind: "key"; 
+/**  Caminho opcional do arquivo de identidade. */
+identityFile: string | null };
+
+/**  Configuração de autenticação SSH em template persistido. */
+export type SshAuth_Deserialize = 
+/**  Autenticação por senha referenciando credencial opaca cifrada no cofre. */
+{ kind: "password"; 
+/**  Identificador da credencial no repositório seguro. */
+credentialId: string } | 
+/**  Autenticação por chave SSH (arquivo de identidade opcional). */
+{ kind: "key"; 
+/**  Caminho opcional do arquivo de chave privada (ex.: `~/.ssh/id_ed25519`). */
+identityFile?: string | null };
+
+/**  Configuração de autenticação SSH em template persistido. */
+export type SshAuth_Serialize = 
+/**  Autenticação por senha referenciando credencial opaca cifrada no cofre. */
+{ kind: "password"; 
+/**  Identificador da credencial no repositório seguro. */
+credentialId: string } | 
+/**  Autenticação por chave SSH (arquivo de identidade opcional). */
+{ kind: "key"; 
+/**  Caminho opcional do arquivo de chave privada (ex.: `~/.ssh/id_ed25519`). */
+identityFile: string | null };
+
 /**  Stack tecnológica primária ou detectada de um projeto. */
 export type StackKind = 
 /**  Aplicação Desktop Tauri (`src-tauri/tauri.conf.json`). */
@@ -12702,6 +12973,8 @@ export type TabTemplateInput_Deserialize = {
 	envVars: { [key in string]: EnvValue },
 	/**  Se `true`, promove este template a padrão do projeto na mesma transação. */
 	makeDefault: boolean,
+	/**  Conexão de execução (local ou remota SSH). */
+	connection?: TemplateConnectionInput_Deserialize,
 };
 
 /**  Payload de entrada para criação ou atualização de um Template de Aba. */
@@ -12724,6 +12997,8 @@ export type TabTemplateInput_Serialize = {
 	envVars: { [key in string]: EnvValue },
 	/**  Se `true`, promove este template a padrão do projeto na mesma transação. */
 	makeDefault: boolean,
+	/**  Conexão de execução (local ou remota SSH). */
+	connection: TemplateConnectionInput_Serialize,
 };
 
 /**  Representação completa de um Template de Aba persistido. */
@@ -12913,6 +13188,8 @@ export type TemplateConfig_Deserialize = {
 	environment: TemplateEnvironment_Deserialize,
 	/**  Variáveis de ambiente adicionais. */
 	envVars: { [key in string]: EnvValue },
+	/**  Conexão configurada para o template (local ou SSH remoto). */
+	connection?: TemplateConnection_Deserialize,
 };
 
 /**  Configuração persistida e compartilhada de um Template de Aba. */
@@ -12933,7 +13210,67 @@ export type TemplateConfig_Serialize = {
 	environment: TemplateEnvironment_Serialize,
 	/**  Variáveis de ambiente adicionais. */
 	envVars: { [key in string]: EnvValue },
+	/**  Conexão configurada para o template (local ou SSH remoto). */
+	connection: TemplateConnection_Serialize,
 };
+
+/**  Configuração de conexão persistida do template (local ou SSH remoto). */
+export type TemplateConnection = TemplateConnection_Serialize | TemplateConnection_Deserialize;
+
+/**  Conexão informada no payload de criação/atualização de template. */
+export type TemplateConnectionInput = TemplateConnectionInput_Serialize | TemplateConnectionInput_Deserialize;
+
+/**  Conexão informada no payload de criação/atualização de template. */
+export type TemplateConnectionInput_Deserialize = 
+/**  Execução local. */
+{ kind: "local" } | 
+/**  Conexão SSH remota. */
+{ kind: "ssh"; 
+/**  Endereço IP (v4/v6) ou hostname do host remoto. */
+host: string; 
+/**  Usuário de login remoto. */
+user: string; 
+/**  Configuração de autenticação. */
+auth: SshAuthInput_Deserialize };
+
+/**  Conexão informada no payload de criação/atualização de template. */
+export type TemplateConnectionInput_Serialize = 
+/**  Execução local. */
+{ kind: "local" } | 
+/**  Conexão SSH remota. */
+{ kind: "ssh"; 
+/**  Endereço IP (v4/v6) ou hostname do host remoto. */
+host: string; 
+/**  Usuário de login remoto. */
+user: string; 
+/**  Configuração de autenticação. */
+auth: SshAuthInput_Serialize };
+
+/**  Configuração de conexão persistida do template (local ou SSH remoto). */
+export type TemplateConnection_Deserialize = 
+/**  Conexão shell local. */
+{ kind: "local" } | 
+/**  Conexão SSH remota supervisionada. */
+{ kind: "ssh"; 
+/**  Endereço IP (v4/v6) ou hostname do servidor remoto. */
+host: string; 
+/**  Usuário de login no servidor remoto. */
+user: string; 
+/**  Configuração de autenticação (senha cifrada ou chave). */
+auth: SshAuth_Deserialize };
+
+/**  Configuração de conexão persistida do template (local ou SSH remoto). */
+export type TemplateConnection_Serialize = 
+/**  Conexão shell local. */
+{ kind: "local" } | 
+/**  Conexão SSH remota supervisionada. */
+{ kind: "ssh"; 
+/**  Endereço IP (v4/v6) ou hostname do servidor remoto. */
+host: string; 
+/**  Usuário de login no servidor remoto. */
+user: string; 
+/**  Configuração de autenticação (senha cifrada ou chave). */
+auth: SshAuth_Serialize };
 
 /**  Configuração de ambiente de execução do template. */
 export type TemplateEnvironment = TemplateEnvironment_Serialize | TemplateEnvironment_Deserialize;
@@ -13455,6 +13792,15 @@ export type ValidationReport = {
 };
 
 export type Value = null | boolean | number | string | Value[] | { [key in string]: Value };
+
+/**  Estado público do cofre retornado aos comandos IPC e exibido na UI. */
+export type VaultStatus = 
+/**  O cofre ainda não possui senha mestra configurada. */
+"unconfigured" | 
+/**  O cofre está configurado, porém bloqueado (aguarda senha mestra). */
+"locked" | 
+/**  O cofre está desbloqueado e sua chave de dados (DEK) está ativa em memória. */
+"unlocked";
 
 /**  Códigos semânticos de aviso emitidos durante a normalização de um esquema. */
 export type WarningCode = 
