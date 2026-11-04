@@ -45,7 +45,9 @@ describe('DestructiveConfirm.vue (Fase 12 — Unidade 03)', () => {
         const confirmBtn = wrapper.find('[data-testid="btn-confirm-destructive"]');
         expect((confirmBtn.element as HTMLButtonElement).disabled).toBe(true);
 
-        const input = wrapper.find('[data-testid="confirm-token-input"]');
+        const input = wrapper.find('[data-testid="confirm-token-input"] input').exists()
+            ? wrapper.find('[data-testid="confirm-token-input"] input')
+            : wrapper.find('[data-testid="confirm-token-input"]');
         await input.setValue('errado');
         expect((confirmBtn.element as HTMLButtonElement).disabled).toBe(true);
 

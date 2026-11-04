@@ -20,7 +20,7 @@
             <div class="prefs-system__grid">
                 <div class="prefs-system__field">
                     <label class="prefs-system__label" for="mt-quake-mode">Estilo de abertura</label>
-                    <MaxInputSelect id="mt-quake-mode" :model-value="settings.quake.mode" :options="quakeModeOptions" option-label="label" option-value="value" option-name="label" :disabled="osSettingsStore.saving" class="prefs-system__select" @change="onQuakeModeChange" />
+                    <MaxInputSelect id="mt-quake-mode" aria-label="Estilo de abertura no modo Quake" :model-value="settings.quake.mode" :options="quakeModeOptions" option-label="label" option-value="value" option-name="label" :disabled="osSettingsStore.saving" class="prefs-system__select" @change="onQuakeModeChange" />
                 </div>
                 <div class="prefs-system__field">
                     <label class="prefs-system__label" for="mt-quake-height">Altura no modo Quake ({{ settings.quake.dropDownHeightPct }}%)</label>

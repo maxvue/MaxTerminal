@@ -29,18 +29,9 @@
             </span>
 
             <div class="group-run-item-row__actions">
-                <button v-if="canShowOutput" type="button" class="group-run-item-row__action-btn" data-testid="group-run-item-show-output" title="Ver saída ao vivo (somente leitura)" @click="emitAction('show_output')">
-                    <MaxIcon icon="lucide:terminal" />
-                    <span>Ver saída</span>
-                </button>
-                <button v-if="props.item.tabId" type="button" class="group-run-item-row__action-btn" data-testid="group-run-item-focus-tab" title="Focar aba vinculada" @click="emitAction('focus_tab')">
-                    <MaxIcon icon="lucide:external-link" />
-                    <span>Focar aba</span>
-                </button>
-                <button v-if="canCancel" type="button" class="group-run-item-row__action-btn is-danger" data-testid="group-run-item-cancel" title="Cancelar este comando" @click="emitAction('cancel')">
-                    <MaxIcon icon="lucide:square" />
-                    <span>Cancelar</span>
-                </button>
+                <MaxButton v-if="canShowOutput" label="Ver saída" icon="lucide:terminal" size="small" variant="text" class="group-run-item-row__action-btn" data-testid="group-run-item-show-output" title="Ver saída ao vivo (somente leitura)" @click="emitAction('show_output')" />
+                <MaxButton v-if="props.item.tabId" label="Focar aba" icon="lucide:external-link" size="small" variant="text" class="group-run-item-row__action-btn" data-testid="group-run-item-focus-tab" title="Focar aba vinculada" @click="emitAction('focus_tab')" />
+                <MaxButton v-if="canCancel" label="Cancelar" icon="lucide:square" size="small" variant="text" severity="danger" class="group-run-item-row__action-btn is-danger" data-testid="group-run-item-cancel" title="Cancelar este comando" @click="emitAction('cancel')" />
             </div>
         </div>
     </div>
@@ -48,6 +39,7 @@
 
 <script setup lang="ts">
     import { computed } from 'vue';
+    import { MaxButton, MaxIcon } from '@maxvue/max-components-ui';
     import type {
         GroupRun,
         GroupRunItem,

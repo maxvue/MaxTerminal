@@ -6,6 +6,7 @@
                 <h2 class="artisan-modal__title">Criar comando Artisan</h2>
                 <span v-if="root" class="artisan-modal__root">{{ root }}</span>
             </div>
+            <MaxIconButton icon="lucide:x" label="Fechar modal" variant="text" class="artisan-modal__close-btn" data-testid="btn-close-artisan-modal" @click="handleClose" />
         </template>
 
         <div v-if="store.modal.lastCreateResult" class="artisan-modal__created-banner" data-testid="artisan-created-banner">
@@ -15,24 +16,24 @@
         <div class="artisan-modal__columns">
             <div class="artisan-modal__form-col">
                 <div class="artisan-modal__row">
-                    <label class="artisan-modal__field">
+                    <div class="artisan-modal__field">
                         <span class="artisan-modal__label">Nome da Classe</span>
-                        <input type="text" class="artisan-modal__input" data-field-path="className" data-testid="input-class-name" placeholder="SendWeeklyReport" :value="form.className" @input="onClassNameInput">
+                        <MaxInputText :model-value="form.className" data-field-path="className" data-testid="input-class-name" placeholder="SendWeeklyReport" aria-label="Nome da Classe" class="artisan-modal__input-text" @update:model-value="onClassNameChange" />
                         <span v-if="firstErrorMessageFor('className')" class="artisan-modal__error" data-testid="error-class-name">{{ firstErrorMessageFor('className') }}</span>
-                    </label>
+                    </div>
 
-                    <label class="artisan-modal__field">
+                    <div class="artisan-modal__field">
                         <span class="artisan-modal__label">Signature</span>
-                        <input type="text" class="artisan-modal__input" data-field-path="signatureName" data-testid="input-signature-name" placeholder="reports:send-weekly" :value="form.signatureName" @input="onSignatureNameInput">
+                        <MaxInputText :model-value="form.signatureName" data-field-path="signatureName" data-testid="input-signature-name" placeholder="reports:send-weekly" aria-label="Signature" class="artisan-modal__input-text" @update:model-value="onSignatureNameChange" />
                         <span v-if="firstErrorMessageFor('signatureName')" class="artisan-modal__error" data-testid="error-signature-name">{{ firstErrorMessageFor('signatureName') }}</span>
-                    </label>
+                    </div>
                 </div>
 
-                <label class="artisan-modal__field">
+                <div class="artisan-modal__field">
                     <span class="artisan-modal__label">Descrição</span>
-                    <input type="text" class="artisan-modal__input" data-field-path="description" data-testid="input-description" placeholder="Envia o relatório semanal por e-mail" :value="form.description" @input="onDescriptionInput">
+                    <MaxInputText :model-value="form.description" data-field-path="description" data-testid="input-description" placeholder="Envia o relatório semanal por e-mail" aria-label="Descrição" class="artisan-modal__input-text" @update:model-value="onDescriptionChange" />
                     <span v-if="firstErrorMessageFor('description')" class="artisan-modal__error" data-testid="error-description">{{ firstErrorMessageFor('description') }}</span>
-                </label>
+                </div>
 
                 <ArtisanParamsBuilder :model-value="form.params ?? []" :issues="allIssues" @update:model-value="setParams" />
 
@@ -77,7 +78,7 @@
 
 <script setup lang="ts">
     import { computed, ref } from 'vue';
-    import { MaxAlert, MaxButton, MaxIcon, MaxInputCheckbox, MaxInputTextArea, MaxModal } from '@maxvue/max-components-ui';
+    import { MaxAlert, MaxButton, MaxIcon, MaxIconButton, MaxInputCheckbox, MaxInputText, MaxInputTextArea, MaxModal } from '@maxvue/max-components-ui';
     import ArtisanParamsBuilder from '@/components/quick-commands/ArtisanParamsBuilder.vue';
     import ArtisanPhpPreview from '@/components/quick-commands/ArtisanPhpPreview.vue';
     import ArtisanSchedulePicker from '@/components/quick-commands/ArtisanSchedulePicker.vue';
@@ -134,16 +135,16 @@
         );
     });
 
-    function onClassNameInput(ev: Event): void {
-        setClassName((ev.target as HTMLInputElement).value);
+    function onClassNameChange(val?: string | number): void {
+        setClassName(String(val ?? ''));
     }
 
-    function onSignatureNameInput(ev: Event): void {
-        setSignatureName((ev.target as HTMLInputElement).value);
+    function onSignatureNameChange(val?: string | number): void {
+        setSignatureName(String(val ?? ''));
     }
 
-    function onDescriptionInput(ev: Event): void {
-        setDescription((ev.target as HTMLInputElement).value);
+    function onDescriptionChange(val?: string | number): void {
+        setDescription(String(val ?? ''));
     }
 
     function handleClose(): void {

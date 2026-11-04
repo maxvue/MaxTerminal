@@ -3,17 +3,17 @@
         <div class="group-item-row__header">
             <span class="group-item-row__badge" aria-hidden="true">#{{ index + 1 }}</span>
             <div class="group-item-row__main-fields">
-                <label class="group-item-row__field">
+                <div class="group-item-row__field">
                     <span class="group-item-row__label">Título do Item</span>
-                    <input type="text" class="group-item-row__input" :data-testid="`item-title-${index}`" placeholder="Ex.: Subir servidor Vite" :value="item.title" @input="onTitleInput">
+                    <MaxInputText :model-value="item.title" class="group-item-row__input" :data-testid="`item-title-${index}`" placeholder="Ex.: Subir servidor Vite" aria-label="Título do Item" @update:model-value="onTitleChange" />
                     <span v-if="titleError" class="group-item-row__error" :data-testid="`item-title-error-${index}`">{{ titleError }}</span>
-                </label>
+                </div>
 
-                <label class="group-item-row__field group-item-row__field--cmd">
+                <div class="group-item-row__field group-item-row__field--cmd">
                     <span class="group-item-row__label">Comando Shell</span>
-                    <input type="text" class="group-item-row__input group-item-row__input--mono" :data-testid="`item-command-${index}`" placeholder="npm run dev" :value="item.command" @input="onCommandInput">
+                    <MaxInputText :model-value="item.command" class="group-item-row__input group-item-row__input--mono" :data-testid="`item-command-${index}`" placeholder="npm run dev" aria-label="Comando Shell" @update:model-value="onCommandChange" />
                     <span v-if="commandError" class="group-item-row__error" :data-testid="`item-command-error-${index}`">{{ commandError }}</span>
-                </label>
+                </div>
             </div>
 
             <div class="group-item-row__actions">
@@ -25,11 +25,11 @@
         </div>
 
         <div class="group-item-row__sub">
-            <label class="group-item-row__field group-item-row__field--cwd">
+            <div class="group-item-row__field group-item-row__field--cwd">
                 <span class="group-item-row__label">Diretório relativo (opcional)</span>
-                <input type="text" class="group-item-row__input group-item-row__input--mono" :data-testid="`item-cwd-${index}`" placeholder="packages/web" :value="item.cwd ?? ''" @input="onCwdInput">
+                <MaxInputText :model-value="item.cwd ?? ''" class="group-item-row__input group-item-row__input--mono" :data-testid="`item-cwd-${index}`" placeholder="packages/web" aria-label="Diretório relativo" @update:model-value="onCwdChange" />
                 <span v-if="cwdError" class="group-item-row__error" :data-testid="`item-cwd-error-${index}`">{{ cwdError }}</span>
-            </label>
+            </div>
 
             <MaxInputCheckbox :data-testid="`item-continuous-${index}`" :model-value="item.continuous" label="Execução Contínua (daemon/watcher)" class="group-item-row__checkbox" @update:model-value="onContinuousChange" />
 
@@ -51,7 +51,7 @@
 
 <script setup lang="ts">
     import { computed, ref } from 'vue';
-    import { MaxButton, MaxIconButton, MaxInputCheckbox } from '@maxvue/max-components-ui';
+    import { MaxButton, MaxIconButton, MaxInputCheckbox, MaxInputText } from '@maxvue/max-components-ui';
     import { isSensitiveEnvKey } from '@/composables/commandGroups/useCommandGroupEditor';
     import type { EditableGroupItem } from '@/types/commandGroups';
 
@@ -110,16 +110,16 @@
         });
     }
 
-    function onTitleInput(event: Event): void {
-        emitPatch({ title: (event.target as HTMLInputElement).value });
+    function onTitleChange(val?: string | number): void {
+        emitPatch({ title: String(val ?? '') });
     }
 
-    function onCommandInput(event: Event): void {
-        emitPatch({ command: (event.target as HTMLInputElement).value });
+    function onCommandChange(val?: string | number): void {
+        emitPatch({ command: String(val ?? '') });
     }
 
-    function onCwdInput(event: Event): void {
-        emitPatch({ cwd: (event.target as HTMLInputElement).value });
+    function onCwdChange(val?: string | number): void {
+        emitPatch({ cwd: String(val ?? '') });
     }
 
     function onContinuousChange(valOrEv: unknown): void {

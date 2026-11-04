@@ -20,7 +20,11 @@
             <code class="ai-suggestion-block__stream-code">{{ state.streamingText || 'Gerando sugestão de comando...' }}</code>
         </div>
 
-        <MaxAlert v-else-if="state.status === 'failed'" severity="danger" icon="lucide:circle-alert" :message="state.error || 'Falha ao gerar comando.'" role="alert" data-testid="suggestion-error" class="ai-suggestion-block__error" />
+        <MaxAlert v-else-if="state.status === 'failed'" severity="danger" :message="state.error || 'Falha ao gerar comando.'" role="alert" data-testid="suggestion-error" class="ai-suggestion-block__error">
+            <template #icon>
+                <MaxIcon icon="lucide:circle-alert" />
+            </template>
+        </MaxAlert>
 
         <div v-else-if="state.status === 'completed'" class="ai-suggestion-block__body">
             <label class="ai-suggestion-block__cmd-field">

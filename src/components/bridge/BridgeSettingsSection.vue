@@ -41,25 +41,21 @@
                 <MaxInputCheckbox :model-value="bridgeStore.settings.focusWindowOnIncomingCommand" data-testid="toggle-focus-window" @update:model-value="onToggleFocusWindowValue" />
             </label>
 
-            <label class="bridge-settings__row">
+            <div class="bridge-settings__row">
                 <div class="bridge-settings__row-info">
                     <span class="bridge-settings__row-title">Modo de fallback do botão Inspecionar</span>
                     <span class="bridge-settings__row-desc">Comportamento quando o MaxCode estiver fechado no momento da inspeção.</span>
                 </div>
-                <select class="bridge-settings__select" :value="bridgeStore.settings.inspectFallbackMode" data-testid="select-fallback-mode" @change="onChangeFallbackMode">
-                    <option value="uri_scheme">Acordar via URI (vscode://)</option>
-                    <option value="clipboard_only">Apenas copiar prompt</option>
-                    <option value="disabled">Desativado</option>
-                </select>
-            </label>
+                <MaxInputSelect :model-value="bridgeStore.settings.inspectFallbackMode" :options="fallbackOptions" option-label="label" option-value="value" aria-label="Modo de fallback do botão Inspecionar" class="bridge-settings__select" data-testid="select-fallback-mode" @update:model-value="onChangeFallbackModeComp" />
+            </div>
 
-            <label class="bridge-settings__row">
+            <div class="bridge-settings__row">
                 <div class="bridge-settings__row-info">
                     <span class="bridge-settings__row-title">Porta preferida</span>
                     <span class="bridge-settings__row-desc">Porta TCP opcional (1024–65535). Vazio aloca porta efêmera automática.</span>
                 </div>
-                <input type="number" class="bridge-settings__input" min="1024" max="65535" placeholder="Automática" :value="bridgeStore.settings.preferredPort ?? ''" data-testid="input-preferred-port" @change="onChangePreferredPort">
-            </label>
+                <MaxInputNumber :model-value="bridgeStore.settings.preferredPort ?? undefined" :min="1024" :max="65535" :step="1" placeholder="Automática" aria-label="Porta preferida" class="bridge-settings__input" data-testid="input-preferred-port" @update:model-value="onChangePreferredPortComp" />
+            </div>
         </div>
 
         <div class="bridge-settings__telemetry">
@@ -85,7 +81,7 @@
 
 <script setup lang="ts">
     import { computed } from 'vue';
-    import { MaxButton, MaxInputCheckbox, MaxTag } from '@maxvue/max-components-ui';
+    import { MaxButton, MaxInputCheckbox, MaxInputNumber, MaxInputSelect, MaxTag } from '@maxvue/max-components-ui';
     import { useMaxCodeBridgeStore } from '@/stores/maxCodeBridge';
     import type { BridgeSettings_Serialize, InspectFallbackMode } from '@/types/bindings';
 
@@ -122,6 +118,32 @@
         return caps.length > 0 ? caps.join(', ') : 'Nenhuma sessão ativa';
     });
 
+    const fallbackOptions = [
+        { label: 'Acordar via URI (vscode://)', value: 'uri_scheme' },
+        { label: 'Apenas copiar prompt', value: 'clipboard_only' },
+        { label: 'Desativado', value: 'disabled' }
+    ];
+
+    async function onChangeFallbackModeComp(val: unknown): Promise<void> {
+        const mode = String(val ?? 'uri_scheme') as InspectFallbackMode;
+        const updated = await bridgeStore.updateSettings({ inspectFallbackMode: mode });
+        emit('saved', updated);
+    }
+
+    async function onChangePreferredPortComp(val: unknown): Promise<void> {
+        if (val === null || val === undefined || val === '') {
+            const updated = await bridgeStore.updateSettings({ preferredPort: null });
+            emit('saved', updated);
+            return;
+        }
+        const num = typeof val === 'number' ? val : Number.parseInt(String(val), 10);
+        if (Number.isNaN(num) || num < 1024 || num > 65535) {
+            return;
+        }
+        const updated = await bridgeStore.updateSettings({ preferredPort: num });
+        emit('saved', updated);
+    }
+
     async function onToggleEnabledValue(checked: boolean): Promise<void> {
         const updated = await bridgeStore.updateSettings({ enabled: Boolean(checked) });
         emit('saved', updated);
@@ -141,22 +163,6 @@
         const updated = await bridgeStore.updateSettings({
             focusWindowOnIncomingCommand: Boolean(checked)
         });
-        emit('saved', updated);
-    }
-
-    async function onChangeFallbackMode(ev: Event): Promise<void> {
-        const mode = (ev.target as HTMLSelectElement).value as InspectFallbackMode;
-        const updated = await bridgeStore.updateSettings({ inspectFallbackMode: mode });
-        emit('saved', updated);
-    }
-
-    async function onChangePreferredPort(ev: Event): Promise<void> {
-        const raw = (ev.target as HTMLInputElement).value.trim();
-        const parsed = raw === '' ? null : Number.parseInt(raw, 10);
-        if (parsed !== null && (Number.isNaN(parsed) || parsed < 1024 || parsed > 65535)) {
-            return;
-        }
-        const updated = await bridgeStore.updateSettings({ preferredPort: parsed });
         emit('saved', updated);
     }
 

@@ -8,7 +8,11 @@
             <MaxButton type="button" severity="secondary" icon="lucide:folder-sync" :disabled="isScanning" data-testid="skills-scan-btn" :label="isScanning ? 'Escaneando...' : 'Escanear MaxSkills'" @click="onScan" />
         </header>
 
-        <MaxAlert v-if="activeError" severity="danger" icon="lucide:alert-circle" :message="activeError.message" data-testid="skills-sync-error" />
+        <MaxAlert v-if="activeError" severity="danger" :message="activeError.message" data-testid="skills-sync-error">
+            <template #icon>
+                <MaxIcon icon="lucide:alert-circle" />
+            </template>
+        </MaxAlert>
 
         <section class="skills-sync-panel__new-target">
             <h4 class="skills-sync-panel__section-title">Configurar Alvo de Sincronização</h4>
@@ -60,6 +64,7 @@
     import {
         MaxAlert,
         MaxButton,
+        MaxIcon,
         MaxInputSelect,
         MaxInputText,
         MaxTag

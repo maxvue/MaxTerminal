@@ -1,8 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { mount } from '@vue/test-utils';
+import { createPinia, setActivePinia } from 'pinia';
 import ArtisanSchedulePicker from '../ArtisanSchedulePicker.vue';
 
 describe('ArtisanSchedulePicker', () => {
+    beforeEach(() => {
+        setActivePinia(createPinia());
+    });
     it('habilita agendamento e alterna entre presets e cron customizado', async () => {
         const wrapper = mount(ArtisanSchedulePicker, {
             props: {
@@ -12,7 +16,9 @@ describe('ArtisanSchedulePicker', () => {
             }
         });
 
-        const checkbox = wrapper.find('[data-testid="schedule-enable-checkbox"]');
+        const checkbox = wrapper.find('[data-testid="schedule-enable-checkbox"] input').exists()
+            ? wrapper.find('[data-testid="schedule-enable-checkbox"] input')
+            : wrapper.find('[data-testid="schedule-enable-checkbox"]');
         await checkbox.setValue(true);
 
         const emittedEnable = wrapper.emitted('update:modelValue');

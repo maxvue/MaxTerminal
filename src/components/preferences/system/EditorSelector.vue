@@ -2,7 +2,7 @@
     <div class="editor-selector">
         <div class="editor-selector__field">
             <label class="editor-selector__label" for="mt-editor-kind">Editor preferencial para links do terminal</label>
-            <MaxInputSelect id="mt-editor-kind" :model-value="props.modelValue.kind" :options="selectOptions" option-label="label" option-value="value" option-name="label" :disabled="props.disabled" class="editor-selector__select" @change="onKindChange" />
+            <MaxInputSelect id="mt-editor-kind" aria-label="Editor preferencial para links do terminal" :model-value="props.modelValue.kind" :options="selectOptions" option-label="label" option-value="value" option-name="label" :disabled="props.disabled" class="editor-selector__select" @change="onKindChange" />
         </div>
         <div v-if="props.modelValue.kind === 'custom'" class="editor-selector__custom">
             <div class="editor-selector__field">

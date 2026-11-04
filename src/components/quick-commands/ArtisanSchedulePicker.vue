@@ -1,56 +1,49 @@
 <template>
     <div class="schedule-picker" data-testid="artisan-schedule-picker">
-        <label class="schedule-picker__toggle">
-            <input type="checkbox" data-testid="schedule-enable-checkbox" :checked="modelValue !== null" @change="onToggleSchedule">
-            <span class="schedule-picker__toggle-label">Agendamento (Schedule)</span>
-        </label>
+        <MaxInputCheckbox :model-value="modelValue !== null" label="Agendamento (Schedule)" data-testid="schedule-enable-checkbox" @update:model-value="onToggleSchedule" />
 
         <div v-if="modelValue !== null" class="schedule-picker__body">
             <div class="schedule-picker__row">
-                <label class="schedule-picker__field">
+                <div class="schedule-picker__field">
                     <span class="schedule-picker__label">Frequência</span>
-                    <select class="schedule-picker__select" data-testid="schedule-frequency-select" :value="modelValue.frequency.kind" @change="onFrequencyKindChange">
-                        <option v-for="opt in FREQUENCY_OPTIONS" :key="opt.kind" :value="opt.kind">{{ opt.label }}</option>
-                    </select>
-                </label>
+                    <MaxInputSelect data-testid="schedule-frequency-select" aria-label="Frequência do agendamento" :model-value="modelValue.frequency.kind" :options="frequencySelectOptions" option-label="label" option-value="value" option-name="label" @change="onFrequencyKindChange" />
+                </div>
 
-                <label v-if="modelValue.frequency.kind === 'hourlyAt'" class="schedule-picker__field">
+                <div v-if="modelValue.frequency.kind === 'hourlyAt'" class="schedule-picker__field">
                     <span class="schedule-picker__label">Minuto (0–59)</span>
-                    <input type="number" min="0" max="59" class="schedule-picker__input" data-field-path="schedule.frequency.minute" :value="modelValue.frequency.minute" @input="onMinuteInput">
-                </label>
+                    <MaxInputNumber :model-value="modelValue.frequency.minute" :min="0" :max="59" :step="1" aria-label="Minuto (0–59)" data-field-path="schedule.frequency.minute" class="schedule-picker__number" @update:model-value="onMinuteNumberChange" />
+                </div>
 
-                <label v-if="modelValue.frequency.kind === 'dailyAt' || modelValue.frequency.kind === 'weeklyOn' || modelValue.frequency.kind === 'monthlyOn'" class="schedule-picker__field">
+                <div v-if="modelValue.frequency.kind === 'dailyAt' || modelValue.frequency.kind === 'weeklyOn' || modelValue.frequency.kind === 'monthlyOn'" class="schedule-picker__field">
                     <span class="schedule-picker__label">Horário (HH:MM)</span>
-                    <input type="text" class="schedule-picker__input" data-field-path="schedule.frequency.time" placeholder="08:00" :value="currentTimeValue" @input="onTimeInput">
-                </label>
+                    <MaxInputText :model-value="currentTimeValue" placeholder="08:00" aria-label="Horário (HH:MM)" data-field-path="schedule.frequency.time" class="schedule-picker__text-input" @update:model-value="onTimeStringChange" />
+                </div>
 
-                <label v-if="modelValue.frequency.kind === 'weeklyOn'" class="schedule-picker__field">
+                <div v-if="modelValue.frequency.kind === 'weeklyOn'" class="schedule-picker__field">
                     <span class="schedule-picker__label">Dia da semana</span>
-                    <select class="schedule-picker__select" data-field-path="schedule.frequency.day" :value="modelValue.frequency.day" @change="onWeekdayChange">
-                        <option v-for="d in WEEKDAYS" :key="d.value" :value="d.value">{{ d.label }}</option>
-                    </select>
-                </label>
+                    <MaxInputSelect :model-value="modelValue.frequency.day" :options="weekdaySelectOptions" option-label="label" option-value="value" option-name="label" aria-label="Dia da semana" data-field-path="schedule.frequency.day" @change="onWeekdaySelectChange" />
+                </div>
 
-                <label v-if="modelValue.frequency.kind === 'monthlyOn'" class="schedule-picker__field">
+                <div v-if="modelValue.frequency.kind === 'monthlyOn'" class="schedule-picker__field">
                     <span class="schedule-picker__label">Dia do mês (1–31)</span>
-                    <input type="number" min="1" max="31" class="schedule-picker__input" data-field-path="schedule.frequency.day" :value="modelValue.frequency.day" @input="onMonthDayInput">
-                </label>
+                    <MaxInputNumber :model-value="modelValue.frequency.day" :min="1" :max="31" :step="1" aria-label="Dia do mês (1–31)" data-field-path="schedule.frequency.day" class="schedule-picker__number" @update:model-value="onMonthDayNumberChange" />
+                </div>
 
                 <template v-if="modelValue.frequency.kind === 'twiceDaily'">
-                    <label class="schedule-picker__field">
+                    <div class="schedule-picker__field">
                         <span class="schedule-picker__label">1ª hora (0–23)</span>
-                        <input type="number" min="0" max="23" class="schedule-picker__input" data-field-path="schedule.frequency.first" :value="modelValue.frequency.first" @input="onTwiceFirstInput">
-                    </label>
-                    <label class="schedule-picker__field">
+                        <MaxInputNumber :model-value="modelValue.frequency.first" :min="0" :max="23" :step="1" aria-label="1ª hora (0–23)" data-field-path="schedule.frequency.first" class="schedule-picker__number" @update:model-value="onTwiceFirstNumberChange" />
+                    </div>
+                    <div class="schedule-picker__field">
                         <span class="schedule-picker__label">2ª hora (0–23)</span>
-                        <input type="number" min="0" max="23" class="schedule-picker__input" data-field-path="schedule.frequency.second" :value="modelValue.frequency.second" @input="onTwiceSecondInput">
-                    </label>
+                        <MaxInputNumber :model-value="modelValue.frequency.second" :min="0" :max="23" :step="1" aria-label="2ª hora (0–23)" data-field-path="schedule.frequency.second" class="schedule-picker__number" @update:model-value="onTwiceSecondNumberChange" />
+                    </div>
                 </template>
 
-                <label v-if="modelValue.frequency.kind === 'cron'" class="schedule-picker__field schedule-picker__field--wide">
+                <div v-if="modelValue.frequency.kind === 'cron'" class="schedule-picker__field schedule-picker__field--wide">
                     <span class="schedule-picker__label">Expressão Cron (5 campos)</span>
-                    <input type="text" class="schedule-picker__input" data-testid="schedule-cron-input" data-field-path="schedule.frequency.expression" placeholder="0 8 * * 1" :value="modelValue.frequency.expression" @input="onCronInput">
-                </label>
+                    <MaxInputText :model-value="modelValue.frequency.expression" placeholder="0 8 * * 1" aria-label="Expressão Cron" data-testid="schedule-cron-input" data-field-path="schedule.frequency.expression" class="schedule-picker__text-input" @update:model-value="onCronTextChange" />
+                </div>
             </div>
 
             <div v-if="scheduleIssues.length > 0" class="schedule-picker__errors">
@@ -60,10 +53,10 @@
             <div v-if="argumentParams.length > 0" class="schedule-picker__args">
                 <span class="schedule-picker__subtitle">Valores dos argumentos no agendamento</span>
                 <div class="schedule-picker__row">
-                    <label v-for="(arg, idx) in argumentParams" :key="arg.name || idx" class="schedule-picker__field">
+                    <div v-for="(arg, idx) in argumentParams" :key="arg.name || idx" class="schedule-picker__field">
                         <span class="schedule-picker__label">{{ arg.name || `Argumento ${idx + 1}` }}{{ arg.optional ? ' (opcional)' : ' *' }}</span>
-                        <input type="text" class="schedule-picker__input" :data-field-path="`schedule.arguments[${idx}]`" :value="(modelValue.arguments ?? [])[idx] ?? ''" @input="(ev) => onScheduleArgInput(idx, ev)">
-                    </label>
+                        <MaxInputText :model-value="(modelValue.arguments ?? [])[idx] ?? ''" :data-field-path="`schedule.arguments[${idx}]`" :aria-label="arg.name || `Argumento ${idx + 1}`" class="schedule-picker__text-input" @update:model-value="(val) => onScheduleArgTextChange(idx, val)" />
+                    </div>
                 </div>
             </div>
 
@@ -78,7 +71,7 @@
 
 <script setup lang="ts">
     import { computed } from 'vue';
-    import { MaxAlert, MaxInputCheckbox } from '@maxvue/max-components-ui';
+    import { MaxAlert, MaxInputCheckbox, MaxInputNumber, MaxInputSelect, MaxInputText } from '@maxvue/max-components-ui';
     import type {
         ArtisanParam,
         FieldIssue,
@@ -116,6 +109,10 @@
         { kind: 'cron', label: 'Expressão Cron personalizada' }
     ];
 
+    const frequencySelectOptions = computed(() =>
+        FREQUENCY_OPTIONS.map((opt) => ({ label: opt.label, value: opt.kind }))
+    );
+
     const WEEKDAYS = [
         { value: 0, label: 'Domingo' },
         { value: 1, label: 'Segunda-feira' },
@@ -125,6 +122,8 @@
         { value: 5, label: 'Sexta-feira' },
         { value: 6, label: 'Sábado' }
     ];
+
+    const weekdaySelectOptions = WEEKDAYS.map((d) => ({ label: d.label, value: d.value }));
 
     const argumentParams = computed(() =>
         props.params.filter((p) => p.kind === 'argument')
@@ -190,18 +189,21 @@
         });
     }
 
-    function onFrequencyKindChange(ev: Event): void {
-        const kind = (ev.target as HTMLSelectElement).value as ScheduleFrequency['kind'];
-        updateFrequency(defaultFrequencyForKind(kind));
+    function onFrequencyKindChange(valOrEv: unknown): void {
+        const kind = (typeof valOrEv === 'string' ? valOrEv : (valOrEv as { target?: HTMLSelectElement })?.target?.value) as ScheduleFrequency['kind'];
+        if (kind) {
+            updateFrequency(defaultFrequencyForKind(kind));
+        }
     }
 
-    function onMinuteInput(ev: Event): void {
-        const minute = Number((ev.target as HTMLInputElement).value);
-        updateFrequency({ kind: 'hourlyAt', minute: Number.isNaN(minute) ? 0 : minute });
+    function onMinuteNumberChange(valOrEv: unknown): void {
+        const raw = typeof valOrEv === 'number' ? valOrEv : Number((valOrEv as { target?: HTMLInputElement })?.target?.value ?? valOrEv);
+        const minute = Number.isNaN(raw) ? 0 : Math.min(59, Math.max(0, Math.round(raw)));
+        updateFrequency({ kind: 'hourlyAt', minute });
     }
 
-    function onTimeInput(ev: Event): void {
-        const time = (ev.target as HTMLInputElement).value;
+    function onTimeStringChange(valOrEv: unknown): void {
+        const time = typeof valOrEv === 'string' ? valOrEv : String((valOrEv as { target?: HTMLInputElement })?.target?.value ?? '');
         const freq = props.modelValue?.frequency;
         if (!freq) {
             return;
@@ -215,48 +217,52 @@
         }
     }
 
-    function onWeekdayChange(ev: Event): void {
-        const day = Number((ev.target as HTMLSelectElement).value);
+    function onWeekdaySelectChange(valOrEv: unknown): void {
+        const raw = typeof valOrEv === 'number' ? valOrEv : Number((valOrEv as { target?: HTMLSelectElement })?.target?.value ?? valOrEv);
+        const day = Number.isNaN(raw) ? 0 : raw;
         const freq = props.modelValue?.frequency;
         if (freq?.kind === 'weeklyOn') {
             updateFrequency({ kind: 'weeklyOn', day, time: freq.time });
         }
     }
 
-    function onMonthDayInput(ev: Event): void {
-        const day = Number((ev.target as HTMLInputElement).value);
+    function onMonthDayNumberChange(valOrEv: unknown): void {
+        const raw = typeof valOrEv === 'number' ? valOrEv : Number((valOrEv as { target?: HTMLInputElement })?.target?.value ?? valOrEv);
+        const day = Number.isNaN(raw) ? 1 : Math.min(31, Math.max(1, Math.round(raw)));
         const freq = props.modelValue?.frequency;
         if (freq?.kind === 'monthlyOn') {
-            updateFrequency({ kind: 'monthlyOn', day: Number.isNaN(day) ? 1 : day, time: freq.time });
+            updateFrequency({ kind: 'monthlyOn', day, time: freq.time });
         }
     }
 
-    function onTwiceFirstInput(ev: Event): void {
-        const first = Number((ev.target as HTMLInputElement).value);
+    function onTwiceFirstNumberChange(valOrEv: unknown): void {
+        const raw = typeof valOrEv === 'number' ? valOrEv : Number((valOrEv as { target?: HTMLInputElement })?.target?.value ?? valOrEv);
+        const first = Number.isNaN(raw) ? 1 : Math.min(23, Math.max(0, Math.round(raw)));
         const freq = props.modelValue?.frequency;
         if (freq?.kind === 'twiceDaily') {
-            updateFrequency({ kind: 'twiceDaily', first: Number.isNaN(first) ? 1 : first, second: freq.second });
+            updateFrequency({ kind: 'twiceDaily', first, second: freq.second });
         }
     }
 
-    function onTwiceSecondInput(ev: Event): void {
-        const second = Number((ev.target as HTMLInputElement).value);
+    function onTwiceSecondNumberChange(valOrEv: unknown): void {
+        const raw = typeof valOrEv === 'number' ? valOrEv : Number((valOrEv as { target?: HTMLInputElement })?.target?.value ?? valOrEv);
+        const second = Number.isNaN(raw) ? 13 : Math.min(23, Math.max(0, Math.round(raw)));
         const freq = props.modelValue?.frequency;
         if (freq?.kind === 'twiceDaily') {
-            updateFrequency({ kind: 'twiceDaily', first: freq.first, second: Number.isNaN(second) ? 13 : second });
+            updateFrequency({ kind: 'twiceDaily', first: freq.first, second });
         }
     }
 
-    function onCronInput(ev: Event): void {
-        const expression = (ev.target as HTMLInputElement).value;
+    function onCronTextChange(valOrEv: unknown): void {
+        const expression = typeof valOrEv === 'string' ? valOrEv : String((valOrEv as { target?: HTMLInputElement })?.target?.value ?? '');
         updateFrequency({ kind: 'cron', expression });
     }
 
-    function onScheduleArgInput(index: number, ev: Event): void {
+    function onScheduleArgTextChange(index: number, valOrEv: unknown): void {
         if (!props.modelValue) {
             return;
         }
-        const val = (ev.target as HTMLInputElement).value;
+        const val = typeof valOrEv === 'string' ? valOrEv : String((valOrEv as { target?: HTMLInputElement })?.target?.value ?? '');
         const nextArgs = [...(props.modelValue.arguments ?? [])];
         while (nextArgs.length <= index) {
             nextArgs.push('');

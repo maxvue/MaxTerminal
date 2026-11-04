@@ -9,15 +9,11 @@
             </TabBarItem>
         </div>
         <div class="tab-bar__controls">
-            <button type="button" class="tab-bar__btn tab-bar__btn--primary" title="Adicionar nova aba (Template Padrão)" aria-label="Adicionar nova aba" @click="emit('add-default-tab')">
-                <MaxIcon icon="lucide:plus" />
-                <span>Adicionar nova aba</span>
-            </button>
+            <span class="tab-bar__btn-wrap" aria-label="Adicionar nova aba" @click="emit('add-default-tab')">
+                <MaxButton label="Adicionar nova aba" icon="lucide:plus" size="small" class="tab-bar__btn tab-bar__btn--primary" title="Adicionar nova aba (Template Padrão)" aria-label="Adicionar nova aba" />
+            </span>
             <div class="tab-bar__template-anchor">
-                <button type="button" class="tab-bar__btn" title="Iniciar Aba Template" aria-label="Iniciar Aba Template" :aria-expanded="templatePopoverOpen" @click="toggleTemplatePopover">
-                    <MaxIcon icon="lucide:layers" />
-                    <span>Iniciar Aba Template</span>
-                </button>
+                <MaxButton label="Iniciar Aba Template" icon="lucide:layers" severity="secondary" size="small" class="tab-bar__btn" title="Iniciar Aba Template" aria-label="Iniciar Aba Template" :aria-expanded="templatePopoverOpen" @click="toggleTemplatePopover" />
                 <TemplateLaunchPopover :open="templatePopoverOpen" :templates="props.templates" @launch="onLaunchTemplate" @create-template="onCreateTemplate" @edit-template="onEditTemplate" @delete-template="emit('delete-template', $event)" @set-default="emit('set-default-template', $event)" />
             </div>
             <template v-if="props.activeTabId">
@@ -33,7 +29,7 @@
 
 <script setup lang="ts">
     import { ref } from 'vue';
-    import { MaxButton, MaxIcon, MaxIconButton } from '@maxvue/max-components-ui';
+    import { MaxButton, MaxIconButton } from '@maxvue/max-components-ui';
     import type { SplitDirection, TabId, TabTemplate_Serialize, TabView_Serialize, TemplateId } from '@/types/bindings';
     import TabBarItem from './TabBarItem.vue';
     import TemplateLaunchPopover from './TemplateLaunchPopover.vue';

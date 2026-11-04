@@ -232,7 +232,8 @@
 
     function onSelectionAlphaChange(val: number | null | undefined): void {
         if (typeof val === 'number' && Number.isFinite(val)) {
-            editorStore.setSelectionColor(editorStore.selectionParts.hex, val);
+            const clamped = Math.min(100, Math.max(5, Math.round(val / 5) * 5));
+            editorStore.setSelectionColor(editorStore.selectionParts.hex, clamped);
         }
     }
 

@@ -8,9 +8,7 @@
             </div>
 
             <div class="rag-results__controls">
-                <select v-if="slugs.length > 0" :value="selectedSlug" class="rag-results__slug-select" aria-label="Selecionar base RAG" data-testid="rag-slug-select" @change="onChangeSlug">
-                    <option v-for="s in slugs" :key="s.slug" :value="s.slug">{{ s.title || s.slug }}</option>
-                </select>
+                <MaxInputSelect v-if="slugs.length > 0" :model-value="selectedSlug" :options="slugOptions" option-label="label" option-value="value" class="rag-results__slug-select" aria-label="Selecionar base RAG" data-testid="rag-slug-select" @update:model-value="onSelectSlug" />
                 <MaxIconButton icon="lucide:x" :size="0.75" class="rag-results__close" title="Fechar resultados RAG" aria-label="Fechar resultados RAG" data-testid="btn-close-rag" @click="clear" />
             </div>
         </header>
@@ -41,8 +39,8 @@
 </template>
 
 <script setup lang="ts">
-    import { ref } from 'vue';
-    import { MaxButton, MaxIcon, MaxIconButton } from '@maxvue/max-components-ui';
+    import { computed, ref } from 'vue';
+    import { MaxButton, MaxIcon, MaxIconButton, MaxInputSelect } from '@maxvue/max-components-ui';
     import { useRagSearch } from '@/composables/ai/useRagSearch';
     import type { PaneId, RagResult_Serialize } from '@/types/bindings';
 
@@ -65,8 +63,15 @@
 
     const copiedIdx = ref<number | null>(null);
 
-    async function onChangeSlug(ev: Event): Promise<void> {
-        const nextSlug = (ev.target as HTMLSelectElement).value;
+    const slugOptions = computed(() =>
+        slugs.value.map((s) => ({
+            label: s.title || s.slug,
+            value: s.slug
+        }))
+    );
+
+    async function onSelectSlug(val: unknown): Promise<void> {
+        const nextSlug = String(val ?? '');
         selectedSlug.value = nextSlug;
         if (response.value?.query) {
             await search(response.value.query, nextSlug).catch(() => {});

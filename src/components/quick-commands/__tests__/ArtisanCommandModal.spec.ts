@@ -67,7 +67,9 @@ describe('ArtisanCommandModal', () => {
             }
         });
 
-        const classInput = wrapper.find('[data-testid="input-class-name"]');
+        const classInput = wrapper.find('[data-testid="input-class-name"] input').exists()
+            ? wrapper.find('[data-testid="input-class-name"] input')
+            : wrapper.find('[data-testid="input-class-name"]');
         expect((classInput.element as HTMLInputElement).value).toBe('BillingSync');
 
         await wrapper.find('[data-testid="btn-create-maxcode"]').trigger('click');

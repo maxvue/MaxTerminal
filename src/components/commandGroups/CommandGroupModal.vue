@@ -30,11 +30,11 @@
             <div class="command-group-modal__body">
                 <div class="command-group-modal__main-col">
                     <div class="command-group-modal__grid">
-                        <label class="command-group-modal__field">
+                        <div class="command-group-modal__field">
                             <span class="command-group-modal__label">Nome do Grupo</span>
-                            <input v-model="editor.draft.value.name" type="text" class="command-group-modal__input" data-testid="input-group-name" placeholder="Ex.: Subir Ambiente Completo" @input="editor.markMutated()">
+                            <MaxInputText v-model="editor.draft.value.name" class="command-group-modal__input" data-testid="input-group-name" placeholder="Ex.: Subir Ambiente Completo" aria-label="Nome do Grupo" @update:model-value="editor.markMutated()" />
                             <span v-if="editor.fieldErrors.value['name']" class="command-group-modal__error" data-testid="error-group-name">{{ editor.fieldErrors.value['name'] }}</span>
-                        </label>
+                        </div>
 
                         <div class="command-group-modal__field">
                             <span class="command-group-modal__label">Escopo</span>
@@ -46,11 +46,11 @@
                         </div>
                     </div>
 
-                    <label class="command-group-modal__field">
+                    <div class="command-group-modal__field">
                         <span class="command-group-modal__label">Descrição</span>
-                        <input v-model="editor.draft.value.description" type="text" class="command-group-modal__input" data-testid="input-group-description" placeholder="Descrição curta do propósito deste grupo de comandos" @input="editor.markMutated()">
+                        <MaxInputText v-model="editor.draft.value.description" class="command-group-modal__input" data-testid="input-group-description" placeholder="Descrição curta do propósito deste grupo de comandos" aria-label="Descrição" @update:model-value="editor.markMutated()" />
                         <span v-if="editor.fieldErrors.value['description']" class="command-group-modal__error">{{ editor.fieldErrors.value['description'] }}</span>
-                    </label>
+                    </div>
 
                     <div class="command-group-modal__grid">
                         <div class="command-group-modal__field">
@@ -74,11 +74,11 @@
                     <p class="command-group-modal__isolation-note" data-testid="isolation-note">No modo Sequencial, itens sem override mantêm o estado do shell (<code>cd</code>, <code>export</code>), enquanto itens com override de diretório ou ambiente rodam em shell filho isolado (<code>env -C</code>).</p>
 
                     <div class="command-group-modal__grid">
-                        <label class="command-group-modal__field">
+                        <div class="command-group-modal__field">
                             <span class="command-group-modal__label">Diretório relativo padrão do grupo (opcional)</span>
-                            <input v-model="editor.draft.value.cwd" type="text" class="command-group-modal__input command-group-modal__input--mono" data-testid="input-group-cwd" placeholder="Ex.: backend" @input="editor.markMutated()">
+                            <MaxInputText v-model="editor.draft.value.cwd" class="command-group-modal__input command-group-modal__input--mono" data-testid="input-group-cwd" placeholder="Ex.: backend" aria-label="Diretório relativo padrão do grupo" @update:model-value="editor.markMutated()" />
                             <span v-if="editor.fieldErrors.value['cwd']" class="command-group-modal__error" data-testid="error-group-cwd">{{ editor.fieldErrors.value['cwd'] }}</span>
-                        </label>
+                        </div>
 
                         <div class="command-group-modal__field">
                             <span class="command-group-modal__label">Etiquetas (Labels)</span>
@@ -130,7 +130,7 @@
 
 <script setup lang="ts">
     import { ref, watch } from 'vue';
-    import { MaxButton, MaxIcon, MaxIconButton } from '@maxvue/max-components-ui';
+    import { MaxButton, MaxIcon, MaxIconButton, MaxInputText } from '@maxvue/max-components-ui';
     import CommandGroupItemRow from '@/components/commandGroups/CommandGroupItemRow.vue';
     import CommandGroupSuggestPanel from '@/components/commandGroups/CommandGroupSuggestPanel.vue';
     import { useCommandGroupEditor } from '@/composables/commandGroups/useCommandGroupEditor';

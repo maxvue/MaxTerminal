@@ -10,29 +10,29 @@
         </div>
 
         <div class="param-row__grid">
-            <label class="param-row__field">
+            <div class="param-row__field">
                 <span class="param-row__label">{{ modelValue.kind === 'option' ? 'Nome (--)' : 'Nome' }}</span>
-                <input type="text" class="param-row__input" :data-field-path="`params[${index}].name`" :placeholder="modelValue.kind === 'option' ? 'queue' : 'user'" :value="modelValue.name" @input="onNameInput">
+                <MaxInputText :model-value="modelValue.name" :placeholder="modelValue.kind === 'option' ? 'queue' : 'user'" :data-field-path="`params[${index}].name`" aria-label="Nome do parâmetro" class="param-row__input" @update:model-value="onNameChange" />
                 <span v-if="nameError" class="param-row__error">{{ nameError }}</span>
-            </label>
+            </div>
 
-            <label v-if="modelValue.kind === 'option'" class="param-row__field param-row__field--short">
+            <div v-if="modelValue.kind === 'option'" class="param-row__field param-row__field--short">
                 <span class="param-row__label">Atalho (-)</span>
-                <input type="text" maxlength="1" class="param-row__input" :data-field-path="`params[${index}].shortcut`" placeholder="Q" :value="modelValue.shortcut ?? ''" @input="onShortcutInput">
+                <MaxInputText :model-value="modelValue.shortcut ?? ''" placeholder="Q" maxlength="1" :data-field-path="`params[${index}].shortcut`" aria-label="Atalho" class="param-row__input" @update:model-value="onShortcutChange" />
                 <span v-if="shortcutError" class="param-row__error">{{ shortcutError }}</span>
-            </label>
+            </div>
 
-            <label class="param-row__field param-row__field--wide">
+            <div class="param-row__field param-row__field--wide">
                 <span class="param-row__label">Descrição</span>
-                <input type="text" class="param-row__input" :data-field-path="`params[${index}].description`" placeholder="Descrição exibida no --help" :value="modelValue.description" @input="onDescriptionInput">
+                <MaxInputText :model-value="modelValue.description" placeholder="Descrição exibida no --help" :data-field-path="`params[${index}].description`" aria-label="Descrição do parâmetro" class="param-row__input" @update:model-value="onDescriptionChange" />
                 <span v-if="descriptionError" class="param-row__error">{{ descriptionError }}</span>
-            </label>
+            </div>
 
-            <label class="param-row__field">
+            <div class="param-row__field">
                 <span class="param-row__label">Valor padrão</span>
-                <input type="text" class="param-row__input" :data-field-path="`params[${index}].default`" placeholder="Opcional" :disabled="!canEditDefault" :value="modelValue.default ?? ''" @input="onDefaultInput">
+                <MaxInputText :model-value="modelValue.default ?? ''" placeholder="Opcional" :disabled="!canEditDefault" :data-field-path="`params[${index}].default`" aria-label="Valor padrão do parâmetro" class="param-row__input" @update:model-value="onDefaultChange" />
                 <span v-if="defaultError" class="param-row__error">{{ defaultError }}</span>
-            </label>
+            </div>
         </div>
 
         <div class="param-row__toggles">
@@ -50,7 +50,7 @@
 
 <script setup lang="ts">
     import { computed } from 'vue';
-    import { MaxIconButton, MaxInputCheckbox, MaxTag } from '@maxvue/max-components-ui';
+    import { MaxIconButton, MaxInputCheckbox, MaxInputText, MaxTag } from '@maxvue/max-components-ui';
     import type { ArtisanParam, FieldIssue } from '@/types/bindings';
 
     export interface ArtisanParamRowProps {
@@ -97,44 +97,53 @@
         });
     }
 
-    function onNameInput(ev: Event): void {
-        const val = (ev.target as HTMLInputElement).value.replace(/^--+/, '');
-        patchParam({ name: val });
+    function onNameChange(val?: string | number): void {
+        const cleaned = String(val ?? '').replace(/^--+/, '');
+        patchParam({ name: cleaned });
     }
 
-    function onShortcutInput(ev: Event): void {
-        const val = (ev.target as HTMLInputElement).value.replace(/^-+/, '').trim();
-        patchParam({ shortcut: val.length > 0 ? val : null });
+    function onShortcutChange(val?: string | number): void {
+        const cleaned = String(val ?? '').replace(/^-+/, '').trim();
+        patchParam({ shortcut: cleaned.length > 0 ? cleaned : null });
     }
 
-    function onDescriptionInput(ev: Event): void {
-        const val = (ev.target as HTMLInputElement).value;
-        patchParam({ description: val });
+    function onDescriptionChange(val?: string | number): void {
+        patchParam({ description: String(val ?? '') });
     }
 
-    function onDefaultInput(ev: Event): void {
-        const val = (ev.target as HTMLInputElement).value;
-        patchParam({ default: val.length > 0 ? val : null });
+    function onDefaultChange(val?: string | number): void {
+        const str = String(val ?? '');
+        patchParam({ default: str.length > 0 ? str : null });
     }
 
-    function onOptionalChange(ev: Event): void {
-        const checked = (ev.target as HTMLInputElement).checked;
+    function extractChecked(valOrEv: unknown): boolean {
+        if (typeof valOrEv === 'boolean') {
+            return valOrEv;
+        }
+        if (valOrEv && typeof valOrEv === 'object' && 'target' in valOrEv) {
+            return Boolean((valOrEv as { target: HTMLInputElement }).target?.checked);
+        }
+        return Boolean(valOrEv);
+    }
+
+    function onOptionalChange(valOrEv: unknown): void {
+        const checked = extractChecked(valOrEv);
         patchParam({
             optional: checked,
             default: checked ? (props.modelValue.default ?? null) : null
         });
     }
 
-    function onArrayChange(ev: Event): void {
-        const checked = (ev.target as HTMLInputElement).checked;
+    function onArrayChange(valOrEv: unknown): void {
+        const checked = extractChecked(valOrEv);
         patchParam({
             isArray: checked,
             default: checked ? null : (props.modelValue.default ?? null)
         });
     }
 
-    function onAcceptsValueChange(ev: Event): void {
-        const checked = (ev.target as HTMLInputElement).checked;
+    function onAcceptsValueChange(valOrEv: unknown): void {
+        const checked = extractChecked(valOrEv);
         patchParam({
             acceptsValue: checked,
             isArray: checked ? Boolean(props.modelValue.isArray) : false,
@@ -142,8 +151,8 @@
         });
     }
 
-    function onOptionArrayChange(ev: Event): void {
-        const checked = (ev.target as HTMLInputElement).checked;
+    function onOptionArrayChange(valOrEv: unknown): void {
+        const checked = extractChecked(valOrEv);
         patchParam({
             isArray: checked,
             acceptsValue: checked ? true : Boolean(props.modelValue.acceptsValue),

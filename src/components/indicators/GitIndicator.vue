@@ -32,8 +32,7 @@
 
 <script setup lang="ts">
     import { computed, ref } from 'vue';
-    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
-    import MaxIcon from '@maxvue/max-components-ui/components/MaxIcon';
+    import { MaxButton, MaxIcon } from '@maxvue/max-components-ui';
     import type { GitContext_Serialize } from '@/types/bindings';
 
     export interface GitIndicatorProps {

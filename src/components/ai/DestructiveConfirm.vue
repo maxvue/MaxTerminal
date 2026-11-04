@@ -14,10 +14,10 @@
                 </li>
             </ul>
 
-            <label class="destructive-confirm__field">
+            <div class="destructive-confirm__field">
                 <span class="destructive-confirm__field-label">Para liberar a execução, digite exatamente <strong class="destructive-confirm__token" data-testid="expected-confirm-token">{{ expectedToken }}</strong> abaixo:</span>
-                <input v-model="typedToken" type="text" class="destructive-confirm__input" :placeholder="expectedToken" autocomplete="off" spellcheck="false" data-testid="confirm-token-input" @keydown.enter.prevent="onConfirm" @keydown.esc.prevent="onCancel">
-            </label>
+                <MaxInputText v-model="typedToken" class="destructive-confirm__input" :placeholder="expectedToken" autocomplete="off" :spellcheck="false" data-testid="confirm-token-input" aria-label="Token de confirmação" @keydown.enter.prevent="onConfirm" @keydown.esc.prevent="onCancel" />
+            </div>
         </div>
 
         <footer class="destructive-confirm__footer">
@@ -36,6 +36,7 @@
     import {
         MaxAlert,
         MaxButton,
+        MaxInputText,
         MaxModal
     } from '@maxvue/max-components-ui';
     import type { RiskAssessment_Serialize } from '@/types/bindings';

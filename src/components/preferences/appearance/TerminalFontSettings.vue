@@ -3,7 +3,7 @@
         <div class="font-settings__grid">
             <div class="font-settings__field">
                 <label class="font-settings__label" for="mt-font-preset">Preset de fonte monoespaçada</label>
-                <MaxInputSelect id="mt-font-preset" :model-value="selectedPresetId" :options="presetOptions" option-label="label" option-value="value" option-name="label" :disabled="disabled" class="font-settings__select" @change="onPresetChange" />
+                <MaxInputSelect id="mt-font-preset" aria-label="Preset de fonte monoespaçada" :model-value="selectedPresetId" :options="presetOptions" option-label="label" option-value="value" option-name="label" :disabled="disabled" class="font-settings__select" @change="onPresetChange" />
             </div>
 
             <div class="font-settings__field">
@@ -24,7 +24,7 @@
 
             <div class="font-settings__field">
                 <label class="font-settings__label" for="mt-cursor-style">Estilo do cursor</label>
-                <MaxInputSelect id="mt-cursor-style" :model-value="appearance.cursorStyleOverride ?? 'theme'" :options="cursorStyleOptions" option-label="label" option-value="value" option-name="label" :disabled="disabled" class="font-settings__select" @change="onCursorStyleChange" />
+                <MaxInputSelect id="mt-cursor-style" aria-label="Estilo do cursor" :model-value="appearance.cursorStyleOverride ?? 'theme'" :options="cursorStyleOptions" option-label="label" option-value="value" option-name="label" :disabled="disabled" class="font-settings__select" @change="onCursorStyleChange" />
             </div>
 
             <div class="font-settings__field">

@@ -4,6 +4,8 @@ import { createPinia, setActivePinia } from 'pinia';
 import BridgeSettingsSection from '@/components/bridge/BridgeSettingsSection.vue';
 import { useMaxCodeBridgeStore } from '@/stores/maxCodeBridge';
 
+type EmittableComponent = { vm: { $emit: (event: string, ...args: unknown[]) => void } };
+
 describe('BridgeSettingsSection.vue', () => {
     beforeEach(() => {
         setActivePinia(createPinia());
@@ -41,10 +43,26 @@ describe('BridgeSettingsSection.vue', () => {
         await syncToggle.setValue(false);
         expect(updateSpy).toHaveBeenCalledWith({ autoSyncActiveProject: false });
 
-        await wrapper.get('[data-testid="select-fallback-mode"]').setValue('clipboard_only');
+        const fallbackSelect = wrapper.find('[data-testid="select-fallback-mode"] select');
+        if (fallbackSelect.exists()) {
+            await fallbackSelect.setValue('clipboard_only');
+        } else {
+            const fallbackComp = wrapper.findComponent('[data-testid="select-fallback-mode"]');
+            (fallbackComp as unknown as EmittableComponent).vm.$emit('update:modelValue', 'clipboard_only');
+        }
         expect(updateSpy).toHaveBeenCalledWith({ inspectFallbackMode: 'clipboard_only' });
 
-        await wrapper.get('[data-testid="input-preferred-port"]').setValue('48080');
+        const portInput = wrapper.find('[data-testid="input-preferred-port"] input');
+        if (portInput.exists()) {
+            const portComp = wrapper.findComponent('[data-testid="input-preferred-port"]');
+            if (portComp.exists()) {
+                (portComp as unknown as EmittableComponent).vm.$emit('update:modelValue', 48080);
+            } else {
+                await portInput.setValue('48080');
+            }
+        } else {
+            await wrapper.get('[data-testid="input-preferred-port"]').setValue('48080');
+        }
         expect(updateSpy).toHaveBeenCalledWith({ preferredPort: 48080 });
 
         await wrapper.get('[data-testid="btn-reconnect"]').trigger('click');

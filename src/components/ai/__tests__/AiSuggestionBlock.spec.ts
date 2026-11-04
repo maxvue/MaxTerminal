@@ -104,7 +104,10 @@ describe('AiSuggestionBlock.vue (Fase 12 — Unidades 03 e 04)', () => {
         expect(wrapper.find('[data-testid="destructive-confirm-modal"]').exists()).toBe(true);
 
         const execSpy = vi.spyOn(adapters, 'executeCommandInPane').mockResolvedValue();
-        await wrapper.find('[data-testid="confirm-token-input"]').setValue('migrate:fresh');
+        const tokenInput = wrapper.find('[data-testid="confirm-token-input"] input').exists()
+            ? wrapper.find('[data-testid="confirm-token-input"] input')
+            : wrapper.find('[data-testid="confirm-token-input"]');
+        await tokenInput.setValue('migrate:fresh');
         await wrapper.find('[data-testid="btn-confirm-destructive"]').trigger('click');
 
         expect(execSpy).toHaveBeenCalledWith('pane-1', 'php artisan migrate:fresh');

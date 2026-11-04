@@ -1,0 +1,104 @@
+{
+  "version": 2,
+  "planRevision": "99c68f76651ab3760717285227e9e0e7929b60c49446990f05cc4e3b00902b03",
+  "tasks": [
+    {
+      "id": "task-1-contratos-invalidos",
+      "status": "completed",
+      "files": [
+        "src/components/skills/SkillsSyncPanel.vue",
+        "src/components/ai/AiSuggestionBlock.vue",
+        "src/components/preferences/appearance/TerminalFontSettings.vue",
+        "src/components/preferences/system/EditorSelector.vue",
+        "src/components/preferences/system/PreferencesSystemSection.vue",
+        "src/components/preferences/appearance/ThemeEditorDialog.vue",
+        "src/components/quick-commands/ArtisanCommandModal.vue"
+      ],
+      "validations": []
+    },
+    {
+      "id": "task-2-quick-commands",
+      "status": "completed",
+      "files": [
+        "src/components/quick-commands/ArtisanSchedulePicker.vue",
+        "src/components/quick-commands/ArtisanCommandModal.vue",
+        "src/components/quick-commands/ArtisanParamRow.vue",
+        "src/components/quick-commands/__tests__/ArtisanSchedulePicker.spec.ts",
+        "src/components/quick-commands/__tests__/ArtisanCommandModal.spec.ts"
+      ],
+      "validations": []
+    },
+    {
+      "id": "task-3-command-groups-workspace",
+      "status": "completed",
+      "files": [
+        "src/components/commandGroups/CommandGroupModal.vue",
+        "src/components/commandGroups/CommandGroupItemRow.vue",
+        "src/components/commandGroups/GroupRunItemRow.vue",
+        "src/components/workspace/TabBar.vue",
+        "src/components/workspace/SessionHistoryDrawer.vue",
+        "tests/commandGroups/CommandGroupModal.spec.ts"
+      ],
+      "validations": []
+    },
+    {
+      "id": "task-4-projects-ai-search-github-bridge",
+      "status": "completed",
+      "files": [
+        "src/components/projects/ProjectAddModal.vue",
+        "src/components/ai/DestructiveConfirm.vue",
+        "src/components/ai/RagResults.vue",
+        "src/components/github/IssueLabelEditor.vue",
+        "src/components/bridge/BridgeSettingsSection.vue",
+        "src/components/indicators/GitIndicator.vue",
+        "src/components/ai/__tests__/DestructiveConfirm.spec.ts",
+        "src/components/ai/__tests__/AiSuggestionBlock.spec.ts",
+        "tests/frontend/github/detail-plan-and-mutations.spec.ts",
+        "tests/components/bridge/BridgeSettingsSection.spec.ts"
+      ],
+      "validations": []
+    },
+    {
+      "id": "task-5-validacao-final",
+      "status": "completed",
+      "files": [],
+      "validations": []
+    }
+  ],
+  "verification": {
+    "revision": "ac258d195e72091d4e6e693a6651be4fa799a2c8",
+    "checks": [
+      {
+        "command": "npx --no-install vitest run src/components/quick-commands src/components/ai tests/commandGroups tests/frontend/projects tests/components/bridge tests/frontend/github tests/frontend/workspace tests/lint",
+        "revision": "ac258d195e72091d4e6e693a6651be4fa799a2c8",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run typecheck",
+        "revision": "ac258d195e72091d4e6e693a6651be4fa799a2c8",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run build",
+        "revision": "ac258d195e72091d4e6e693a6651be4fa799a2c8",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run lint",
+        "revision": "ac258d195e72091d4e6e693a6651be4fa799a2c8",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm test",
+        "revision": "ac258d195e72091d4e6e693a6651be4fa799a2c8",
+        "result": "passed",
+        "exitCode": 0
+      }
+    ]
+  },
+  "updatedAt": 1762283200000
+}

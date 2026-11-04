@@ -4,7 +4,7 @@
             <div class="project-add-modal__field">
                 <label for="project-add-path" class="project-add-modal__label">Pasta do projeto</label>
                 <div class="project-add-modal__path-row">
-                    <input id="project-add-path" v-model="pathInput" type="text" class="project-add-modal__input" placeholder="~/GitHub/meu-projeto" autocomplete="off" @input="onPathInputChanged">
+                    <MaxInputText id="project-add-path" v-model="pathInput" class="project-add-modal__input" placeholder="~/GitHub/meu-projeto" autocomplete="off" aria-label="Pasta do projeto" @input="onPathInputChanged" />
                     <MaxButton type="button" severity="secondary" class="project-add-modal__pick-btn" data-testid="pick-folder-btn" @click="handlePickFolder">
                         Escolher pasta
                     </MaxButton>
@@ -13,7 +13,7 @@
 
             <div class="project-add-modal__field">
                 <label for="project-add-title" class="project-add-modal__label">Título</label>
-                <input id="project-add-title" v-model="titleInput" type="text" class="project-add-modal__input" placeholder="Nome do projeto" maxlength="120" @input="onTitleManualEdit">
+                <MaxInputText id="project-add-title" v-model="titleInput" class="project-add-modal__input" placeholder="Nome do projeto" maxlength="120" aria-label="Título" @input="onTitleManualEdit" />
             </div>
 
             <div class="project-add-modal__identity-grid">
@@ -23,7 +23,7 @@
                         <span class="project-add-modal__icon-preview" aria-hidden="true">
                             <MaxIcon :icon="effectiveIcon" />
                         </span>
-                        <input id="project-add-icon" v-model="iconInput" type="text" class="project-add-modal__input" placeholder="logos:laravel" @input="onIconManualEdit">
+                        <MaxInputText id="project-add-icon" v-model="iconInput" class="project-add-modal__input" placeholder="logos:laravel" aria-label="Ícone (Iconify)" @input="onIconManualEdit" />
                     </div>
                 </div>
 
@@ -31,7 +31,7 @@
                     <label for="project-add-color" class="project-add-modal__label">Cor (#RRGGBB)</label>
                     <div class="project-add-modal__color-row">
                         <input v-model="colorInput" type="color" class="project-add-modal__color-picker" aria-label="Selecionar cor" @input="onColorManualEdit">
-                        <input id="project-add-color" v-model="colorInput" type="text" class="project-add-modal__input" placeholder="#14B8A6" maxlength="7" @input="onColorManualEdit">
+                        <MaxInputText id="project-add-color" v-model="colorInput" class="project-add-modal__input" placeholder="#14B8A6" maxlength="7" aria-label="Cor (#RRGGBB)" @input="onColorManualEdit" />
                     </div>
                 </div>
             </div>
@@ -55,6 +55,8 @@
     import {
         MaxAlert,
         MaxButton,
+        MaxIcon,
+        MaxInputText,
         MaxModal
     } from '@maxvue/max-components-ui';
     import { useIpcError } from '@/composables/useIpcError';
@@ -201,9 +203,10 @@
         }, PREVIEW_DEBOUNCE_MS);
     }
 
-    function onPathInputChanged(): void {
+    function onPathInputChanged(ev?: Event): void {
+        const raw = (ev?.target as HTMLInputElement)?.value ?? pathInput.value;
         errorMessage.value = null;
-        schedulePreview(pathInput.value);
+        schedulePreview(raw);
     }
 
     function onTitleManualEdit(): void {

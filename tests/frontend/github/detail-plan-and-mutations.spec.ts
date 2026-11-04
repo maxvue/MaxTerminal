@@ -128,8 +128,13 @@ describe('Fase 16 — Detalhe da Issue, Plano de Implementação, Markdown Segur
             }
         });
 
-        const selects = wrapper.findAll('select');
-        await selects[0]!.setValue('Planned');
+        const nativeSelects = wrapper.findAll('select');
+        if (nativeSelects.length > 0) {
+            await nativeSelects[0]!.setValue('Planned');
+        } else {
+            const selectComp = wrapper.findAllComponents({ name: 'MaxInputSelect' })[0];
+            selectComp?.vm.$emit('update:modelValue', 'Planned');
+        }
         expect(onUpdate).toHaveBeenCalledWith(
             expect.objectContaining({
                 projectId: 'proj-1',

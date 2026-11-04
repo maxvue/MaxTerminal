@@ -11,7 +11,7 @@
             </div>
         </header>
         <div class="session-drawer__search">
-            <input v-model="searchQuery" type="search" class="session-drawer__search-input" placeholder="Buscar no histórico desta aba (FTS5)..." aria-label="Buscar no histórico desta aba" @keydown.enter.prevent="triggerSearch">
+            <MaxInputText v-model="searchQuery" type="search" class="session-drawer__search-input" placeholder="Buscar no histórico desta aba (FTS5)..." aria-label="Buscar no histórico desta aba" @keydown.enter.prevent="triggerSearch" />
             <MaxButton label="Buscar" severity="secondary" size="small" class="session-drawer__search-btn" @click="triggerSearch" />
         </div>
         <div v-if="searchQuery.trim() && props.searchHits.length > 0" class="session-drawer__hits">
@@ -50,7 +50,7 @@
 
 <script setup lang="ts">
     import { ref } from 'vue';
-    import { MaxButton, MaxIcon, MaxIconButton } from '@maxvue/max-components-ui';
+    import { MaxButton, MaxIcon, MaxIconButton, MaxInputText } from '@maxvue/max-components-ui';
     import type { ScrollbackChunk, SessionDetail_Serialize, SessionId, SessionSearchHit, SessionSummary_Serialize, TabSessionId } from '@/types/bindings';
     import SessionReadonlyViewer from './SessionReadonlyViewer.vue';
 

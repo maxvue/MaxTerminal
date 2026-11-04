@@ -93,6 +93,11 @@ function makeGroup(overrides: Partial<CommandGroup> = {}): CommandGroup {
     };
 }
 
+function getFieldInput(wrapper: ReturnType<typeof mount>, testId: string) {
+    const input = wrapper.find(`[data-testid="${testId}"] input`);
+    return input.exists() ? input : wrapper.get(`[data-testid="${testId}"]`);
+}
+
 describe('CommandGroupModal.vue', () => {
     beforeEach(() => {
         setActivePinia(createPinia());
@@ -121,15 +126,15 @@ describe('CommandGroupModal.vue', () => {
 
         await flushPromises();
 
-        expect((wrapper.get('[data-testid="item-title-0"]').element as HTMLInputElement).value).toBe(
+        expect((getFieldInput(wrapper, 'item-title-0').element as HTMLInputElement).value).toBe(
             'Servidor Vite'
         );
-        expect((wrapper.get('[data-testid="item-title-1"]').element as HTMLInputElement).value).toBe(
+        expect((getFieldInput(wrapper, 'item-title-1').element as HTMLInputElement).value).toBe(
             'Testes Watch'
         );
 
         await wrapper.get('[data-testid="item-move-down-0"]').trigger('click');
-        expect((wrapper.get('[data-testid="item-title-0"]').element as HTMLInputElement).value).toBe(
+        expect((getFieldInput(wrapper, 'item-title-0').element as HTMLInputElement).value).toBe(
             'Testes Watch'
         );
         expect(wrapper.get('[data-testid="reorder-live-region"]').text()).toContain(
@@ -140,7 +145,7 @@ describe('CommandGroupModal.vue', () => {
             key: 'ArrowUp',
             altKey: true
         });
-        expect((wrapper.get('[data-testid="item-title-0"]').element as HTMLInputElement).value).toBe(
+        expect((getFieldInput(wrapper, 'item-title-0').element as HTMLInputElement).value).toBe(
             'Servidor Vite'
         );
         expect(wrapper.get('[data-testid="reorder-live-region"]').text()).toContain(
@@ -166,7 +171,7 @@ describe('CommandGroupModal.vue', () => {
 
         await flushPromises();
 
-        await wrapper.get('[data-testid="input-group-cwd"]').setValue('../fora-do-projeto');
+        await getFieldInput(wrapper, 'input-group-cwd').setValue('../fora-do-projeto');
         await wrapper.get('[data-testid="btn-save-group"]').trigger('click');
         await flushPromises();
 
@@ -175,7 +180,7 @@ describe('CommandGroupModal.vue', () => {
         );
         expect(mockUpdate).not.toHaveBeenCalled();
 
-        await wrapper.get('[data-testid="input-group-cwd"]').setValue('packages/app');
+        await getFieldInput(wrapper, 'input-group-cwd').setValue('packages/app');
         mockUpdate.mockRejectedValueOnce(
             new MtIpcError(
                 {
@@ -232,12 +237,12 @@ describe('CommandGroupModal.vue', () => {
 
         await flushPromises();
 
-        await wrapper.get('[data-testid="input-group-name"]').setValue('Minha Edição Local');
+        await getFieldInput(wrapper, 'input-group-name').setValue('Minha Edição Local');
         await wrapper.get('[data-testid="btn-save-group"]').trigger('click');
         await flushPromises();
 
         expect(wrapper.find('[data-testid="revision-conflict-banner"]').exists()).toBe(true);
-        expect((wrapper.get('[data-testid="input-group-name"]').element as HTMLInputElement).value).toBe(
+        expect((getFieldInput(wrapper, 'input-group-name').element as HTMLInputElement).value).toBe(
             'Minha Edição Local'
         );
 
@@ -317,21 +322,21 @@ describe('CommandGroupModal.vue', () => {
         await flushPromises();
 
         expect(wrapper.find('[data-testid="suggest-preview-box"]').exists()).toBe(true);
-        expect((wrapper.get('[data-testid="input-group-name"]').element as HTMLInputElement).value).toBe(
+        expect((getFieldInput(wrapper, 'input-group-name').element as HTMLInputElement).value).toBe(
             'Ambiente Dev'
         );
 
         await wrapper.get('[data-testid="btn-apply-suggestion"]').trigger('click');
         await flushPromises();
 
-        expect((wrapper.get('[data-testid="input-group-name"]').element as HTMLInputElement).value).toBe(
+        expect((getFieldInput(wrapper, 'input-group-name').element as HTMLInputElement).value).toBe(
             'Stack IA Completa'
         );
 
         await wrapper.get('[data-testid="btn-undo-suggestion"]').trigger('click');
         await flushPromises();
 
-        expect((wrapper.get('[data-testid="input-group-name"]').element as HTMLInputElement).value).toBe(
+        expect((getFieldInput(wrapper, 'input-group-name').element as HTMLInputElement).value).toBe(
             'Ambiente Dev'
         );
     });

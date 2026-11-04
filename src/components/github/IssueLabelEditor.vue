@@ -1,20 +1,14 @@
 <template>
     <div class="issue-label-editor" aria-label="Editor de labels da issue">
         <div class="issue-label-editor__row">
-            <label class="issue-label-editor__field">
+            <div class="issue-label-editor__field">
                 <span class="issue-label-editor__field-label">Estado MaxCode (exclusivo):</span>
-                <select class="issue-label-editor__select" aria-label="Selecionar estado da issue" :value="currentStateLabel" :disabled="props.disabled" @change="onStateChange">
-                    <option value="">(Sem estado)</option>
-                    <option v-for="spec in stateSpecs" :key="spec.name" :value="spec.name">{{ spec.name }}</option>
-                </select>
-            </label>
-            <label class="issue-label-editor__field">
+                <MaxInputSelect :model-value="currentStateLabel" :options="stateOptions" option-label="label" option-value="value" :disabled="props.disabled" class="issue-label-editor__select" aria-label="Selecionar estado da issue" @update:model-value="onStateChangeComp" />
+            </div>
+            <div class="issue-label-editor__field">
                 <span class="issue-label-editor__field-label">Encerramento (exclusivo):</span>
-                <select class="issue-label-editor__select" aria-label="Selecionar label de encerramento" :value="currentClosureLabel" :disabled="props.disabled" @change="onClosureChange">
-                    <option value="">(Nenhum)</option>
-                    <option v-for="spec in closureSpecs" :key="spec.name" :value="spec.name">{{ spec.name }}</option>
-                </select>
-            </label>
+                <MaxInputSelect :model-value="currentClosureLabel" :options="closureOptions" option-label="label" option-value="value" :disabled="props.disabled" class="issue-label-editor__select" aria-label="Selecionar label de encerramento" @update:model-value="onClosureChangeComp" />
+            </div>
         </div>
         <div class="issue-label-editor__categories" role="group" aria-label="Categorias MaxCode">
             <span class="issue-label-editor__field-label">Categorias:</span>
@@ -25,7 +19,7 @@
 
 <script setup lang="ts">
     import { computed } from 'vue';
-    import { MaxInputCheckbox } from '@maxvue/max-components-ui';
+    import { MaxInputCheckbox, MaxInputSelect } from '@maxvue/max-components-ui';
     import {
         CANONICAL_CATEGORY_LABELS,
         CANONICAL_CLOSURE_LABELS,
@@ -52,6 +46,16 @@
     const closureSpecs = CANONICAL_CLOSURE_LABELS;
     const categorySpecs = CANONICAL_CATEGORY_LABELS;
 
+    const stateOptions = computed(() => [
+        { label: '(Sem estado)', value: '' },
+        ...stateSpecs.map((spec) => ({ label: spec.name, value: spec.name }))
+    ]);
+
+    const closureOptions = computed(() => [
+        { label: '(Nenhum)', value: '' },
+        ...closureSpecs.map((spec) => ({ label: spec.name, value: spec.name }))
+    ]);
+
     const currentStateLabel = computed<string>(() => {
         const found = props.labels.find((l) => l.canonicalGroup === 'state');
         return found?.name ?? '';
@@ -66,13 +70,12 @@
         props.labels.filter((l) => l.canonicalGroup === 'category').map((l) => l.name)
     );
 
-    function onStateChange(event: Event): void {
-        const target = event.target as HTMLSelectElement;
-        const val = target.value;
+    function onStateChangeComp(val?: unknown): void {
+        const str = String(val ?? '');
         emit('update-labels', {
             projectId: props.projectId,
             issueNumber: props.issueNumber,
-            stateChange: val ? { op: 'set', value: val } : { op: 'clear' },
+            stateChange: str ? { op: 'set', value: str } : { op: 'clear' },
             closureChange: { op: 'keep' },
             addCategories: [],
             removeCategories: [],
@@ -82,14 +85,13 @@
         });
     }
 
-    function onClosureChange(event: Event): void {
-        const target = event.target as HTMLSelectElement;
-        const val = target.value;
+    function onClosureChangeComp(val?: unknown): void {
+        const str = String(val ?? '');
         emit('update-labels', {
             projectId: props.projectId,
             issueNumber: props.issueNumber,
             stateChange: { op: 'keep' },
-            closureChange: val ? { op: 'set', value: val } : { op: 'clear' },
+            closureChange: str ? { op: 'set', value: str } : { op: 'clear' },
             addCategories: [],
             removeCategories: [],
             addCustom: [],
