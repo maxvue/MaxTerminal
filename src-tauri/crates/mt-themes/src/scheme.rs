@@ -213,3 +213,161 @@ impl ColorScheme {
         hex::encode(hasher.finalize())
     }
 }
+
+/// Paleta ANSI de 16 cores em formato textual (`#RRGGBB` / `rgb(...)`) recebida do editor de temas.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct AnsiPaletteInput {
+    /// ANSI 0 — Preto.
+    pub black: String,
+    /// ANSI 1 — Vermelho.
+    pub red: String,
+    /// ANSI 2 — Verde.
+    pub green: String,
+    /// ANSI 3 — Amarelo.
+    pub yellow: String,
+    /// ANSI 4 — Azul.
+    pub blue: String,
+    /// ANSI 5 — Magenta.
+    pub magenta: String,
+    /// ANSI 6 — Ciano.
+    pub cyan: String,
+    /// ANSI 7 — Branco.
+    pub white: String,
+    /// ANSI 8 — Preto brilhante.
+    pub bright_black: String,
+    /// ANSI 9 — Vermelho brilhante.
+    pub bright_red: String,
+    /// ANSI 10 — Verde brilhante.
+    pub bright_green: String,
+    /// ANSI 11 — Amarelo brilhante.
+    pub bright_yellow: String,
+    /// ANSI 12 — Azul brilhante.
+    pub bright_blue: String,
+    /// ANSI 13 — Magenta brilhante.
+    pub bright_magenta: String,
+    /// ANSI 14 — Ciano brilhante.
+    pub bright_cyan: String,
+    /// ANSI 15 — Branco brilhante.
+    pub bright_white: String,
+}
+
+impl AnsiPaletteInput {
+    /// Retorna os pares `(nome_do_campo, valor)` na ordem canônica ANSI `0..=15`.
+    #[must_use]
+    pub fn as_named_entries(&self) -> [(&'static str, &str); 16] {
+        [
+            ("ansi.black", &self.black),
+            ("ansi.red", &self.red),
+            ("ansi.green", &self.green),
+            ("ansi.yellow", &self.yellow),
+            ("ansi.blue", &self.blue),
+            ("ansi.magenta", &self.magenta),
+            ("ansi.cyan", &self.cyan),
+            ("ansi.white", &self.white),
+            ("ansi.brightBlack", &self.bright_black),
+            ("ansi.brightRed", &self.bright_red),
+            ("ansi.brightGreen", &self.bright_green),
+            ("ansi.brightYellow", &self.bright_yellow),
+            ("ansi.brightBlue", &self.bright_blue),
+            ("ansi.brightMagenta", &self.bright_magenta),
+            ("ansi.brightCyan", &self.bright_cyan),
+            ("ansi.brightWhite", &self.bright_white),
+        ]
+    }
+
+    /// Retorna as 16 cores como vetor na ordem canônica ANSI `0..=15`.
+    #[must_use]
+    pub fn to_vec(&self) -> Vec<String> {
+        self.as_named_entries()
+            .into_iter()
+            .map(|(_, value)| value.to_string())
+            .collect()
+    }
+}
+
+impl From<&AnsiPalette> for AnsiPaletteInput {
+    fn from(palette: &AnsiPalette) -> Self {
+        Self {
+            black: palette.black.to_hex_string(),
+            red: palette.red.to_hex_string(),
+            green: palette.green.to_hex_string(),
+            yellow: palette.yellow.to_hex_string(),
+            blue: palette.blue.to_hex_string(),
+            magenta: palette.magenta.to_hex_string(),
+            cyan: palette.cyan.to_hex_string(),
+            white: palette.white.to_hex_string(),
+            bright_black: palette.bright_black.to_hex_string(),
+            bright_red: palette.bright_red.to_hex_string(),
+            bright_green: palette.bright_green.to_hex_string(),
+            bright_yellow: palette.bright_yellow.to_hex_string(),
+            bright_blue: palette.bright_blue.to_hex_string(),
+            bright_magenta: palette.bright_magenta.to_hex_string(),
+            bright_cyan: palette.bright_cyan.to_hex_string(),
+            bright_white: palette.bright_white.to_hex_string(),
+        }
+    }
+}
+
+impl From<AnsiPalette> for AnsiPaletteInput {
+    fn from(palette: AnsiPalette) -> Self {
+        Self::from(&palette)
+    }
+}
+
+/// Payload de criação e edição de temas customizados ou importados (`theme_create` / `theme_update`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ThemeDraftInput {
+    /// Nome legível exibido na interface (1..=80 caracteres).
+    pub name: String,
+    /// Autor ou organização responsável pelo esquema (opcional).
+    pub author: Option<String>,
+    /// Cor principal de texto do terminal.
+    pub foreground: String,
+    /// Cor principal de fundo do terminal.
+    pub background: String,
+    /// Cor do cursor do terminal.
+    pub cursor: String,
+    /// Cor do caractere sob o cursor em modo bloco.
+    pub cursor_accent: String,
+    /// Estilo geométrico do cursor.
+    pub cursor_style: CursorStyle,
+    /// Cor de fundo da seleção de texto (com canal alfa `#RRGGBBAA`, `rgba(...)` ou `#RRGGBB`).
+    pub selection_background: String,
+    /// Cor opcional de texto selecionado (`None` mantém a cor original do glifo).
+    pub selection_foreground: Option<String>,
+    /// Cor opcional de destaque da aba ativa.
+    pub active_tab_accent: Option<String>,
+    /// Paleta ANSI completa de 16 cores (`0..=15`).
+    pub ansi: AnsiPaletteInput,
+    /// Paleta estendida opcional (`16..=255`).
+    #[serde(default)]
+    pub indexed_colors: BTreeMap<u8, String>,
+}
+
+impl ThemeDraftInput {
+    /// Constrói um `ThemeDraftInput` a partir de um `ColorScheme` existente preservando todas as cores,
+    /// canal alfa da seleção e `indexed_colors`.
+    #[must_use]
+    pub fn from_scheme(scheme: &ColorScheme) -> Self {
+        Self {
+            name: scheme.name.clone(),
+            author: scheme.metadata.author.clone(),
+            foreground: scheme.foreground.to_hex_string(),
+            background: scheme.background.to_hex_string(),
+            cursor: scheme.cursor.to_hex_string(),
+            cursor_accent: scheme.cursor_accent.to_hex_string(),
+            cursor_style: scheme.cursor_style,
+            selection_background: scheme.selection_background.to_hex8_string(),
+            selection_foreground: scheme.selection_foreground.map(HexColor::to_hex_string),
+            active_tab_accent: scheme.active_tab_accent.map(HexColor::to_hex_string),
+            ansi: AnsiPaletteInput::from(&scheme.ansi),
+            indexed_colors: scheme
+                .indexed_colors
+                .iter()
+                .map(|(k, v)| (*k, v.to_hex_string()))
+                .collect(),
+        }
+    }
+}

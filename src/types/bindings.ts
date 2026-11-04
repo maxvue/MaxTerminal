@@ -233,6 +233,12 @@ export const commands = {
 	themeDelete: (id: ThemeId, fallbackId: ThemeId | null) => typedError<null, MtError_Serialize>(__TAURI_INVOKE("theme_delete", { id, fallbackId })),
 	/**  Exporta um tema existente para YAML ou JSON no formato solicitado. */
 	themeExport: (id: ThemeId, format: ExportFormat) => typedError<string, MtError_Serialize>(__TAURI_INVOKE("theme_export", { id, format })),
+	/**  Cria um novo tema customizado (`origin = Custom`) a partir do payload do editor. */
+	themeCreate: (input: ThemeDraftInput_Deserialize) => typedError<ResolvedTheme_Serialize, MtError_Serialize>(__TAURI_INVOKE("theme_create", { input })),
+	/**  Atualiza um tema existente (`origin = Imported | Custom`) pelo ID. */
+	themeUpdate: (id: ThemeId, input: ThemeDraftInput_Deserialize) => typedError<ResolvedTheme_Serialize, MtError_Serialize>(__TAURI_INVOKE("theme_update", { id, input })),
+	/**  Duplica qualquer tema existente (`builtin`, `imported` ou `custom`) preservando cores e metadados. */
+	themeDuplicate: (id: ThemeId) => typedError<ResolvedTheme_Serialize, MtError_Serialize>(__TAURI_INVOKE("theme_duplicate", { id })),
 	/**  Retorna o snapshot atual de conexão e telemetria da ponte com o `MaxCode` (`bridge_status`). */
 	bridgeStatus: () => typedError<BridgeStatusSnapshot_Serialize, MtError_Serialize>(__TAURI_INVOKE("bridge_status")),
 	/**  Retorna as configurações atuais da ponte (`bridge_get_settings`). */
@@ -1556,6 +1562,42 @@ export type AiTrigger =
 
 /**  Paleta ANSI completa de 16 cores (8 normais `0..=7` + 8 brilhantes `8..=15`). */
 export type AnsiPalette = {
+	/**  ANSI 0 — Preto. */
+	black: string,
+	/**  ANSI 1 — Vermelho. */
+	red: string,
+	/**  ANSI 2 — Verde. */
+	green: string,
+	/**  ANSI 3 — Amarelo. */
+	yellow: string,
+	/**  ANSI 4 — Azul. */
+	blue: string,
+	/**  ANSI 5 — Magenta. */
+	magenta: string,
+	/**  ANSI 6 — Ciano. */
+	cyan: string,
+	/**  ANSI 7 — Branco. */
+	white: string,
+	/**  ANSI 8 — Preto brilhante. */
+	brightBlack: string,
+	/**  ANSI 9 — Vermelho brilhante. */
+	brightRed: string,
+	/**  ANSI 10 — Verde brilhante. */
+	brightGreen: string,
+	/**  ANSI 11 — Amarelo brilhante. */
+	brightYellow: string,
+	/**  ANSI 12 — Azul brilhante. */
+	brightBlue: string,
+	/**  ANSI 13 — Magenta brilhante. */
+	brightMagenta: string,
+	/**  ANSI 14 — Ciano brilhante. */
+	brightCyan: string,
+	/**  ANSI 15 — Branco brilhante. */
+	brightWhite: string,
+};
+
+/**  Paleta ANSI de 16 cores em formato textual (`#RRGGBB` / `rgb(...)`) recebida do editor de temas. */
+export type AnsiPaletteInput = {
 	/**  ANSI 0 — Preto. */
 	black: string,
 	/**  ANSI 1 — Vermelho. */
@@ -7872,7 +7914,13 @@ export type LibraryChangeReason =
 /**  Um ou mais temas foram importados. */
 "imported" | 
 /**  Um tema foi excluído. */
-"deleted";
+"deleted" | 
+/**  Um tema customizado foi criado pelo editor. */
+"created" | 
+/**  Um tema existente (`imported` ou `custom`) foi atualizado pelo editor. */
+"updated" | 
+/**  Um tema foi duplicado a partir de um esquema existente. */
+"duplicated";
 
 /**  Candidato de link extraído pelo parser do frontend a partir de uma linha do terminal. */
 export type LinkCandidate = LinkCandidate_Serialize | LinkCandidate_Deserialize;
@@ -13417,6 +13465,65 @@ export type ThemeChangedTauriEvent_Deserialize = ThemeChangedEvent_Deserialize;
 
 /**  Evento Tauri `theme://changed`. */
 export type ThemeChangedTauriEvent_Serialize = ThemeChangedEvent_Serialize;
+
+/**  Payload de criação e edição de temas customizados ou importados (`theme_create` / `theme_update`). */
+export type ThemeDraftInput = ThemeDraftInput_Serialize | ThemeDraftInput_Deserialize;
+
+/**  Payload de criação e edição de temas customizados ou importados (`theme_create` / `theme_update`). */
+export type ThemeDraftInput_Deserialize = {
+	/**  Nome legível exibido na interface (1..=80 caracteres). */
+	name: string,
+	/**  Autor ou organização responsável pelo esquema (opcional). */
+	author?: string | null,
+	/**  Cor principal de texto do terminal. */
+	foreground: string,
+	/**  Cor principal de fundo do terminal. */
+	background: string,
+	/**  Cor do cursor do terminal. */
+	cursor: string,
+	/**  Cor do caractere sob o cursor em modo bloco. */
+	cursorAccent: string,
+	/**  Estilo geométrico do cursor. */
+	cursorStyle: CursorStyle,
+	/**  Cor de fundo da seleção de texto (com canal alfa `#RRGGBBAA`, `rgba(...)` ou `#RRGGBB`). */
+	selectionBackground: string,
+	/**  Cor opcional de texto selecionado (`None` mantém a cor original do glifo). */
+	selectionForeground?: string | null,
+	/**  Cor opcional de destaque da aba ativa. */
+	activeTabAccent?: string | null,
+	/**  Paleta ANSI completa de 16 cores (`0..=15`). */
+	ansi: AnsiPaletteInput,
+	/**  Paleta estendida opcional (`16..=255`). */
+	indexedColors?: { [key in number]: string },
+};
+
+/**  Payload de criação e edição de temas customizados ou importados (`theme_create` / `theme_update`). */
+export type ThemeDraftInput_Serialize = {
+	/**  Nome legível exibido na interface (1..=80 caracteres). */
+	name: string,
+	/**  Autor ou organização responsável pelo esquema (opcional). */
+	author: string | null,
+	/**  Cor principal de texto do terminal. */
+	foreground: string,
+	/**  Cor principal de fundo do terminal. */
+	background: string,
+	/**  Cor do cursor do terminal. */
+	cursor: string,
+	/**  Cor do caractere sob o cursor em modo bloco. */
+	cursorAccent: string,
+	/**  Estilo geométrico do cursor. */
+	cursorStyle: CursorStyle,
+	/**  Cor de fundo da seleção de texto (com canal alfa `#RRGGBBAA`, `rgba(...)` ou `#RRGGBB`). */
+	selectionBackground: string,
+	/**  Cor opcional de texto selecionado (`None` mantém a cor original do glifo). */
+	selectionForeground: string | null,
+	/**  Cor opcional de destaque da aba ativa. */
+	activeTabAccent: string | null,
+	/**  Paleta ANSI completa de 16 cores (`0..=15`). */
+	ansi: AnsiPaletteInput,
+	/**  Paleta estendida opcional (`16..=255`). */
+	indexedColors: { [key in number]: string },
+};
 
 /**  Erros de domínio do subsistema de temas e importador Tabby. */
 export type ThemeError = 

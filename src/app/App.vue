@@ -1,31 +1,40 @@
 <template>
-    <AppShell :loading="appStore.status === 'loading'">
-        <template #workspace>
-            <AppEmptyState v-if="appStore.status === 'error'" icon="mdi:alert-circle-outline" title="Falha ao inicializar o MaxTerminal" :description="errorDescription">
-                <div flex flex-col items-center gap-2>
-                    <span v-if="errorCode" class="app-error-code" text-xs px-2 py-0.5 rounded>{{ errorCode }}</span>
-                    <MaxButton type="button" class="app-retry-btn" label="Tentar novamente" severity="primary" @click="handleRetry" />
-                </div>
-            </AppEmptyState>
-            <DbRecoveryPanel v-else-if="settingsStore.isRecoveryRequired" />
-            <component :is="DevTerminalPlaygroundComponent" v-else-if="showDevPlayground && DevTerminalPlaygroundComponent" />
-            <AppLayout v-else />
-            <PreferencesDialog />
-            <ProjectSettingsDialog />
-            <QuickCommandsHost />
-            <GlobalSearchPalette />
-            <PerfOverlay />
-            <VaultUnlockModal :visible="vaultStore.unlockModalOpen" @update:visible="vaultStore.unlockModalOpen = $event" @unlocked="vaultStore.handleUnlocked" />
-            <VaultSetupModal :visible="vaultStore.setupModalOpen" @update:visible="vaultStore.setupModalOpen = $event" @configured="vaultStore.handleConfigured" />
+    <!-- O host global de notificações <MaxToast /> é montado internamente por <MaxApp> -->
+    <MaxApp blank-mode no-login controlled-theme :colors="maxAppColors">
+        <template #blank>
+            <AppShell :loading="appStore.status === 'loading'">
+                <template #workspace>
+                    <AppEmptyState v-if="appStore.status === 'error'" icon="mdi:alert-circle-outline" title="Falha ao inicializar o MaxTerminal" :description="errorDescription">
+                        <div flex flex-col items-center gap-2>
+                            <span v-if="errorCode" class="app-error-code" text-xs px-2 py-0.5 rounded>{{ errorCode }}</span>
+                            <MaxButton type="button" class="app-retry-btn" label="Tentar novamente" @click="handleRetry" />
+                        </div>
+                    </AppEmptyState>
+                    <DbRecoveryPanel v-else-if="settingsStore.isRecoveryRequired" />
+                    <component :is="DevTerminalPlaygroundComponent" v-else-if="showDevPlayground && DevTerminalPlaygroundComponent" />
+                    <AppLayout v-else />
+                    <PreferencesDialog />
+                    <ProjectSettingsDialog />
+                    <QuickCommandsHost />
+                    <GlobalSearchPalette />
+                    <PerfOverlay />
+                    <VaultUnlockModal :visible="vaultStore.unlockModalOpen" @update:visible="vaultStore.unlockModalOpen = $event" @unlocked="vaultStore.handleUnlocked" />
+                    <VaultSetupModal :visible="vaultStore.setupModalOpen" @update:visible="vaultStore.setupModalOpen = $event" @configured="vaultStore.handleConfigured" />
+                </template>
+            </AppShell>
         </template>
-    </AppShell>
-    <MaxToast />
+    </MaxApp>
 </template>
 
 <script setup lang="ts">
-    import { computed, onBeforeUnmount, onMounted } from 'vue';
-    import { MaxButton, MaxToast } from '@maxvue/max-components-ui';
-    import { DevTerminalPlaygroundComponent, isDevTerminalPlaygroundRoute } from '@/app/router';
+    import { computed, getCurrentInstance, onBeforeUnmount, onMounted } from 'vue';
+    import { MaxApp, MaxButton } from '@maxvue/max-components-ui';
+    import { applyMaxAppOfflineConfig } from '@/app/plugins';
+    import {
+        DevTerminalPlaygroundComponent,
+        ensureAppRouterInstalled,
+        isDevTerminalPlaygroundRoute
+    } from '@/app/router';
     import PerfOverlay from '@/components/dev/PerfOverlay.vue';
     import VaultSetupModal from '@/components/credentials/VaultSetupModal.vue';
     import VaultUnlockModal from '@/components/credentials/VaultUnlockModal.vue';
@@ -50,9 +59,18 @@
     import { useShellHistoryStore } from '@/stores/shellHistory';
     import { useSkillsStore } from '@/stores/skills';
     import { useTabStatusStore } from '@/stores/tabStatus';
+    import { useThemeStore } from '@/stores/theme';
     import { useVaultStore } from '@/stores/vault';
     import { useWindowStore } from '@/stores/window';
     import { installShellIntegrationExtension } from '@/terminal/extensions/shellIntegration';
+    import { loadThemeBootstrapSnapshot } from '@/theme/bootstrap';
+    import { resolveMaxAppColors } from '@/theme/maxAppPalette';
+
+    applyMaxAppOfflineConfig();
+    const vmInstance = getCurrentInstance();
+    if (vmInstance?.appContext?.app) {
+        ensureAppRouterInstalled(vmInstance.appContext.app);
+    }
 
     const appStore = useAppStore();
     const settingsStore = useSettingsStore();
@@ -62,6 +80,7 @@
     const agentsStore = useAgentsStore();
     const skillsStore = useSkillsStore();
     const tabStatusStore = useTabStatusStore();
+    const themeStore = useThemeStore();
     const vaultStore = useVaultStore();
     const shellHistoryStore = useShellHistoryStore();
     const ipcError = useIpcError();
@@ -75,6 +94,10 @@
         shellExtDisposable.dispose();
     });
 
+    const bootstrapSnapshot = loadThemeBootstrapSnapshot();
+    const maxAppColors = computed(() =>
+        resolveMaxAppColors(themeStore.effectiveResolved, bootstrapSnapshot)
+    );
     const errorDescription = computed<string>(() => ipcError.message(appStore.error));
     const errorCode = computed<string | null>(() => ipcError.code(appStore.error));
     const showDevPlayground = computed<boolean>(() => isDevTerminalPlaygroundRoute());

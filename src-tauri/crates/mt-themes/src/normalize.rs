@@ -13,7 +13,7 @@ use crate::error::ThemeError;
 use crate::formats::RawColorScheme;
 use crate::ids::{ThemeId, ThemeOrigin};
 use crate::oklch::Oklch;
-use crate::scheme::{AnsiPalette, ColorScheme, CursorStyle, ThemeMetadata};
+use crate::scheme::{AnsiPalette, ColorScheme, CursorStyle, ThemeDraftInput, ThemeMetadata};
 
 /// Códigos semânticos de aviso emitidos durante a normalização de um esquema.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type)]
@@ -277,6 +277,60 @@ pub fn normalize_raw_scheme(
     scheme.metadata.sha256 = sha256;
 
     Ok(NormalizedSchemeOutput { scheme, warnings })
+}
+
+/// Valida e normaliza um `ThemeDraftInput` oriundo do editor visual de temas (`theme_create` / `theme_update`),
+/// exigindo o preenchimento explícito de todos os campos obrigatórios (nome, cores principais, cursor,
+/// seleção e as 16 cores ANSI) e preservando `indexed_colors` (`16..=255`).
+pub fn normalize_draft_input(
+    draft: ThemeDraftInput,
+    origin: ThemeOrigin,
+    explicit_id: Option<ThemeId>,
+    now_ms: i64,
+) -> Result<NormalizedSchemeOutput, ThemeError> {
+    if draft.name.trim().is_empty() {
+        return Err(ThemeError::InvalidField {
+            field: "name".to_string(),
+            reason: "Nome do esquema não pode ser vazio".to_string(),
+        });
+    }
+
+    let background = HexColor::parse_field("background", &draft.background)?;
+    let _foreground = parse_color_with_bg("foreground", &draft.foreground, Some(background))?;
+    let cursor = parse_color_with_bg("cursor", &draft.cursor, Some(background))?;
+    let _cursor_accent = parse_color_with_bg("cursorAccent", &draft.cursor_accent, Some(cursor))?;
+    let _selection_bg = RgbaColor::parse_field("selectionBackground", &draft.selection_background)?;
+
+    for (field_name, value) in draft.ansi.as_named_entries() {
+        let _ = parse_color_with_bg(field_name, value, Some(background))?;
+    }
+
+    for idx in draft.indexed_colors.keys() {
+        if *idx < 16 {
+            return Err(ThemeError::InvalidField {
+                field: format!("indexedColors[{idx}]"),
+                reason: "Índices da paleta estendida devem estar entre 16 e 255".to_string(),
+            });
+        }
+    }
+
+    let raw = RawColorScheme {
+        name: draft.name,
+        author: draft.author,
+        foreground: draft.foreground,
+        background: draft.background,
+        cursor: Some(draft.cursor),
+        cursor_accent: Some(draft.cursor_accent),
+        cursor_style: Some(draft.cursor_style.as_xterm_str().to_string()),
+        selection_background: Some(draft.selection_background),
+        selection_foreground: draft.selection_foreground,
+        active_tab_accent: draft.active_tab_accent,
+        colors: draft.ansi.to_vec(),
+        indexed_colors: draft.indexed_colors,
+        source_format: None,
+    };
+
+    normalize_raw_scheme(raw, origin, explicit_id, None, now_ms)
 }
 
 fn build_ansi_palette(

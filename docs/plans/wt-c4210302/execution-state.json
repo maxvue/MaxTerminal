@@ -1,0 +1,253 @@
+{
+  "version": 2,
+  "planRevision": "f4b0f24f14a7911f5f973602b453b8b3f3b34e97fbc7a425e4f64c96434ad72c",
+  "tasks": [
+    {
+      "id": "T1",
+      "status": "completed",
+      "files": [
+        "src-tauri/crates/mt-themes/src/lib.rs",
+        "src-tauri/crates/mt-themes/src/normalize.rs",
+        "src-tauri/crates/mt-themes/src/scheme.rs",
+        "src-tauri/crates/mt-themes/src/service.rs",
+        "src-tauri/crates/mt-themes/tests/service_db.rs"
+      ],
+      "revision": "3dda07297d86e7d1e79a09a76abc6b354dd91b049ef8c0e24e8460c12dd8827d",
+      "validations": [
+        {
+          "command": "cargo test --manifest-path src-tauri/Cargo.toml --locked -p mt-themes --test service_db",
+          "revision": "b6b3d44aca23938256137a17667878b22001e0be6ccddd6283391aca5f464271",
+          "result": "passed"
+        },
+        {
+          "command": "cargo clippy --manifest-path src-tauri/Cargo.toml --locked --workspace --all-targets -- -D warnings",
+          "revision": "b6b3d44aca23938256137a17667878b22001e0be6ccddd6283391aca5f464271",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "T2",
+      "status": "completed",
+      "files": [
+        "src-tauri/src/commands/themes.rs",
+        "src-tauri/src/specta.rs",
+        "src/types/bindings.ts",
+        "src/types/theme.ts",
+        "src/ipc/themes.ts",
+        "src/ipc/themeMaxPiniaAdapter.ts",
+        "src/app/plugins.ts",
+        "src/stores/theme.ts",
+        "src/stores/themeEditor.ts",
+        "tests/ipc/themeMaxPiniaAdapter.spec.ts",
+        "tests/stores/theme.spec.ts"
+      ],
+      "revision": "7fc9caf0b24ddf6910b095632bdbfaf7643858c701ff1d843cef7d72ffb5eb1d",
+      "validations": [
+        {
+          "command": "npm run bindings",
+          "revision": "b6b3d44aca23938256137a17667878b22001e0be6ccddd6283391aca5f464271",
+          "result": "passed"
+        },
+        {
+          "command": "npx --no-install vitest run tests/theme tests/ipc/themeMaxPiniaAdapter.spec.ts tests/stores/theme.spec.ts tests/app/plugins.spec.ts tests/app/toastIntegration.spec.ts tests/components/shell/AppShell.spec.ts tests/components/preferences/appearance/ThemeSwatch.spec.ts tests/components/preferences/appearance/ThemePicker.spec.ts tests/components/preferences/appearance/ThemeEditorDialog.spec.ts tests/components/preferences/appearance/AppearancePreferences.spec.ts",
+          "revision": "b6b3d44aca23938256137a17667878b22001e0be6ccddd6283391aca5f464271",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "T3",
+      "status": "completed",
+      "files": [
+        "src/components/preferences/appearance/AppearancePreferences.vue",
+        "src/components/preferences/appearance/ThemePicker.vue",
+        "src/components/preferences/appearance/ThemeSwatch.vue",
+        "src/components/preferences/appearance/ThemeEditorDialog.vue",
+        "src/composables/useThemePreview.ts",
+        "tests/components/preferences/appearance/AppearancePreferences.spec.ts",
+        "tests/components/preferences/appearance/ThemePicker.spec.ts",
+        "tests/components/preferences/appearance/ThemeSwatch.spec.ts",
+        "tests/components/preferences/appearance/ThemeEditorDialog.spec.ts"
+      ],
+      "revision": "16748c100d600fd607f481db88f8a1b152f4aa059a9b5cbab1b67cd3b1adf8ac",
+      "validations": [
+        {
+          "command": "npx --no-install vitest run tests/theme tests/ipc/themeMaxPiniaAdapter.spec.ts tests/stores/theme.spec.ts tests/app/plugins.spec.ts tests/app/toastIntegration.spec.ts tests/components/shell/AppShell.spec.ts tests/components/preferences/appearance/ThemeSwatch.spec.ts tests/components/preferences/appearance/ThemePicker.spec.ts tests/components/preferences/appearance/ThemeEditorDialog.spec.ts tests/components/preferences/appearance/AppearancePreferences.spec.ts",
+          "revision": "b6b3d44aca23938256137a17667878b22001e0be6ccddd6283391aca5f464271",
+          "result": "passed"
+        },
+        {
+          "command": "npm run lint",
+          "revision": "b6b3d44aca23938256137a17667878b22001e0be6ccddd6283391aca5f464271",
+          "result": "passed"
+        },
+        {
+          "command": "npm run lint:style",
+          "revision": "b6b3d44aca23938256137a17667878b22001e0be6ccddd6283391aca5f464271",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "T4",
+      "status": "completed",
+      "files": [
+        "src/app/App.vue",
+        "src/app/router.ts",
+        "src/app/plugins.ts",
+        "src/theme/maxAppPalette.ts",
+        "vite.config.ts",
+        "vitest.config.ts",
+        "tests/app/plugins.spec.ts",
+        "tests/app/toastIntegration.spec.ts",
+        "tests/theme/maxAppPalette.spec.ts"
+      ],
+      "revision": "c6a732ca72bee398390a9ecc469b65f2f19b9b3e40aa309eba03aac2952fdeff",
+      "validations": [
+        {
+          "command": "npm run typecheck",
+          "revision": "b6b3d44aca23938256137a17667878b22001e0be6ccddd6283391aca5f464271",
+          "result": "passed"
+        },
+        {
+          "command": "npm run build",
+          "revision": "b6b3d44aca23938256137a17667878b22001e0be6ccddd6283391aca5f464271",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "T5",
+      "status": "manualPending",
+      "files": [
+        "docs/plans/wt-c4210302/execution-state.json"
+      ],
+      "revision": "b6b3d44aca23938256137a17667878b22001e0be6ccddd6283391aca5f464271",
+      "validations": [
+        {
+          "command": "node scripts/sync-local-libs.mjs --check",
+          "revision": "b6b3d44aca23938256137a17667878b22001e0be6ccddd6283391aca5f464271",
+          "result": "passed"
+        },
+        {
+          "command": "npm test",
+          "revision": "b6b3d44aca23938256137a17667878b22001e0be6ccddd6283391aca5f464271",
+          "result": "passed"
+        },
+        {
+          "command": "npm run test:coverage",
+          "revision": "b6b3d44aca23938256137a17667878b22001e0be6ccddd6283391aca5f464271",
+          "result": "passed"
+        },
+        {
+          "command": "cargo fmt --manifest-path src-tauri/Cargo.toml --all --check",
+          "revision": "b6b3d44aca23938256137a17667878b22001e0be6ccddd6283391aca5f464271",
+          "result": "passed"
+        },
+        {
+          "command": "cargo test --manifest-path src-tauri/Cargo.toml --workspace --locked",
+          "revision": "b6b3d44aca23938256137a17667878b22001e0be6ccddd6283391aca5f464271",
+          "result": "passed"
+        },
+        {
+          "command": "npm run typecheck:vue",
+          "revision": "b6b3d44aca23938256137a17667878b22001e0be6ccddd6283391aca5f464271",
+          "result": "failed"
+        }
+      ],
+      "nextAction": "Executar roteiro visual nativo em perfil sandbox isolado e alinhar erros pré-existentes de vue-tsc em 69 arquivos fora do escopo (0 erros nos SFCs alterados por esta tarefa)."
+    }
+  ],
+  "verification": {
+    "revision": "b6b3d44aca23938256137a17667878b22001e0be6ccddd6283391aca5f464271",
+    "checks": [
+      {
+        "command": "node scripts/sync-local-libs.mjs --check",
+        "revision": "b6b3d44aca23938256137a17667878b22001e0be6ccddd6283391aca5f464271",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run bindings",
+        "revision": "b6b3d44aca23938256137a17667878b22001e0be6ccddd6283391aca5f464271",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run lint",
+        "revision": "b6b3d44aca23938256137a17667878b22001e0be6ccddd6283391aca5f464271",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run lint:style",
+        "revision": "b6b3d44aca23938256137a17667878b22001e0be6ccddd6283391aca5f464271",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run typecheck",
+        "revision": "b6b3d44aca23938256137a17667878b22001e0be6ccddd6283391aca5f464271",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run typecheck:vue",
+        "revision": "b6b3d44aca23938256137a17667878b22001e0be6ccddd6283391aca5f464271",
+        "result": "failed",
+        "exitCode": 2
+      },
+      {
+        "command": "npx --no-install vitest run tests/theme tests/ipc/themeMaxPiniaAdapter.spec.ts tests/stores/theme.spec.ts tests/app/plugins.spec.ts tests/app/toastIntegration.spec.ts tests/components/shell/AppShell.spec.ts tests/components/preferences/appearance/ThemeSwatch.spec.ts tests/components/preferences/appearance/ThemePicker.spec.ts tests/components/preferences/appearance/ThemeEditorDialog.spec.ts tests/components/preferences/appearance/AppearancePreferences.spec.ts",
+        "revision": "b6b3d44aca23938256137a17667878b22001e0be6ccddd6283391aca5f464271",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm test",
+        "revision": "b6b3d44aca23938256137a17667878b22001e0be6ccddd6283391aca5f464271",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run test:coverage",
+        "revision": "b6b3d44aca23938256137a17667878b22001e0be6ccddd6283391aca5f464271",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run build",
+        "revision": "b6b3d44aca23938256137a17667878b22001e0be6ccddd6283391aca5f464271",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "cargo fmt --manifest-path src-tauri/Cargo.toml --all --check",
+        "revision": "b6b3d44aca23938256137a17667878b22001e0be6ccddd6283391aca5f464271",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "cargo clippy --manifest-path src-tauri/Cargo.toml --locked --workspace --all-targets -- -D warnings",
+        "revision": "b6b3d44aca23938256137a17667878b22001e0be6ccddd6283391aca5f464271",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "cargo test --manifest-path src-tauri/Cargo.toml --locked -p mt-themes --test service_db",
+        "revision": "b6b3d44aca23938256137a17667878b22001e0be6ccddd6283391aca5f464271",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "cargo test --manifest-path src-tauri/Cargo.toml --workspace --locked",
+        "revision": "b6b3d44aca23938256137a17667878b22001e0be6ccddd6283391aca5f464271",
+        "result": "passed",
+        "exitCode": 0
+      }
+    ]
+  },
+  "updatedAt": 1793811400000,
+  "nextAction": "Concluída a implementação e validação automatizada de T1–T4 (9/10 gates de scripts/check.mjs aprovados com exitCode 0). Pendente validação manual nativa em sandbox isolado e correção dos erros pré-existentes de vue-tsc em 69 arquivos fora do escopo."
+}

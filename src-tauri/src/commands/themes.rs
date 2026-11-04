@@ -6,7 +6,7 @@ use std::sync::Arc;
 use mt_core::MtError;
 use mt_themes::{
     AppearanceSettings, AppearanceSettingsPatch, ExportFormat, ImportDirOptions, ImportFileOptions,
-    ImportReport, ResolvedTheme, ThemeId, ThemeScope, ThemeService, ThemeSummary,
+    ImportReport, ResolvedTheme, ThemeDraftInput, ThemeId, ThemeScope, ThemeService, ThemeSummary,
 };
 use tauri::State;
 
@@ -121,4 +121,47 @@ pub async fn theme_export(
     format: ExportFormat,
 ) -> Result<String, MtError> {
     svc.export_theme(&id, format).map_err(MtError::from)
+}
+
+/// Cria um novo tema customizado (`origin = Custom`) a partir do payload do editor.
+#[tauri::command]
+#[specta::specta]
+pub async fn theme_create(
+    svc: State<'_, Arc<ThemeService>>,
+    input: ThemeDraftInput,
+) -> Result<ResolvedTheme, MtError> {
+    let svc_clone = Arc::clone(&svc);
+    tokio::task::spawn_blocking(move || svc_clone.create_theme(input))
+        .await
+        .map_err(|e| MtError::internal(e.to_string()))?
+        .map_err(MtError::from)
+}
+
+/// Atualiza um tema existente (`origin = Imported | Custom`) pelo ID.
+#[tauri::command]
+#[specta::specta]
+pub async fn theme_update(
+    svc: State<'_, Arc<ThemeService>>,
+    id: ThemeId,
+    input: ThemeDraftInput,
+) -> Result<ResolvedTheme, MtError> {
+    let svc_clone = Arc::clone(&svc);
+    tokio::task::spawn_blocking(move || svc_clone.update_theme(&id, input))
+        .await
+        .map_err(|e| MtError::internal(e.to_string()))?
+        .map_err(MtError::from)
+}
+
+/// Duplica qualquer tema existente (`builtin`, `imported` ou `custom`) preservando cores e metadados.
+#[tauri::command]
+#[specta::specta]
+pub async fn theme_duplicate(
+    svc: State<'_, Arc<ThemeService>>,
+    id: ThemeId,
+) -> Result<ResolvedTheme, MtError> {
+    let svc_clone = Arc::clone(&svc);
+    tokio::task::spawn_blocking(move || svc_clone.duplicate_theme(&id))
+        .await
+        .map_err(|e| MtError::internal(e.to_string()))?
+        .map_err(MtError::from)
 }

@@ -20,10 +20,12 @@
                 <span class="theme-swatch__name">{{ summary.name }}</span>
                 <MaxTag :value="polarityLabel" severity="secondary" :no-uppercase="true" class="theme-swatch__badge" />
             </div>
-            <div class="theme-swatch__actions" @click.stop>
+            <div class="theme-swatch__actions" @click.stop @keydown.enter.stop @keydown.space.stop>
                 <MaxTag v-if="active" value="Ativo" severity="success" :no-uppercase="true" class="theme-swatch__active-tag" />
+                <MaxIconButton icon="lucide:pencil" :disabled="summary.origin === 'builtin'" :title="editTitle" :aria-label="editAriaLabel" size="small" variant="text" class="theme-swatch__icon-btn" @click="onEditClick" />
+                <MaxIconButton icon="lucide:copy" title="Duplicar tema" :aria-label="`Duplicar tema ${summary.name}`" size="small" variant="text" class="theme-swatch__icon-btn" @click="emit('duplicate', summary.id)" />
                 <MaxIconButton v-if="summary.origin !== 'builtin'" icon="lucide:download" title="Exportar tema" :aria-label="`Exportar tema ${summary.name}`" size="small" variant="text" class="theme-swatch__icon-btn" @click="emit('export', summary.id)" />
-                <MaxIconButton v-if="summary.origin !== 'builtin' && !active" icon="lucide:trash-2" title="Excluir tema" :aria-label="`Excluir tema ${summary.name}`" size="small" variant="text" severity="danger" class="theme-swatch__icon-btn theme-swatch__icon-btn--danger" @click="emit('delete', summary.id)" />
+                <MaxIconButton v-if="summary.origin !== 'builtin'" icon="lucide:trash-2" title="Excluir tema" :aria-label="`Excluir tema ${summary.name}`" size="small" variant="text" severity="danger" class="theme-swatch__icon-btn theme-swatch__icon-btn--danger" @click="emit('delete', summary.id)" />
             </div>
         </div>
     </div>
@@ -48,6 +50,8 @@
         select: [id: ThemeId];
         hover: [id: ThemeId];
         leave: [];
+        edit: [id: ThemeId];
+        duplicate: [id: ThemeId];
         delete: [id: ThemeId];
         export: [id: ThemeId];
     }>();
@@ -55,6 +59,25 @@
     const polarityLabel = computed(() =>
         props.summary.polarity === 'dark' ? 'Escuro' : 'Claro'
     );
+
+    const editTitle = computed(() =>
+        props.summary.origin === 'builtin'
+            ? 'Tema nativo somente leitura — duplique para editar'
+            : 'Editar tema'
+    );
+
+    const editAriaLabel = computed(() =>
+        props.summary.origin === 'builtin'
+            ? `Tema nativo ${props.summary.name} somente leitura — duplique para editar`
+            : `Editar tema ${props.summary.name}`
+    );
+
+    function onEditClick(): void {
+        if (props.summary.origin === 'builtin') {
+            return;
+        }
+        emit('edit', props.summary.id);
+    }
 
     const previewBoxStyle = computed(() => ({
         backgroundColor: props.summary.background,

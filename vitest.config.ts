@@ -13,12 +13,25 @@ export default defineConfig({
         alias: {
             '@': path.resolve(workspaceRoot, 'src')
         },
-        dedupe: ['vue', 'pinia']
+        dedupe: [
+            'vue',
+            'pinia',
+            'vue-router',
+            'axios',
+            '@maxvue/max-use',
+            '@maxvue/max-pinia',
+            '@maxvue/max-components-ui'
+        ]
     },
     test: {
         globals: true,
         environment: 'happy-dom',
         setupFiles: ['./tests/setup.ts'],
+        server: {
+            deps: {
+                inline: [/^@maxvue\//]
+            }
+        },
         include: ['tests/**/*.spec.ts', 'src/**/__tests__/**/*.spec.ts'],
         coverage: {
             provider: 'v8',

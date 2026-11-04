@@ -41,10 +41,14 @@ pub use mapping::{
     tokens::{MaxUiTokens, TerminalUiTokens, derive_max_ui_tokens},
     xterm::{XtermThemePayload, derive_xterm_theme},
 };
-pub use normalize::{ImportWarning, NormalizedSchemeOutput, WarningCode, normalize_raw_scheme};
+pub use normalize::{
+    ImportWarning, NormalizedSchemeOutput, WarningCode, normalize_draft_input, normalize_raw_scheme,
+};
 pub use oklch::{Oklch, hsl_to_srgb, linear_to_srgb_u8, srgb_u8_to_linear};
 pub use scale::{BackgroundRamp, ColorScale11, generate_background_ramp, generate_scale};
-pub use scheme::{AnsiPalette, ColorScheme, CursorStyle, ThemeMetadata};
+pub use scheme::{
+    AnsiPalette, AnsiPaletteInput, ColorScheme, CursorStyle, ThemeDraftInput, ThemeMetadata,
+};
 pub use service::{
     AppearanceSettings, AppearanceSettingsPatch, LibraryChangeReason, NoopThemeEventSink,
     ThemeChangedEvent, ThemeEventSink, ThemeLibraryChangedEvent, ThemeScope, ThemeService,

@@ -46,7 +46,15 @@ export default defineConfig({
         alias: {
             '@': srcDir
         },
-        dedupe: ['vue', 'pinia']
+        dedupe: [
+            'vue',
+            'pinia',
+            'vue-router',
+            'axios',
+            '@maxvue/max-use',
+            '@maxvue/max-pinia',
+            '@maxvue/max-components-ui'
+        ]
     },
     optimizeDeps: {
         exclude: [
