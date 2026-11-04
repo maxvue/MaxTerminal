@@ -12,6 +12,6 @@ pub use model::{
 };
 pub use probe::{
     EMBEDDED_HORIZON_PROBE_PHP, RawHorizonProbeOutput, RawQueueScope, build_snapshot_from_probe,
-    has_static_horizon_manifest, run_horizon_probe,
+    compute_capabilities, has_static_horizon_manifest, run_horizon_probe,
 };
 pub use service::HorizonDomainService;

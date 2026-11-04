@@ -1,10 +1,10 @@
 <template>
     <div class="horizon-modal-wrapper">
-        <MaxModal :visible="isOpen" title="Laravel Horizon — Monitoramento e Supervisão" :no-button="true" max-width="64rem" class="horizon-modal" :dismissable="!store.isBusy" :close-on-escape="!store.isBusy" @update:visible="handleModalVisible">
+        <MaxModal :visible="isOpen" title="Laravel Horizon — Monitoramento e Supervisão" :no-button="true" max-width="64rem" class="horizon-modal" :dismissable="!store.isBusy" :close-on-escape="!store.isBusy" :before-close="handleBeforeCloseMain" @update:visible="handleModalVisible">
             <div class="horizon-modal__content">
                 <header class="horizon-modal__header">
                     <div class="horizon-modal__meta">
-                        <div class="horizon-modal__status-badge" :class="`is-${store.status}`">
+                        <div class="horizon-modal__status-badge" :class="`is-${store.runtimeStatus}`">
                             <span class="horizon-modal__status-dot" />
                             <span class="horizon-modal__status-text">{{ statusLabel }}</span>
                         </div>
@@ -32,12 +32,16 @@
                     <div class="horizon-modal__actions">
                         <MaxButton v-if="store.canStart" label="Iniciar Horizon" icon="lucide:play" size="small" :loading="store.isStarting" :disabled="store.isBusy" @click="handleStart" />
                         <MaxButton v-if="store.canStop" label="Parar Horizon" icon="lucide:square" severity="danger" size="small" :loading="store.isStopping" :disabled="store.isBusy" @click="handleStop" />
-                        <MaxButton v-if="store.canClearPending" label="Limpar Pendentes" icon="lucide:trash-2" severity="warning" size="small" :loading="store.isPreviewing || store.isClearing" :disabled="store.isBusy" @click="handleOpenClearPreview" />
+                        <MaxButton label="Limpar Pendentes" icon="lucide:trash-2" severity="warning" size="small" :loading="store.isPreviewing || store.isClearing" :disabled="!store.canClearPending || store.isBusy" :title="!store.canClearPending ? 'Nenhuma tarefa pendente para limpeza nas filas monitoradas' : 'Limpar exclusivamente tarefas prontas e agendadas'" @click="handleOpenClearPreview" />
                     </div>
                 </header>
 
                 <div v-if="store.actionError" class="horizon-modal__alert horizon-modal__alert--danger">
                     <span>{{ store.actionError }}</span>
+                </div>
+
+                <div v-if="lastClearMessage" class="horizon-modal__alert horizon-modal__alert--info">
+                    <span>{{ lastClearMessage }}</span>
                 </div>
 
                 <div v-if="store.queues.length > 0" class="horizon-modal__queues-bar">
@@ -49,23 +53,20 @@
 
                 <main class="horizon-modal__body">
                     <div v-if="store.session" class="horizon-modal__terminal-container">
-                        <TerminalView :key="store.session.generation" :pane-id="store.session.paneId" :pty-id="store.session.ptyId" :visible="isOpen" />
+                        <TerminalView :key="`${store.selectedProjectId ?? ''}:${store.session.paneId}:${store.session.ptyId}:${store.session.generation}`" :pane-id="store.session.paneId" :pty-id="store.session.ptyId" :visible="isOpen" />
                     </div>
-                    <div v-else-if="store.status === 'external'" class="horizon-modal__external-panel">
+                    <div v-else-if="store.runtimeStatus === 'external'" class="horizon-modal__external-panel">
                         <div class="horizon-modal__external-card">
                             <MaxIcon icon="lucide:activity" class="horizon-modal__external-icon" />
                             <div class="horizon-modal__external-info">
                                 <h4 class="horizon-modal__external-title">Horizon em Execução Externa</h4>
                                 <p class="horizon-modal__external-desc">
-                                    O daemon do Laravel Horizon está em execução no sistema operacional (processo externo ao MaxTerminal). As métricas de filas, workers e tarefas acima estão sendo monitoradas e sincronizadas em tempo real.
+                                    O daemon do Laravel Horizon está em execução no sistema operacional (processo externo ao MaxTerminal). As métricas de filas, workers e tarefas acima estão sendo sincronizadas em tempo real.
+                                </p>
+                                <p class="horizon-modal__external-hint">
+                                    O terminal integrado e os comandos de parada estão disponíveis exclusivamente para instâncias supervisionadas iniciadas pelo MaxTerminal.
                                 </p>
                             </div>
-                        </div>
-                        <div class="horizon-modal__external-actions">
-                            <p class="horizon-modal__external-hint">
-                                Para visualizar o fluxo do terminal diretamente aqui no MaxTerminal, você pode iniciar uma instância supervisionada.
-                            </p>
-                            <MaxButton label="Iniciar Terminal Supervisionado no MaxTerminal" icon="lucide:play" :loading="store.isStarting" :disabled="store.isBusy" @click="handleStart" />
                         </div>
                     </div>
                     <div v-else class="horizon-modal__empty">
@@ -82,7 +83,7 @@
         </MaxModal>
 
         <!-- Modal secundário de confirmação de limpeza exclusiva de pendentes -->
-        <MaxModal :visible="isClearModalOpen" title="Confirmar Limpeza Exclusiva de Tarefas Pendentes" :no-button="true" max-width="36rem" class="horizon-clear-modal" :dismissable="!store.isClearing" :close-on-escape="!store.isClearing" @update:visible="handleClearModalVisible">
+        <MaxModal :visible="isClearModalOpen" title="Confirmar Limpeza Exclusiva de Tarefas Pendentes" :no-button="true" max-width="36rem" class="horizon-clear-modal" :dismissable="!store.isClearing" :close-on-escape="!store.isClearing" :before-close="handleBeforeCloseClear" @update:visible="handleClearModalVisible">
             <div class="horizon-clear-modal__content">
                 <div class="horizon-clear-modal__warning">
                     <MaxIcon icon="lucide:alert-triangle" class="horizon-clear-modal__warning-icon" />
@@ -99,6 +100,10 @@
                     </div>
                 </div>
 
+                <div v-if="previewExpiredError" class="horizon-modal__alert horizon-modal__alert--danger">
+                    <span>{{ previewExpiredError }}</span>
+                </div>
+
                 <div v-if="clearPreviewData" class="horizon-clear-modal__summary">
                     <span class="horizon-clear-modal__summary-title">Escopo da Limpeza (Estimativa Total: {{ clearPreviewData.estimatedPending }} tarefas):</span>
                     <ul class="horizon-clear-modal__queue-list">
@@ -109,8 +114,8 @@
                 </div>
 
                 <footer class="horizon-clear-modal__footer">
-                    <MaxButton label="Cancelar" variant="text" :disabled="store.isClearing" @click="isClearModalOpen = false" />
-                    <MaxButton label="Confirmar Limpeza" severity="danger" icon="lucide:trash-2" :loading="store.isClearing" :disabled="store.isClearing" @click="handleExecuteClear" />
+                    <MaxButton label="Cancelar" variant="text" :disabled="store.isClearing" @click="closeClearModal" />
+                    <MaxButton label="Confirmar Limpeza" severity="danger" icon="lucide:trash-2" :loading="store.isClearing" :disabled="store.isClearing || !!previewExpiredError" @click="handleExecuteClear" />
                 </footer>
             </div>
         </MaxModal>
@@ -118,7 +123,7 @@
 </template>
 
 <script setup lang="ts">
-    import { computed, ref } from 'vue';
+    import { computed, ref, watch } from 'vue';
     import { MaxButton, MaxIcon } from '@maxvue/max-components-ui';
     import MaxModal from '@maxvue/max-components-ui/components/MaxModal';
     import TerminalView from '@/components/terminal/TerminalView.vue';
@@ -137,6 +142,8 @@
 
     const isClearModalOpen = ref(false);
     const clearPreviewData = ref<HorizonClearPreview | null>(null);
+    const previewExpiredError = ref<string | null>(null);
+    const lastClearMessage = ref<string | null>(null);
 
     const isOpen = computed({
         get(): boolean {
@@ -149,7 +156,7 @@
     });
 
     const statusLabel = computed<string>(() => {
-        switch (store.status) {
+        switch (store.runtimeStatus) {
             case 'running':
                 return 'Em Execução';
             case 'starting':
@@ -163,16 +170,37 @@
             case 'external':
                 return 'Externo (Ativo)';
             default:
-                return store.status;
+                return store.runtimeStatus;
         }
     });
 
+    function handleBeforeCloseMain(): boolean {
+        return !store.isBusy;
+    }
+
+    function handleBeforeCloseClear(): boolean {
+        return !store.isClearing;
+    }
+
     function handleModalVisible(visible: boolean): void {
         isOpen.value = visible;
+        if (!visible) {
+            closeClearModal();
+        }
     }
 
     function handleClearModalVisible(visible: boolean): void {
         isClearModalOpen.value = visible;
+        if (!visible) {
+            clearPreviewData.value = null;
+            previewExpiredError.value = null;
+        }
+    }
+
+    function closeClearModal(): void {
+        isClearModalOpen.value = false;
+        clearPreviewData.value = null;
+        previewExpiredError.value = null;
     }
 
     async function handleStart(): Promise<void> {
@@ -192,6 +220,7 @@
     }
 
     async function handleOpenClearPreview(): Promise<void> {
+        previewExpiredError.value = null;
         try {
             clearPreviewData.value = await store.previewClear();
             isClearModalOpen.value = true;
@@ -204,14 +233,36 @@
         if (!clearPreviewData.value) {
             return;
         }
+
+        if (Date.now() >= clearPreviewData.value.expiresAtMs) {
+            previewExpiredError.value = 'O token de confirmação da limpeza expirou (máximo de 30 segundos). Solicite uma nova prévia.';
+            return;
+        }
+
         try {
-            await store.confirmClear(clearPreviewData.value.token);
-            isClearModalOpen.value = false;
-            clearPreviewData.value = null;
+            const result = await store.confirmClear(clearPreviewData.value.token);
+            closeClearModal();
+            let msg = `Limpeza concluída com sucesso: ${result.totalCleared} tarefa(s) pendente(s) removida(s).`;
+            if (result.isPartial) {
+                msg += ' (Aviso: limpeza parcial devido ao limite por lote).';
+            }
+            if (result.warning) {
+                msg += ` Observação: ${result.warning}`;
+            }
+            lastClearMessage.value = msg;
         } catch {
             // Tratado pelo store.actionError
         }
     }
+
+    // Limpa a prévia ao mudar de projeto para isolamento estrito
+    watch(
+        () => store.selectedProjectId,
+        () => {
+            closeClearModal();
+            lastClearMessage.value = null;
+        }
+    );
 </script>
 
 <style lang="scss" scoped>
@@ -386,6 +437,12 @@
             color: var(--max-danger-500);
             border: 1px solid color-mix(in srgb, var(--max-danger-500) 30%, transparent);
         }
+
+        &--info {
+            background: var(--mt-ui-info-subtle, color-mix(in srgb, var(--max-info-500) 15%, transparent));
+            color: var(--max-info-500);
+            border: 1px solid color-mix(in srgb, var(--max-info-500) 30%, transparent);
+        }
     }
 
     .horizon-modal__queues-bar {
@@ -499,13 +556,6 @@
         line-height: 1.5;
         color: var(--mt-ui-text-secondary, var(--background-600));
         margin: 0;
-    }
-
-    .horizon-modal__external-actions {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0.75rem;
     }
 
     .horizon-modal__external-hint {

@@ -1,0 +1,128 @@
+{
+  "version": 2,
+  "planRevision": "de8c1cf45fe8d999b85579cbb4c31d8a075ca1b844c38530bddb01a275d3364b",
+  "tasks": [
+    {
+      "id": "T1",
+      "status": "completed",
+      "files": [
+        "scripts/sync-local-libs.mjs"
+      ],
+      "validations": []
+    },
+    {
+      "id": "T2",
+      "status": "completed",
+      "files": [
+        "src/stores/horizon.ts",
+        "src/ipc/horizonMaxPiniaAdapter.ts",
+        "src/stores/__tests__/horizon.spec.ts",
+        "src/ipc/__tests__/horizonMaxPiniaAdapter.spec.ts"
+      ],
+      "validations": []
+    },
+    {
+      "id": "T3",
+      "status": "completed",
+      "files": [
+        "src/components/horizon/HorizonBadgeButton.vue",
+        "src/components/horizon/HorizonModal.vue",
+        "src/components/horizon/__tests__/HorizonBadgeButton.spec.ts",
+        "src/components/horizon/__tests__/HorizonModal.spec.ts",
+        "tests/components/horizon/HorizonBadgeButton.spec.ts",
+        "tests/components/horizon/HorizonModal.spec.ts"
+      ],
+      "validations": []
+    },
+    {
+      "id": "T4",
+      "status": "completed",
+      "files": [
+        "src-tauri/src/horizon/mod.rs",
+        "src-tauri/crates/mt-commands/src/horizon/service.rs",
+        "src-tauri/crates/mt-commands/src/horizon/probe.rs",
+        "src-tauri/tests/horizon_runtime.rs",
+        "src-tauri/crates/mt-commands/tests/horizon_tests.rs"
+      ],
+      "validations": []
+    },
+    {
+      "id": "T5",
+      "status": "completed",
+      "files": [],
+      "validations": []
+    }
+  ],
+  "verification": {
+    "revision": "ec1033f1c69d4e60f3329f333069e129f66b0e536336794fb4e30a8bdb3b7190",
+    "checks": [
+      {
+        "command": "npx --no-install vitest run src/stores/__tests__/horizon.spec.ts src/ipc/__tests__/horizonMaxPiniaAdapter.spec.ts src/components/horizon/__tests__/HorizonBadgeButton.spec.ts src/components/horizon/__tests__/HorizonModal.spec.ts",
+        "revision": "ec1033f1c69d4e60f3329f333069e129f66b0e536336794fb4e30a8bdb3b7190",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run typecheck",
+        "revision": "ec1033f1c69d4e60f3329f333069e129f66b0e536336794fb4e30a8bdb3b7190",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run typecheck:vue",
+        "revision": "ec1033f1c69d4e60f3329f333069e129f66b0e536336794fb4e30a8bdb3b7190",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run lint",
+        "revision": "ec1033f1c69d4e60f3329f333069e129f66b0e536336794fb4e30a8bdb3b7190",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run lint:style",
+        "revision": "ec1033f1c69d4e60f3329f333069e129f66b0e536336794fb4e30a8bdb3b7190",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run build",
+        "revision": "ec1033f1c69d4e60f3329f333069e129f66b0e536336794fb4e30a8bdb3b7190",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "cargo test -p mt-commands --test horizon_tests",
+        "revision": "ec1033f1c69d4e60f3329f333069e129f66b0e536336794fb4e30a8bdb3b7190",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "cargo test --manifest-path src-tauri/Cargo.toml --test horizon_runtime",
+        "revision": "ec1033f1c69d4e60f3329f333069e129f66b0e536336794fb4e30a8bdb3b7190",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "cargo fmt --manifest-path src-tauri/Cargo.toml --check",
+        "revision": "ec1033f1c69d4e60f3329f333069e129f66b0e536336794fb4e30a8bdb3b7190",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings",
+        "revision": "ec1033f1c69d4e60f3329f333069e129f66b0e536336794fb4e30a8bdb3b7190",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm test",
+        "revision": "ec1033f1c69d4e60f3329f333069e129f66b0e536336794fb4e30a8bdb3b7190",
+        "result": "passed",
+        "exitCode": 0
+      }
+    ]
+  },
+  "updatedAt": 1793836800000
+}
