@@ -193,7 +193,7 @@
 
             &--danger {
                 background-color: var(--max-danger-600);
-                color: #fff;
+                color: var(--max-danger-content, #fff);
             }
         }
     }

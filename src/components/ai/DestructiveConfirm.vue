@@ -95,7 +95,7 @@
     .destructive-confirm__backdrop {
         position: absolute;
         inset: 0;
-        background: rgb(0 0 0 / 72%);
+        background: var(--mt-ui-overlay, rgb(0 0 0 / 72%));
     }
 
     .destructive-confirm__panel {

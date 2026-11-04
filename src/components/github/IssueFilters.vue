@@ -195,7 +195,7 @@
 
         &--active {
             border-color: var(--max-info-500);
-            background: rgb(14 165 233 / 20%);
+            background: var(--mt-ui-info-subtle, color-mix(in srgb, var(--max-info-500) 20%, transparent));
             color: var(--max-info-300);
         }
     }

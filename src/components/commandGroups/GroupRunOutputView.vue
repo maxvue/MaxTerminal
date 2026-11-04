@@ -168,7 +168,7 @@
     .group-run-output-view__badge {
         padding: 0.125rem 0.4375rem;
         border-radius: 0.25rem;
-        background: rgb(14 165 233 / 15%);
+        background: var(--mt-ui-info-subtle, color-mix(in srgb, var(--max-info-500) 15%, transparent));
         border: 1px solid var(--max-info-500);
         color: var(--max-info-400);
         font-size: 0.6875rem;
@@ -219,7 +219,7 @@
         align-items: center;
         gap: 0.375rem;
         padding: 0.3125rem 0.875rem;
-        background: rgb(245 158 11 / 15%);
+        background: var(--mt-ui-warning-subtle, color-mix(in srgb, var(--max-warning-500) 15%, transparent));
         border-bottom: 1px solid var(--max-warning-500);
         color: var(--max-warning-300);
         font-size: 0.7188rem;
@@ -227,7 +227,7 @@
 
     .group-run-output-view__error {
         padding: 0.375rem 0.875rem;
-        background: rgb(239 68 68 / 15%);
+        background: var(--mt-ui-danger-subtle, color-mix(in srgb, var(--max-danger-500) 15%, transparent));
         color: var(--max-danger-300);
         font-size: 0.75rem;
     }

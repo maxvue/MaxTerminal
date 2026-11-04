@@ -119,7 +119,7 @@
         font-weight: 600;
         padding: 0.0625rem 0.4375rem;
         border-radius: 999px;
-        background: rgb(34 197 94 / 18%);
+        background: var(--mt-ui-success-subtle, color-mix(in srgb, var(--max-success-500) 18%, transparent));
         color: var(--max-success-400);
 
         &.is-archived {
@@ -190,7 +190,7 @@
             margin: 0.375rem 0;
             padding: 0.25rem 0.5rem;
             border-radius: 0.25rem;
-            background: rgb(245 158 11 / 15%);
+            background: var(--mt-ui-warning-subtle, color-mix(in srgb, var(--max-warning-500) 15%, transparent));
             color: var(--max-warning-300);
             font-size: 0.7188rem;
         }

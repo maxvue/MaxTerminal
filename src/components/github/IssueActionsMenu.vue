@@ -54,19 +54,19 @@
 
         &--plan {
             border-color: var(--max-info-500);
-            background: rgb(14 165 233 / 18%);
+            background: var(--mt-ui-info-subtle, color-mix(in srgb, var(--max-info-500) 18%, transparent));
             color: var(--max-info-300);
         }
 
         &--fix {
             border-color: var(--max-warning-500);
-            background: rgb(245 158 11 / 18%);
+            background: var(--mt-ui-warning-subtle, color-mix(in srgb, var(--max-warning-500) 18%, transparent));
             color: var(--max-warning-300);
         }
 
         &--terminal {
             border-color: var(--max-primary-500);
-            background: rgb(20 184 166 / 18%);
+            background: color-mix(in srgb, var(--max-primary-500) 18%, transparent);
             color: var(--max-primary-400);
         }
     }

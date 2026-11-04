@@ -54,8 +54,8 @@
         justify-content: space-between;
         gap: 0.75rem;
         padding: 0.5rem 0.875rem;
-        background: rgb(20 184 166 / 12%);
-        border-bottom: 1px solid rgb(20 184 166 / 35%);
+        background: var(--mt-ui-primary-subtle, color-mix(in srgb, var(--max-primary-500) 12%, transparent));
+        border-bottom: 1px solid color-mix(in srgb, var(--max-primary-500) 35%, transparent);
         color: var(--mt-ui-text-strong, var(--background-950));
         font-size: 0.7813rem;
     }

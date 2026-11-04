@@ -543,7 +543,7 @@
     .pg-btn-danger {
         background: var(--max-danger-600);
         border-color: var(--max-danger-500);
-        color: #fff;
+        color: var(--max-danger-content, #fff);
     }
 
     .pg-tab-btn {
@@ -554,7 +554,7 @@
 
     .playground-alert {
         padding: 6px 12px;
-        background: rgb(239 68 68 / 20%);
+        background: color-mix(in srgb, var(--max-danger-500) 20%, transparent);
         border-bottom: 1px solid var(--max-danger-500);
         color: var(--max-danger-300);
         font-size: 12px;

@@ -99,7 +99,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: rgb(0 0 0 / 60%);
+        background: var(--mt-ui-overlay, rgb(0 0 0 / 60%));
     }
 
     .github-auth-panel__card {
@@ -200,13 +200,13 @@
 
         &--primary {
             border-color: var(--max-primary-500);
-            background: rgb(20 184 166 / 20%);
+            background: color-mix(in srgb, var(--max-primary-500) 20%, transparent);
             color: var(--max-primary-400);
         }
 
         &--danger {
             border-color: var(--max-danger-500);
-            background: rgb(239 68 68 / 20%);
+            background: color-mix(in srgb, var(--max-danger-500) 20%, transparent);
             color: var(--max-danger-300);
         }
     }
