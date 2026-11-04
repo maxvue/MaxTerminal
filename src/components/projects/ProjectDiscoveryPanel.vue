@@ -5,7 +5,7 @@
                 <MaxIcon :icon="expanded ? 'mdi:chevron-down' : 'mdi:chevron-right'" />
                 <span>Novas pastas encontradas ({{ props.items.length }})</span>
             </button>
-            <MaxButton variant="primary" class="project-discovery__accept-all" @click="acceptAll">
+            <MaxButton class="project-discovery__accept-all" @click="acceptAll">
                 Adicionar todas
             </MaxButton>
         </div>
@@ -20,10 +20,10 @@
                     <span class="project-discovery__path" :title="item.path">{{ item.path }}</span>
                 </div>
                 <div class="project-discovery__actions">
-                    <MaxButton variant="success" class="project-discovery__btn project-discovery__btn--accept" @click="emit('accept', [item.path])">
+                    <MaxButton severity="success" class="project-discovery__btn project-discovery__btn--accept" @click="emit('accept', [item.path])">
                         Adicionar
                     </MaxButton>
-                    <MaxButton variant="secondary" class="project-discovery__btn project-discovery__btn--dismiss" @click="emit('dismiss', [item.path])">
+                    <MaxButton severity="secondary" class="project-discovery__btn project-discovery__btn--dismiss" @click="emit('dismiss', [item.path])">
                         Dispensar
                     </MaxButton>
                 </div>

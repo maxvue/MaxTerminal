@@ -5,16 +5,14 @@
                 <label for="project-root-path" class="project-root-modal__label">Caminho da pasta de projetos</label>
                 <div class="project-root-modal__path-row">
                     <input id="project-root-path" v-model="pathInput" type="text" class="project-root-modal__input" placeholder="~/GitHub" :readonly="Boolean(props.root)" autocomplete="off">
-                    <MaxButton v-if="!props.root" type="button" variant="secondary" size="small" class="project-root-modal__pick-btn" @click="handlePickFolder">
-                        Escolher pasta
-                    </MaxButton>
+                    <MaxButton v-if="!props.root" type="button" severity="secondary" size="small" class="project-root-modal__pick-btn" label="Escolher pasta" @click="handlePickFolder" />
                 </div>
             </div>
 
             <fieldset class="project-root-modal__fieldset">
                 <legend class="project-root-modal__label">Modo de descoberta</legend>
-                <MaxInputRadio v-model="discoveryMode" value="suggest" label="Sugerir novas pastas" />
-                <MaxInputRadio v-model="discoveryMode" value="auto_import" label="Importar automaticamente" />
+                <MaxInputRadio v-model="discoveryMode" name="project-root-discovery-mode" value="suggest" label="Sugerir novas pastas" />
+                <MaxInputRadio v-model="discoveryMode" name="project-root-discovery-mode" value="auto_import" label="Importar automaticamente" />
             </fieldset>
 
             <MaxInputCheckbox v-if="!props.root" v-model="importExisting" label="Importar subpastas existentes agora" />
@@ -22,25 +20,15 @@
             <MaxInputCheckbox v-model="watchEnabled" label="Monitorar alterações automaticamente" />
 
             <div v-if="props.root" class="project-root-modal__edit-actions">
-                <MaxButton type="button" variant="secondary" :disabled="submitting" @click="handleRescan">
-                    Varrer agora
-                </MaxButton>
-                <MaxButton type="button" variant="danger" :disabled="submitting" @click="handleRemoveRoot">
-                    Remover pasta de projetos
-                </MaxButton>
+                <MaxButton type="button" severity="secondary" label="Varrer agora" :disabled="submitting" @click="handleRescan" />
+                <MaxButton type="button" severity="danger" label="Remover pasta de projetos" :disabled="submitting" @click="handleRemoveRoot" />
             </div>
 
-            <MaxAlert v-if="errorMessage" type="danger" role="alert" class="project-root-modal__error">
-                {{ errorMessage }}
-            </MaxAlert>
+            <MaxAlert v-if="errorMessage" severity="danger" role="alert" :message="errorMessage" class="project-root-modal__error" />
 
             <footer class="project-root-modal__footer">
-                <MaxButton type="button" variant="secondary" class="project-root-modal__btn project-root-modal__btn--cancel" @click="handleClose">
-                    Cancelar
-                </MaxButton>
-                <MaxButton type="submit" variant="primary" class="project-root-modal__btn project-root-modal__btn--submit" :disabled="submitting" :loading="submitting">
-                    {{ submitting ? 'Salvando...' : 'Salvar' }}
-                </MaxButton>
+                <MaxButton type="button" severity="secondary" label="Cancelar" class="project-root-modal__btn project-root-modal__btn--cancel" @click="handleClose" />
+                <MaxButton type="submit" class="project-root-modal__btn project-root-modal__btn--submit" :label="submitting ? 'Salvando...' : 'Salvar'" :disabled="submitting" :loading="submitting" />
             </footer>
         </form>
     </MaxModal>
@@ -48,11 +36,7 @@
 
 <script setup lang="ts">
     import { ref, watch } from 'vue';
-    import MaxAlert from '@maxvue/max-components-ui/components/MaxAlert';
-    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
-    import MaxInputCheckbox from '@maxvue/max-components-ui/components/MaxInputCheckbox';
-    import MaxInputRadio from '@maxvue/max-components-ui/components/MaxInputRadio';
-    import MaxModal from '@maxvue/max-components-ui/components/MaxModal';
+    import { MaxAlert, MaxButton, MaxInputCheckbox, MaxInputRadio, MaxModal } from '@maxvue/max-components-ui';
     import { useIpcError } from '@/composables/useIpcError';
     import * as projectsIpc from '@/ipc/projects';
     import { useProjectsStore } from '@/stores/projects';

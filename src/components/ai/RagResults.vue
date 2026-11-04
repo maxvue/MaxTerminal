@@ -27,10 +27,10 @@
                 <div class="rag-results__item-actions">
                     <span v-if="item.source" class="rag-results__item-source">{{ item.source }}</span>
                     <div class="rag-results__item-btns">
-                        <MaxButton type="button" size="sm" variant="secondary" icon="lucide:copy" :data-testid="`btn-copy-rag-${idx}`" @click="onCopy(item, idx)">
+                        <MaxButton type="button" size="sm" severity="secondary" icon="lucide:copy" :data-testid="`btn-copy-rag-${idx}`" @click="onCopy(item, idx)">
                             <span>{{ copiedIdx === idx ? 'Copiado' : 'Copiar' }}</span>
                         </MaxButton>
-                        <MaxButton type="button" size="sm" variant="secondary" icon="lucide:corner-down-left" :data-testid="`btn-insert-rag-${idx}`" @click="insertResultIntoInput(item)">
+                        <MaxButton type="button" size="sm" severity="secondary" icon="lucide:corner-down-left" :data-testid="`btn-insert-rag-${idx}`" @click="insertResultIntoInput(item)">
                             <span>Inserir</span>
                         </MaxButton>
                     </div>
@@ -42,9 +42,7 @@
 
 <script setup lang="ts">
     import { ref } from 'vue';
-    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
-    import MaxIconButton from '@maxvue/max-components-ui/components/MaxIconButton';
-    import MaxIcon from '@maxvue/max-components-ui/components/MaxIcon';
+    import { MaxButton, MaxIcon, MaxIconButton } from '@maxvue/max-components-ui';
     import { useRagSearch } from '@/composables/ai/useRagSearch';
     import type { PaneId, RagResult_Serialize } from '@/types/bindings';
 

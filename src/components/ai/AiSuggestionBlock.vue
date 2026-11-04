@@ -43,26 +43,29 @@
         <div v-if="cautionConfirmOpen && effectiveRisk?.level === 'caution'" class="ai-suggestion-block__caution-popover" role="alertdialog" aria-label="Confirmar comando com atenção" data-testid="caution-confirm-popover">
             <span class="ai-suggestion-block__caution-text">Este comando requer atenção antes de executar. Deseja prosseguir?</span>
             <div class="ai-suggestion-block__caution-actions">
-                <MaxButton type="button" variant="secondary" size="sm" data-testid="btn-cancel-caution" @click="cautionConfirmOpen = false">Cancelar</MaxButton>
-                <MaxButton type="button" variant="warning" size="sm" data-testid="btn-confirm-caution" @click="onConfirmCaution">Confirmar execução</MaxButton>
+                <MaxButton type="button" severity="secondary" size="sm" data-testid="btn-cancel-caution" @click="cautionConfirmOpen = false">Cancelar</MaxButton>
+                <MaxButton type="button" severity="warning" size="sm" data-testid="btn-confirm-caution" @click="onConfirmCaution">Confirmar execução</MaxButton>
             </div>
         </div>
 
         <footer class="ai-suggestion-block__actions">
-            <MaxButton v-if="state.status === 'streaming'" type="button" variant="secondary" size="sm" icon="lucide:square" data-testid="btn-cancel-stream" @click="onCancel">
+            <MaxButton v-if="state.status === 'streaming'" type="button" severity="secondary" size="sm" icon="lucide:square" data-testid="btn-cancel-stream" @click="onCancel">
                 <span>Cancelar</span>
             </MaxButton>
 
             <template v-else>
-                <MaxButton type="button" variant="secondary" size="sm" icon="lucide:refresh-cw" data-testid="btn-regenerate" @click="onRegenerate">
+                <MaxButton type="button" severity="secondary" size="sm" icon="lucide:refresh-cw" data-testid="btn-regenerate" @click="onRegenerate">
                     <span>Regenerar</span>
                 </MaxButton>
 
-                <MaxButton v-if="state.status === 'completed'" type="button" variant="secondary" size="sm" icon="lucide:corner-down-left" data-testid="btn-insert-input" @click="onInsert">
+                <MaxButton v-if="state.status === 'completed'" type="button" severity="secondary" size="sm" icon="lucide:corner-down-left" data-testid="btn-insert-input" @click="onInsert">
                     <span>Inserir no input</span>
                 </MaxButton>
 
-                <MaxButton v-if="state.status === 'completed'" type="button" :variant="executeVariant" size="sm" :disabled="reclassifying || !effectiveCommand.trim()" :icon="executeBtnIcon" data-testid="btn-execute-command" @click="onExecuteClick">
+                <MaxButton v-if="state.status === 'completed' && executeSeverity" type="button" :severity="executeSeverity" size="sm" :disabled="reclassifying || !effectiveCommand.trim()" :icon="executeBtnIcon" data-testid="btn-execute-command" @click="onExecuteClick">
+                    <span>{{ executeBtnLabel }}</span>
+                </MaxButton>
+                <MaxButton v-else-if="state.status === 'completed'" type="button" size="sm" :disabled="reclassifying || !effectiveCommand.trim()" :icon="executeBtnIcon" data-testid="btn-execute-command" @click="onExecuteClick">
                     <span>{{ executeBtnLabel }}</span>
                 </MaxButton>
             </template>
@@ -137,7 +140,7 @@
             : `${sel.harnessId} · ${sel.modelId}`;
     });
 
-    const executeVariant = computed<'primary' | 'warning' | 'danger'>(() => {
+    const executeSeverity = computed<'warning' | 'danger' | null>(() => {
         const level = effectiveRisk.value?.level ?? 'safe';
         if (level === 'destructive') {
             return 'danger';
@@ -145,7 +148,7 @@
         if (level === 'caution') {
             return 'warning';
         }
-        return 'primary';
+        return null;
     });
 
     const executeBtnIcon = computed<string>(() => {

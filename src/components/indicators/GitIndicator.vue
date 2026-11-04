@@ -9,7 +9,7 @@
         <div v-if="detailsOpen" class="git-indicator__popover" role="dialog" aria-label="Detalhes do Git" @click.stop>
             <div class="git-indicator__popover-head">
                 <span class="git-indicator__popover-title">{{ branchLabel }}</span>
-                <MaxButton type="button" size="sm" variant="secondary" icon="lucide:refresh-cw" aria-label="Atualizar status" class="git-indicator__refresh-btn" @click="onRefresh">
+                <MaxButton type="button" size="sm" severity="secondary" icon="lucide:refresh-cw" aria-label="Atualizar status" class="git-indicator__refresh-btn" @click="onRefresh">
                     <span>Atualizar status</span>
                 </MaxButton>
             </div>

@@ -3,15 +3,15 @@
         <div class="harness-picker__steps">
             <button type="button" class="harness-picker__step" :class="{ 'is-active': stage === 0 }" data-testid="step-harness" @click="goToStage(0)">
                 <span>1. Harness</span>
-                <MaxTag v-if="selectedHarness" size="sm" variant="primary" class="harness-picker__step-val">{{ selectedHarness.label }}</MaxTag>
+                <MaxTag v-if="selectedHarness" size="sm" severity="info" :value="selectedHarness.label" class="harness-picker__step-val" />
             </button>
             <button type="button" class="harness-picker__step" :class="{ 'is-active': stage === 1 }" :disabled="!selectedHarness" data-testid="step-model" @click="goToStage(1)">
                 <span>2. Modelo</span>
-                <MaxTag v-if="selectedModel" size="sm" variant="primary" class="harness-picker__step-val">{{ selectedModel.label }}</MaxTag>
+                <MaxTag v-if="selectedModel" size="sm" severity="info" :value="selectedModel.label" class="harness-picker__step-val" />
             </button>
             <button v-if="hasReasoningLevels" type="button" class="harness-picker__step" :class="{ 'is-active': stage === 2 }" :disabled="!selectedModel" data-testid="step-reasoning" @click="goToStage(2)">
                 <span>3. Raciocínio</span>
-                <MaxTag v-if="selectedReasoningId" size="sm" variant="primary" class="harness-picker__step-val">{{ selectedReasoningId }}</MaxTag>
+                <MaxTag v-if="selectedReasoningId" size="sm" severity="info" :value="selectedReasoningId" class="harness-picker__step-val" />
             </button>
         </div>
 
@@ -20,7 +20,7 @@
                 <MaxIcon :icon="harness.icon || 'lucide:bot'" :size="1" class="harness-picker__option-icon" />
                 <div class="harness-picker__option-info">
                     <span class="harness-picker__option-label">{{ harness.label }}</span>
-                    <MaxTag size="sm" variant="secondary" class="harness-picker__option-meta">{{ harness.models.length }} modelo(s)</MaxTag>
+                    <MaxTag size="sm" severity="secondary" :value="`${harness.models.length} modelo(s)`" class="harness-picker__option-meta" />
                 </div>
             </button>
         </div>
@@ -50,8 +50,7 @@
 
 <script setup lang="ts">
     import { computed, ref, watch } from 'vue';
-    import MaxIcon from '@maxvue/max-components-ui/components/MaxIcon';
-    import MaxTag from '@maxvue/max-components-ui/components/MaxTag';
+    import { MaxIcon, MaxTag } from '@maxvue/max-components-ui';
     import { CANONICAL_HARNESSES_FALLBACK } from '@/stores/ai';
     import type {
         AiModel_Serialize,

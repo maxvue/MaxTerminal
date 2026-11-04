@@ -5,7 +5,7 @@
                 <h3 class="bridge-settings__title">Integração Bidirecional com MaxCode</h3>
                 <p class="bridge-settings__subtitle">Sincronização de projetos em tempo real, inspeção de erros em Plan Mode e protocolo de Issues.</p>
             </div>
-            <MaxTag :variant="bridgeBadgeVariant" size="sm" class="bridge-settings__badge">{{ bridgeStore.indicator.label }}</MaxTag>
+            <MaxTag :severity="bridgeBadgeSeverity" :value="bridgeStore.indicator.label" size="sm" class="bridge-settings__badge" />
         </header>
 
         <div class="bridge-settings__grid">
@@ -14,7 +14,7 @@
                     <span class="bridge-settings__row-title">Ativar ponte com MaxCode</span>
                     <span class="bridge-settings__row-desc">Mantém o servidor loopback autenticado em 127.0.0.1 ativo.</span>
                 </div>
-                <input type="checkbox" class="bridge-settings__checkbox" :checked="bridgeStore.settings.enabled" data-testid="toggle-enabled" @change="onToggleEnabled">
+                <MaxInputCheckbox :model-value="bridgeStore.settings.enabled" data-testid="toggle-enabled" @update:model-value="onToggleEnabledValue" />
             </label>
 
             <label class="bridge-settings__row">
@@ -22,7 +22,7 @@
                     <span class="bridge-settings__row-title">Sincronizar projeto ativo</span>
                     <span class="bridge-settings__row-desc">Seleciona automaticamente o mesmo projeto ao alternar no MaxCode ou no MaxTerminal.</span>
                 </div>
-                <input type="checkbox" class="bridge-settings__checkbox" :checked="bridgeStore.settings.autoSyncActiveProject" data-testid="toggle-sync-project" @change="onToggleAutoSync">
+                <MaxInputCheckbox :model-value="bridgeStore.settings.autoSyncActiveProject" data-testid="toggle-sync-project" @update:model-value="onToggleAutoSyncValue" />
             </label>
 
             <label class="bridge-settings__row">
@@ -30,7 +30,7 @@
                     <span class="bridge-settings__row-title">Cadastrar automaticamente projetos desconhecidos</span>
                     <span class="bridge-settings__row-desc">Importa projetos abertos no MaxCode que ainda não estejam na lista.</span>
                 </div>
-                <input type="checkbox" class="bridge-settings__checkbox" :checked="bridgeStore.settings.autoRegisterUnknownProject" data-testid="toggle-auto-register" @change="onToggleAutoRegister">
+                <MaxInputCheckbox :model-value="bridgeStore.settings.autoRegisterUnknownProject" data-testid="toggle-auto-register" @update:model-value="onToggleAutoRegisterValue" />
             </label>
 
             <label class="bridge-settings__row">
@@ -38,7 +38,7 @@
                     <span class="bridge-settings__row-title">Focar janela ao receber comando do MaxCode</span>
                     <span class="bridge-settings__row-desc">Traz o MaxTerminal para frente ao abrir uma aba de Issue a partir do MaxCode.</span>
                 </div>
-                <input type="checkbox" class="bridge-settings__checkbox" :checked="bridgeStore.settings.focusWindowOnIncomingCommand" data-testid="toggle-focus-window" @change="onToggleFocusWindow">
+                <MaxInputCheckbox :model-value="bridgeStore.settings.focusWindowOnIncomingCommand" data-testid="toggle-focus-window" @update:model-value="onToggleFocusWindowValue" />
             </label>
 
             <label class="bridge-settings__row">
@@ -78,17 +78,14 @@
         </div>
 
         <footer class="bridge-settings__actions">
-            <MaxButton type="button" variant="primary" icon="lucide:refresh-cw" data-testid="btn-reconnect" @click="onReconnect">
-                <span>Reconectar agora</span>
-            </MaxButton>
+            <MaxButton type="button" icon="lucide:refresh-cw" label="Reconectar agora" data-testid="btn-reconnect" @click="onReconnect" />
         </footer>
     </section>
 </template>
 
 <script setup lang="ts">
     import { computed } from 'vue';
-    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
-    import MaxTag from '@maxvue/max-components-ui/components/MaxTag';
+    import { MaxButton, MaxInputCheckbox, MaxTag } from '@maxvue/max-components-ui';
     import { useMaxCodeBridgeStore } from '@/stores/maxCodeBridge';
     import type { BridgeSettings_Serialize, InspectFallbackMode } from '@/types/bindings';
 
@@ -106,7 +103,7 @@
 
     const bridgeStore = useMaxCodeBridgeStore();
 
-    const bridgeBadgeVariant = computed<'success' | 'info' | 'danger' | 'secondary'>(() => {
+    const bridgeBadgeSeverity = computed<'success' | 'info' | 'danger' | 'secondary'>(() => {
         switch (bridgeStore.indicator.color) {
             case 'success':
                 return 'success';
@@ -125,28 +122,24 @@
         return caps.length > 0 ? caps.join(', ') : 'Nenhuma sessão ativa';
     });
 
-    async function onToggleEnabled(ev: Event): Promise<void> {
-        const checked = (ev.target as HTMLInputElement).checked;
-        const updated = await bridgeStore.updateSettings({ enabled: checked });
+    async function onToggleEnabledValue(checked: boolean): Promise<void> {
+        const updated = await bridgeStore.updateSettings({ enabled: Boolean(checked) });
         emit('saved', updated);
     }
 
-    async function onToggleAutoSync(ev: Event): Promise<void> {
-        const checked = (ev.target as HTMLInputElement).checked;
-        const updated = await bridgeStore.updateSettings({ autoSyncActiveProject: checked });
+    async function onToggleAutoSyncValue(checked: boolean): Promise<void> {
+        const updated = await bridgeStore.updateSettings({ autoSyncActiveProject: Boolean(checked) });
         emit('saved', updated);
     }
 
-    async function onToggleAutoRegister(ev: Event): Promise<void> {
-        const checked = (ev.target as HTMLInputElement).checked;
-        const updated = await bridgeStore.updateSettings({ autoRegisterUnknownProject: checked });
+    async function onToggleAutoRegisterValue(checked: boolean): Promise<void> {
+        const updated = await bridgeStore.updateSettings({ autoRegisterUnknownProject: Boolean(checked) });
         emit('saved', updated);
     }
 
-    async function onToggleFocusWindow(ev: Event): Promise<void> {
-        const checked = (ev.target as HTMLInputElement).checked;
+    async function onToggleFocusWindowValue(checked: boolean): Promise<void> {
         const updated = await bridgeStore.updateSettings({
-            focusWindowOnIncomingCommand: checked
+            focusWindowOnIncomingCommand: Boolean(checked)
         });
         emit('saved', updated);
     }

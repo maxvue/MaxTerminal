@@ -6,8 +6,8 @@
             <span v-else>Faltam {{ props.missingCount }} labels canônicas do workflow MaxCode neste repositório.</span>
         </div>
         <div class="label-sync-banner__actions">
-            <MaxButton v-if="props.missingCount > 0" label="Sincronizar 24 labels MaxCode" icon="lucide:refresh-cw" variant="secondary" size="small" class="label-sync-banner__btn" :disabled="syncing" :loading="syncing" @click="onSync" />
-            <MaxButton v-if="reportMessage" label="OK" variant="ghost" size="small" class="label-sync-banner__dismiss" aria-label="Fechar aviso" @click="reportMessage = null" />
+            <MaxButton v-if="props.missingCount > 0" label="Sincronizar 24 labels MaxCode" icon="lucide:refresh-cw" severity="secondary" size="small" class="label-sync-banner__btn" :disabled="syncing" :loading="syncing" @click="onSync" />
+            <MaxButton v-if="reportMessage" label="OK" variant="text" severity="secondary" size="small" class="label-sync-banner__dismiss" aria-label="Fechar aviso" @click="reportMessage = null" />
         </div>
     </div>
 </template>

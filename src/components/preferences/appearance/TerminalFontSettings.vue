@@ -9,7 +9,7 @@
             <div class="font-settings__field">
                 <label class="font-settings__label" for="mt-font-family">Pilha CSS font-family</label>
                 <MaxInputText id="mt-font-family" :model-value="appearance.fontFamily" :disabled="disabled" class="font-settings__input" @update:model-value="onFontFamilyChange" @change="onFontFamilyChange" />
-                <MaxAlert v-if="fontError" :message="fontError" severity="error" class="font-settings__error" />
+                <MaxAlert v-if="fontError" :message="fontError" severity="danger" class="font-settings__error" />
             </div>
 
             <div class="font-settings__field">
@@ -34,8 +34,8 @@
         </div>
 
         <div class="font-settings__toggles">
-            <MaxInputCheckbox id="mt-font-ligatures" :model-value="appearance.fontLigatures" :disabled="disabled" label="Habilitar ligaduras tipográficas no terminal (ex.: =>, !==, ->)" class="font-settings__checkbox" @update:model-value="onLigaturesToggle" @change="onLigaturesToggle" />
-            <MaxInputCheckbox id="mt-cursor-blink" :model-value="appearance.cursorBlink" :disabled="disabled" label="Cursor piscante nas sessões interativas" class="font-settings__checkbox" @update:model-value="onCursorBlinkToggle" @change="onCursorBlinkToggle" />
+            <MaxInputCheckbox id="mt-font-ligatures" :model-value="appearance.fontLigatures" :disabled="Boolean(disabled)" label="Habilitar ligaduras tipográficas no terminal (ex.: =>, !==, ->)" class="font-settings__checkbox" @update:model-value="onLigaturesToggle" />
+            <MaxInputCheckbox id="mt-cursor-blink" :model-value="appearance.cursorBlink" :disabled="Boolean(disabled)" label="Cursor piscante nas sessões interativas" class="font-settings__checkbox" @update:model-value="onCursorBlinkToggle" />
         </div>
     </div>
 </template>

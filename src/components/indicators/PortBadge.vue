@@ -15,8 +15,8 @@
         <div v-if="confirmingPort" class="port-badge__confirm" role="alertdialog" aria-label="Confirmar encerramento da porta">
             <span class="port-badge__confirm-text">Encerrar {{ confirmingPort.processName }} (PID {{ confirmingPort.pid }}) na porta :{{ confirmingPort.port }}?</span>
             <div class="port-badge__confirm-actions">
-                <MaxButton type="button" size="sm" variant="danger" class="port-badge__confirm-yes" @click.stop="confirmKill">Encerrar processo da porta</MaxButton>
-                <MaxButton type="button" size="sm" variant="secondary" class="port-badge__confirm-no" @click.stop="confirmingPort = null">Cancelar</MaxButton>
+                <MaxButton type="button" size="sm" severity="danger" class="port-badge__confirm-yes" @click.stop="confirmKill">Encerrar processo da porta</MaxButton>
+                <MaxButton type="button" size="sm" severity="secondary" class="port-badge__confirm-no" @click.stop="confirmingPort = null">Cancelar</MaxButton>
             </div>
         </div>
         <div v-if="popoverOpen && overflowCount > 0" class="port-badge__list-popover" role="dialog" aria-label="Todas as portas ativas">
@@ -25,7 +25,7 @@
                     <strong>:{{ item.port }}</strong>
                     <span>{{ item.processName }} (PID {{ item.pid }})</span>
                 </button>
-                <MaxButton type="button" size="sm" variant="danger" @click.stop="requestKill(item)">Encerrar</MaxButton>
+                <MaxButton type="button" size="sm" severity="danger" @click.stop="requestKill(item)">Encerrar</MaxButton>
             </div>
         </div>
     </div>

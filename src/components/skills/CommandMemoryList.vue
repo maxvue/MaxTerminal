@@ -10,7 +10,7 @@
                     <input v-model="includeHidden" type="checkbox" data-testid="memory-include-hidden" @change="onReload">
                     <span>Exibir ocultos</span>
                 </label>
-                <MaxButton type="button" size="sm" variant="secondary" icon="lucide:refresh-cw" data-testid="memory-rebuild-btn" @click="onRebuild">
+                <MaxButton type="button" size="sm" severity="secondary" icon="lucide:refresh-cw" data-testid="memory-rebuild-btn" @click="onRebuild">
                     <span>Reconstruir</span>
                 </MaxButton>
             </div>
@@ -27,8 +27,8 @@
                     </span>
                 </button>
                 <div class="command-memory-list__actions">
-                    <MaxIconButton icon="lucide:pin" :size="0.75" class="command-memory-list__action-btn" :class="{ 'command-memory-list__action-btn--active': entry.pinned }" :aria-label="entry.pinned ? 'Desafixar comando' : 'Fixar comando'" :data-testid="`memory-pin-${entry.command}`" @click="onTogglePin(entry)" />
-                    <MaxIconButton :icon="entry.hidden ? 'lucide:eye' : 'lucide:eye-off'" :size="0.75" class="command-memory-list__action-btn" :class="{ 'command-memory-list__action-btn--active': entry.hidden }" :aria-label="entry.hidden ? 'Reexibir comando' : 'Ocultar comando'" :data-testid="`memory-hide-${entry.command}`" @click="onToggleHide(entry)" />
+                    <MaxIconButton icon="lucide:pin" :size="0.75" class="command-memory-list__action-btn" :class="entry.pinned ? 'command-memory-list__action-btn--active' : ''" :aria-label="entry.pinned ? 'Desafixar comando' : 'Fixar comando'" :data-testid="`memory-pin-${entry.command}`" @click="onTogglePin(entry)" />
+                    <MaxIconButton :icon="entry.hidden ? 'lucide:eye' : 'lucide:eye-off'" :size="0.75" class="command-memory-list__action-btn" :class="entry.hidden ? 'command-memory-list__action-btn--active' : ''" :aria-label="entry.hidden ? 'Reexibir comando' : 'Ocultar comando'" :data-testid="`memory-hide-${entry.command}`" @click="onToggleHide(entry)" />
                     <MaxIconButton icon="lucide:trash-2" :size="0.75" class="command-memory-list__action-btn command-memory-list__action-btn--danger" aria-label="Esquecer comando permanentemente" :data-testid="`memory-forget-${entry.command}`" @click="onForget(entry)" />
                 </div>
             </li>
@@ -39,9 +39,7 @@
 
 <script setup lang="ts">
     import { computed, onMounted, ref, watch } from 'vue';
-    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
-    import MaxIconButton from '@maxvue/max-components-ui/components/MaxIconButton';
-    import MaxIcon from '@maxvue/max-components-ui/components/MaxIcon';
+    import { MaxButton, MaxIcon, MaxIconButton } from '@maxvue/max-components-ui';
     import { useCommandMemorySuggestions } from '@/composables/useCommandMemorySuggestions';
     import { useSkillsStore } from '@/stores/skills';
     import type { MemoryEntry_Serialize, PaneId, ProjectId } from '@/types/bindings';

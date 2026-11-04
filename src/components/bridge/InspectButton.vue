@@ -1,12 +1,12 @@
 <template>
-    <MaxButton v-if="visible" type="button" variant="danger" size="sm" :class="[{ 'is-loading': loading }, 'inspect-button']" :disabled="loading" :icon="loading ? 'lucide:loader-circle' : 'mdi:magnify-scan'" title="Abrir conversa em Plan Mode no MaxCode" aria-label="Inspecionar erro no MaxCode" @click="onClick">
+    <MaxButton v-if="visible" type="button" severity="danger" size="sm" :class="loading ? 'inspect-button is-loading' : 'inspect-button'" :disabled="loading" :icon="loading ? 'lucide:loader-circle' : 'mdi:magnify-scan'" title="Abrir conversa em Plan Mode no MaxCode" aria-label="Inspecionar erro no MaxCode" @click="onClick">
         <span>{{ buttonLabel }}</span>
     </MaxButton>
 </template>
 
 <script setup lang="ts">
     import { computed, ref } from 'vue';
-    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
+    import { MaxButton } from '@maxvue/max-components-ui';
     import { useMaxCodeInspect, type InspectableBlockLike } from '@/composables/useMaxCodeInspect';
     import type { InspectDispatchResult_Serialize } from '@/types/bindings';
 

@@ -21,10 +21,10 @@
         </div>
 
         <footer class="destructive-confirm__footer">
-            <MaxButton type="button" variant="secondary" size="sm" data-testid="btn-cancel-destructive" @click="onCancel">
+            <MaxButton type="button" severity="secondary" size="sm" data-testid="btn-cancel-destructive" @click="onCancel">
                 <span>Cancelar</span>
             </MaxButton>
-            <MaxButton type="button" variant="danger" size="sm" :disabled="!isConfirmed" data-testid="btn-confirm-destructive" @click="onConfirm">
+            <MaxButton type="button" severity="danger" size="sm" :disabled="!isConfirmed" data-testid="btn-confirm-destructive" @click="onConfirm">
                 <span>Executar comando destrutivo</span>
             </MaxButton>
         </footer>

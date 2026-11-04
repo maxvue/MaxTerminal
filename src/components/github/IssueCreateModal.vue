@@ -18,16 +18,13 @@
                 </label>
                 <div class="issue-create-modal__categories" role="group" aria-label="Categorias da nova issue">
                     <span class="issue-create-modal__label">Categorias:</span>
-                    <label v-for="spec in categorySpecs" :key="spec.name" class="issue-create-modal__checkbox">
-                        <input type="checkbox" :checked="selectedCategories.includes(spec.name)" @change="onToggleCategory(spec.name)">
-                        <span>{{ spec.name }}</span>
-                    </label>
+                    <MaxInputCheckbox v-for="spec in categorySpecs" :key="spec.name" :model-value="selectedCategories.includes(spec.name)" :label="spec.name" @update:model-value="onToggleCategory(spec.name)" />
                 </div>
                 <p v-if="validationError" class="issue-create-modal__error" role="alert">{{ validationError }}</p>
             </div>
             <footer class="issue-create-modal__footer">
-                <MaxButton label="Cancelar" variant="secondary" class="issue-create-modal__btn" @click="emit('close')" />
-                <MaxButton type="submit" :label="props.submitting ? 'Criando...' : 'Criar Issue'" variant="primary" class="issue-create-modal__btn issue-create-modal__btn--primary" :disabled="props.submitting" :loading="props.submitting" />
+                <MaxButton label="Cancelar" severity="secondary" class="issue-create-modal__btn" @click="emit('close')" />
+                <MaxButton type="submit" :label="props.submitting ? 'Criando...' : 'Criar Issue'" class="issue-create-modal__btn issue-create-modal__btn--primary" :disabled="props.submitting" :loading="props.submitting" />
             </footer>
         </form>
     </MaxModal>
@@ -35,7 +32,7 @@
 
 <script setup lang="ts">
     import { ref } from 'vue';
-    import { MaxButton, MaxInputTextArea, MaxModal } from '@maxvue/max-components-ui';
+    import { MaxButton, MaxInputCheckbox, MaxInputTextArea, MaxModal } from '@maxvue/max-components-ui';
     import { CANONICAL_CATEGORY_LABELS, CANONICAL_STATE_LABELS } from '@/constants/githubLabels';
     import type { CreateIssueInput, ProjectId } from '@/types/bindings';
 

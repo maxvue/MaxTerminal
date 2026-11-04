@@ -1,7 +1,7 @@
 <template>
     <div class="theme-picker">
         <div class="theme-picker__toolbar">
-            <MaxSegmentedControl v-model="filter" :options="polarityOptions" aria-label="Filtrar temas por polaridade" class="theme-picker__filters" />
+            <MaxSegmentedControl v-model="filter" :options="polarityOptions" aria-label="Filtrar temas por polaridade" ariaLabel="Filtrar temas por polaridade" class="theme-picker__filters" />
             <MaxInputSearch v-model="searchQuery" placeholder="Filtrar temas pelo nome..." aria-label="Filtrar temas pelo nome" class="theme-picker__search" />
         </div>
 

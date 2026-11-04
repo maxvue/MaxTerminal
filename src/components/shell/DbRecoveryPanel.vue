@@ -18,7 +18,7 @@
 
         <footer class="db-recovery-panel__actions">
             <MaxButton type="button" label="Tentar reabrir" variant="outlined" data-testid="btn-recovery-retry" :disabled="settingsStore.loading" @click="onRetry" />
-            <MaxButton v-if="selectedBackup" type="button" label="Restaurar backup selecionado" severity="primary" data-testid="btn-recovery-restore" :disabled="settingsStore.loading" @click="onRestore" />
+            <MaxButton v-if="selectedBackup" type="button" label="Restaurar backup selecionado" data-testid="btn-recovery-restore" :disabled="settingsStore.loading" @click="onRestore" />
             <MaxButton type="button" label="Recriar banco limpo (preservar cópia em quarentena)" severity="danger" data-testid="btn-recovery-reset" :disabled="settingsStore.loading" @click="onReset" />
         </footer>
     </section>

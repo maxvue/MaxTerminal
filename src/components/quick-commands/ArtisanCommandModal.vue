@@ -37,14 +37,8 @@
                 <ArtisanParamsBuilder :model-value="form.params ?? []" :issues="allIssues" @update:model-value="setParams" />
 
                 <div class="artisan-modal__interfaces">
-                    <label class="artisan-modal__checkbox">
-                        <input type="checkbox" data-testid="checkbox-isolatable" :checked="form.isolatable" @change="onIsolatableChange">
-                        <span>Isolatable (--isolated)</span>
-                    </label>
-                    <label class="artisan-modal__checkbox">
-                        <input type="checkbox" data-testid="checkbox-prompts" :checked="form.promptsForMissingInput" @change="onPromptsChange">
-                        <span>PromptsForMissingInput</span>
-                    </label>
+                    <MaxInputCheckbox :model-value="Boolean(form.isolatable)" label="Isolatable (--isolated)" data-testid="checkbox-isolatable" @update:model-value="(val: boolean) => setIsolatable(val)" />
+                    <MaxInputCheckbox :model-value="Boolean(form.promptsForMissingInput)" label="PromptsForMissingInput" data-testid="checkbox-prompts" @update:model-value="(val: boolean) => setPromptsForMissingInput(val)" />
                 </div>
                 <p v-if="promptsWarning" class="artisan-modal__warning" data-testid="warning-prompts">{{ promptsWarning }}</p>
 
@@ -52,7 +46,7 @@
 
                 <label class="artisan-modal__field">
                     <span class="artisan-modal__label">Objetivo / Regras do Comando</span>
-                    <MaxInputTextArea :rows="6" class="artisan-modal__textarea" data-field-path="objective" data-testid="textarea-objective" placeholder="Descreva o objetivo e as regras de negócio do comando para gerar o PHPDoc, preencher com IA ou enviar ao MaxCode…" :model-value="form.objective" @update:model-value="(val: string) => { if (val !== form.objective) setObjective(val); }" />
+                    <MaxInputTextArea :rows="6" class="artisan-modal__textarea" data-field-path="objective" data-testid="textarea-objective" placeholder="Descreva o objetivo e as regras de negócio do comando para gerar o PHPDoc, preencher com IA ou enviar ao MaxCode…" :model-value="form.objective ?? ''" @update:model-value="(val?: string) => { if (val !== undefined && val !== form.objective) setObjective(val); }" />
                     <span v-if="firstErrorMessageFor('objective')" class="artisan-modal__error">{{ firstErrorMessageFor('objective') }}</span>
                 </label>
 
@@ -68,14 +62,14 @@
 
         <footer class="artisan-modal__footer">
             <div class="artisan-modal__footer-left">
-                <MaxButton :label="store.modal.aiLoading ? 'Gerando sugestão…' : 'Preencher com IA'" icon="mdi:sparkles" variant="secondary" class="artisan-modal__btn artisan-modal__btn--secondary" data-testid="btn-fill-ai" :disabled="store.modal.aiLoading || !canFillWithAi" :loading="store.modal.aiLoading" @click="handleFillWithAi" />
-                <MaxButton v-if="hasAiSnapshot" label="Desfazer sugestão" icon="mdi:undo" variant="ghost" class="artisan-modal__btn artisan-modal__btn--ghost" data-testid="btn-undo-ai" @click="store.undoAiSuggestion()" />
+                <MaxButton :label="store.modal.aiLoading ? 'Gerando sugestão…' : 'Preencher com IA'" icon="mdi:sparkles" severity="secondary" class="artisan-modal__btn artisan-modal__btn--secondary" data-testid="btn-fill-ai" :disabled="store.modal.aiLoading || !canFillWithAi" :loading="store.modal.aiLoading" @click="handleFillWithAi" />
+                <MaxButton v-if="hasAiSnapshot" label="Desfazer sugestão" icon="mdi:undo" variant="text" severity="secondary" class="artisan-modal__btn artisan-modal__btn--ghost" data-testid="btn-undo-ai" @click="store.undoAiSuggestion()" />
             </div>
 
             <div class="artisan-modal__footer-right">
-                <MaxButton label="Cancelar" variant="ghost" class="artisan-modal__btn artisan-modal__btn--ghost" data-testid="btn-cancel-modal" @click="handleClose" />
-                <MaxButton label="Criar com MaxCode" icon="mdi:code-braces" variant="secondary" class="artisan-modal__btn artisan-modal__btn--secondary" data-testid="btn-create-maxcode" @click="handleCreateWithMaxCode" />
-                <MaxButton :label="store.modal.creating ? 'Criando…' : 'Criar'" icon="mdi:check" variant="primary" class="artisan-modal__btn artisan-modal__btn--primary" data-testid="btn-create-artisan" :disabled="!canCreate" :loading="store.modal.creating" @click="handleCreate" />
+                <MaxButton label="Cancelar" variant="text" severity="secondary" class="artisan-modal__btn artisan-modal__btn--ghost" data-testid="btn-cancel-modal" @click="handleClose" />
+                <MaxButton label="Criar com MaxCode" icon="mdi:code-braces" severity="secondary" class="artisan-modal__btn artisan-modal__btn--secondary" data-testid="btn-create-maxcode" @click="handleCreateWithMaxCode" />
+                <MaxButton :label="store.modal.creating ? 'Criando…' : 'Criar'" icon="mdi:check" class="artisan-modal__btn artisan-modal__btn--primary" data-testid="btn-create-artisan" :disabled="!canCreate" :loading="store.modal.creating" @click="handleCreate" />
             </div>
         </footer>
     </MaxModal>
@@ -83,7 +77,7 @@
 
 <script setup lang="ts">
     import { computed, ref } from 'vue';
-    import { MaxButton, MaxIcon, MaxInputTextArea, MaxModal } from '@maxvue/max-components-ui';
+    import { MaxButton, MaxIcon, MaxInputCheckbox, MaxInputTextArea, MaxModal } from '@maxvue/max-components-ui';
     import ArtisanParamsBuilder from '@/components/quick-commands/ArtisanParamsBuilder.vue';
     import ArtisanPhpPreview from '@/components/quick-commands/ArtisanPhpPreview.vue';
     import ArtisanSchedulePicker from '@/components/quick-commands/ArtisanSchedulePicker.vue';
@@ -150,14 +144,6 @@
 
     function onDescriptionInput(ev: Event): void {
         setDescription((ev.target as HTMLInputElement).value);
-    }
-
-    function onIsolatableChange(ev: Event): void {
-        setIsolatable((ev.target as HTMLInputElement).checked);
-    }
-
-    function onPromptsChange(ev: Event): void {
-        setPromptsForMissingInput((ev.target as HTMLInputElement).checked);
     }
 
     function handleClose(): void {

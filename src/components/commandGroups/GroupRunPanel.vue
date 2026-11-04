@@ -6,7 +6,7 @@
                 <span>{{ props.busyPaneFallback.reason || 'O painel atual está ocupado com um processo em execução.' }}</span>
             </div>
             <div class="group-run-panel__busy-actions">
-                <MaxButton label="Executar em nova aba" icon="lucide:plus-square" variant="secondary" size="small" class="group-run-panel__new-tab-btn" data-testid="group-run-in-new-tab-btn" @click="onRunInNewTab" />
+                <MaxButton label="Executar em nova aba" icon="lucide:plus-square" severity="secondary" size="small" class="group-run-panel__new-tab-btn" data-testid="group-run-in-new-tab-btn" @click="onRunInNewTab" />
             </div>
         </div>
 
@@ -28,9 +28,9 @@
                         <template v-if="failedCount > 0"> · {{ failedCount }} falhas</template>
                     </span>
 
-                    <MaxButton v-if="canRestartBusyOriginPane" label="Encerrar e reiniciar painel" icon="lucide:rotate-ccw" variant="secondary" size="small" class="group-run-panel__restart-btn" data-testid="group-run-restart-pane-btn" @click="onRestartBusyPane" />
-                    <MaxButton v-if="isRunActive" label="Cancelar tudo" icon="lucide:octagon-x" variant="danger" size="small" class="group-run-panel__cancel-all-btn" data-testid="group-run-cancel-all-btn" @click="emit('cancel-run', props.run.id)" />
-                    <MaxIconButton icon="lucide:x" label="Fechar painel de execução" variant="ghost" class="group-run-panel__close-btn" @click="emit('close')" />
+                    <MaxButton v-if="canRestartBusyOriginPane" label="Encerrar e reiniciar painel" icon="lucide:rotate-ccw" severity="secondary" size="small" class="group-run-panel__restart-btn" data-testid="group-run-restart-pane-btn" @click="onRestartBusyPane" />
+                    <MaxButton v-if="isRunActive" label="Cancelar tudo" icon="lucide:octagon-x" severity="danger" size="small" class="group-run-panel__cancel-all-btn" data-testid="group-run-cancel-all-btn" @click="emit('cancel-run', props.run.id)" />
+                    <MaxIconButton icon="lucide:x" label="Fechar painel de execução" variant="text" class="group-run-panel__close-btn" @click="emit('close')" />
                 </div>
             </header>
 

@@ -51,7 +51,7 @@
                 <ol class="php-preview__steps" data-testid="preview-manual-steps">
                     <li v-for="(step, idx) in manualSteps" :key="idx" class="php-preview__step">
                         <pre class="php-preview__step-text"><code>{{ step }}</code></pre>
-                        <MaxButton label="Copiar trecho" icon="mdi:content-copy" variant="ghost" size="small" class="php-preview__copy-btn" data-testid="copy-manual-step-btn" @click="copyText(step)" />
+                        <MaxButton label="Copiar trecho" icon="mdi:content-copy" variant="text" size="small" class="php-preview__copy-btn" data-testid="copy-manual-step-btn" @click="copyText(step)" />
                     </li>
                 </ol>
             </template>

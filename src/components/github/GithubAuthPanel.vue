@@ -32,8 +32,8 @@
                 <label class="github-auth-panel__input-label" for="github-pat-input">Configurar Personal Access Token (fallback REST):</label>
                 <div class="github-auth-panel__input-group">
                     <input id="github-pat-input" v-model="tokenInput" type="password" class="github-auth-panel__input" placeholder="ghp_... ou github_pat_..." autocomplete="off">
-                    <MaxButton type="submit" label="Salvar Token" variant="primary" class="github-auth-panel__btn github-auth-panel__btn--primary" :disabled="!tokenInput.trim() || saving" />
-                    <MaxButton v-if="props.status?.restToken.configured" type="button" label="Remover" variant="danger" class="github-auth-panel__btn github-auth-panel__btn--danger" :disabled="saving" @click="onClearToken" />
+                    <MaxButton type="submit" label="Salvar Token" class="github-auth-panel__btn github-auth-panel__btn--primary" :disabled="!tokenInput.trim() || saving" />
+                    <MaxButton v-if="props.status?.restToken.configured" type="button" label="Remover" severity="danger" class="github-auth-panel__btn github-auth-panel__btn--danger" :disabled="saving" @click="onClearToken" />
                 </div>
             </form>
             <p v-if="errorMessage" class="github-auth-panel__error" role="alert">{{ errorMessage }}</p>

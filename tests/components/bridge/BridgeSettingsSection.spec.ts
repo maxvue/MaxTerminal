@@ -35,7 +35,10 @@ describe('BridgeSettingsSection.vue', () => {
 
         const wrapper = mount(BridgeSettingsSection);
 
-        await wrapper.get('[data-testid="toggle-sync-project"]').setValue(false);
+        const syncToggle = wrapper.find('[data-testid="toggle-sync-project"] input').exists()
+            ? wrapper.get('[data-testid="toggle-sync-project"] input')
+            : wrapper.get('[data-testid="toggle-sync-project"]');
+        await syncToggle.setValue(false);
         expect(updateSpy).toHaveBeenCalledWith({ autoSyncActiveProject: false });
 
         await wrapper.get('[data-testid="select-fallback-mode"]').setValue('clipboard_only');

@@ -16,9 +16,9 @@
             </label>
             <fieldset class="agent-open-dialog__fieldset">
                 <legend class="agent-open-dialog__legend">Isolamento em Git Worktree</legend>
-                <MaxInputRadio v-model="isolationMode" value="none" label="Sem isolamento (executar na pasta do projeto)" />
-                <MaxInputRadio v-model="isolationMode" value="create" label="Criar nova Git Worktree isolada" />
-                <MaxInputRadio v-model="isolationMode" value="existing" label="Vincular uma worktree existente do repositório" />
+                <MaxInputRadio v-model="isolationMode" name="agent-isolation-mode" value="none" label="Sem isolamento (executar na pasta do projeto)" />
+                <MaxInputRadio v-model="isolationMode" name="agent-isolation-mode" value="create" label="Criar nova Git Worktree isolada" />
+                <MaxInputRadio v-model="isolationMode" name="agent-isolation-mode" value="existing" label="Vincular uma worktree existente do repositório" />
             </fieldset>
             <div v-if="isolationMode === 'create'" class="agent-open-dialog__worktree-box">
                 <div class="agent-open-dialog__row">
@@ -43,7 +43,7 @@
                         <strong>Branch:</strong>
                         <code>{{ proposal.branch }}</code>
                     </div>
-                    <MaxAlert v-if="!proposal.rootIgnored || proposal.warnings.length > 0" type="warning" role="alert" class="agent-open-dialog__warning">
+                    <MaxAlert v-if="!proposal.rootIgnored || proposal.warnings.length > 0" severity="warning" role="alert" class="agent-open-dialog__warning">
                         <p v-if="!proposal.rootIgnored">A pasta de worktrees não está ignorada pelo Git neste repositório.</p>
                         <p v-for="(warn, idx) in proposal.warnings" :key="idx">{{ warn }}</p>
                         <MaxInputCheckbox v-model="ensureGitignore" label="Registrar pasta de worktrees na exclusão local do Git" />
@@ -56,22 +56,18 @@
                     <input v-model="existingPath" type="text" class="agent-open-dialog__input" placeholder="/caminho/para/worktree">
                 </label>
             </div>
-            <MaxAlert v-if="errorMessage" type="danger" role="alert" class="agent-open-dialog__error">{{ errorMessage }}</MaxAlert>
+            <MaxAlert v-if="errorMessage" severity="danger" role="alert" :message="errorMessage" class="agent-open-dialog__error" />
         </div>
         <footer class="agent-open-dialog__footer">
-            <MaxButton type="button" variant="secondary" class="agent-open-dialog__btn" @click="closeDialog">Cancelar</MaxButton>
-            <MaxButton type="button" variant="primary" class="agent-open-dialog__btn agent-open-dialog__btn--primary" :disabled="submitting" :loading="submitting" @click="onSubmit">Abrir Aba de Agente</MaxButton>
+            <MaxButton type="button" severity="secondary" label="Cancelar" class="agent-open-dialog__btn" @click="closeDialog" />
+            <MaxButton type="button" label="Abrir Aba de Agente" class="agent-open-dialog__btn agent-open-dialog__btn--primary" :disabled="submitting" :loading="submitting" @click="onSubmit" />
         </footer>
     </MaxModal>
 </template>
 
 <script setup lang="ts">
     import { computed, ref, watch } from 'vue';
-    import MaxAlert from '@maxvue/max-components-ui/components/MaxAlert';
-    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
-    import MaxInputCheckbox from '@maxvue/max-components-ui/components/MaxInputCheckbox';
-    import MaxInputRadio from '@maxvue/max-components-ui/components/MaxInputRadio';
-    import MaxModal from '@maxvue/max-components-ui/components/MaxModal';
+    import { MaxAlert, MaxButton, MaxInputCheckbox, MaxInputRadio, MaxModal } from '@maxvue/max-components-ui';
     import { useAgentsStore } from '@/stores/agents';
     import type {
         AgentKind,

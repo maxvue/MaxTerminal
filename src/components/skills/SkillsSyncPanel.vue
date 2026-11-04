@@ -5,14 +5,10 @@
                 <h3 class="skills-sync-panel__title">Sincronização MaxSkills</h3>
                 <p class="skills-sync-panel__subtitle">{{ catalog ? `Fonte: ${catalog.sourceDir} (${catalog.skills.length} skills)` : 'Catálogo local de skills para Agentes CLI.' }}</p>
             </div>
-            <MaxButton type="button" variant="secondary" icon="lucide:folder-sync" :disabled="isScanning" data-testid="skills-scan-btn" @click="onScan">
-                <span>{{ isScanning ? 'Escaneando...' : 'Escanear MaxSkills' }}</span>
-            </MaxButton>
+            <MaxButton type="button" severity="secondary" icon="lucide:folder-sync" :disabled="isScanning" data-testid="skills-scan-btn" :label="isScanning ? 'Escaneando...' : 'Escanear MaxSkills'" @click="onScan" />
         </header>
 
-        <MaxAlert v-if="activeError" variant="danger" icon="lucide:alert-circle" data-testid="skills-sync-error">
-            <span>{{ activeError.message }}</span>
-        </MaxAlert>
+        <MaxAlert v-if="activeError" severity="danger" icon="lucide:alert-circle" :message="activeError.message" data-testid="skills-sync-error" />
 
         <section class="skills-sync-panel__new-target">
             <h4 class="skills-sync-panel__section-title">Configurar Alvo de Sincronização</h4>
@@ -32,9 +28,7 @@
                     <option value="copy">Cópia com Manifesto</option>
                 </select>
                 <input v-if="draftAgent === 'agy'" v-model="draftDestOverride" type="text" class="skills-sync-panel__input" placeholder="Destino explícito (ex.: .agent/skills)" data-testid="target-dest-override">
-                <MaxButton type="button" variant="primary" icon="lucide:plus" data-testid="target-save-btn" @click="onSaveTarget">
-                    <span>Salvar Alvo</span>
-                </MaxButton>
+                <MaxButton type="button" icon="lucide:plus" label="Salvar Alvo" data-testid="target-save-btn" @click="onSaveTarget" />
             </div>
         </section>
 
@@ -43,13 +37,13 @@
                 <div class="skills-sync-panel__target-head">
                     <div class="skills-sync-panel__target-meta">
                         <strong>{{ target.agent }}</strong>
-                        <MaxTag size="sm" variant="secondary" class="skills-sync-panel__badge">{{ target.scope === 'project' ? 'Projeto' : 'Global' }}</MaxTag>
-                        <MaxTag size="sm" variant="secondary" class="skills-sync-panel__badge">{{ target.mode === 'symlink' ? 'Symlink' : 'Cópia' }}</MaxTag>
+                        <MaxTag size="sm" severity="secondary" :value="target.scope === 'project' ? 'Projeto' : 'Global'" class="skills-sync-panel__badge" />
+                        <MaxTag size="sm" severity="secondary" :value="target.mode === 'symlink' ? 'Symlink' : 'Cópia'" class="skills-sync-panel__badge" />
                         <code v-if="target.destDir" class="skills-sync-panel__dest">{{ target.destDir }}</code>
                     </div>
                     <div class="skills-sync-panel__target-actions">
-                        <MaxButton v-if="target.id !== null" type="button" size="sm" variant="secondary" :data-testid="`plan-target-${target.id}`" @click="onPlanTarget(target.id)">Simular (Dry-Run)</MaxButton>
-                        <MaxButton v-if="target.id !== null" type="button" size="sm" variant="danger" :data-testid="`remove-target-${target.id}`" @click="onRemoveTarget(target.id)">Remover</MaxButton>
+                        <MaxButton v-if="target.id !== null" type="button" size="sm" severity="secondary" :data-testid="`plan-target-${target.id}`" @click="onPlanTarget(target.id)">Simular (Dry-Run)</MaxButton>
+                        <MaxButton v-if="target.id !== null" type="button" size="sm" severity="danger" :data-testid="`remove-target-${target.id}`" @click="onRemoveTarget(target.id)">Remover</MaxButton>
                     </div>
                 </div>
 
@@ -60,7 +54,7 @@
                     <p class="skills-sync-panel__plan-summary">{{ formatPlanSummary(planFor(target.id)!) }}</p>
                     <SkillConflictList :conflicts="conflictsFor(planFor(target.id)!)" :model-value="resolutionsByTarget[target.id] ?? {}" @update:model-value="setResolutions(target.id, $event)" />
                     <div class="skills-sync-panel__apply-row">
-                        <MaxButton type="button" variant="primary" :data-testid="`apply-plan-${target.id}`" @click="onApplyPlan(target.id, planFor(target.id)!)">Aplicar Sincronização</MaxButton>
+                        <MaxButton type="button" label="Aplicar Sincronização" :data-testid="`apply-plan-${target.id}`" @click="onApplyPlan(target.id, planFor(target.id)!)" />
                     </div>
                 </div>
 
@@ -74,9 +68,7 @@
 
 <script setup lang="ts">
     import { computed, onMounted, ref } from 'vue';
-    import MaxAlert from '@maxvue/max-components-ui/components/MaxAlert';
-    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
-    import MaxTag from '@maxvue/max-components-ui/components/MaxTag';
+    import { MaxAlert, MaxButton, MaxTag } from '@maxvue/max-components-ui';
     import { useSkillsStore } from '@/stores/skills';
     import type {
         AgentKind,
