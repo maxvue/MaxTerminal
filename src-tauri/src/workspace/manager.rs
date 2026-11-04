@@ -660,8 +660,10 @@ impl WorkspaceManager {
         mt_core::workspace::validate_template_input(&input)?;
         EnvironmentResolver::validate_environment_available(&input.environment)?;
 
-        if matches!(input.connection, mt_core::workspace::TemplateConnectionInput::Local)
-            && let Some(ref custom_cwd) = input.cwd
+        if matches!(
+            input.connection,
+            mt_core::workspace::TemplateConnectionInput::Local
+        ) && let Some(ref custom_cwd) = input.cwd
             && let Some(proj) = self.load_project_path(project_id).await?
         {
             let _ = EnvironmentResolver::resolve_cwd(&proj, Some(custom_cwd), false)?;
@@ -716,8 +718,10 @@ impl WorkspaceManager {
         EnvironmentResolver::validate_environment_available(&input.environment)?;
 
         let existing = self.template_get(template_id).await?;
-        if matches!(input.connection, mt_core::workspace::TemplateConnectionInput::Local)
-            && let Some(ref custom_cwd) = input.cwd
+        if matches!(
+            input.connection,
+            mt_core::workspace::TemplateConnectionInput::Local
+        ) && let Some(ref custom_cwd) = input.cwd
             && let Some(proj) = self.load_project_path(existing.project_id).await?
         {
             let _ = EnvironmentResolver::resolve_cwd(&proj, Some(custom_cwd), false)?;
@@ -1136,7 +1140,8 @@ impl WorkspaceManager {
             let effective_cwd = if matches!(
                 snapshot.connection,
                 mt_core::workspace::TemplateConnection::Ssh { .. }
-            ) || pane_cwd.is_dir() {
+            ) || pane_cwd.is_dir()
+            {
                 pane_cwd
             } else {
                 resolved_env.cwd.clone()
@@ -2872,7 +2877,8 @@ impl WorkspaceManager {
             let effective_cwd = if matches!(
                 stored_tab.launch_snapshot.connection,
                 mt_core::workspace::TemplateConnection::Ssh { .. }
-            ) || pane_cwd.is_dir() {
+            ) || pane_cwd.is_dir()
+            {
                 pane_cwd
             } else {
                 PathBuf::from(&stored_tab.launch_snapshot.resolved_cwd)
