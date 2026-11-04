@@ -1,6 +1,6 @@
 //! Testes de integração do runner e registro de migrations (`mt-db`).
 
-#![allow(clippy::unwrap_used, clippy::too_many_lines)]
+#![allow(clippy::unwrap_used, clippy::too_many_lines, clippy::similar_names)]
 
 use std::fs;
 

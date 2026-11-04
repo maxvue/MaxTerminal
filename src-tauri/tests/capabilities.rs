@@ -100,6 +100,7 @@ fn capabilities_restrict_to_main_window_and_allowed_commands() {
             "allow-template-update",
             "allow-template-delete",
             "allow-template-set-default",
+            "allow-template-test-connection",
             "allow-tab-list",
             "allow-tab-open",
             "allow-tab-close",
