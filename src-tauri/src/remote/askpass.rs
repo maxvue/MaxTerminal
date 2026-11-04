@@ -22,6 +22,7 @@ pub struct AskpassServer {
     token: String,
     _password: Arc<Zeroizing<String>>,
     served: Arc<AtomicBool>,
+    stopped: Arc<AtomicBool>,
     temp_dir: PathBuf,
 }
 
@@ -58,11 +59,26 @@ impl AskpassServer {
         let srv_password = Arc::clone(&password_arc);
         let srv_token = token.clone();
         let srv_served = Arc::clone(&served);
+        let stopped = Arc::new(AtomicBool::new(false));
+        let srv_stopped = Arc::clone(&stopped);
 
         std::thread::spawn(move || {
-            let _ = listener.set_nonblocking(false);
-            // Aguarda até 30 segundos pela conexão do OpenSSH
-            if let Ok((mut stream, _)) = listener.accept() {
+            if listener.set_nonblocking(true).is_err() {
+                return;
+            }
+            // Encerra a espera ao cancelar o teste ou após 30 segundos sem autenticação.
+            for _ in 0..300 {
+                if srv_stopped.load(Ordering::Acquire) {
+                    break;
+                }
+                let mut stream = match listener.accept() {
+                    Ok((stream, _)) => stream,
+                    Err(err) if err.kind() == std::io::ErrorKind::WouldBlock => {
+                        std::thread::sleep(Duration::from_millis(100));
+                        continue;
+                    }
+                    Err(_) => break,
+                };
                 let _ = stream.set_read_timeout(Some(Duration::from_secs(5)));
                 let _ = stream.set_write_timeout(Some(Duration::from_secs(5)));
 
@@ -74,13 +90,19 @@ impl AskpassServer {
                     let prompt = lines.next().unwrap_or("").to_lowercase();
 
                     // Valida o token e confirma que é um prompt de password
-                    if received_token == srv_token && (prompt.contains("password") || prompt.contains("senha") || prompt.contains("passphrase") || prompt.is_empty()) {
+                    if received_token == srv_token
+                        && (prompt.contains("password")
+                            || prompt.contains("senha")
+                            || prompt.contains("passphrase")
+                            || prompt.is_empty())
+                    {
                         let _ = stream.write_all(srv_password.as_bytes());
                         let _ = stream.write_all(b"\n");
                         let _ = stream.flush();
                         srv_served.store(true, Ordering::Release);
                     }
                 }
+                break;
             }
         });
 
@@ -89,6 +111,7 @@ impl AskpassServer {
             token,
             _password: password_arc,
             served,
+            stopped,
             temp_dir,
         })
     }
@@ -112,29 +135,24 @@ impl AskpassServer {
     }
 
     /// Desacopla a limpeza para execução em background após uma janela de espera.
-    pub fn detach_with_timeout(mut self, timeout: Duration) {
-        let socket_path = std::mem::take(&mut self.socket_path);
-        let temp_dir = std::mem::take(&mut self.temp_dir);
-        let served = Arc::clone(&self.served);
-        std::mem::forget(self);
-
+    pub fn detach_with_timeout(self, timeout: Duration) {
         std::thread::spawn(move || {
             let start = std::time::Instant::now();
             while start.elapsed() < timeout {
-                if served.load(Ordering::Acquire) {
+                if self.served.load(Ordering::Acquire) {
                     std::thread::sleep(Duration::from_millis(500));
                     break;
                 }
                 std::thread::sleep(Duration::from_millis(100));
             }
-            let _ = fs::remove_file(&socket_path);
-            let _ = fs::remove_dir_all(&temp_dir);
+            drop(self);
         });
     }
 }
 
 impl Drop for AskpassServer {
     fn drop(&mut self) {
+        self.stopped.store(true, Ordering::Release);
         let _ = fs::remove_file(&self.socket_path);
         let _ = fs::remove_dir_all(&self.temp_dir);
     }
@@ -178,4 +196,39 @@ pub fn run_askpass_helper(args: &[String]) -> ! {
 
     response.zeroize();
     std::process::exit(0);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn dropping_askpass_releases_password_without_waiting_for_a_connection() {
+        let server = AskpassServer::start(Zeroizing::new(String::from("senha-de-teste"))).unwrap();
+        let password = Arc::downgrade(&server._password);
+        let socket = server.socket_path().to_path_buf();
+        drop(server);
+        for _ in 0..20 {
+            if password.upgrade().is_none() {
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(25));
+        }
+        assert!(password.upgrade().is_none());
+        assert!(!socket.exists());
+    }
+
+    #[test]
+    fn detached_askpass_releases_password_after_timeout() {
+        let server = AskpassServer::start(Zeroizing::new(String::from("senha-de-teste"))).unwrap();
+        let password = Arc::downgrade(&server._password);
+        server.detach_with_timeout(Duration::from_millis(20));
+        for _ in 0..40 {
+            if password.upgrade().is_none() {
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(25));
+        }
+        assert!(password.upgrade().is_none());
+    }
 }

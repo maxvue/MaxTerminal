@@ -52,6 +52,7 @@ fn main() {
         "template_update",
         "template_delete",
         "template_set_default",
+        "template_test_connection",
         "tab_list",
         "tab_open",
         "tab_close",

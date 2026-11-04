@@ -2,7 +2,7 @@
 
 use mt_core::error::MtError;
 use mt_core::ids::{ProjectId, TemplateId};
-use mt_core::workspace::{TabTemplate, TabTemplateInput};
+use mt_core::workspace::{TabTemplate, TabTemplateInput, TemplateConnectionInput};
 use tauri::State;
 
 use crate::workspace::manager::WorkspaceManager;
@@ -71,4 +71,19 @@ pub async fn template_set_default(
     template_id: TemplateId,
 ) -> Result<Vec<TabTemplate>, MtError> {
     state.template_set_default(template_id).await
+}
+
+/// Testa uma conexão SSH e a pasta remota antes de salvar o template.
+#[tauri::command]
+#[specta::specta]
+pub async fn template_test_connection(
+    state: State<'_, WorkspaceManager>,
+    project_id: ProjectId,
+    template_id: Option<TemplateId>,
+    connection: TemplateConnectionInput,
+    cwd: Option<String>,
+) -> Result<String, MtError> {
+    state
+        .template_test_connection(project_id, template_id, connection, cwd)
+        .await
 }

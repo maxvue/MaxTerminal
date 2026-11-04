@@ -564,6 +564,93 @@ impl WorkspaceManager {
         })
     }
 
+    /// Testa a configuração SSH sem salvar o template ou alterar credenciais.
+    pub async fn template_test_connection(
+        &self,
+        project_id: ProjectId,
+        template_id: Option<TemplateId>,
+        connection: mt_core::workspace::TemplateConnectionInput,
+        cwd: Option<String>,
+    ) -> MtResult<String> {
+        use mt_core::workspace::{
+            PasswordCredentialOperation, SshAuth, SshAuthInput, TemplateConnection,
+            TemplateConnectionInput,
+        };
+
+        let TemplateConnectionInput::Ssh { host, user, auth } = connection else {
+            return Err(MtError::invalid_argument(
+                "connection",
+                "Selecione uma conexão SSH para testar.",
+            ));
+        };
+        let host = mt_core::workspace::template::validate_ssh_host(&host)?;
+        let user = mt_core::workspace::template::validate_ssh_user(&user)?;
+        let (auth, password) = match auth {
+            SshAuthInput::Key { identity_file } => (
+                SshAuth::Key {
+                    identity_file: mt_core::workspace::template::validate_ssh_identity_file(
+                        identity_file.as_deref(),
+                    )?,
+                },
+                None,
+            ),
+            SshAuthInput::Password { operation } => {
+                let password = match operation {
+                    PasswordCredentialOperation::Set { password } if !password.is_empty() => {
+                        zeroize::Zeroizing::new(password)
+                    }
+                    PasswordCredentialOperation::Keep => {
+                        let template_id = template_id.ok_or_else(|| {
+                            MtError::invalid_argument(
+                                "templateId",
+                                "Informe a senha SSH para testar um novo template.",
+                            )
+                        })?;
+                        let existing = self.template_get(template_id).await?;
+                        if existing.project_id != project_id {
+                            return Err(MtError::new(
+                                codes::TEMPLATE_INVALID,
+                                "O template informado pertence a outro projeto.",
+                            ));
+                        }
+                        let TemplateConnection::Ssh {
+                            auth: SshAuth::Password { credential_id },
+                            ..
+                        } = existing.config.connection
+                        else {
+                            return Err(MtError::new(
+                                codes::TEMPLATE_INVALID,
+                                "O template não possui senha SSH salva.",
+                            ));
+                        };
+                        self.inner
+                            .vault_service
+                            .retrieve_credential(project_id, &credential_id)
+                            .await?
+                    }
+                    _ => {
+                        return Err(MtError::invalid_argument(
+                            "password",
+                            "Informe uma senha SSH válida para testar a conexão.",
+                        ));
+                    }
+                };
+                (
+                    SshAuth::Password {
+                        credential_id: String::new(),
+                    },
+                    Some(password),
+                )
+            }
+        };
+        crate::remote::ssh::test_connection(
+            &TemplateConnection::Ssh { host, user, auth },
+            password,
+            cwd.as_deref(),
+        )
+        .await
+    }
+
     /// Cria um novo template de aba no projeto validando segredos e ambiente.
     pub async fn template_create(
         &self,
@@ -573,7 +660,8 @@ impl WorkspaceManager {
         mt_core::workspace::validate_template_input(&input)?;
         EnvironmentResolver::validate_environment_available(&input.environment)?;
 
-        if let Some(ref custom_cwd) = input.cwd
+        if matches!(input.connection, mt_core::workspace::TemplateConnectionInput::Local)
+            && let Some(ref custom_cwd) = input.cwd
             && let Some(proj) = self.load_project_path(project_id).await?
         {
             let _ = EnvironmentResolver::resolve_cwd(&proj, Some(custom_cwd), false)?;
@@ -630,7 +718,8 @@ impl WorkspaceManager {
         EnvironmentResolver::validate_environment_available(&input.environment)?;
 
         let existing = self.template_get(template_id).await?;
-        if let Some(ref custom_cwd) = input.cwd
+        if matches!(input.connection, mt_core::workspace::TemplateConnectionInput::Local)
+            && let Some(ref custom_cwd) = input.cwd
             && let Some(proj) = self.load_project_path(existing.project_id).await?
         {
             let _ = EnvironmentResolver::resolve_cwd(&proj, Some(custom_cwd), false)?;
@@ -1044,7 +1133,10 @@ impl WorkspaceManager {
                 .unwrap_or_else(|| (SessionId::new(), InitialDispatchState::None));
 
             let pane_cwd = PathBuf::from(&pane_row.cwd);
-            let effective_cwd = if pane_cwd.is_dir() {
+            let effective_cwd = if matches!(
+                snapshot.connection,
+                mt_core::workspace::TemplateConnection::Ssh { .. }
+            ) || pane_cwd.is_dir() {
                 pane_cwd
             } else {
                 resolved_env.cwd.clone()
@@ -1301,7 +1393,8 @@ impl WorkspaceManager {
                     PtySize::default(),
                 )?;
 
-                let spec = ssh_session.spec.clone();
+                let mut spec = ssh_session.spec.clone();
+                crate::remote::ssh::configure_remote_shell(&mut spec, cwd.to_str())?;
                 let integration_req = ShellIntegrationRequest {
                     enabled: false,
                     continuous_policy: ContinuousPolicy::Never,
@@ -1630,10 +1723,13 @@ impl WorkspaceManager {
                 )
             })?;
             let src_pane = entry.panes.get(&pane_id).ok_or_else(pane_not_found)?;
-            let runtime_cwd = src_pane
-                .pty_id
-                .and_then(|pty_id| self.inner.shell_service.current_cwd(pty_id))
-                .unwrap_or_else(|| src_pane.cwd.clone());
+            let runtime_cwd = match entry.launch_snapshot.connection {
+                mt_core::workspace::TemplateConnection::Local => src_pane
+                    .pty_id
+                    .and_then(|pty_id| self.inner.shell_service.current_cwd(pty_id))
+                    .unwrap_or_else(|| src_pane.cwd.clone()),
+                mt_core::workspace::TemplateConnection::Ssh { .. } => src_pane.cwd.clone(),
+            };
             (
                 entry.project_id,
                 entry.launch_snapshot.clone(),
@@ -2761,7 +2857,10 @@ impl WorkspaceManager {
             p2t_entries.push((pane_id, tab_id));
 
             let pane_cwd = PathBuf::from(&pane_row.cwd);
-            let effective_cwd = if pane_cwd.is_dir() {
+            let effective_cwd = if matches!(
+                stored_tab.launch_snapshot.connection,
+                mt_core::workspace::TemplateConnection::Ssh { .. }
+            ) || pane_cwd.is_dir() {
                 pane_cwd
             } else {
                 PathBuf::from(&stored_tab.launch_snapshot.resolved_cwd)
