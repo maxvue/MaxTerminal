@@ -31,10 +31,7 @@
                 <span v-if="cwdError" class="group-item-row__error" :data-testid="`item-cwd-error-${index}`">{{ cwdError }}</span>
             </label>
 
-            <label class="group-item-row__checkbox">
-                <input type="checkbox" :data-testid="`item-continuous-${index}`" :checked="item.continuous" @change="onContinuousChange">
-                <span>Execução Contínua (daemon/watcher)</span>
-            </label>
+            <MaxInputCheckbox :data-testid="`item-continuous-${index}`" :model-value="item.continuous" label="Execução Contínua (daemon/watcher)" class="group-item-row__checkbox" @update:model-value="onContinuousChange" />
 
             <MaxButton :label="`Variável de ambiente (${item.envPairs.length})`" icon="lucide:plus" variant="text" class="group-item-row__env-toggle" :data-testid="`item-add-env-${index}`" @click="onAddEnvPair" />
         </div>
@@ -54,7 +51,7 @@
 
 <script setup lang="ts">
     import { computed, ref } from 'vue';
-    import { MaxButton, MaxIconButton } from '@maxvue/max-components-ui';
+    import { MaxButton, MaxIconButton, MaxInputCheckbox } from '@maxvue/max-components-ui';
     import { isSensitiveEnvKey } from '@/composables/commandGroups/useCommandGroupEditor';
     import type { EditableGroupItem } from '@/types/commandGroups';
 
@@ -125,8 +122,9 @@
         emitPatch({ cwd: (event.target as HTMLInputElement).value });
     }
 
-    function onContinuousChange(event: Event): void {
-        emitPatch({ continuous: (event.target as HTMLInputElement).checked });
+    function onContinuousChange(valOrEv: unknown): void {
+        const checked = typeof valOrEv === 'boolean' ? valOrEv : Boolean((valOrEv as { target?: HTMLInputElement })?.target?.checked);
+        emitPatch({ continuous: checked });
     }
 
     function onAddEnvPair(): void {

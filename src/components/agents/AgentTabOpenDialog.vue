@@ -1,19 +1,14 @@
 <template>
     <MaxModal :visible="props.modelValue" title="Iniciar Agente CLI" :no-button="true" max-width="32rem" class="agent-open-dialog" :dismissable="!submitting" :close-on-escape="!submitting" @update:visible="emit('update:modelValue', $event)">
         <div class="agent-open-dialog__body">
-            <label class="agent-open-dialog__field">
+            <div class="agent-open-dialog__field">
                 <span class="agent-open-dialog__label">Agente CLI</span>
-                <select v-model="selectedAgent" class="agent-open-dialog__select">
-                    <option value="claude-code">Claude Code (claude)</option>
-                    <option value="codex">OpenAI Codex (codex)</option>
-                    <option value="agy">Google Antigravity (agy)</option>
-                    <option value="opencode">OpenCode (opencode)</option>
-                </select>
-            </label>
-            <label class="agent-open-dialog__field">
+                <MaxInputSelect v-model="selectedAgent" :options="agentOptions" option-label="label" option-value="value" option-name="label" class="agent-open-dialog__select" />
+            </div>
+            <div class="agent-open-dialog__field">
                 <span class="agent-open-dialog__label">Modelo CLI (opcional)</span>
-                <input v-model="modelInput" type="text" class="agent-open-dialog__input" placeholder="Padrão do agente (sem flag --model)" :disabled="!supportsModelSelection">
-            </label>
+                <MaxInputText v-model="modelInput" class="agent-open-dialog__input" placeholder="Padrão do agente (sem flag --model)" :disabled="!supportsModelSelection" />
+            </div>
             <fieldset class="agent-open-dialog__fieldset">
                 <legend class="agent-open-dialog__legend">Isolamento em Git Worktree</legend>
                 <MaxInputRadio v-model="isolationMode" name="agent-isolation-mode" value="none" label="Sem isolamento (executar na pasta do projeto)" />
@@ -22,17 +17,14 @@
             </fieldset>
             <div v-if="isolationMode === 'create'" class="agent-open-dialog__worktree-box">
                 <div class="agent-open-dialog__row">
-                    <label class="agent-open-dialog__field">
+                    <div class="agent-open-dialog__field">
                         <span class="agent-open-dialog__label">Localização da Worktree</span>
-                        <select v-model="location" class="agent-open-dialog__select">
-                            <option value="project">.worktrees/ (MaxTerminal)</option>
-                            <option value="maxCode">.max-code-worktrees/ (MaxCode)</option>
-                        </select>
-                    </label>
-                    <label class="agent-open-dialog__field">
+                        <MaxInputSelect v-model="location" :options="locationOptions" option-label="label" option-value="value" option-name="label" class="agent-open-dialog__select" />
+                    </div>
+                    <div class="agent-open-dialog__field">
                         <span class="agent-open-dialog__label">Sugestão de Slug (opcional)</span>
-                        <input v-model="slugHint" type="text" class="agent-open-dialog__input" placeholder="Ex.: feat-login" @change="refreshProposal">
-                    </label>
+                        <MaxInputText v-model="slugHint" class="agent-open-dialog__input" placeholder="Ex.: feat-login" @change="refreshProposal" />
+                    </div>
                 </div>
                 <div v-if="proposal" class="agent-open-dialog__proposal">
                     <div class="agent-open-dialog__proposal-line">
@@ -51,10 +43,10 @@
                 </div>
             </div>
             <div v-if="isolationMode === 'existing'" class="agent-open-dialog__worktree-box">
-                <label class="agent-open-dialog__field">
+                <div class="agent-open-dialog__field">
                     <span class="agent-open-dialog__label">Caminho da Worktree Existente</span>
-                    <input v-model="existingPath" type="text" class="agent-open-dialog__input" placeholder="/caminho/para/worktree">
-                </label>
+                    <MaxInputText v-model="existingPath" class="agent-open-dialog__input" placeholder="/caminho/para/worktree" />
+                </div>
             </div>
             <MaxAlert v-if="errorMessage" severity="danger" role="alert" :message="errorMessage" class="agent-open-dialog__error" />
         </div>
@@ -67,8 +59,28 @@
 
 <script setup lang="ts">
     import { computed, ref, watch } from 'vue';
-    import { MaxAlert, MaxButton, MaxInputCheckbox, MaxInputRadio, MaxModal } from '@maxvue/max-components-ui';
+    import {
+        MaxAlert,
+        MaxButton,
+        MaxInputCheckbox,
+        MaxInputRadio,
+        MaxInputSelect,
+        MaxInputText,
+        MaxModal
+    } from '@maxvue/max-components-ui';
     import { useAgentsStore } from '@/stores/agents';
+
+    const agentOptions = [
+        { label: 'Claude Code (claude)', value: 'claude-code' },
+        { label: 'OpenAI Codex (codex)', value: 'codex' },
+        { label: 'Google Antigravity (agy)', value: 'agy' },
+        { label: 'OpenCode (opencode)', value: 'opencode' }
+    ];
+
+    const locationOptions = [
+        { label: '.worktrees/ (MaxTerminal)', value: 'project' },
+        { label: '.max-code-worktrees/ (MaxCode)', value: 'maxCode' }
+    ];
     import type {
         AgentKind,
         AgentTabOpened_Serialize,

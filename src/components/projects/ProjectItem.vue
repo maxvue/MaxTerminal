@@ -23,10 +23,10 @@
                     </button>
                 </template>
                 <template #item="{ data }">
-                    <button type="button" class="project-item__menu-btn" :class="{ 'project-item__menu-btn--danger': data.danger }" :data-action="data.actionKey" role="menuitem" @click.stop="data.action">
+                    <span class="project-item__menu-btn" :class="{ 'project-item__menu-btn--danger': data.danger }" :data-action="data.actionKey">
                         <MaxIcon :icon="data.icon" />
                         <span>{{ data.label }}</span>
-                    </button>
+                    </span>
                 </template>
             </MaxPopoverMenu>
         </div>

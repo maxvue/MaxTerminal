@@ -4,7 +4,7 @@
             <div class="project-root-modal__field">
                 <label for="project-root-path" class="project-root-modal__label">Caminho da pasta de projetos</label>
                 <div class="project-root-modal__path-row">
-                    <input id="project-root-path" v-model="pathInput" type="text" class="project-root-modal__input" placeholder="~/GitHub" :readonly="Boolean(props.root)" autocomplete="off">
+                    <MaxInputText id="project-root-path" v-model="pathInput" class="project-root-modal__input" placeholder="~/GitHub" :readonly="Boolean(props.root)" autocomplete="off" />
                     <MaxButton v-if="!props.root" type="button" severity="secondary" size="small" class="project-root-modal__pick-btn" label="Escolher pasta" @click="handlePickFolder" />
                 </div>
             </div>
@@ -36,7 +36,14 @@
 
 <script setup lang="ts">
     import { ref, watch } from 'vue';
-    import { MaxAlert, MaxButton, MaxInputCheckbox, MaxInputRadio, MaxModal } from '@maxvue/max-components-ui';
+    import {
+        MaxAlert,
+        MaxButton,
+        MaxInputCheckbox,
+        MaxInputRadio,
+        MaxInputText,
+        MaxModal
+    } from '@maxvue/max-components-ui';
     import { useIpcError } from '@/composables/useIpcError';
     import * as projectsIpc from '@/ipc/projects';
     import { useProjectsStore } from '@/stores/projects';

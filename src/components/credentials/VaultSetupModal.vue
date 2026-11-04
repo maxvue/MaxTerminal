@@ -7,23 +7,23 @@
 
             <div class="vault-modal__field">
                 <label for="vault-setup-password" class="vault-modal__label">Senha Mestra (mínimo 6 caracteres)</label>
-                <input id="vault-setup-password" v-model="password" type="password" class="vault-modal__input" placeholder="Nova senha mestra..." required autocomplete="new-password" minlength="6">
+                <MaxInputText id="vault-setup-password" v-model="password" type="password" class="vault-modal__input" placeholder="Nova senha mestra..." required autocomplete="new-password" minlength="6" />
             </div>
 
             <div class="vault-modal__field">
                 <label for="vault-setup-confirm" class="vault-modal__label">Confirmar Senha Mestra</label>
-                <input id="vault-setup-confirm" v-model="confirmPassword" type="password" class="vault-modal__input" placeholder="Repita a senha mestra..." required autocomplete="new-password" minlength="6">
+                <MaxInputText id="vault-setup-confirm" v-model="confirmPassword" type="password" class="vault-modal__input" placeholder="Repita a senha mestra..." required autocomplete="new-password" minlength="6" />
             </div>
 
-            <MaxAlert v-if="localError || vaultStore.error" type="danger" role="alert" class="vault-modal__error">
+            <MaxAlert v-if="localError || vaultStore.error" severity="danger" role="alert" class="vault-modal__error">
                 {{ localError || vaultStore.error }}
             </MaxAlert>
 
             <footer class="vault-modal__footer">
-                <MaxButton type="button" variant="secondary" class="vault-modal__btn" :disabled="submitting" @click="emit('update:visible', false)">
+                <MaxButton type="button" severity="secondary" class="vault-modal__btn" :disabled="submitting" @click="emit('update:visible', false)">
                     Cancelar
                 </MaxButton>
-                <MaxButton type="submit" variant="primary" class="vault-modal__btn" :disabled="submitting || !password.trim() || password.length < 6" :loading="submitting">
+                <MaxButton type="submit" class="vault-modal__btn" :disabled="submitting || !password.trim() || password.length < 6" :loading="submitting">
                     {{ submitting ? 'Configurando...' : 'Configurar Cofre' }}
                 </MaxButton>
             </footer>
@@ -33,9 +33,12 @@
 
 <script setup lang="ts">
     import { ref, watch } from 'vue';
-    import MaxAlert from '@maxvue/max-components-ui/components/MaxAlert';
-    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
-    import MaxModal from '@maxvue/max-components-ui/components/MaxModal';
+    import {
+        MaxAlert,
+        MaxButton,
+        MaxInputText,
+        MaxModal
+    } from '@maxvue/max-components-ui';
     import { useVaultStore } from '@/stores/vault';
 
     export interface VaultSetupModalProps {

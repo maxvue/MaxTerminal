@@ -1,9 +1,7 @@
 <template>
     <div class="param-row" :data-testid="`artisan-param-row-${index}`">
         <div class="param-row__topbar">
-            <span class="param-row__badge" :class="modelValue.kind === 'argument' ? 'param-row__badge--arg' : 'param-row__badge--opt'">
-                {{ modelValue.kind === 'argument' ? 'Argumento' : 'Opção (--flag)' }}
-            </span>
+            <MaxTag :value="modelValue.kind === 'argument' ? 'Argumento' : 'Opção (--flag)'" :severity="modelValue.kind === 'argument' ? 'info' : 'secondary'" size="sm" class="param-row__badge" />
             <div class="param-row__actions">
                 <MaxIconButton icon="mdi:arrow-up" label="Mover parâmetro para cima" variant="text" severity="secondary" class="param-row__icon-btn" :disabled="index === 0" title="Mover para cima" @click="emit('move', -1)" />
                 <MaxIconButton icon="mdi:arrow-down" label="Mover parâmetro para baixo" variant="text" severity="secondary" class="param-row__icon-btn" :disabled="index >= total - 1" title="Mover para baixo" @click="emit('move', 1)" />
@@ -39,24 +37,12 @@
 
         <div class="param-row__toggles">
             <template v-if="modelValue.kind === 'argument'">
-                <label class="param-row__checkbox">
-                    <input type="checkbox" :checked="modelValue.optional" @change="onOptionalChange">
-                    <span>Opcional (?)</span>
-                </label>
-                <label class="param-row__checkbox">
-                    <input type="checkbox" :checked="modelValue.isArray" @change="onArrayChange">
-                    <span>Array (*)</span>
-                </label>
+                <MaxInputCheckbox :model-value="Boolean(modelValue.optional)" label="Opcional (?)" class="param-row__checkbox" @update:model-value="onOptionalChange" />
+                <MaxInputCheckbox :model-value="Boolean(modelValue.isArray)" label="Array (*)" class="param-row__checkbox" @update:model-value="onArrayChange" />
             </template>
             <template v-else>
-                <label class="param-row__checkbox">
-                    <input type="checkbox" :checked="modelValue.acceptsValue" @change="onAcceptsValueChange">
-                    <span>Aceita valor (=)</span>
-                </label>
-                <label class="param-row__checkbox">
-                    <input type="checkbox" :checked="modelValue.isArray" @change="onOptionArrayChange">
-                    <span>Múltiplos valores (=*)</span>
-                </label>
+                <MaxInputCheckbox :model-value="Boolean(modelValue.acceptsValue)" label="Aceita valor (=)" class="param-row__checkbox" @update:model-value="onAcceptsValueChange" />
+                <MaxInputCheckbox :model-value="Boolean(modelValue.isArray)" label="Múltiplos valores (=*)" class="param-row__checkbox" @update:model-value="onOptionArrayChange" />
             </template>
         </div>
     </div>
@@ -64,7 +50,7 @@
 
 <script setup lang="ts">
     import { computed } from 'vue';
-    import { MaxIconButton } from '@maxvue/max-components-ui';
+    import { MaxIconButton, MaxInputCheckbox, MaxTag } from '@maxvue/max-components-ui';
     import type { ArtisanParam, FieldIssue } from '@/types/bindings';
 
     export interface ArtisanParamRowProps {

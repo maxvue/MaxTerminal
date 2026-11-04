@@ -1,15 +1,9 @@
 <template>
     <div class="command-memory-list" data-testid="command-memory-list">
         <header class="command-memory-list__header">
-            <div class="command-memory-list__search">
-                <MaxIcon icon="lucide:history" :size="0.875" />
-                <input v-model="filterPrefix" type="text" class="command-memory-list__input" placeholder="Filtrar comandos memorizados..." aria-label="Filtrar comandos memorizados" data-testid="memory-filter-input">
-            </div>
+            <MaxInputText v-model="filterPrefix" icon="lucide:history" placeholder="Filtrar comandos memorizados..." aria-label="Filtrar comandos memorizados" data-testid="memory-filter-input" class="command-memory-list__search" />
             <div class="command-memory-list__controls">
-                <label class="command-memory-list__checkbox">
-                    <input v-model="includeHidden" type="checkbox" data-testid="memory-include-hidden" @change="onReload">
-                    <span>Exibir ocultos</span>
-                </label>
+                <MaxInputCheckbox v-model="includeHidden" label="Exibir ocultos" data-testid="memory-include-hidden" class="command-memory-list__checkbox" @update:model-value="onReload" />
                 <MaxButton type="button" size="sm" severity="secondary" icon="lucide:refresh-cw" data-testid="memory-rebuild-btn" @click="onRebuild">
                     <span>Reconstruir</span>
                 </MaxButton>
@@ -39,7 +33,7 @@
 
 <script setup lang="ts">
     import { computed, onMounted, ref, watch } from 'vue';
-    import { MaxButton, MaxIcon, MaxIconButton } from '@maxvue/max-components-ui';
+    import { MaxButton, MaxIconButton, MaxInputCheckbox, MaxInputText } from '@maxvue/max-components-ui';
     import { useCommandMemorySuggestions } from '@/composables/useCommandMemorySuggestions';
     import { useSkillsStore } from '@/stores/skills';
     import type { MemoryEntry_Serialize, PaneId, ProjectId } from '@/types/bindings';

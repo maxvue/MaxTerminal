@@ -7,18 +7,18 @@
 
             <div class="vault-modal__field">
                 <label for="vault-master-password" class="vault-modal__label">Senha Mestra</label>
-                <input id="vault-master-password" ref="passwordInputRef" v-model="password" type="password" class="vault-modal__input" placeholder="Digite sua senha mestra..." required autocomplete="current-password" autofocus>
+                <MaxInputText id="vault-master-password" ref="passwordInputRef" v-model="password" type="password" class="vault-modal__input" placeholder="Digite sua senha mestra..." required autocomplete="current-password" autofocus />
             </div>
 
-            <MaxAlert v-if="localError || vaultStore.error" type="danger" role="alert" class="vault-modal__error">
+            <MaxAlert v-if="localError || vaultStore.error" severity="danger" role="alert" class="vault-modal__error">
                 {{ localError || vaultStore.error }}
             </MaxAlert>
 
             <footer class="vault-modal__footer">
-                <MaxButton type="button" variant="secondary" class="vault-modal__btn" :disabled="submitting" @click="emit('update:visible', false)">
+                <MaxButton type="button" severity="secondary" class="vault-modal__btn" :disabled="submitting" @click="emit('update:visible', false)">
                     Cancelar
                 </MaxButton>
-                <MaxButton type="submit" variant="primary" class="vault-modal__btn" :disabled="submitting || !password.trim()" :loading="submitting">
+                <MaxButton type="submit" class="vault-modal__btn" :disabled="submitting || !password.trim()" :loading="submitting">
                     {{ submitting ? 'Desbloqueando...' : 'Desbloquear' }}
                 </MaxButton>
             </footer>
@@ -28,9 +28,12 @@
 
 <script setup lang="ts">
     import { ref, watch } from 'vue';
-    import MaxAlert from '@maxvue/max-components-ui/components/MaxAlert';
-    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
-    import MaxModal from '@maxvue/max-components-ui/components/MaxModal';
+    import {
+        MaxAlert,
+        MaxButton,
+        MaxInputText,
+        MaxModal
+    } from '@maxvue/max-components-ui';
     import { useVaultStore } from '@/stores/vault';
 
     export interface VaultUnlockModalProps {
@@ -48,7 +51,7 @@
     const password = ref<string>('');
     const submitting = ref<boolean>(false);
     const localError = ref<string | null>(null);
-    const passwordInputRef = ref<HTMLInputElement | null>(null);
+    const passwordInputRef = ref<{ focus: () => void } | HTMLInputElement | null>(null);
 
     watch(
         () => props.visible,

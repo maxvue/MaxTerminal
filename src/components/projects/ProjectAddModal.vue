@@ -52,7 +52,11 @@
 
 <script setup lang="ts">
     import { computed, onScopeDispose, ref, watch } from 'vue';
-    import { MaxAlert, MaxButton, MaxModal } from '@maxvue/max-components-ui';
+    import {
+        MaxAlert,
+        MaxButton,
+        MaxModal
+    } from '@maxvue/max-components-ui';
     import { useIpcError } from '@/composables/useIpcError';
     import {
         isValidProjectColor,

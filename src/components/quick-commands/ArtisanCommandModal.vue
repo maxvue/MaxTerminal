@@ -51,7 +51,7 @@
                 </label>
 
                 <div v-if="generalIssues.length > 0" class="artisan-modal__general-errors">
-                    <p v-for="(iss, idx) in generalIssues" :key="idx" class="artisan-modal__error">{{ iss.message }}</p>
+                    <MaxAlert v-for="(iss, idx) in generalIssues" :key="idx" severity="danger" :message="iss.message" class="artisan-modal__error" />
                 </div>
             </div>
 
@@ -77,7 +77,7 @@
 
 <script setup lang="ts">
     import { computed, ref } from 'vue';
-    import { MaxButton, MaxIcon, MaxInputCheckbox, MaxInputTextArea, MaxModal } from '@maxvue/max-components-ui';
+    import { MaxAlert, MaxButton, MaxIcon, MaxInputCheckbox, MaxInputTextArea, MaxModal } from '@maxvue/max-components-ui';
     import ArtisanParamsBuilder from '@/components/quick-commands/ArtisanParamsBuilder.vue';
     import ArtisanPhpPreview from '@/components/quick-commands/ArtisanPhpPreview.vue';
     import ArtisanSchedulePicker from '@/components/quick-commands/ArtisanSchedulePicker.vue';

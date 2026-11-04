@@ -20,10 +20,7 @@
             <code class="ai-suggestion-block__stream-code">{{ state.streamingText || 'Gerando sugestão de comando...' }}</code>
         </div>
 
-        <div v-else-if="state.status === 'failed'" class="ai-suggestion-block__error" role="alert" data-testid="suggestion-error">
-            <MaxIcon icon="lucide:circle-alert" :size="0.875" />
-            <span>{{ state.error || 'Falha ao gerar comando.' }}</span>
-        </div>
+        <MaxAlert v-else-if="state.status === 'failed'" severity="danger" icon="lucide:circle-alert" :message="state.error || 'Falha ao gerar comando.'" role="alert" data-testid="suggestion-error" class="ai-suggestion-block__error" />
 
         <div v-else-if="state.status === 'completed'" class="ai-suggestion-block__body">
             <label class="ai-suggestion-block__cmd-field">
@@ -77,9 +74,12 @@
 
 <script setup lang="ts">
     import { computed, ref } from 'vue';
-    import MaxButton from '@maxvue/max-components-ui/components/MaxButton';
-    import MaxIconButton from '@maxvue/max-components-ui/components/MaxIconButton';
-    import MaxIcon from '@maxvue/max-components-ui/components/MaxIcon';
+    import {
+        MaxAlert,
+        MaxButton,
+        MaxIcon,
+        MaxIconButton
+    } from '@maxvue/max-components-ui';
     import AiContextPreview from '@/components/ai/AiContextPreview.vue';
     import DestructiveConfirm from '@/components/ai/DestructiveConfirm.vue';
     import RiskBadge from '@/components/ai/RiskBadge.vue';

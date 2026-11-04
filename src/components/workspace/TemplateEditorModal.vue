@@ -1,7 +1,7 @@
 <template>
     <MaxModal :visible="props.open" :title="modalTitle" :no-button="true" max-width="38rem" class="template-modal" :dismissable="!props.saving" :close-on-escape="!props.saving" @update:visible="emit('close')">
         <form class="template-modal__form" @submit.prevent="handleSubmit">
-            <div v-if="localError || props.errorMessage" class="template-modal__error" role="alert">{{ localError || props.errorMessage }}</div>
+            <MaxAlert v-if="localError || props.errorMessage" severity="danger" role="alert" :message="localError || props.errorMessage" class="template-modal__error" />
             <div class="template-modal__row">
                 <label class="template-modal__field template-modal__field--grow">
                     <span class="template-modal__label">Nome do Template *</span>
@@ -51,8 +51,8 @@
             </label>
             <div v-if="origin === 'remote'" class="template-modal__connection-test">
                 <MaxButton type="button" :label="testingConnection ? 'Testando conexão...' : 'Testar Conexão'" icon="lucide:plug-zap" :disabled="testingConnection || props.saving" :loading="testingConnection" @click="handleTestConnection" />
-                <p v-if="connectionTestSuccess" class="template-modal__success" role="status">{{ connectionTestSuccess }}</p>
-                <p v-if="connectionTestError" class="template-modal__error" role="alert">{{ connectionTestError }}</p>
+                <MaxAlert v-if="connectionTestSuccess" severity="success" role="status" :message="connectionTestSuccess" class="template-modal__success" />
+                <MaxAlert v-if="connectionTestError" severity="danger" role="alert" :message="connectionTestError" class="template-modal__error" />
             </div>
             <label class="template-modal__field">
                 <span class="template-modal__label">Comando Inicial (opcional)</span>
@@ -89,6 +89,7 @@
 <script setup lang="ts">
     import { computed, ref, watch } from 'vue';
     import {
+        MaxAlert,
         MaxButton,
         MaxIconButton,
         MaxInputCheckbox,

@@ -54,7 +54,7 @@
             </div>
 
             <div v-if="scheduleIssues.length > 0" class="schedule-picker__errors">
-                <p v-for="(iss, idx) in scheduleIssues" :key="idx" class="schedule-picker__error-item">{{ iss.message }}</p>
+                <MaxAlert v-for="(iss, idx) in scheduleIssues" :key="idx" severity="danger" :message="iss.message" class="schedule-picker__error-item" />
             </div>
 
             <div v-if="argumentParams.length > 0" class="schedule-picker__args">
@@ -68,18 +68,9 @@
             </div>
 
             <div class="schedule-picker__modifiers">
-                <label class="schedule-picker__checkbox">
-                    <input type="checkbox" :checked="modelValue.withoutOverlapping" @change="(ev) => patchModifier('withoutOverlapping', ev)">
-                    <span>Sem sobreposição (withoutOverlapping)</span>
-                </label>
-                <label class="schedule-picker__checkbox">
-                    <input type="checkbox" :checked="modelValue.onOneServer" @change="(ev) => patchModifier('onOneServer', ev)">
-                    <span>Em um único servidor (onOneServer)</span>
-                </label>
-                <label class="schedule-picker__checkbox">
-                    <input type="checkbox" :checked="modelValue.runInBackground" @change="(ev) => patchModifier('runInBackground', ev)">
-                    <span>Em segundo plano (runInBackground)</span>
-                </label>
+                <MaxInputCheckbox :model-value="Boolean(modelValue.withoutOverlapping)" label="Sem sobreposição (withoutOverlapping)" class="schedule-picker__checkbox" @update:model-value="(val) => patchModifier('withoutOverlapping', val)" />
+                <MaxInputCheckbox :model-value="Boolean(modelValue.onOneServer)" label="Em um único servidor (onOneServer)" class="schedule-picker__checkbox" @update:model-value="(val) => patchModifier('onOneServer', val)" />
+                <MaxInputCheckbox :model-value="Boolean(modelValue.runInBackground)" label="Em segundo plano (runInBackground)" class="schedule-picker__checkbox" @update:model-value="(val) => patchModifier('runInBackground', val)" />
             </div>
         </div>
     </div>
@@ -87,6 +78,7 @@
 
 <script setup lang="ts">
     import { computed } from 'vue';
+    import { MaxAlert, MaxInputCheckbox } from '@maxvue/max-components-ui';
     import type {
         ArtisanParam,
         FieldIssue,
@@ -172,8 +164,8 @@
         }
     }
 
-    function onToggleSchedule(ev: Event): void {
-        const enabled = (ev.target as HTMLInputElement).checked;
+    function onToggleSchedule(valOrEv: unknown): void {
+        const enabled = typeof valOrEv === 'boolean' ? valOrEv : Boolean((valOrEv as { target?: HTMLInputElement })?.target?.checked);
         if (!enabled) {
             emit('update:modelValue', null);
             return;
@@ -278,12 +270,12 @@
 
     function patchModifier(
         key: 'withoutOverlapping' | 'onOneServer' | 'runInBackground',
-        ev: Event
+        valOrEv: unknown
     ): void {
         if (!props.modelValue) {
             return;
         }
-        const checked = (ev.target as HTMLInputElement).checked;
+        const checked = typeof valOrEv === 'boolean' ? valOrEv : Boolean((valOrEv as { target?: HTMLInputElement })?.target?.checked);
         emit('update:modelValue', {
             ...props.modelValue,
             [key]: checked

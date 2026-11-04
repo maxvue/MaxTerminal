@@ -34,8 +34,8 @@
         </div>
 
         <div class="font-settings__toggles">
-            <MaxInputCheckbox id="mt-font-ligatures" :model-value="appearance.fontLigatures" :disabled="Boolean(disabled)" label="Habilitar ligaduras tipográficas no terminal (ex.: =>, !==, ->)" class="font-settings__checkbox" @update:model-value="onLigaturesToggle" />
-            <MaxInputCheckbox id="mt-cursor-blink" :model-value="appearance.cursorBlink" :disabled="Boolean(disabled)" label="Cursor piscante nas sessões interativas" class="font-settings__checkbox" @update:model-value="onCursorBlinkToggle" />
+            <MaxInputCheckbox :model-value="appearance.fontLigatures" :disabled="Boolean(disabled)" label="Habilitar ligaduras tipográficas no terminal (ex.: =>, !==, ->)" class="font-settings__checkbox" @update:model-value="onLigaturesToggle" />
+            <MaxInputCheckbox :model-value="appearance.cursorBlink" :disabled="Boolean(disabled)" label="Cursor piscante nas sessões interativas" class="font-settings__checkbox" @update:model-value="onCursorBlinkToggle" />
         </div>
     </div>
 </template>
