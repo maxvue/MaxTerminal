@@ -119,4 +119,22 @@ describe('ThemePicker.vue', () => {
         await wrapper.find('.theme-swatch').trigger('click');
         expect(wrapper.emitted('select')?.[0]).toEqual(['oceano-custom']);
     });
+
+    it('exibe MaxEmptyDiv com label quando nenhum tema corresponde ao filtro', async () => {
+        const wrapper = mount(ThemePicker, {
+            props: {
+                themes: summaries,
+                activeThemeId: 'oceano-custom'
+            }
+        });
+
+        const input = wrapper.find('.theme-picker__search input');
+        await input.setValue('TemaInexistente123');
+        expect(wrapper.findAll('.theme-swatch')).toHaveLength(0);
+
+        const emptyDiv = wrapper.findComponent({ name: 'MaxEmptyDiv' });
+        expect(emptyDiv.exists()).toBe(true);
+        expect(emptyDiv.props('label')).toBe('Nenhum esquema de cores corresponde ao filtro informado.');
+        expect(emptyDiv.text()).toContain('Nenhum esquema de cores corresponde ao filtro informado.');
+    });
 });

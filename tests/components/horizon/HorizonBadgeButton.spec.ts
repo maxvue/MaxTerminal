@@ -135,7 +135,7 @@ describe('HorizonBadgeButton.vue', () => {
         expect(store.isModalOpen).toBe(false);
     });
 
-    it('chama openModal ao clicar no botão', async () => {
+    it('chama openModal ao clicar no botão quando o modal estiver fechado', async () => {
         const store = useHorizonStore();
         store.data = createMockSnapshot();
         const openModalSpy = vi.spyOn(store, 'openModal');
@@ -145,5 +145,18 @@ describe('HorizonBadgeButton.vue', () => {
         await badgeButton.trigger('click');
 
         expect(openModalSpy).toHaveBeenCalled();
+    });
+
+    it('chama closeModal ao clicar no botão quando o modal já estiver aberto', async () => {
+        const store = useHorizonStore();
+        store.data = createMockSnapshot();
+        store.isModalOpen = true;
+        const closeModalSpy = vi.spyOn(store, 'closeModal');
+
+        const wrapper = mount(HorizonBadgeButton);
+        const badgeButton = wrapper.findComponent({ name: 'MaxBadgeButton' });
+        await badgeButton.trigger('click');
+
+        expect(closeModalSpy).toHaveBeenCalled();
     });
 });

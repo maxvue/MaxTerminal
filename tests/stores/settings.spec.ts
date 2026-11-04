@@ -283,4 +283,28 @@ describe('stores/settings + DbRecoveryPanel', () => {
         expect(dbIpc.recover).toHaveBeenCalledWith({ action: 'reset_database' });
         expect(store.isRecoveryRequired).toBe(false);
     });
+
+    it('DbRecoveryPanel exibe MaxEmptyDiv com label quando não há backups disponíveis', async () => {
+        const noBackupsStatus: DbStatusDto = {
+            ...recoveryStatus,
+            health: {
+                state: 'recovery_required',
+                code: 'db.corrupted',
+                reason: 'O banco de dados local apresenta inconsistências estruturais.',
+                db_path: '/tmp/maxterminal/maxterminal.db',
+                available_backups: []
+            }
+        };
+        vi.mocked(dbIpc.getStatus).mockResolvedValue({ ok: true, data: noBackupsStatus });
+        vi.mocked(dbIpc.getSettings).mockResolvedValue({ ok: true, data: {} });
+
+        const store = useSettingsStore();
+        await store.hydrate();
+
+        const wrapper = mount(DbRecoveryPanel);
+        const emptyDiv = wrapper.findComponent({ name: 'MaxEmptyDiv' });
+        expect(emptyDiv.exists()).toBe(true);
+        expect(emptyDiv.props('label')).toBe('Nenhum backup anterior encontrado no diretório local.');
+        expect(emptyDiv.text()).toContain('Nenhum backup anterior encontrado no diretório local.');
+    });
 });

@@ -4,7 +4,7 @@
             Associe opcionalmente um esquema de cores específico para cada projeto. Ao selecionar o projeto na barra lateral, o MaxTerminal aplicará automaticamente o tema configurado.
         </p>
 
-        <MaxEmptyDiv v-if="props.projects.length === 0" message="Nenhum projeto cadastrado até o momento." class="project-overrides__empty" />
+        <MaxEmptyDiv v-if="props.projects.length === 0" label="Nenhum projeto cadastrado até o momento." class="project-overrides__empty" />
 
         <div v-else class="project-overrides__list">
             <div v-for="proj in props.projects" :key="proj.id" class="project-overrides__row">

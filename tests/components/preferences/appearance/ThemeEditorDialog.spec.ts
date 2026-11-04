@@ -171,4 +171,27 @@ describe('ThemeEditorDialog.vue', () => {
             'Contraste insuficiente entre texto e fundo (2.10:1)'
         );
     });
+
+    it('bloqueia o fechamento e desativa dismissable e close-on-escape enquanto estiver salvando', async () => {
+        const editorStore = useThemeEditorStore();
+        editorStore.openCreate(null);
+
+        const wrapper = mount(ThemeEditorDialog);
+        const modal = wrapper.findComponent({ name: 'MaxModal' });
+        expect(modal.exists()).toBe(true);
+        expect(modal.props('dismissable')).toBe(true);
+        expect(modal.props('closeOnEscape')).toBe(true);
+
+        editorStore.saving = true;
+        await wrapper.vm.$nextTick();
+
+        expect(modal.props('dismissable')).toBe(false);
+        expect(modal.props('closeOnEscape')).toBe(false);
+
+        const beforeClose = modal.props('beforeClose') as ((ev: { preventDefault: () => void }) => void) | undefined;
+        expect(beforeClose).toBeDefined();
+        const preventDefault = vi.fn();
+        beforeClose!({ preventDefault });
+        expect(preventDefault).toHaveBeenCalledTimes(1);
+    });
 });

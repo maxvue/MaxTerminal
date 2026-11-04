@@ -5,11 +5,11 @@
             <div class="template-modal__row">
                 <label class="template-modal__field template-modal__field--grow">
                     <span class="template-modal__label">Nome do Template *</span>
-                    <input v-model="name" type="text" class="template-modal__input" maxlength="64" required placeholder="Ex.: Servidor Dev">
+                    <MaxInputText v-model="name" class="template-modal__input" maxlength="64" required placeholder="Ex.: Servidor Dev" />
                 </label>
                 <label class="template-modal__field">
                     <span class="template-modal__label">Ícone (Iconify)</span>
-                    <input v-model="icon" type="text" class="template-modal__input" maxlength="64" placeholder="lucide:terminal">
+                    <MaxInputText v-model="icon" class="template-modal__input" maxlength="64" placeholder="lucide:terminal" />
                 </label>
             </div>
 
@@ -22,11 +22,11 @@
                 <div class="template-modal__row">
                     <label class="template-modal__field template-modal__field--grow">
                         <span class="template-modal__label">IP / Servidor Remoto *</span>
-                        <input v-model="sshHost" type="text" class="template-modal__input template-modal__input--mono" placeholder="Ex.: 192.168.1.100 ou servidor.empresa.com" required>
+                        <MaxInputText v-model="sshHost" class="template-modal__input template-modal__input--mono" placeholder="Ex.: 192.168.1.100 ou servidor.empresa.com" required />
                     </label>
                     <label class="template-modal__field">
                         <span class="template-modal__label">Usuário SSH *</span>
-                        <input v-model="sshUser" type="text" class="template-modal__input template-modal__input--mono" placeholder="Ex.: ubuntu" required>
+                        <MaxInputText v-model="sshUser" class="template-modal__input template-modal__input--mono" placeholder="Ex.: ubuntu" required />
                     </label>
                 </div>
 
@@ -36,18 +36,18 @@
 
                 <div v-if="sshUseKey" class="template-modal__field">
                     <span class="template-modal__label">Caminho da Chave SSH (opcional)</span>
-                    <input v-model="sshIdentityFile" type="text" class="template-modal__input template-modal__input--mono" placeholder="Ex.: ~/.ssh/id_ed25519 (deixe vazio para ~/.ssh/id_rsa)">
+                    <MaxInputText v-model="sshIdentityFile" class="template-modal__input template-modal__input--mono" placeholder="Ex.: ~/.ssh/id_ed25519 (deixe vazio para ~/.ssh/id_rsa)" />
                 </div>
 
                 <div v-else class="template-modal__field">
                     <span class="template-modal__label">Senha SSH</span>
-                    <input v-model="sshPassword" type="password" class="template-modal__input template-modal__input--mono" :placeholder="hasExistingPassword ? 'Deixe em branco para manter a senha atual' : 'Senha para login remoto...'">
+                    <MaxInputText v-model="sshPassword" type="password" class="template-modal__input template-modal__input--mono" :placeholder="hasExistingPassword ? 'Deixe em branco para manter a senha atual' : 'Senha para login remoto...'" />
                 </div>
             </div>
 
             <label class="template-modal__field">
                 <span class="template-modal__label">Pasta personalizada (opcional)</span>
-                <input v-model="cwd" type="text" class="template-modal__input" :placeholder="origin === 'remote' ? 'Pasta no servidor, ex.: ~/htdocs/engeapp.com.br/current' : 'Relativa à raiz do projeto ou caminho absoluto'">
+                <MaxInputText v-model="cwd" class="template-modal__input" :placeholder="origin === 'remote' ? 'Pasta no servidor, ex.: ~/htdocs/engeapp.com.br/current' : 'Relativa à raiz do projeto ou caminho absoluto'" />
             </label>
             <div v-if="origin === 'remote'" class="template-modal__connection-test">
                 <MaxButton type="button" :label="testingConnection ? 'Testando conexão...' : 'Testar Conexão'" icon="lucide:plug-zap" :disabled="testingConnection || props.saving" :loading="testingConnection" @click="handleTestConnection" />
@@ -56,7 +56,7 @@
             </div>
             <label class="template-modal__field">
                 <span class="template-modal__label">Comando Inicial (opcional)</span>
-                <input v-model="initialCommand" type="text" class="template-modal__input template-modal__input--mono" placeholder="Ex.: npm run dev">
+                <MaxInputText v-model="initialCommand" class="template-modal__input template-modal__input--mono" placeholder="Ex.: npm run dev" />
             </label>
             <div class="template-modal__checkboxes">
                 <MaxInputCheckbox v-model="addToWorkspace" label="Adicionar ao Workspace (abrir ao iniciar)" />
@@ -69,12 +69,9 @@
                     <MaxButton label="Adicionar variável" icon="lucide:plus" variant="text" severity="secondary" size="small" class="template-modal__add-env" @click="addEnvRow" />
                 </div>
                 <div v-for="(row, idx) in envRows" :key="idx" class="template-modal__env-row">
-                    <input v-model="row.key" type="text" class="template-modal__input template-modal__input--mono" placeholder="NOME_VAR">
-                    <select v-model="row.kind" class="template-modal__select">
-                        <option value="literal">Valor literal</option>
-                        <option value="inherited">Herdar do sistema</option>
-                    </select>
-                    <input v-model="row.value" type="text" class="template-modal__input template-modal__input--mono" :placeholder="row.kind === 'inherited' ? 'VAR_HOST' : 'valor'">
+                    <MaxInputText v-model="row.key" class="template-modal__input template-modal__input--mono" placeholder="NOME_VAR" />
+                    <MaxInputSelect v-model="row.kind" :options="envKindOptions" option-label="label" option-value="value" option-name="label" class="template-modal__select" />
+                    <MaxInputText v-model="row.value" class="template-modal__input template-modal__input--mono" :placeholder="row.kind === 'inherited' ? 'VAR_HOST' : 'valor'" />
                     <MaxIconButton icon="lucide:trash-2" label="Remover variável" variant="text" severity="danger" class="template-modal__remove-env" @click="removeEnvRow(idx)" />
                 </div>
             </div>
@@ -94,6 +91,7 @@
         MaxIconButton,
         MaxInputCheckbox,
         MaxInputSelect,
+        MaxInputText,
         MaxModal
     } from '@maxvue/max-components-ui';
     import { templateTestConnection } from '@/ipc/templates';
@@ -104,6 +102,11 @@
         TabTemplateInput_Deserialize,
         TemplateConnectionInput_Deserialize
     } from '@/types/bindings';
+
+    const envKindOptions = [
+        { label: 'Valor literal', value: 'literal' },
+        { label: 'Herdar do sistema', value: 'inherited' }
+    ];
 
     interface EnvRowItem {
         key: string;

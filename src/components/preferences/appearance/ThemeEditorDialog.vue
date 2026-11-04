@@ -1,5 +1,5 @@
 <template>
-    <MaxModal v-model:visible="editorStore.isOpen" :title="dialogTitle" :no-button="true" width="54rem" :closable="!editorStore.saving">
+    <MaxModal v-model:visible="editorStore.isOpen" :title="dialogTitle" :no-button="true" width="54rem" :dismissable="!editorStore.saving" :close-on-escape="!editorStore.saving" :before-close="onBeforeClose">
         <div class="theme-editor">
             <MaxAlert v-if="editorStore.errorMessage" :message="editorStore.errorMessage" severity="danger" class="theme-editor__alert" />
 
@@ -253,6 +253,12 @@
 
     function onAnsiColorPick(key: keyof AnsiPaletteInput, val: unknown): void {
         editorStore.data.draft.ansi[key] = normalizeHexFromPicker(val);
+    }
+
+    function onBeforeClose(event: { preventDefault: () => void }): void {
+        if (editorStore.saving) {
+            event.preventDefault();
+        }
     }
 
     async function onSubmit(): Promise<void> {
