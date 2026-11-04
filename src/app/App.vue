@@ -2,27 +2,25 @@
     <!-- O host global de notificações <MaxToast /> é montado internamente por <MaxApp> -->
     <MaxApp blank-mode no-login controlled-theme :colors="maxAppColors">
         <template #blank>
-            <AppShell :loading="appStore.status === 'loading'">
-                <template #workspace>
-                    <AppEmptyState v-if="appStore.status === 'error'" icon="mdi:alert-circle-outline" title="Falha ao inicializar o MaxTerminal" :description="errorDescription">
-                        <div flex flex-col items-center gap-2>
-                            <span v-if="errorCode" class="app-error-code" text-xs px-2 py-0.5 rounded>{{ errorCode }}</span>
-                            <MaxButton type="button" class="app-retry-btn" label="Tentar novamente" @click="handleRetry" />
-                        </div>
-                    </AppEmptyState>
-                    <DbRecoveryPanel v-else-if="settingsStore.isRecoveryRequired" />
-                    <component :is="DevTerminalPlaygroundComponent" v-else-if="showDevPlayground && DevTerminalPlaygroundComponent" />
-                    <AppLayout v-else />
-                    <PreferencesDialog />
-                    <ProjectSettingsDialog />
-                    <QuickCommandsHost />
-                    <GlobalSearchPalette />
-                    <PerfOverlay />
-                    <VaultUnlockModal :visible="vaultStore.unlockModalOpen" @update:visible="vaultStore.unlockModalOpen = $event" @unlocked="vaultStore.handleUnlocked" />
-                    <VaultSetupModal :visible="vaultStore.setupModalOpen" @update:visible="vaultStore.setupModalOpen = $event" @configured="vaultStore.handleConfigured" />
-                    <HorizonModal />
-                </template>
-            </AppShell>
+            <div class="app-workspace" :data-loading="appStore.status === 'loading' ? 'true' : 'false'">
+                <AppEmptyState v-if="appStore.status === 'error'" icon="mdi:alert-circle-outline" title="Falha ao inicializar o MaxTerminal" :description="errorDescription">
+                    <div flex flex-col items-center gap-2>
+                        <span v-if="errorCode" class="app-error-code" text-xs px-2 py-0.5 rounded>{{ errorCode }}</span>
+                        <MaxButton type="button" class="app-retry-btn" label="Tentar novamente" @click="handleRetry" />
+                    </div>
+                </AppEmptyState>
+                <DbRecoveryPanel v-else-if="settingsStore.isRecoveryRequired" />
+                <component :is="DevTerminalPlaygroundComponent" v-else-if="showDevPlayground && DevTerminalPlaygroundComponent" />
+                <AppLayout v-else />
+                <PreferencesDialog />
+                <ProjectSettingsDialog />
+                <QuickCommandsHost />
+                <GlobalSearchPalette />
+                <PerfOverlay />
+                <VaultUnlockModal :visible="vaultStore.unlockModalOpen" @update:visible="vaultStore.unlockModalOpen = $event" @unlocked="vaultStore.handleUnlocked" />
+                <VaultSetupModal :visible="vaultStore.setupModalOpen" @update:visible="vaultStore.setupModalOpen = $event" @configured="vaultStore.handleConfigured" />
+                <HorizonModal />
+            </div>
         </template>
     </MaxApp>
 </template>
@@ -46,7 +44,6 @@
     import QuickCommandsHost from '@/components/quick-commands/QuickCommandsHost.vue';
     import GlobalSearchPalette from '@/components/search/GlobalSearchPalette.vue';
     import AppEmptyState from '@/components/shell/AppEmptyState.vue';
-    import AppShell from '@/components/shell/AppShell.vue';
     import DbRecoveryPanel from '@/components/shell/DbRecoveryPanel.vue';
     import { useSearchShortcut } from '@/composables/search/useSearchShortcut';
     import { useActiveProjectSync } from '@/composables/useActiveProjectSync';
@@ -134,6 +131,18 @@
 
 <style lang="scss" scoped>
     @use '@/styles/params' as *;
+
+    .app-workspace {
+        display: flex;
+        flex-direction: column;
+        width: 100vw;
+        height: 100vh;
+        min-width: 0;
+        min-height: 0;
+        overflow: hidden;
+        background: var(--mt-ui-surface, var(--background-0));
+        color: var(--mt-ui-text, var(--background-800));
+    }
 
     .app-error-code {
         background: var(--mt-ui-surface-elevated, var(--background-50));

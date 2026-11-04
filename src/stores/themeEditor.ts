@@ -174,6 +174,44 @@ export function formatSelectionBackground(
     return `${baseHex}${alphaHex}`;
 }
 
+export function isValidHexColor(value: string | null | undefined): boolean {
+    if (!value || typeof value !== 'string') {
+        return false;
+    }
+    const trimmed = value.trim();
+    return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(trimmed);
+}
+
+export function isThemeDraftValid(draft: ThemeDraftInput): { valid: boolean; error?: string } {
+    if (!draft.name || draft.name.trim().length === 0) {
+        return { valid: false, error: 'O nome do tema é obrigatório.' };
+    }
+    if (!isValidHexColor(draft.background)) {
+        return { valid: false, error: 'Cor de fundo principal inválida (esperado #RRGGBB).' };
+    }
+    if (!isValidHexColor(draft.foreground)) {
+        return { valid: false, error: 'Cor de texto principal inválida (esperado #RRGGBB).' };
+    }
+    if (!isValidHexColor(draft.cursor)) {
+        return { valid: false, error: 'Cor do cursor inválida (esperado #RRGGBB).' };
+    }
+    if (!isValidHexColor(draft.cursorAccent)) {
+        return { valid: false, error: 'Cor de texto sob o cursor inválida (esperado #RRGGBB).' };
+    }
+    if (draft.selectionForeground && !isValidHexColor(draft.selectionForeground)) {
+        return { valid: false, error: 'Cor de texto selecionado inválida (esperado #RRGGBB).' };
+    }
+    if (draft.activeTabAccent && !isValidHexColor(draft.activeTabAccent)) {
+        return { valid: false, error: 'Cor de destaque da aba ativa inválida (esperado #RRGGBB).' };
+    }
+    for (const [key, color] of Object.entries(draft.ansi)) {
+        if (!isValidHexColor(color)) {
+            return { valid: false, error: `Cor ANSI "${key}" inválida (esperado #RRGGBB).` };
+        }
+    }
+    return { valid: true };
+}
+
 const DEFAULT_EDITOR_STATE: ThemeEditorState = {
     mode: 'create',
     editingId: null,
@@ -213,6 +251,9 @@ export const useThemeEditorStore = defineStore('theme-editor', () => {
     const isReadOnly = computed<boolean>(
         () => data.value.mode === 'edit' && data.value.origin === 'builtin'
     );
+
+    const validationResult = computed(() => isThemeDraftValid(data.value.draft));
+    const isColorsValid = computed(() => validationResult.value.valid);
 
     const selectionParts = computed(() =>
         parseSelectionBackground(data.value.draft.selectionBackground)
@@ -374,8 +415,17 @@ export const useThemeEditorStore = defineStore('theme-editor', () => {
 
     async function submitDraft(): Promise<ResolvedTheme> {
         ensureAutoSavePaused();
+        if (saving.value) {
+            throw new Error('Salvamento já em andamento.');
+        }
         if (isReadOnly.value) {
             const msg = 'Temas nativos são somente leitura. Duplique o tema para editá-lo.';
+            errorMessage.value = msg;
+            throw new Error(msg);
+        }
+        const validation = isThemeDraftValid(data.value.draft);
+        if (!validation.valid) {
+            const msg = validation.error ?? 'Dados do tema inválidos.';
             errorMessage.value = msg;
             throw new Error(msg);
         }
@@ -454,6 +504,8 @@ export const useThemeEditorStore = defineStore('theme-editor', () => {
         lastSavedResolved,
         isDirty,
         isReadOnly,
+        validationResult,
+        isColorsValid,
         selectionParts,
         getSaveData,
         onServerData,

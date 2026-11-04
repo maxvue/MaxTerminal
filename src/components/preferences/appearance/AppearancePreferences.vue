@@ -79,12 +79,13 @@
     import { useProjectsStore } from '@/stores/projects';
     import { useThemeStore } from '@/stores/theme';
     import { useThemeEditorStore } from '@/stores/themeEditor';
-    import type {
-        AppearanceSettingsPatch,
-        ResolvedTheme,
-        ThemeId,
-        ThemeScope,
-        ThemeSummary
+    import {
+        DEFAULT_DARK_THEME_ID,
+        type AppearanceSettingsPatch,
+        type ResolvedTheme,
+        type ThemeId,
+        type ThemeScope,
+        type ThemeSummary
     } from '@/types/theme';
 
     const themeStore = useThemeStore();
@@ -154,6 +155,11 @@
     async function onEditTheme(id: ThemeId): Promise<void> {
         errorMsg.value = null;
         themeStore.cancelPreview();
+        const found = themeStore.themes.find((t) => t.id === id);
+        if (found?.origin === 'builtin') {
+            errorMsg.value = 'Temas nativos são somente leitura. Duplique o tema para editá-lo.';
+            return;
+        }
         try {
             const resolved = await themeStore.fetchAndCacheResolved(id);
             if (resolved) {
@@ -177,7 +183,12 @@
     function onRequestDeleteTheme(id: ThemeId): void {
         errorMsg.value = null;
         themeStore.cancelPreview();
-        const found = themeStore.themes.find((t) => t.id === id) ?? {
+        const found = themeStore.themes.find((t) => t.id === id);
+        if (found?.origin === 'builtin') {
+            errorMsg.value = 'Temas nativos não podem ser excluídos.';
+            return;
+        }
+        pendingDeleteTheme.value = found ?? {
             id,
             name: id,
             origin: 'custom',
@@ -196,7 +207,6 @@
                 '#e2e8f0'
             ]
         };
-        pendingDeleteTheme.value = found;
     }
 
     function onDeleteModalVisibilityChange(visible: boolean): void {
@@ -213,7 +223,7 @@
         pendingDeleteTheme.value = null;
         errorMsg.value = null;
         try {
-            await themeStore.deleteTheme(target.id);
+            await themeStore.deleteTheme(target.id, DEFAULT_DARK_THEME_ID);
         } catch (err: unknown) {
             errorMsg.value = ipcError.message(err);
         }
