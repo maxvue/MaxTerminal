@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use mt_commands::horizon::{
     HorizonAvailability, HorizonDomainService, HorizonStatus, RawHorizonProbeOutput, RawQueueScope,
-    build_snapshot_from_probe, has_static_horizon_manifest,
+    build_snapshot_from_probe, compute_capabilities, has_static_horizon_manifest,
 };
 use mt_commands::ports::{Clock, ProjectLookup};
 use mt_core::ProjectId;
@@ -38,6 +38,30 @@ impl Clock for MockClock {
     fn now_ms(&self) -> i64 {
         self.time
     }
+}
+
+#[test]
+fn test_compute_capabilities_external_status_never_allows_start_or_stop() {
+    let (can_start, can_stop, can_clear) =
+        compute_capabilities(HorizonAvailability::Available, HorizonStatus::External, true, Some(10));
+
+    // Processo externo não deve conceder iniciar nem parar supervisionado
+    assert!(!can_start);
+    assert!(!can_stop);
+    assert!(can_clear);
+}
+
+#[test]
+fn test_compute_capabilities_stopped_and_running() {
+    let (can_start, can_stop, _) =
+        compute_capabilities(HorizonAvailability::Available, HorizonStatus::Stopped, true, None);
+    assert!(can_start);
+    assert!(!can_stop);
+
+    let (can_start_run, can_stop_run, _) =
+        compute_capabilities(HorizonAvailability::Available, HorizonStatus::Running, true, None);
+    assert!(!can_start_run);
+    assert!(can_stop_run);
 }
 
 #[test]

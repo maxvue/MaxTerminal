@@ -1,8 +1,10 @@
-import { ref } from 'vue';
+import { createApp, ref } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createMaxPinia } from '@maxvue/max-pinia';
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { useHorizonStore } from '@/stores/horizon';
 import { useProjectsStore } from '@/stores/projects';
+import { createHorizonAxiosInstance } from '@/ipc/horizonMaxPiniaAdapter';
 import * as horizonIpc from '@/ipc/horizon';
 import type { HorizonSnapshot_Serialize, Project_Serialize } from '@/types/bindings';
 
@@ -19,6 +21,37 @@ const mockVisibility = ref('visible');
 vi.mock('@maxvue/max-use', () => ({
     useDocumentVisibility: () => mockVisibility
 }));
+
+// Harness isolado de LocalForage em memória conforme exigido em T1
+vi.mock('localforage', () => {
+    const memory = new Map<string, unknown>();
+    const instance = {
+        getItem: vi.fn(async (key: string) => memory.get(key) ?? null),
+        setItem: vi.fn(async (key: string, val: unknown) => {
+            memory.set(key, val);
+            return val;
+        }),
+        removeItem: vi.fn(async (key: string) => {
+            memory.delete(key);
+        }),
+        clear: vi.fn(async () => {
+            memory.clear();
+        }),
+        keys: vi.fn(async () => Array.from(memory.keys())),
+        config: vi.fn()
+    };
+    return {
+        default: {
+            createInstance: () => instance,
+            config: () => {},
+            getItem: instance.getItem,
+            setItem: instance.setItem,
+            removeItem: instance.removeItem,
+            clear: instance.clear,
+            keys: instance.keys
+        }
+    };
+});
 
 describe('useHorizonStore', () => {
     const sampleProject: Project_Serialize = {
@@ -61,17 +94,34 @@ describe('useHorizonStore', () => {
     };
 
     beforeEach(() => {
-        setActivePinia(createPinia());
+        const app = createApp({});
+        const pinia = createPinia();
+        pinia.use(
+            createMaxPinia({
+                axios: createHorizonAxiosInstance() as never
+            }) as never
+        );
+        app.use(pinia);
+        setActivePinia(pinia);
         vi.clearAllMocks();
         mockVisibility.value = 'visible';
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
     });
 
     it('inicializa com valores vazios quando não há projeto selecionado', () => {
         const store = useHorizonStore();
         expect(store.id).toBe('');
         expect(store.enabled).toBe(false);
-        expect(store.data).toBeNull();
+        expect(store.data?.context).toBeUndefined();
         expect(store.isAvailable).toBe(false);
+        expect(store.runtimeStatus).toBe('stopped');
+        // store.status pertence exclusivamente ao MaxPinia (injetado via plugin em runtime)
+        const storeWithPlugin = store as unknown as { status?: { reset?: () => void } };
+        expect(storeWithPlugin.status).toBeDefined();
+        expect(typeof storeWithPlugin.status?.reset).toBe('function');
     });
 
     it('carrega snapshot quando um projeto é selecionado no projectsStore', async () => {
@@ -91,6 +141,26 @@ describe('useHorizonStore', () => {
         expect(store.canStart).toBe(true);
         expect(store.pendingCount).toBe(20);
         expect(store.failedCount).toBe(1);
+        expect(store.runtimeStatus).toBe('stopped');
+    });
+
+    it('descarta snapshot recebido cujo projectId difira do projeto ativo no onServerData', () => {
+        const projectsStore = useProjectsStore();
+        projectsStore.projects = [sampleProject];
+        projectsStore.selectedId = 'proj-1';
+        const store = useHorizonStore();
+
+        // Tenta injetar snapshot de outro projeto
+        const foreignSnapshot: HorizonSnapshot_Serialize = {
+            ...sampleSnapshot,
+            context: {
+                ...sampleSnapshot.context,
+                projectId: 'proj-other'
+            }
+        };
+
+        store.onServerData(foreignSnapshot);
+        expect(store.data?.context?.projectId).not.toBe('proj-other');
     });
 
     it('executa a ação start() chamando o IPC e atualizando o snapshot', async () => {
@@ -111,6 +181,7 @@ describe('useHorizonStore', () => {
         const store = useHorizonStore();
         await vi.waitFor(() => {
             expect(store.isAvailable).toBe(true);
+            expect(store.canStart).toBe(true);
         });
 
         await store.start();
@@ -120,7 +191,7 @@ describe('useHorizonStore', () => {
             'rev-100',
             expect.any(String)
         );
-        expect(store.status).toBe('running');
+        expect(store.runtimeStatus).toBe('running');
         expect(store.isRunning).toBe(true);
         expect(store.session).toEqual(runningSnap.session);
     });
@@ -148,21 +219,23 @@ describe('useHorizonStore', () => {
 
         const store = useHorizonStore();
         await vi.waitFor(() => {
-            expect(store.status).toBe('running');
+            expect(store.runtimeStatus).toBe('running');
+            expect(store.canStop).toBe(true);
         });
 
         await store.stop();
 
         expect(horizonIpc.stopHorizon).toHaveBeenCalledWith('proj-1', 2, expect.any(String));
-        expect(store.status).toBe('stopped');
+        expect(store.runtimeStatus).toBe('stopped');
     });
 
-    it('executa previewClear() e confirmClear() com reconciliação', async () => {
+    it('executa previewClear() e confirmClear() com validação estrita de token e TTL', async () => {
         vi.mocked(horizonIpc.getHorizonSnapshot).mockResolvedValue(sampleSnapshot);
+        const expiresAtMs = Date.now() + 30000;
         vi.mocked(horizonIpc.previewClearPending).mockResolvedValue({
             token: 'uuid-token-xyz',
             contextRevision: 'rev-100',
-            expiresAtMs: 1700000030000,
+            expiresAtMs,
             scopeId: 'scope-200',
             queues: [{ connection: 'redis', queue: 'default' }],
             estimatedPending: 20
@@ -186,6 +259,12 @@ describe('useHorizonStore', () => {
         const preview = await store.previewClear();
         expect(preview.token).toBe('uuid-token-xyz');
 
+        // Tentativa com token divergente rejeita
+        await expect(store.confirmClear('wrong-token')).rejects.toThrow(
+            'Prévia de confirmação de limpeza ausente ou token divergente.'
+        );
+
+        // Confirmação válida
         const result = await store.confirmClear(preview.token);
         expect(result.totalCleared).toBe(20);
         expect(horizonIpc.clearPending).toHaveBeenCalledWith(
@@ -193,6 +272,33 @@ describe('useHorizonStore', () => {
             'uuid-token-xyz',
             expect.any(String)
         );
-        expect(horizonIpc.getHorizonSnapshot).toHaveBeenCalledTimes(2);
+    });
+
+    it('rejeita confirmClear quando a prévia estiver expirada', async () => {
+        vi.mocked(horizonIpc.getHorizonSnapshot).mockResolvedValue(sampleSnapshot);
+        // Token já expirado no passado
+        vi.mocked(horizonIpc.previewClearPending).mockResolvedValue({
+            token: 'expired-token',
+            contextRevision: 'rev-100',
+            expiresAtMs: Date.now() - 1000,
+            scopeId: 'scope-200',
+            queues: [{ connection: 'redis', queue: 'default' }],
+            estimatedPending: 5
+        });
+
+        const projectsStore = useProjectsStore();
+        projectsStore.projects = [sampleProject];
+        projectsStore.selectedId = sampleProject.id;
+
+        const store = useHorizonStore();
+        await vi.waitFor(() => {
+            expect(store.isAvailable).toBe(true);
+        });
+
+        const preview = await store.previewClear();
+        await expect(store.confirmClear(preview.token)).rejects.toThrow(
+            'O tempo para confirmação da limpeza expirou (máximo de 30 segundos).'
+        );
+        expect(horizonIpc.clearPending).not.toHaveBeenCalled();
     });
 });

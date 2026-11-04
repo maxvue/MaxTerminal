@@ -13,7 +13,7 @@ export const HORIZON_SNAPSHOT_ROUTE = '/app/horizon/snapshot';
 /**
  * Extrai o identificador do projeto a partir dos parâmetros de configuração ou da query string da URL.
  */
-function extractProjectId(config: InternalAxiosRequestConfig): ProjectId | null {
+export function extractProjectId(config: InternalAxiosRequestConfig): ProjectId | null {
     if (config.params && typeof config.params.projectId === 'string' && config.params.projectId.length > 0) {
         return config.params.projectId;
     }
@@ -37,19 +37,37 @@ function extractProjectId(config: InternalAxiosRequestConfig): ProjectId | null 
 }
 
 /**
+ * Compara se a requisição corresponde estritamente à rota GET do snapshot do Horizon.
+ */
+export function isHorizonSnapshotRoute(config: InternalAxiosRequestConfig): boolean {
+    const method = (config.method || 'get').toLowerCase();
+    if (method !== 'get') {
+        return false;
+    }
+
+    const rawUrl = config.url;
+    if (!rawUrl || typeof rawUrl !== 'string') {
+        return false;
+    }
+
+    try {
+        const parsed = new URL(rawUrl, 'http://127.0.0.1');
+        return parsed.pathname === HORIZON_SNAPSHOT_ROUTE;
+    } catch {
+        const [path] = rawUrl.split('?');
+        return path === HORIZON_SNAPSHOT_ROUTE;
+    }
+}
+
+/**
  * Adapter restrito do Axios para o ecossistema MaxPinia.
  * Intercepta chamadas à rota `/app/horizon/snapshot`, executando o IPC seguro `horizon_snapshot`
- * e respeitando o ciclo de vida do AbortSignal. Rotas não pertencentes ao Horizon são delegadas
- * ao adapter padrão do Axios.
+ * e respeitando o ciclo de vida do AbortSignal com descarte e liberação estrita de listeners em finally.
  */
 export const horizonMaxPiniaAdapter: AxiosAdapter = async (
     config: InternalAxiosRequestConfig
 ): Promise<AxiosResponse> => {
-    const isHorizonSnapshot =
-        config.url?.startsWith(HORIZON_SNAPSHOT_ROUTE) ||
-        config.url?.includes(HORIZON_SNAPSHOT_ROUTE);
-
-    if (!isHorizonSnapshot) {
+    if (!isHorizonSnapshotRoute(config)) {
         const defaultAdapter = axios.getAdapter(axios.defaults.adapter);
         return defaultAdapter(config);
     }
@@ -64,30 +82,36 @@ export const horizonMaxPiniaAdapter: AxiosAdapter = async (
     }
 
     const signal = config.signal as AbortSignal | undefined;
+    let removeAbortListener: (() => void) | undefined;
     const abortPromise = new Promise<never>((_, reject) => {
         if (!signal) {
             return;
         }
         const onAbort = () => {
-            signal.removeEventListener('abort', onAbort);
             reject(new CanceledError('canceled'));
         };
         signal.addEventListener('abort', onAbort);
+        removeAbortListener = () => {
+            signal.removeEventListener('abort', onAbort);
+        };
     });
 
-    const snapshotPromise = getHorizonSnapshot(projectId);
+    try {
+        const snapshotPromise = getHorizonSnapshot(projectId);
+        const snapshot = await Promise.race([snapshotPromise, abortPromise]);
 
-    const snapshot = await Promise.race([snapshotPromise, abortPromise]);
+        const response: AxiosResponse<HorizonSnapshot_Serialize> = {
+            data: snapshot,
+            status: 200,
+            statusText: 'OK',
+            headers: {},
+            config
+        };
 
-    const response: AxiosResponse<HorizonSnapshot_Serialize> = {
-        data: snapshot,
-        status: 200,
-        statusText: 'OK',
-        headers: {},
-        config
-    };
-
-    return response;
+        return response;
+    } finally {
+        removeAbortListener?.();
+    }
 };
 
 /**

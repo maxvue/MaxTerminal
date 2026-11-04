@@ -1,10 +1,9 @@
 import { defineStore } from 'pinia';
-import { computed, ref, watch } from 'vue';
+import { computed, onScopeDispose, ref, watch } from 'vue';
 import { useDocumentVisibility } from '@maxvue/max-use';
 import { useProjectsStore } from '@/stores/projects';
 import {
     clearPending,
-    getHorizonSnapshot,
     previewClearPending,
     startHorizon,
     stopHorizon
@@ -24,16 +23,24 @@ import type {
 export const useHorizonStore = defineStore('horizon', () => {
     // Configurações reativas de opt-in para o plugin MaxPinia
     const isCached = ref(true);
+    const is_cached = ref(true);
     const id = ref<string>('');
     const enabled = ref(false);
+    const default_value = ref<HorizonSnapshot_Serialize | null>(null);
     const data = ref<HorizonSnapshot_Serialize | null>(null);
 
+    // Contrato estrito com MaxPinia: data como dicionário cujos valores são resolvidos via toValue
     const options = {
         get: {
             route: HORIZON_SNAPSHOT_ROUTE,
-            data: computed(() => ({ projectId: id.value }))
+            data: {
+                projectId: computed(() => id.value)
+            }
         }
     };
+
+    // Indicador se os dados atuais foram confirmados pelo backend nesta ativação
+    const isConfirmedCurrentActivation = ref(false);
 
     // Estado local da UI e ações
     const isModalOpen = ref(false);
@@ -42,6 +49,9 @@ export const useHorizonStore = defineStore('horizon', () => {
     const isPreviewing = ref(false);
     const isClearing = ref(false);
     const actionError = ref<string | null>(null);
+
+    // Prévia temporária de limpeza em voo vinculada ao projeto ativo
+    const clearPreviewData = ref<HorizonClearPreview | null>(null);
 
     const projectsStore = useProjectsStore();
     const visibility = useDocumentVisibility();
@@ -57,27 +67,45 @@ export const useHorizonStore = defineStore('horizon', () => {
     const isAvailable = computed<boolean>(
         () => availability.value === 'available' || availability.value === 'error'
     );
-    const status = computed<HorizonStatus>(() => data.value?.status ?? 'stopped');
-    const isRunning = computed<boolean>(() => status.value === 'running');
-    const isStartingState = computed<boolean>(() => status.value === 'starting');
-    const isStoppingState = computed<boolean>(() => status.value === 'stopping');
+
+    // O status do daemon do Horizon é exposto exclusivamente como `runtimeStatus`,
+    // preservando `status` para o estado de requisição/cache injetado pelo MaxPinia
+    const runtimeStatus = computed<HorizonStatus>(() => data.value?.status ?? 'stopped');
+    const isRunning = computed<boolean>(() => runtimeStatus.value === 'running');
+    const isStartingState = computed<boolean>(() => runtimeStatus.value === 'starting');
+    const isStoppingState = computed<boolean>(() => runtimeStatus.value === 'stopping');
+
     const isBusy = computed<boolean>(
         () =>
             isStarting.value ||
             isStopping.value ||
+            isPreviewing.value ||
             isClearing.value ||
             isStartingState.value ||
             isStoppingState.value
     );
 
+    // Capacidades operacionais exigem confirmação pelo backend nesta ativação para evitar dados obsoletos
     const canStart = computed<boolean>(
-        () => !!data.value?.canStart && !isBusy.value && isAvailable.value
+        () =>
+            isConfirmedCurrentActivation.value &&
+            !!data.value?.canStart &&
+            !isBusy.value &&
+            isAvailable.value
     );
     const canStop = computed<boolean>(
-        () => !!data.value?.canStop && !isBusy.value && isAvailable.value
+        () =>
+            isConfirmedCurrentActivation.value &&
+            !!data.value?.canStop &&
+            !isBusy.value &&
+            isAvailable.value
     );
     const canClearPending = computed<boolean>(
-        () => !!data.value?.canClearPending && !isClearing.value && isAvailable.value
+        () =>
+            isConfirmedCurrentActivation.value &&
+            !!data.value?.canClearPending &&
+            !isClearing.value &&
+            isAvailable.value
     );
 
     const pendingCount = computed<number | null>(() => data.value?.pending ?? null);
@@ -86,63 +114,134 @@ export const useHorizonStore = defineStore('horizon', () => {
     const queues = computed<QueueScope[]>(() => data.value?.queues ?? []);
     const horizonVersion = computed<string | null>(() => data.value?.horizonVersion ?? null);
     const environment = computed<string | null>(() => data.value?.environment ?? null);
-    const session = computed<HorizonSessionDto | null>(() => data.value?.session ?? null);
+
+    // A sessão supervisionada (PTY e pane) exige confirmação nativa nesta ativação
+    const session = computed<HorizonSessionDto | null>(() => {
+        if (!isConfirmedCurrentActivation.value) {
+            return null;
+        }
+        return data.value?.session ?? null;
+    });
+
     const contextRevision = computed<string>(() => data.value?.context.contextRevision ?? '');
     const generation = computed<number>(() => data.value?.session?.generation ?? 0);
 
-    let pollTimer: ReturnType<typeof setInterval> | null = null;
+    let pollTimeoutId: ReturnType<typeof setTimeout> | null = null;
+    let isFetching = false;
+    let backoffDelayMs = 0;
+
+    function clearPollingTimer(): void {
+        if (pollTimeoutId) {
+            clearTimeout(pollTimeoutId);
+            pollTimeoutId = null;
+        }
+    }
 
     /**
-     * Executa a atualização manual do snapshot do projeto atual via IPC.
+     * Interceptor do MaxPinia chamado ao receber dados do servidor.
+     * Valida estritamente a identidade do projeto ativo e a revisão para evitar dados fora de ordem.
+     */
+    function onServerData(
+        serverData: HorizonSnapshot_Serialize | { data?: HorizonSnapshot_Serialize } | null,
+        _requestMeta?: unknown
+    ): void {
+        const snap =
+            serverData &&
+            typeof serverData === 'object' &&
+            'data' in serverData &&
+            serverData.data &&
+            typeof serverData.data === 'object' &&
+            'context' in (serverData.data as object)
+                ? (serverData.data as HorizonSnapshot_Serialize)
+                : (serverData as HorizonSnapshot_Serialize | null);
+
+        if (!snap || !snap.context || typeof snap.context !== 'object') {
+            return;
+        }
+
+        // Descarta respostas cujo projeto não corresponda ao projeto atualmente selecionado
+        if (snap.context.projectId !== selectedProjectId.value) {
+            return;
+        }
+
+        // Evita sobreposição com snapshot de revisão anterior caso haja resposta atrasada
+        if (
+            data.value?.context?.projectId === snap.context.projectId &&
+            snap.revision < (data.value?.revision ?? 0)
+        ) {
+            return;
+        }
+
+        data.value = snap;
+        isConfirmedCurrentActivation.value = true;
+        if (snap.availability === 'available') {
+            actionError.value = null;
+        }
+    }
+
+    /**
+     * Executa a atualização do snapshot do projeto atual delegando exclusivamente ao `reload` do MaxPinia.
      */
     async function refreshSnapshot(): Promise<void> {
         const currentProject = selectedProjectId.value;
         if (!currentProject) {
             data.value = null;
+            isConfirmedCurrentActivation.value = false;
             return;
         }
 
+        // Delega ao reload() injetado pelo MaxPinia quando disponível
+        const storeInstance = useHorizonStore();
+        if (typeof (storeInstance as unknown as { reload?: () => Promise<void> }).reload === 'function') {
+            await (storeInstance as unknown as { reload: () => Promise<void> }).reload();
+        }
+    }
+
+    /**
+     * Agenda a próxima rodada de polling sequencial sem sobreposição de requisições.
+     */
+    function scheduleNextPoll(): void {
+        clearPollingTimer();
+        if (!selectedProjectId.value || availability.value === 'unavailable') {
+            return;
+        }
+        if (visibility.value !== 'visible') {
+            return;
+        }
+
+        const baseInterval = isModalOpen.value ? 2000 : 5000;
+        const delay = backoffDelayMs > 0 ? backoffDelayMs : baseInterval;
+        pollTimeoutId = setTimeout(() => {
+            void triggerPoll();
+        }, delay);
+    }
+
+    /**
+     * Dispara uma leitura lógica controlada, aplicando recuo exponencial em caso de erro.
+     */
+    async function triggerPoll(): Promise<void> {
+        clearPollingTimer();
+        if (!selectedProjectId.value || availability.value === 'unavailable') {
+            return;
+        }
+        if (visibility.value !== 'visible') {
+            return;
+        }
+        if (isFetching) {
+            return;
+        }
+
+        isFetching = true;
         try {
-            const snap = await getHorizonSnapshot(currentProject);
-            // Atualiza apenas se o projeto ainda for o mesmo
-            if (selectedProjectId.value === currentProject) {
-                data.value = snap;
-            }
-        } catch (err: unknown) {
-            if (selectedProjectId.value === currentProject) {
-                const diagnosticMsg = err instanceof Error ? err.message : String(err);
-                if (data.value) {
-                    data.value = {
-                        ...data.value,
-                        status: 'error',
-                        diagnostic: diagnosticMsg
-                    };
-                } else {
-                    data.value = {
-                        context: {
-                            projectId: currentProject,
-                            root: '',
-                            contextRevision: '',
-                            scopeId: ''
-                        },
-                        availability: 'error',
-                        horizonVersion: null,
-                        queues: [],
-                        environment: null,
-                        status: 'error',
-                        pending: null,
-                        running: null,
-                        failed: null,
-                        sampledAtMs: Date.now(),
-                        revision: 0,
-                        diagnostic: diagnosticMsg,
-                        canStart: false,
-                        canStop: false,
-                        canClearPending: false,
-                        session: null
-                    };
-                }
-            }
+            await refreshSnapshot();
+            backoffDelayMs = 0;
+        } catch {
+            backoffDelayMs = backoffDelayMs
+                ? Math.min(30000, Math.round(backoffDelayMs * 1.5))
+                : 5000;
+        } finally {
+            isFetching = false;
+            scheduleNextPoll();
         }
     }
 
@@ -157,23 +256,29 @@ export const useHorizonStore = defineStore('horizon', () => {
 
         isStarting.value = true;
         actionError.value = null;
+        const capturedRevision = contextRevision.value;
         const requestId = crypto.randomUUID();
 
         try {
-            const snap = await startHorizon(currentProject, contextRevision.value, requestId);
+            const snap = await startHorizon(currentProject, capturedRevision, requestId);
             if (selectedProjectId.value === currentProject) {
                 data.value = snap;
+                isConfirmedCurrentActivation.value = true;
             }
         } catch (err: unknown) {
-            actionError.value = err instanceof Error ? err.message : String(err);
+            if (selectedProjectId.value === currentProject) {
+                actionError.value = err instanceof Error ? err.message : String(err);
+            }
             throw err;
         } finally {
-            isStarting.value = false;
+            if (selectedProjectId.value === currentProject) {
+                isStarting.value = false;
+            }
         }
     }
 
     /**
-     * Encerra graciosamente o processo master do Horizon.
+     * Encerra graciosamente o processo master do Horizon supervisionado.
      */
     async function stop(): Promise<void> {
         const currentProject = selectedProjectId.value;
@@ -183,18 +288,24 @@ export const useHorizonStore = defineStore('horizon', () => {
 
         isStopping.value = true;
         actionError.value = null;
+        const capturedGen = generation.value;
         const requestId = crypto.randomUUID();
 
         try {
-            const snap = await stopHorizon(currentProject, generation.value, requestId);
+            const snap = await stopHorizon(currentProject, capturedGen, requestId);
             if (selectedProjectId.value === currentProject) {
                 data.value = snap;
+                isConfirmedCurrentActivation.value = true;
             }
         } catch (err: unknown) {
-            actionError.value = err instanceof Error ? err.message : String(err);
+            if (selectedProjectId.value === currentProject) {
+                actionError.value = err instanceof Error ? err.message : String(err);
+            }
             throw err;
         } finally {
-            isStopping.value = false;
+            if (selectedProjectId.value === currentProject) {
+                isStopping.value = false;
+            }
         }
     }
 
@@ -210,12 +321,20 @@ export const useHorizonStore = defineStore('horizon', () => {
         isPreviewing.value = true;
         actionError.value = null;
         try {
-            return await previewClearPending(currentProject);
+            const preview = await previewClearPending(currentProject);
+            if (selectedProjectId.value === currentProject) {
+                clearPreviewData.value = preview;
+            }
+            return preview;
         } catch (err: unknown) {
-            actionError.value = err instanceof Error ? err.message : String(err);
+            if (selectedProjectId.value === currentProject) {
+                actionError.value = err instanceof Error ? err.message : String(err);
+            }
             throw err;
         } finally {
-            isPreviewing.value = false;
+            if (selectedProjectId.value === currentProject) {
+                isPreviewing.value = false;
+            }
         }
     }
 
@@ -228,102 +347,101 @@ export const useHorizonStore = defineStore('horizon', () => {
             throw new Error('Nenhum projeto selecionado para confirmação de limpeza.');
         }
 
+        if (!clearPreviewData.value || clearPreviewData.value.token !== token) {
+            throw new Error('Prévia de confirmação de limpeza ausente ou token divergente.');
+        }
+
+        if (Date.now() >= clearPreviewData.value.expiresAtMs) {
+            throw new Error('O tempo para confirmação da limpeza expirou (máximo de 30 segundos).');
+        }
+
         isClearing.value = true;
         actionError.value = null;
         const requestId = crypto.randomUUID();
 
         try {
             const result = await clearPending(currentProject, token, requestId);
-            // Atualiza o snapshot após a remoção para refletir as novas contagens
+            clearPreviewData.value = null;
             await refreshSnapshot();
             return result;
         } catch (err: unknown) {
-            actionError.value = err instanceof Error ? err.message : String(err);
+            if (selectedProjectId.value === currentProject) {
+                actionError.value = err instanceof Error ? err.message : String(err);
+            }
             throw err;
         } finally {
-            isClearing.value = false;
+            if (selectedProjectId.value === currentProject) {
+                isClearing.value = false;
+            }
         }
     }
 
     function openModal(): void {
         isModalOpen.value = true;
+        // Ao abrir o modal, solicita atualização imediata deduplicada
+        if (!isFetching) {
+            void triggerPoll();
+        }
     }
 
     function closeModal(): void {
         isModalOpen.value = false;
+        clearPreviewData.value = null;
+        scheduleNextPoll();
     }
 
     function toggleModal(): void {
-        isModalOpen.value = !isModalOpen.value;
-    }
-
-    /**
-     * Ajusta o temporizador de polling conforme o contexto ativo:
-     * - Pausado quando o documento estiver invisível
-     * - 2s quando o modal estiver aberto
-     * - 5s quando disponível e modal fechado
-     * - Pausado se indisponível ou sem projeto selecionado
-     */
-    function updatePolling(): void {
-        if (pollTimer) {
-            clearInterval(pollTimer);
-            pollTimer = null;
+        if (isModalOpen.value) {
+            closeModal();
+        } else {
+            openModal();
         }
-
-        if (!selectedProjectId.value || availability.value === 'unavailable') {
-            return;
-        }
-
-        if (visibility.value !== 'visible') {
-            return;
-        }
-
-        const intervalMs = isModalOpen.value ? 2000 : 5000;
-        pollTimer = setInterval(() => {
-            void refreshSnapshot();
-        }, intervalMs);
     }
 
     // Monitora mudanças de projeto selecionado
     watch(
         selectedProjectId,
         (newId) => {
-            if (pollTimer) {
-                clearInterval(pollTimer);
-                pollTimer = null;
-            }
+            clearPollingTimer();
+            clearPreviewData.value = null;
+            actionError.value = null;
+            isConfirmedCurrentActivation.value = false;
 
             if (!newId) {
                 id.value = '';
                 enabled.value = false;
                 data.value = null;
                 isModalOpen.value = false;
-                actionError.value = null;
                 return;
             }
 
             id.value = newId;
             enabled.value = true;
-            actionError.value = null;
-            void refreshSnapshot().then(() => {
-                updatePolling();
-            });
+            data.value = null;
+            void triggerPoll();
         },
         { immediate: true }
     );
 
-    // Ajusta o intervalo quando a visibilidade do documento ou o estado do modal muda
+    // Ajusta o intervalo de polling conforme modal, visibilidade ou disponibilidade
     watch([isModalOpen, visibility, availability], () => {
-        updatePolling();
+        scheduleNextPoll();
+    });
+
+    onScopeDispose(() => {
+        clearPollingTimer();
     });
 
     return {
         // MaxPinia contratos
         isCached,
+        is_cached,
         id,
         enabled,
+        default_value,
         data,
         options,
+        onServerData,
 
         // Estado reativo da UI
         isModalOpen,
@@ -333,11 +451,14 @@ export const useHorizonStore = defineStore('horizon', () => {
         isClearing,
         isBusy,
         actionError,
+        isConfirmedCurrentActivation,
+        clearPreviewData,
 
         // Getters
+        selectedProjectId,
         availability,
         isAvailable,
-        status,
+        runtimeStatus,
         isRunning,
         isStartingState,
         isStoppingState,

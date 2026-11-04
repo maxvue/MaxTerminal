@@ -316,6 +316,26 @@ pub async fn run_horizon_probe(root: &Path) -> MtResult<RawHorizonProbeOutput> {
     Ok(parsed)
 }
 
+/// Derivação centralizada das capacidades operacionais do Laravel Horizon.
+#[must_use]
+pub fn compute_capabilities(
+    availability: HorizonAvailability,
+    status: HorizonStatus,
+    has_queues: bool,
+    pending: Option<u64>,
+) -> (bool, bool, bool) {
+    let can_start = availability == HorizonAvailability::Available
+        && matches!(status, HorizonStatus::Stopped | HorizonStatus::Error);
+
+    let can_stop = matches!(status, HorizonStatus::Running | HorizonStatus::Starting);
+
+    let can_clear_pending = availability == HorizonAvailability::Available
+        && has_queues
+        && pending.unwrap_or(0) > 0;
+
+    (can_start, can_stop, can_clear_pending)
+}
+
 /// Compõe o [`HorizonSnapshot`] a partir do probe e do estado de supervisão do runtime.
 #[must_use]
 pub fn build_snapshot_from_probe(
@@ -413,17 +433,8 @@ pub fn build_snapshot_from_probe(
         HorizonStatus::Stopped
     };
 
-    let can_start = availability == HorizonAvailability::Available
-        && matches!(
-            status,
-            HorizonStatus::Stopped | HorizonStatus::Error | HorizonStatus::External
-        );
-
-    let can_stop = matches!(status, HorizonStatus::Running | HorizonStatus::Starting);
-
-    let can_clear_pending = availability == HorizonAvailability::Available
-        && !queues.is_empty()
-        && pending.unwrap_or(0) > 0;
+    let (can_start, can_stop, can_clear_pending) =
+        compute_capabilities(availability, status, !queues.is_empty(), pending);
 
     let context_revision = {
         let mut hasher = Sha256::new();

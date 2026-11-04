@@ -15,7 +15,8 @@ use crate::horizon::model::{
     HorizonSessionDto, HorizonSnapshot, HorizonStatus, QueueScope,
 };
 use crate::horizon::probe::{
-    build_snapshot_from_probe, has_static_horizon_manifest, run_horizon_probe,
+    build_snapshot_from_probe, compute_capabilities, has_static_horizon_manifest,
+    run_horizon_probe,
 };
 use crate::ports::{Clock, ProjectLookup};
 
@@ -30,10 +31,9 @@ struct CachedProbe {
 
 #[derive(Clone)]
 struct PendingConfirmation {
+    project_id: ProjectId,
     expires_at_ms: i64,
-    #[allow(dead_code)]
     context_revision: String,
-    #[allow(dead_code)]
     scope_id: String,
     queues: Vec<QueueScope>,
 }
@@ -91,6 +91,15 @@ impl HorizonDomainService {
                     if let Some(st) = supervised_status {
                         current.status = st;
                         current.session = session;
+                        let (can_start, can_stop, can_clear) = compute_capabilities(
+                            current.availability,
+                            current.status,
+                            !current.queues.is_empty(),
+                            current.pending,
+                        );
+                        current.can_start = can_start;
+                        current.can_stop = can_stop;
+                        current.can_clear_pending = can_clear;
                     }
                     return Ok(current);
                 }
@@ -205,6 +214,7 @@ impl HorizonDomainService {
         let token = Uuid::new_v4().to_string();
 
         let pending_conf = PendingConfirmation {
+            project_id,
             expires_at_ms,
             context_revision: snap.context.context_revision.clone(),
             scope_id: snap.context.scope_id.clone(),
@@ -249,10 +259,35 @@ impl HorizonDomainService {
             ));
         };
 
-        if conf.expires_at_ms < now {
+        // Validação estrita de escopo: o token deve pertencer ao mesmo projeto
+        if conf.project_id != project_id {
+            return Err(MtError::new(
+                mt_core::ErrorCode("horizon.token_project_mismatch"),
+                "O token de confirmação não pertence ao projeto selecionado.",
+            ));
+        }
+
+        if conf.expires_at_ms <= now {
             return Err(MtError::new(
                 mt_core::ErrorCode("horizon.token_expired"),
                 "O tempo para confirmar a limpeza expirou (máximo de 30 segundos).",
+            ));
+        }
+
+        // Revalida o contexto atual antes de executar exclusão
+        let current_snap = self.snapshot(project_id, None, None, true).await?;
+        if current_snap.availability != HorizonAvailability::Available {
+            return Err(MtError::new(
+                mt_core::ErrorCode("horizon.unavailable"),
+                "Horizon tornou-se indisponível antes da execução da limpeza.",
+            ));
+        }
+        if current_snap.context.context_revision != conf.context_revision
+            || current_snap.context.scope_id != conf.scope_id
+        {
+            return Err(MtError::new(
+                mt_core::ErrorCode("horizon.context_mismatch"),
+                "O contexto das filas foi alterado; confirme novamente a limpeza.",
             ));
         }
 
@@ -267,8 +302,10 @@ impl HorizonDomainService {
         Ok(result)
     }
 
-    /// Invalida o cache do projeto informado.
+    /// Invalida o cache e as confirmações temporárias pendentes do projeto informado.
     pub fn invalidate_cache(&self, project_id: ProjectId) {
         self.cache.remove(&project_id);
+        let mut confs = self.confirmations.write();
+        confs.retain(|_, v| v.project_id != project_id);
     }
 }
