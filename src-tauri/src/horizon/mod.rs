@@ -15,6 +15,7 @@ use mt_projects::ProjectRemovalHook;
 use mt_pty::{KillMode, PtyExitEvent, PtyManager, PtyOwner, PtySize, SpawnSpec};
 use nix::sys::signal::Signal;
 use parking_lot::RwLock;
+use tokio::sync::Mutex as AsyncMutex;
 
 /// Estado de uma sessão supervisionada do daemon Horizon.
 #[derive(Debug, Clone)]
@@ -33,6 +34,7 @@ pub struct HorizonRuntimeService {
     domain: Arc<HorizonDomainService>,
     sessions: Arc<RwLock<HashMap<ProjectId, HorizonSessionState>>>,
     generation_counter: Arc<RwLock<HashMap<ProjectId, u64>>>,
+    mutation_lock: Arc<AsyncMutex<()>>,
 }
 
 impl HorizonRuntimeService {
@@ -44,6 +46,7 @@ impl HorizonRuntimeService {
             domain,
             sessions: Arc::new(RwLock::new(HashMap::new())),
             generation_counter: Arc::new(RwLock::new(HashMap::new())),
+            mutation_lock: Arc::new(AsyncMutex::new(())),
         })
     }
 
@@ -53,23 +56,27 @@ impl HorizonRuntimeService {
         &self.domain
     }
 
+    /// Reconcilia o estado de uma sessão com o PtyManager.
+    fn reconcile_session_status(&self, s: &mut HorizonSessionState) {
+        match self.pty.get_instance(s.pty_id) {
+            Some(inst) => match inst.status() {
+                mt_pty::PtyStatus::Running => {}
+                mt_pty::PtyStatus::Exiting { .. } => s.status = HorizonStatus::Stopping,
+                mt_pty::PtyStatus::Exited { .. } => s.status = HorizonStatus::Stopped,
+                mt_pty::PtyStatus::CleanupFailed { .. } => s.status = HorizonStatus::Error,
+            },
+            None => s.status = HorizonStatus::Stopped,
+        }
+    }
+
     /// Obtém o snapshot atual com status sincronizado do PTY supervisionado.
     pub async fn snapshot(&self, project_id: ProjectId) -> MtResult<HorizonSnapshot> {
         let (sup_status, session_dto) = {
-            let sessions = self.sessions.read();
-            if let Some(s) = sessions.get(&project_id) {
-                // Sincroniza estado com o PtyManager caso o processo tenha encerrado
-                let actual_status = match self.pty.get_instance(s.pty_id) {
-                    Some(inst) => match inst.status() {
-                        mt_pty::PtyStatus::Running => s.status,
-                        mt_pty::PtyStatus::Exiting { .. } => HorizonStatus::Stopping,
-                        mt_pty::PtyStatus::Exited { .. } => HorizonStatus::Stopped,
-                        mt_pty::PtyStatus::CleanupFailed { .. } => HorizonStatus::Error,
-                    },
-                    None => HorizonStatus::Stopped,
-                };
+            let mut sessions = self.sessions.write();
+            if let Some(s) = sessions.get_mut(&project_id) {
+                self.reconcile_session_status(s);
                 (
-                    Some(actual_status),
+                    Some(s.status),
                     Some(HorizonSessionDto {
                         pty_id: s.pty_id,
                         pane_id: s.pane_id,
@@ -93,7 +100,25 @@ impl HorizonRuntimeService {
         expected_context_revision: &str,
         _request_id: &str,
     ) -> MtResult<HorizonSnapshot> {
+        // Serialização atômica de operações de mutação para evitar disparos concorrentes
+        let _guard = self.mutation_lock.lock().await;
+
+        // Reconcilia sessões existentes antes de verificar disponibilidade
+        {
+            let mut sessions = self.sessions.write();
+            for s in sessions.values_mut() {
+                self.reconcile_session_status(s);
+            }
+        }
+
         let current_snap = self.domain.snapshot(project_id, None, None, true).await?;
+
+        if current_snap.availability != mt_commands::horizon::HorizonAvailability::Available {
+            return Err(MtError::new(
+                ErrorCode("horizon.unavailable"),
+                "Laravel Horizon não está disponível para este projeto.",
+            ));
+        }
 
         if !expected_context_revision.is_empty()
             && current_snap.context.context_revision != expected_context_revision
@@ -104,14 +129,18 @@ impl HorizonRuntimeService {
             ));
         }
 
-        // Verifica conflito de destino (mesmo Redis/prefixo já em execução em outro projeto)
         let scope_id = current_snap.context.scope_id.clone();
-        let already_running = {
+
+        // Verifica conflito de destino entre projetos e se a sessão atual ainda está viva ou parando
+        let (already_running, already_stopping) = {
             let sessions = self.sessions.read();
             for (p_id, s) in sessions.iter() {
                 if *p_id != project_id
                     && s.scope_id == scope_id
-                    && matches!(s.status, HorizonStatus::Running | HorizonStatus::Starting)
+                    && matches!(
+                        s.status,
+                        HorizonStatus::Running | HorizonStatus::Starting | HorizonStatus::Stopping
+                    )
                 {
                     return Err(MtError::new(
                         ErrorCode("horizon.destination_conflict"),
@@ -119,12 +148,23 @@ impl HorizonRuntimeService {
                     ));
                 }
             }
+
             if let Some(s) = sessions.get(&project_id) {
-                matches!(s.status, HorizonStatus::Running | HorizonStatus::Starting)
+                (
+                    matches!(s.status, HorizonStatus::Running | HorizonStatus::Starting),
+                    matches!(s.status, HorizonStatus::Stopping),
+                )
             } else {
-                false
+                (false, false)
             }
         };
+
+        if already_stopping {
+            return Err(MtError::new(
+                ErrorCode("horizon.still_stopping"),
+                "O daemon do Horizon está sendo encerrado; aguarde a conclusão da parada antes de reiniciar.",
+            ));
+        }
 
         if already_running {
             return self.snapshot(project_id).await;
@@ -184,7 +224,6 @@ impl HorizonRuntimeService {
             sessions.insert(project_id, session_state);
         }
 
-        // Força novo snapshot refletindo a sessão iniciada
         self.snapshot(project_id).await
     }
 
@@ -195,9 +234,13 @@ impl HorizonRuntimeService {
         expected_generation: u64,
         _request_id: &str,
     ) -> MtResult<HorizonSnapshot> {
+        let _guard = self.mutation_lock.lock().await;
+
         let (pty_id, target_inst) = {
             let mut sessions = self.sessions.write();
             if let Some(session) = sessions.get_mut(&project_id) {
+                self.reconcile_session_status(session);
+
                 if expected_generation > 0 && session.generation != expected_generation {
                     return Err(MtError::new(
                         ErrorCode("horizon.generation_mismatch"),
@@ -205,22 +248,42 @@ impl HorizonRuntimeService {
                     ));
                 }
 
-                session.status = HorizonStatus::Stopping;
-                let pty_id = session.pty_id;
-                let inst = self.pty.get_instance(pty_id);
-                (Some(pty_id), inst)
+                if matches!(session.status, HorizonStatus::Stopped) {
+                    (None, None)
+                } else {
+                    let pty_id = session.pty_id;
+                    let inst = self.pty.get_instance(pty_id);
+                    (Some(pty_id), inst)
+                }
             } else {
                 (None, None)
             }
         };
 
         if let Some(pty_id) = pty_id {
-            // Envia SIGTERM cirurgicamente apenas ao líder do PTY (o processo master do Horizon)
-            if let Some(inst) = target_inst {
+            let sig_res = if let Some(inst) = &target_inst {
                 let leader = inst.leader_identity();
-                let _ = self.pty.signal_process(pty_id, &leader, Signal::SIGTERM);
+                self.pty.signal_process(pty_id, &leader, Signal::SIGTERM)
             } else {
-                let _ = self.pty.kill(pty_id, KillMode::Graceful);
+                self.pty.kill(pty_id, KillMode::Graceful).map(|_| ())
+            };
+
+            if let Err(e) = sig_res {
+                let mut sessions = self.sessions.write();
+                if let Some(s) = sessions.get_mut(&project_id) {
+                    s.status = HorizonStatus::Error;
+                }
+                return Err(MtError::new(
+                    ErrorCode("horizon.stop_signal_failed"),
+                    format!("Falha ao enviar sinal de término para o daemon do Horizon: {e}"),
+                ));
+            }
+
+            {
+                let mut sessions = self.sessions.write();
+                if let Some(session) = sessions.get_mut(&project_id) {
+                    session.status = HorizonStatus::Stopping;
+                }
             }
         }
 

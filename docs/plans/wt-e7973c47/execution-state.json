@@ -1,0 +1,120 @@
+{
+  "version": 2,
+  "planRevision": "62e67325eaa6576ff1abfc2e7206d656de516a8129cd2f181a0cc9b954860e74",
+  "tasks": [
+    {
+      "id": "task-1",
+      "status": "completed",
+      "files": [
+        "src/components/preferences/appearance/ThemeSwatch.vue",
+        "src/components/preferences/appearance/AppearancePreferences.vue"
+      ],
+      "validations": [],
+      "revision": "99c68f76651ab3760717285227e9e0e7929b60c49446990f05cc4e3b00902b03",
+      "nextAction": "Ações Novo Tema, Editar, Duplicar e Excluir claras e acessíveis com proteção para temas nativos."
+    },
+    {
+      "id": "task-2",
+      "status": "completed",
+      "files": [
+        "src/components/preferences/appearance/ThemeEditorDialog.vue",
+        "src/stores/themeEditor.ts"
+      ],
+      "validations": [],
+      "revision": "99c68f76651ab3760717285227e9e0e7929b60c49446990f05cc4e3b00902b03",
+      "nextAction": "Validação de nome e cores hexadecimais, proteção contra submissão repetida e feedback de erro."
+    },
+    {
+      "id": "task-3",
+      "status": "completed",
+      "files": [
+        "src/components/preferences/appearance/AppearancePreferences.vue",
+        "src/stores/theme.ts"
+      ],
+      "validations": [],
+      "revision": "99c68f76651ab3760717285227e9e0e7929b60c49446990f05cc4e3b00902b03",
+      "nextAction": "Atualização do catálogo, duplicação preservando original e exclusão com impactos e fallback padrão."
+    },
+    {
+      "id": "task-4",
+      "status": "completed",
+      "files": [
+        "src/app/App.vue"
+      ],
+      "validations": [],
+      "revision": "99c68f76651ab3760717285227e9e0e7929b60c49446990f05cc4e3b00902b03",
+      "nextAction": "AppShell removido e workspace renderizado diretamente no slot #blank do MaxApp com restrições de layout."
+    },
+    {
+      "id": "task-5",
+      "status": "completed",
+      "files": [
+        "src/app/App.vue",
+        "src/theme/maxAppPalette.ts"
+      ],
+      "validations": [],
+      "revision": "99c68f76651ab3760717285227e9e0e7929b60c49446990f05cc4e3b00902b03",
+      "nextAction": "Prop colors reativa derivada de effectiveResolved via resolveMaxAppColors em controlled-theme."
+    },
+    {
+      "id": "task-6",
+      "status": "completed",
+      "files": [
+        "src/components/preferences/__tests__/AppearanceThemeManagement.spec.ts",
+        "src/components/preferences/__tests__/MaxAppIntegration.spec.ts"
+      ],
+      "validations": [],
+      "revision": "99c68f76651ab3760717285227e9e0e7929b60c49446990f05cc4e3b00902b03",
+      "nextAction": "Testes unitários focados implementados e validados cobrindo gestão de temas e integração MaxApp."
+    }
+  ],
+  "verification": {
+    "revision": "99c68f76651ab3760717285227e9e0e7929b60c49446990f05cc4e3b00902b03",
+    "checks": [
+      {
+        "command": "npx --no-install vitest run src/components/preferences/__tests__/AppearanceThemeManagement.spec.ts src/components/preferences/__tests__/MaxAppIntegration.spec.ts tests/components/preferences/appearance/ThemeSwatch.spec.ts tests/components/preferences/appearance/AppearancePreferences.spec.ts tests/components/preferences/appearance/ThemeEditorDialog.spec.ts tests/components/preferences/appearance/ThemePicker.spec.ts tests/components/shell/AppShell.spec.ts tests/theme/maxAppPalette.spec.ts tests/stores/theme.spec.ts tests/ipc/themeMaxPiniaAdapter.spec.ts",
+        "revision": "99c68f76651ab3760717285227e9e0e7929b60c49446990f05cc4e3b00902b03",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run typecheck",
+        "revision": "99c68f76651ab3760717285227e9e0e7929b60c49446990f05cc4e3b00902b03",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run typecheck:vue",
+        "revision": "99c68f76651ab3760717285227e9e0e7929b60c49446990f05cc4e3b00902b03",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run build",
+        "revision": "99c68f76651ab3760717285227e9e0e7929b60c49446990f05cc4e3b00902b03",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run lint",
+        "revision": "99c68f76651ab3760717285227e9e0e7929b60c49446990f05cc4e3b00902b03",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run lint:style",
+        "revision": "99c68f76651ab3760717285227e9e0e7929b60c49446990f05cc4e3b00902b03",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run test",
+        "revision": "99c68f76651ab3760717285227e9e0e7929b60c49446990f05cc4e3b00902b03",
+        "result": "passed",
+        "exitCode": 0
+      }
+    ]
+  },
+  "updatedAt": 1793828400000,
+  "nextAction": "Aguardando confirmação explícita do usuário para commit e integração Git."
+}

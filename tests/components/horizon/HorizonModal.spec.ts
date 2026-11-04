@@ -1,9 +1,11 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { nextTick } from 'vue';
 import HorizonModal from '@/components/horizon/HorizonModal.vue';
 import { useHorizonStore } from '@/stores/horizon';
-import type { HorizonSnapshot_Serialize } from '@/types/bindings';
+import { useProjectsStore } from '@/stores/projects';
+import type { HorizonSnapshot_Serialize, Project_Serialize } from '@/types/bindings';
 
 vi.mock('@/components/terminal/TerminalView.vue', () => ({
     default: {
@@ -14,8 +16,35 @@ vi.mock('@/components/terminal/TerminalView.vue', () => ({
 }));
 
 describe('HorizonModal.vue', () => {
+    let pinia: ReturnType<typeof createPinia>;
+
+    const sampleProject: Project_Serialize = {
+        id: 'p1',
+        title: 'Laravel Project',
+        icon: 'lucide:code',
+        color: '#ff2d20',
+        path: '/app',
+        rootId: null,
+        sortOrder: 0,
+        createdAt: 1700000000000,
+        updatedAt: 1700000000000,
+        stack: 'laravel',
+        identitySource: 'auto',
+        missing: false
+    };
+
     beforeEach(() => {
-        setActivePinia(createPinia());
+        document.body.innerHTML = '';
+        pinia = createPinia();
+        setActivePinia(pinia);
+
+        const projectsStore = useProjectsStore();
+        projectsStore.projects = [sampleProject];
+        projectsStore.selectedId = 'p1';
+    });
+
+    afterEach(() => {
+        document.body.innerHTML = '';
     });
 
     function createMockSnapshot(
@@ -51,22 +80,26 @@ describe('HorizonModal.vue', () => {
         };
     }
 
-    it('renderiza metadados, métricas e terminal supervisionado quando aberto com sessão ativa', () => {
+    it('renderiza metadados, métricas e terminal supervisionado quando aberto com sessão ativa', async () => {
         const store = useHorizonStore();
         store.data = createMockSnapshot();
+        store.isConfirmedCurrentActivation = true;
         store.isModalOpen = true;
 
         const wrapper = mount(HorizonModal, {
-            props: { modelValue: true }
+            attachTo: document.body,
+            props: { modelValue: true },
+            global: { plugins: [pinia] }
         });
+        await nextTick();
 
-        expect(wrapper.text()).toContain('Em Execução');
-        expect(wrapper.text()).toContain('Horizon 5.48.3');
-        expect(wrapper.text()).toContain('local');
-        expect(wrapper.text()).toContain('15');
-        expect(wrapper.text()).toContain('4');
-        expect(wrapper.text()).toContain('2');
-        expect(wrapper.text()).toContain('redis:default');
+        expect(document.body.textContent).toContain('Em Execução');
+        expect(document.body.textContent).toContain('Horizon 5.48.3');
+        expect(document.body.textContent).toContain('local');
+        expect(document.body.textContent).toContain('15');
+        expect(document.body.textContent).toContain('4');
+        expect(document.body.textContent).toContain('2');
+        expect(document.body.textContent).toContain('redis:default');
 
         const terminal = wrapper.findComponent({ name: 'TerminalView' });
         expect(terminal.exists()).toBe(true);
@@ -74,7 +107,7 @@ describe('HorizonModal.vue', () => {
         expect(terminal.props('paneId')).toBe('pane-200');
     });
 
-    it('renderiza o painel de processo inativo quando não há sessão PTY', () => {
+    it('renderiza o painel de processo inativo quando não há sessão PTY', async () => {
         const store = useHorizonStore();
         store.data = createMockSnapshot({
             status: 'stopped',
@@ -82,36 +115,45 @@ describe('HorizonModal.vue', () => {
             canStop: false,
             session: null
         });
+        store.isConfirmedCurrentActivation = true;
         store.isModalOpen = true;
 
         const wrapper = mount(HorizonModal, {
-            props: { modelValue: true }
+            attachTo: document.body,
+            props: { modelValue: true },
+            global: { plugins: [pinia] }
         });
+        await nextTick();
 
         expect(wrapper.find('.horizon-modal__empty').exists()).toBe(true);
         expect(wrapper.findComponent({ name: 'TerminalView' }).exists()).toBe(false);
-        expect(wrapper.text()).toContain('Processo do Horizon Inativo');
+        expect(document.body.textContent).toContain('Processo do Horizon Inativo');
     });
 
-    it('renderiza o painel de processo externo quando o status for external', () => {
+    it('renderiza o painel de processo externo quando o status for external', async () => {
         const store = useHorizonStore();
         store.data = createMockSnapshot({
             status: 'external',
-            canStart: true,
+            canStart: false,
             canStop: false,
             session: null
         });
+        store.isConfirmedCurrentActivation = true;
         store.isModalOpen = true;
 
         const wrapper = mount(HorizonModal, {
-            props: { modelValue: true }
+            attachTo: document.body,
+            props: { modelValue: true },
+            global: { plugins: [pinia] }
         });
+        await nextTick();
 
         expect(wrapper.find('.horizon-modal__external-panel').exists()).toBe(true);
         expect(wrapper.findComponent({ name: 'TerminalView' }).exists()).toBe(false);
-        expect(wrapper.text()).toContain('Horizon em Execução Externa');
-        expect(wrapper.text()).toContain('Externo (Ativo)');
-        expect(wrapper.text()).toContain('Iniciar Terminal Supervisionado no MaxTerminal');
+        expect(document.body.textContent).toContain('Horizon em Execução Externa');
+        expect(document.body.textContent).toContain('Externo (Ativo)');
+        // CTA que induzia duplicata foi removido por requisito do plano
+        expect(document.body.textContent).not.toContain('Iniciar Terminal Supervisionado no MaxTerminal');
     });
 
     it('dispara a ação de iniciar ao clicar no botão Iniciar Horizon', async () => {
@@ -122,13 +164,17 @@ describe('HorizonModal.vue', () => {
             canStop: false,
             session: null
         });
+        store.isConfirmedCurrentActivation = true;
         store.isModalOpen = true;
 
         const startSpy = vi.spyOn(store, 'start').mockResolvedValue();
 
         const wrapper = mount(HorizonModal, {
-            props: { modelValue: true }
+            attachTo: document.body,
+            props: { modelValue: true },
+            global: { plugins: [pinia] }
         });
+        await nextTick();
 
         const startBtn = wrapper
             .findAllComponents({ name: 'MaxButton' })
@@ -146,13 +192,17 @@ describe('HorizonModal.vue', () => {
             canStart: false,
             canStop: true
         });
+        store.isConfirmedCurrentActivation = true;
         store.isModalOpen = true;
 
         const stopSpy = vi.spyOn(store, 'stop').mockResolvedValue();
 
         const wrapper = mount(HorizonModal, {
-            props: { modelValue: true }
+            attachTo: document.body,
+            props: { modelValue: true },
+            global: { plugins: [pinia] }
         });
+        await nextTick();
 
         const stopBtn = wrapper
             .findAllComponents({ name: 'MaxButton' })
@@ -168,12 +218,13 @@ describe('HorizonModal.vue', () => {
         store.data = createMockSnapshot({
             canClearPending: true
         });
+        store.isConfirmedCurrentActivation = true;
         store.isModalOpen = true;
 
         const previewSpy = vi.spyOn(store, 'previewClear').mockResolvedValue({
             token: 'uuid-token-123',
             contextRevision: 'r1',
-            expiresAtMs: 1700000030000,
+            expiresAtMs: Date.now() + 30000,
             scopeId: 'scope-1',
             queues: [
                 { connection: 'redis', queue: 'default' }
@@ -191,8 +242,11 @@ describe('HorizonModal.vue', () => {
         });
 
         const wrapper = mount(HorizonModal, {
-            props: { modelValue: true }
+            attachTo: document.body,
+            props: { modelValue: true },
+            global: { plugins: [pinia] }
         });
+        await nextTick();
 
         const clearBtn = wrapper
             .findAllComponents({ name: 'MaxButton' })
@@ -205,16 +259,15 @@ describe('HorizonModal.vue', () => {
         expect(previewSpy).toHaveBeenCalled();
 
         // O modal de confirmação secundário agora está aberto
-        expect(wrapper.text()).toContain('Confirmar Limpeza Exclusiva de Tarefas Pendentes');
-        expect(wrapper.text()).toContain('Tarefas reservadas (atualmente em execução pelos workers)');
-        expect(wrapper.text()).toContain('estritamente preservados');
+        expect(document.body.textContent).toContain('Confirmar Limpeza Exclusiva de Tarefas Pendentes');
+        expect(document.body.textContent).toContain('Tarefas reservadas (atualmente em execução pelos workers)');
+        expect(document.body.textContent).toContain('estritamente preservados');
 
-        const confirmBtn = wrapper
-            .findAllComponents({ name: 'MaxButton' })
-            .find((b) => b.props('label') === 'Confirmar Limpeza');
+        const buttons = Array.from(document.body.querySelectorAll('button'));
+        const confirmBtn = buttons.find((b) => b.textContent?.includes('Confirmar Limpeza'));
         expect(confirmBtn).toBeDefined();
 
-        await confirmBtn!.trigger('click');
+        confirmBtn!.click();
         await flushPromises();
 
         expect(confirmSpy).toHaveBeenCalledWith('uuid-token-123');

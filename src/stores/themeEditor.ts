@@ -34,6 +34,14 @@ interface MaxPiniaExposed {
     resumeSave?: () => void;
     reload?: () => Promise<void>;
     saveInServer?: () => Promise<void>;
+    status?: {
+        value: {
+            server: {
+                get: { is_error: boolean; error: unknown };
+                save: { is_error: boolean; error: unknown };
+            };
+        };
+    };
 }
 
 const DEFAULT_ANSI_PALETTE_INPUT: AnsiPaletteInput = {
@@ -174,6 +182,44 @@ export function formatSelectionBackground(
     return `${baseHex}${alphaHex}`;
 }
 
+export function isValidHexColor(value: string | null | undefined): boolean {
+    if (!value || typeof value !== 'string') {
+        return false;
+    }
+    const trimmed = value.trim();
+    return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(trimmed);
+}
+
+export function isThemeDraftValid(draft: ThemeDraftInput): { valid: boolean; error?: string } {
+    if (!draft.name || draft.name.trim().length === 0) {
+        return { valid: false, error: 'O nome do tema é obrigatório.' };
+    }
+    if (!isValidHexColor(draft.background)) {
+        return { valid: false, error: 'Cor de fundo principal inválida (esperado #RRGGBB).' };
+    }
+    if (!isValidHexColor(draft.foreground)) {
+        return { valid: false, error: 'Cor de texto principal inválida (esperado #RRGGBB).' };
+    }
+    if (!isValidHexColor(draft.cursor)) {
+        return { valid: false, error: 'Cor do cursor inválida (esperado #RRGGBB).' };
+    }
+    if (!isValidHexColor(draft.cursorAccent)) {
+        return { valid: false, error: 'Cor de texto sob o cursor inválida (esperado #RRGGBB).' };
+    }
+    if (draft.selectionForeground && !isValidHexColor(draft.selectionForeground)) {
+        return { valid: false, error: 'Cor de texto selecionado inválida (esperado #RRGGBB).' };
+    }
+    if (draft.activeTabAccent && !isValidHexColor(draft.activeTabAccent)) {
+        return { valid: false, error: 'Cor de destaque da aba ativa inválida (esperado #RRGGBB).' };
+    }
+    for (const [key, color] of Object.entries(draft.ansi)) {
+        if (!isValidHexColor(color)) {
+            return { valid: false, error: `Cor ANSI "${key}" inválida (esperado #RRGGBB).` };
+        }
+    }
+    return { valid: true };
+}
+
 const DEFAULT_EDITOR_STATE: ThemeEditorState = {
     mode: 'create',
     editingId: null,
@@ -185,11 +231,6 @@ export const useThemeEditorStore = defineStore('theme-editor', () => {
     installThemeMaxPiniaAdapter();
 
     const isCached = ref(true);
-    const id = ref('theme-editor');
-    const data = ref<ThemeEditorState>(_.cloneDeep(DEFAULT_EDITOR_STATE));
-    const default_value = ref<ThemeEditorState>(_.cloneDeep(DEFAULT_EDITOR_STATE));
-    const block_save = ref(true);
-
     const isOpen = ref(false);
     const saving = ref(false);
     const errorMessage = ref<string | null>(null);
@@ -198,10 +239,28 @@ export const useThemeEditorStore = defineStore('theme-editor', () => {
     );
     const lastSavedResolved = ref<ResolvedTheme | null>(null);
 
+    const internalData = ref<ThemeEditorState>(_.cloneDeep(DEFAULT_EDITOR_STATE));
+    const data = computed<ThemeEditorState>({
+        get: () => internalData.value,
+        set: (incoming: ThemeEditorState) => {
+            // Editor aberto impede hidratação atrasada ou reinicialização de sobrescrever o rascunho aberto
+            if (isOpen.value) {
+                return;
+            }
+            internalData.value = incoming ?? _.cloneDeep(DEFAULT_EDITOR_STATE);
+        }
+    });
+
+    const id = ref('theme-editor');
+    const default_value = ref<ThemeEditorState>(_.cloneDeep(DEFAULT_EDITOR_STATE));
+    const block_save = ref(true);
+
     const options = {
         get: {
             route: THEME_SCHEME_VIRTUAL_ROUTE,
-            data: computed(() => ({ id: data.value.editingId ?? '' }))
+            data: {
+                id: computed(() => data.value.editingId ?? '')
+            }
         },
         save: THEME_SCHEME_VIRTUAL_ROUTE
     };
@@ -213,6 +272,9 @@ export const useThemeEditorStore = defineStore('theme-editor', () => {
     const isReadOnly = computed<boolean>(
         () => data.value.mode === 'edit' && data.value.origin === 'builtin'
     );
+
+    const validationResult = computed(() => isThemeDraftValid(data.value.draft));
+    const isColorsValid = computed(() => validationResult.value.valid);
 
     const selectionParts = computed(() =>
         parseSelectionBackground(data.value.draft.selectionBackground)
@@ -260,7 +322,7 @@ export const useThemeEditorStore = defineStore('theme-editor', () => {
     ): void {
         const draft = schemeToDraftInput(resolved.scheme);
         baselineDraft.value = _.cloneDeep(draft);
-        data.value = {
+        internalData.value = {
             mode,
             editingId: mode === 'edit' ? resolved.scheme.id : null,
             origin: resolved.scheme.origin,
@@ -280,10 +342,10 @@ export const useThemeEditorStore = defineStore('theme-editor', () => {
                 origin: resolved.scheme.origin,
                 draft
             };
-            data.value = nextState;
+            internalData.value = nextState;
             return nextState;
         }
-        return data.value;
+        return internalData.value;
     }
 
     function openCreate(baseScheme?: ColorScheme | null): void {
@@ -292,7 +354,7 @@ export const useThemeEditorStore = defineStore('theme-editor', () => {
         lastSavedResolved.value = null;
         const draft = createDefaultThemeDraftInput(baseScheme ?? null);
         baselineDraft.value = _.cloneDeep(draft);
-        data.value = {
+        internalData.value = {
             mode: 'create',
             editingId: null,
             origin: 'custom',
@@ -308,7 +370,7 @@ export const useThemeEditorStore = defineStore('theme-editor', () => {
         const scheme = 'scheme' in source ? source.scheme : source;
         const draft = schemeToDraftInput(scheme);
         baselineDraft.value = _.cloneDeep(draft);
-        data.value = {
+        internalData.value = {
             mode: 'edit',
             editingId: scheme.id,
             origin: scheme.origin,
@@ -326,12 +388,15 @@ export const useThemeEditorStore = defineStore('theme-editor', () => {
         if (typeof self.reload === 'function') {
             await self.reload();
         }
+        if (data.value.editingId !== themeId) {
+            return;
+        }
         if (!lastSavedResolved.value) {
             const response = await axios.get<ResolvedTheme | null>(
                 THEME_SCHEME_VIRTUAL_ROUTE,
                 { params: { id: themeId } }
             );
-            if (response.data) {
+            if (response.data && data.value.editingId === themeId) {
                 onServerData(response.data);
             }
         }
@@ -347,8 +412,8 @@ export const useThemeEditorStore = defineStore('theme-editor', () => {
     function resetDraft(): void {
         ensureAutoSavePaused();
         errorMessage.value = null;
-        data.value = {
-            ...data.value,
+        internalData.value = {
+            ...internalData.value,
             draft: _.cloneDeep(baselineDraft.value)
         };
     }
@@ -374,8 +439,19 @@ export const useThemeEditorStore = defineStore('theme-editor', () => {
 
     async function submitDraft(): Promise<ResolvedTheme> {
         ensureAutoSavePaused();
+        if (saving.value) {
+            throw new Error(
+                'Uma operação de salvamento de tema já está em andamento. Salvamento já em andamento.'
+            );
+        }
         if (isReadOnly.value) {
             const msg = 'Temas nativos são somente leitura. Duplique o tema para editá-lo.';
+            errorMessage.value = msg;
+            throw new Error(msg);
+        }
+        const validation = isThemeDraftValid(data.value.draft);
+        if (!validation.valid) {
+            const msg = validation.error ?? 'Dados do tema inválidos.';
             errorMessage.value = msg;
             throw new Error(msg);
         }
@@ -383,34 +459,31 @@ export const useThemeEditorStore = defineStore('theme-editor', () => {
         saving.value = true;
         errorMessage.value = null;
         clearLastThemeSchemeSaveState();
+        lastSavedResolved.value = null;
 
         try {
             const self = useThemeEditorStore() as unknown as Partial<MaxPiniaExposed>;
-            if (typeof self.saveInServer === 'function') {
-                await self.saveInServer();
+            if (typeof self.saveInServer !== 'function') {
+                throw new Error(
+                    'Plugin MaxPinia não está disponível para persistência do editor de temas.'
+                );
             }
 
-            let adapterErr = getLastThemeSchemeSaveError();
+            await self.saveInServer();
+
+            const adapterErr = getLastThemeSchemeSaveError();
             if (adapterErr) {
                 throw adapterErr;
             }
 
-            let saved =
-                getLastThemeSchemeSaveResult() ?? lastSavedResolved.value;
-            if (!saved) {
-                const response = await axios.post<ResolvedTheme>(
-                    THEME_SCHEME_VIRTUAL_ROUTE,
-                    getSaveData(data.value)
-                );
-                adapterErr = getLastThemeSchemeSaveError();
-                if (adapterErr) {
-                    throw adapterErr;
-                }
-                saved =
-                    getLastThemeSchemeSaveResult() ??
-                    response?.data ??
-                    lastSavedResolved.value;
+            if (self.status?.value?.server?.save?.is_error) {
+                const pluginErr = self.status.value.server.save.error;
+                throw pluginErr instanceof Error
+                    ? pluginErr
+                    : new Error('Falha ao salvar o tema via MaxPinia.');
             }
+
+            const saved = getLastThemeSchemeSaveResult();
             if (!saved) {
                 throw new Error('Não foi possível confirmar a gravação do tema.');
             }
@@ -454,6 +527,8 @@ export const useThemeEditorStore = defineStore('theme-editor', () => {
         lastSavedResolved,
         isDirty,
         isReadOnly,
+        validationResult,
+        isColorsValid,
         selectionParts,
         getSaveData,
         onServerData,

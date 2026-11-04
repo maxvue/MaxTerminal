@@ -1,5 +1,5 @@
 <template>
-    <MaxBadgeButton v-if="store.isAvailable" :model-value="store.isModalOpen" label="HORIZON" :overlay="overlays" :title="buttonTitle" :aria-label="buttonAriaLabel" size="sm" class="horizon-badge-btn" @update:model-value="handleUpdateModelValue" />
+    <MaxBadgeButton v-if="store.isAvailable" :model-value="store.isModalOpen" label="HORIZON" :overlay="overlays" :title="buttonTitle" :aria-label="buttonAriaLabel" size="sm" class="horizon-badge-btn" @click="handleClick" @update:model-value="handleUpdateModelValue" />
 </template>
 
 <script setup lang="ts">
@@ -8,6 +8,10 @@
     import { useHorizonStore } from '@/stores/horizon';
 
     const store = useHorizonStore();
+
+    function handleClick(): void {
+        store.openModal();
+    }
 
     function handleUpdateModelValue(val: boolean | number): void {
         if (val) {
@@ -34,14 +38,14 @@
         const p = formatCount(store.pendingCount);
         const r = formatCount(store.runningCount);
         const f = formatCount(store.failedCount);
-        return `Laravel Horizon: ${p} pendentes, ${r} em execução, ${f} falhas (Status: ${store.status})`;
+        return `Laravel Horizon: ${p} pendentes, ${r} em execução, ${f} falhas (Status: ${store.runtimeStatus})`;
     });
 
     const buttonAriaLabel = computed(() => {
         const p = formatCount(store.pendingCount);
         const r = formatCount(store.runningCount);
         const f = formatCount(store.failedCount);
-        return `Painel do Laravel Horizon: ${p} tarefas pendentes, ${r} tarefas em execução, ${f} tarefas com falha. Status: ${store.status}`;
+        return `Painel do Laravel Horizon: ${p} tarefas pendentes, ${r} tarefas em execução, ${f} tarefas com falha. Status: ${store.runtimeStatus}`;
     });
 </script>
 

@@ -183,7 +183,8 @@
         () =>
             !editorStore.saving &&
             !editorStore.isReadOnly &&
-            editorStore.data.draft.name.trim().length > 0
+            editorStore.data.draft.name.trim().length > 0 &&
+            editorStore.isColorsValid
     );
 
     function stripHash(hex: string): string {

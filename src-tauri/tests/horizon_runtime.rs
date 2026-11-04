@@ -59,4 +59,44 @@ async fn test_horizon_runtime_service_basic_lifecycle() {
         mt_commands::horizon::HorizonAvailability::Unavailable
     );
     assert_eq!(snap.status, mt_commands::horizon::HorizonStatus::Stopped);
+    assert!(!snap.can_start);
+    assert!(!snap.can_stop);
+}
+
+#[tokio::test]
+async fn test_horizon_runtime_start_fails_when_unavailable() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let pty_manager = PtyManager::new(PtyConfig::default()).expect("pty manager");
+    let lookup = Arc::new(DummyLookup {
+        path: tmp.path().to_path_buf(),
+    });
+    let clock = Arc::new(DummyClock);
+    let domain = Arc::new(HorizonDomainService::new(lookup, clock));
+    let service = HorizonRuntimeService::new(pty_manager, domain);
+
+    let proj_id = ProjectId::new();
+    let err = service
+        .start(proj_id, "", "req-1")
+        .await
+        .expect_err("start deve falhar se projeto for indisponivel");
+    assert_eq!(err.code.0, "horizon.unavailable");
+}
+
+#[tokio::test]
+async fn test_horizon_runtime_stop_when_idle() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let pty_manager = PtyManager::new(PtyConfig::default()).expect("pty manager");
+    let lookup = Arc::new(DummyLookup {
+        path: tmp.path().to_path_buf(),
+    });
+    let clock = Arc::new(DummyClock);
+    let domain = Arc::new(HorizonDomainService::new(lookup, clock));
+    let service = HorizonRuntimeService::new(pty_manager, domain);
+
+    let proj_id = ProjectId::new();
+    let snap = service
+        .stop(proj_id, 0, "req-stop")
+        .await
+        .expect("stop em projeto ocioso deve ser idempotente");
+    assert_eq!(snap.status, mt_commands::horizon::HorizonStatus::Stopped);
 }
