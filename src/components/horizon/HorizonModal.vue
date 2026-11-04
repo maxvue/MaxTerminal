@@ -119,7 +119,8 @@
 
 <script setup lang="ts">
     import { computed, ref } from 'vue';
-    import { MaxButton, MaxIcon, MaxModal } from '@maxvue/max-components-ui';
+    import { MaxButton, MaxIcon } from '@maxvue/max-components-ui';
+    import MaxModal from '@maxvue/max-components-ui/components/MaxModal';
     import TerminalView from '@/components/terminal/TerminalView.vue';
     import { useHorizonStore } from '@/stores/horizon';
     import type { HorizonClearPreview } from '@/types/bindings';

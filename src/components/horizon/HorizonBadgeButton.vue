@@ -1,5 +1,5 @@
 <template>
-    <MaxBadgeButton v-if="store.isAvailable" v-model="store.isModalOpen" label="HORIZON" :overlay="overlays" :title="buttonTitle" :aria-label="buttonAriaLabel" size="sm" class="horizon-badge-btn" @click="handleClick" />
+    <MaxBadgeButton v-if="store.isAvailable" :model-value="store.isModalOpen" label="HORIZON" :overlay="overlays" :title="buttonTitle" :aria-label="buttonAriaLabel" size="sm" class="horizon-badge-btn" @update:model-value="handleUpdateModelValue" @click="handleClick" />
 </template>
 
 <script setup lang="ts">
@@ -11,6 +11,14 @@
 
     function handleClick(): void {
         store.openModal();
+    }
+
+    function handleUpdateModelValue(val: boolean | number): void {
+        if (val) {
+            store.openModal();
+        } else {
+            store.closeModal();
+        }
     }
 
     function formatCount(val: number | null | undefined): string {
