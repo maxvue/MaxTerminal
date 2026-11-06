@@ -1,0 +1,200 @@
+{
+  "version": 2,
+  "planRevision": "a3f666df8783868b3f24b9d1ae4e2eb72dbed5c23d9d2ba6561710443b89a65b",
+  "updatedAt": 1793973907687,
+  "tasks": [
+    {
+      "id": "task-1",
+      "status": "completed",
+      "files": [
+        "node_modules/@maxvue/max-components-ui/COMPONENTS.md"
+      ],
+      "validations": [
+        {
+          "command": "tests/lint/max-components-architecture.spec.ts",
+          "revision": "8d31a4086c0426d583734d7f53f1fb785b2ca5e59b074a00c2e9a8d3f7e309e2",
+          "result": "passed"
+        }
+      ],
+      "revision": "8d31a4086c0426d583734d7f53f1fb785b2ca5e59b074a00c2e9a8d3f7e309e2"
+    },
+    {
+      "id": "task-2",
+      "status": "completed",
+      "files": [
+        "src/components/search/SearchFilterBar.vue",
+        "src/components/ai/AiPromptInput.vue",
+        "src/components/ai/AiSuggestionBlock.vue",
+        "src/components/commandGroups/CommandGroupItemRow.vue",
+        "src/components/commandGroups/CommandGroupSuggestPanel.vue",
+        "src/components/projects/ProjectAddModal.vue"
+      ],
+      "validations": [
+        {
+          "command": "tests/frontend/search/SearchFilterBar.spec.ts",
+          "revision": "8d31a4086c0426d583734d7f53f1fb785b2ca5e59b074a00c2e9a8d3f7e309e2",
+          "result": "passed"
+        }
+      ],
+      "revision": "8d31a4086c0426d583734d7f53f1fb785b2ca5e59b074a00c2e9a8d3f7e309e2"
+    },
+    {
+      "id": "task-3",
+      "status": "completed",
+      "files": [
+        "src/components/commandGroups/CommandGroupModal.vue"
+      ],
+      "validations": [
+        {
+          "command": "tests/commandGroups/CommandGroupModal.spec.ts",
+          "revision": "8d31a4086c0426d583734d7f53f1fb785b2ca5e59b074a00c2e9a8d3f7e309e2",
+          "result": "passed"
+        }
+      ],
+      "revision": "8d31a4086c0426d583734d7f53f1fb785b2ca5e59b074a00c2e9a8d3f7e309e2"
+    },
+    {
+      "id": "task-4",
+      "status": "completed",
+      "files": [
+        "src/components/terminal/RichInput.vue",
+        "src/components/terminal/TerminalSearchBar.vue",
+        "src/components/search/GlobalSearchPalette.vue"
+      ],
+      "validations": [
+        {
+          "command": "tests/lint/max-components-architecture.spec.ts",
+          "revision": "8d31a4086c0426d583734d7f53f1fb785b2ca5e59b074a00c2e9a8d3f7e309e2",
+          "result": "passed"
+        }
+      ],
+      "revision": "8d31a4086c0426d583734d7f53f1fb785b2ca5e59b074a00c2e9a8d3f7e309e2"
+    },
+    {
+      "id": "task-5",
+      "status": "completed",
+      "files": [
+        "src/components/preferences/appearance/AppearancePreferences.vue"
+      ],
+      "validations": [
+        {
+          "command": "tests/components/preferences/appearance/AppearancePreferences.spec.ts",
+          "revision": "8d31a4086c0426d583734d7f53f1fb785b2ca5e59b074a00c2e9a8d3f7e309e2",
+          "result": "passed"
+        }
+      ],
+      "revision": "8d31a4086c0426d583734d7f53f1fb785b2ca5e59b074a00c2e9a8d3f7e309e2"
+    },
+    {
+      "id": "task-6",
+      "status": "completed",
+      "files": [
+        "src/components/bridge/BridgeSettingsSection.vue",
+        "src/components/quick-commands/ArtisanSchedulePicker.vue",
+        "src/components/preferences/AiPreferences.vue",
+        "src/components/preferences/system/PreferencesSystemSection.vue",
+        "src/components/preferences/appearance/ThemeEditorDialog.vue",
+        "src/components/preferences/appearance/TerminalFontSettings.vue"
+      ],
+      "validations": [
+        {
+          "command": "tests/frontend/preferences/AiPreferencesLimits.spec.ts",
+          "revision": "8d31a4086c0426d583734d7f53f1fb785b2ca5e59b074a00c2e9a8d3f7e309e2",
+          "result": "passed"
+        }
+      ],
+      "revision": "8d31a4086c0426d583734d7f53f1fb785b2ca5e59b074a00c2e9a8d3f7e309e2"
+    },
+    {
+      "id": "task-7",
+      "status": "completed",
+      "files": [
+        "src/components/workspace/TemplateLaunchPopover.vue",
+        "src/components/workspace/TemplateEditorModal.vue",
+        "src/components/workspace/TabBarItem.vue",
+        "src/components/workspace/TabBar.vue",
+        "src/components/workspace/SessionReadonlyViewer.vue",
+        "src/components/workspace/SessionHistoryDrawer.vue",
+        "src/components/workspace/PaneView.vue",
+        "src/components/terminal/TerminalSearchBar.vue",
+        "src/components/commandGroups/GroupRunPanel.vue",
+        "src/components/quick-commands/ArtisanParamRow.vue",
+        "src/components/quick-commands/ArtisanCommandModal.vue",
+        "src/components/preferences/appearance/ThemeSwatch.vue",
+        "src/components/preferences/appearance/ThemeImportReport.vue"
+      ],
+      "validations": [
+        {
+          "command": "tests/lint/max-components-architecture.spec.ts",
+          "revision": "8d31a4086c0426d583734d7f53f1fb785b2ca5e59b074a00c2e9a8d3f7e309e2",
+          "result": "passed"
+        }
+      ],
+      "revision": "8d31a4086c0426d583734d7f53f1fb785b2ca5e59b074a00c2e9a8d3f7e309e2"
+    },
+    {
+      "id": "task-8",
+      "status": "completed",
+      "files": [
+        "tests/lint/max-components-architecture.spec.ts",
+        "tests/frontend/search/SearchFilterBar.spec.ts",
+        "tests/components/preferences/appearance/AppearancePreferences.spec.ts"
+      ],
+      "validations": [
+        {
+          "command": "tests/lint/max-components-architecture.spec.ts",
+          "revision": "8d31a4086c0426d583734d7f53f1fb785b2ca5e59b074a00c2e9a8d3f7e309e2",
+          "result": "passed"
+        }
+      ],
+      "revision": "8d31a4086c0426d583734d7f53f1fb785b2ca5e59b074a00c2e9a8d3f7e309e2"
+    }
+  ],
+  "verification": {
+    "revision": "8d31a4086c0426d583734d7f53f1fb785b2ca5e59b074a00c2e9a8d3f7e309e2",
+    "checks": [
+      {
+        "command": "npx vitest run tests/lint/max-components-architecture.spec.ts tests/frontend/search/SearchFilterBar.spec.ts tests/components/preferences/appearance/AppearancePreferences.spec.ts tests/commandGroups/CommandGroupModal.spec.ts tests/frontend/projects/ProjectAddModal.spec.ts tests/frontend/preferences/AiPreferencesLimits.spec.ts src/components/ai/__tests__/AiSuggestionBlock.spec.ts tests/a11y/search-palette.a11y.spec.ts",
+        "revision": "8d31a4086c0426d583734d7f53f1fb785b2ca5e59b074a00c2e9a8d3f7e309e2",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run typecheck",
+        "revision": "8d31a4086c0426d583734d7f53f1fb785b2ca5e59b074a00c2e9a8d3f7e309e2",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run typecheck:vue",
+        "revision": "8d31a4086c0426d583734d7f53f1fb785b2ca5e59b074a00c2e9a8d3f7e309e2",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run build",
+        "revision": "8d31a4086c0426d583734d7f53f1fb785b2ca5e59b074a00c2e9a8d3f7e309e2",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run lint",
+        "revision": "8d31a4086c0426d583734d7f53f1fb785b2ca5e59b074a00c2e9a8d3f7e309e2",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run lint:style",
+        "revision": "8d31a4086c0426d583734d7f53f1fb785b2ca5e59b074a00c2e9a8d3f7e309e2",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm test",
+        "revision": "8d31a4086c0426d583734d7f53f1fb785b2ca5e59b074a00c2e9a8d3f7e309e2",
+        "result": "passed",
+        "exitCode": 0
+      }
+    ]
+  }
+}

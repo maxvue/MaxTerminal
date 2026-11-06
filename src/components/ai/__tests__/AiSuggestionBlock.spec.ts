@@ -97,7 +97,9 @@ describe('AiSuggestionBlock.vue (Fase 12 — Unidades 03 e 04)', () => {
         };
         vi.spyOn(aiIpc, 'classifyRisk').mockResolvedValue(destructiveRisk);
 
-        const cmdInput = wrapper.find('[data-testid="suggestion-command-input"]');
+        const cmdInput = wrapper.find('[data-testid="suggestion-command-input"] input').exists()
+            ? wrapper.find('[data-testid="suggestion-command-input"] input')
+            : wrapper.find('[data-testid="suggestion-command-input"]');
         await cmdInput.setValue('php artisan migrate:fresh');
 
         await wrapper.find('[data-testid="btn-execute-command"]').trigger('click');

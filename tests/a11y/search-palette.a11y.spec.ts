@@ -53,8 +53,15 @@ function auditSeriousAndCriticalA11y(root: HTMLElement): A11yViolation[] {
                 description: 'role="combobox" exige aria-expanded.'
             });
         }
+        const isExpanded = cb.getAttribute('aria-expanded') === 'true';
         const controlsId = cb.getAttribute('aria-controls');
-        if (!controlsId || !root.querySelector(`#${CSS.escape(controlsId)}`)) {
+        if (isExpanded && (!controlsId || !root.querySelector(`#${CSS.escape(controlsId)}`))) {
+            violations.push({
+                id: 'aria-valid-attr-value',
+                impact: 'critical',
+                description: 'aria-controls deve referenciar um listbox existente quando o combobox estiver aberto.'
+            });
+        } else if (controlsId && !root.querySelector(`#${CSS.escape(controlsId)}`)) {
             violations.push({
                 id: 'aria-valid-attr-value',
                 impact: 'critical',

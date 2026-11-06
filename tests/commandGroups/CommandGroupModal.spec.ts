@@ -94,7 +94,7 @@ function makeGroup(overrides: Partial<CommandGroup> = {}): CommandGroup {
 }
 
 function getFieldInput(wrapper: ReturnType<typeof mount>, testId: string) {
-    const input = wrapper.find(`[data-testid="${testId}"] input`);
+    const input = wrapper.find(`[data-testid="${testId}"] textarea, [data-testid="${testId}"] input`);
     return input.exists() ? input : wrapper.get(`[data-testid="${testId}"]`);
 }
 
@@ -317,7 +317,7 @@ describe('CommandGroupModal.vue', () => {
 
         await flushPromises();
 
-        await wrapper.get('[data-testid="suggest-goal-input"]').setValue('Subir Vite e Horizon');
+        await getFieldInput(wrapper, 'suggest-goal-input').setValue('Subir Vite e Horizon');
         await wrapper.get('[data-testid="btn-suggest-ai"]').trigger('click');
         await flushPromises();
 

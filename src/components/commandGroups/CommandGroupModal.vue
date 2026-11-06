@@ -10,7 +10,7 @@
                 <div class="command-group-modal__header-actions">
                     <MaxButton v-if="editor.isEditMode.value && editor.draft.value.scope === 'local'" label="Copiar para Global" icon="lucide:copy" severity="secondary" size="small" class="command-group-modal__copy-btn" data-testid="btn-copy-to-global" @click="editor.copyToScope('global', null)" />
                     <MaxButton v-if="editor.isEditMode.value && editor.draft.value.scope === 'global' && projectId" label="Copiar para este Projeto" icon="lucide:copy" severity="secondary" size="small" class="command-group-modal__copy-btn" data-testid="btn-copy-to-local" @click="editor.copyToScope('local', projectId)" />
-                    <MaxIconButton icon="lucide:x" label="Fechar modal" variant="text" class="command-group-modal__close-btn" data-testid="btn-close-group-modal" @click="onClose" />
+                    <MaxIconButton icon="lucide:x" aria-label="Fechar modal" title="Fechar modal" class="command-group-modal__close-btn" data-testid="btn-close-group-modal" @click="onClose" />
                 </div>
             </header>
 

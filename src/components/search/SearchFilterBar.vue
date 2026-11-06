@@ -3,39 +3,22 @@
         <div class="search-filter-bar__row">
             <label class="search-filter-bar__field">
                 <span class="search-filter-bar__label">Escopo</span>
-                <select class="search-filter-bar__select" :value="props.filters.projectId ?? ''" aria-label="Filtrar por projeto" @change="onProjectChange">
-                    <option value="">Todos os projetos</option>
-                    <option v-for="proj in props.projects" :key="proj.id" :value="proj.id">{{ proj.title }}</option>
-                </select>
+                <MaxInputSelect :model-value="props.filters.projectId ?? ''" :options="projectOptions" option-label="label" option-value="value" option-name="label" aria-label="Filtrar por projeto" class="search-filter-bar__select" @update:model-value="onProjectSelectChange" />
             </label>
 
             <label class="search-filter-bar__field">
                 <span class="search-filter-bar__label">Saída</span>
-                <select class="search-filter-bar__select" :value="props.filters.exit.kind" aria-label="Filtrar por código de saída" @change="onExitChange">
-                    <option value="any">Qualquer</option>
-                    <option value="zero">Sucesso (0)</option>
-                    <option value="nonzero">Com erro (!= 0)</option>
-                    <option value="unknown">Desconhecido</option>
-                </select>
+                <MaxInputSelect :model-value="props.filters.exit.kind" :options="exitOptions" option-label="label" option-value="value" option-name="label" aria-label="Filtrar por código de saída" class="search-filter-bar__select" @update:model-value="onExitSelectChange" />
             </label>
 
             <label class="search-filter-bar__field">
                 <span class="search-filter-bar__label">Período</span>
-                <select class="search-filter-bar__select" :value="selectedPeriodPreset" aria-label="Filtrar por período" @change="onPeriodPresetChange">
-                    <option value="all">Qualquer data</option>
-                    <option value="1h">Última hora</option>
-                    <option value="24h">Últimas 24 horas</option>
-                    <option value="7d">Últimos 7 dias</option>
-                    <option value="30d">Últimos 30 dias</option>
-                </select>
+                <MaxInputSelect :model-value="selectedPeriodPreset" :options="periodOptions" option-label="label" option-value="value" option-name="label" aria-label="Filtrar por período" class="search-filter-bar__select" @update:model-value="onPeriodPresetSelectChange" />
             </label>
 
             <label class="search-filter-bar__field">
                 <span class="search-filter-bar__label">Ordenar</span>
-                <select class="search-filter-bar__select" :value="props.sort.kind" aria-label="Ordenar resultados" @change="onSortChange">
-                    <option value="relevance">Relevância</option>
-                    <option value="recent">Mais recentes</option>
-                </select>
+                <MaxInputSelect :model-value="props.sort.kind" :options="sortOptions" option-label="label" option-value="value" option-name="label" aria-label="Ordenar resultados" class="search-filter-bar__select" @update:model-value="onSortSelectChange" />
             </label>
 
             <MaxButton v-if="hasActiveFilters" label="Limpar filtros" variant="text" severity="secondary" size="small" class="search-filter-bar__clear" aria-label="Limpar filtros ativos" @click="clearFilters" />
@@ -55,7 +38,7 @@
 
 <script setup lang="ts">
     import { computed, ref } from 'vue';
-    import { MaxButton } from '@maxvue/max-components-ui';
+    import { MaxButton, MaxInputSelect } from '@maxvue/max-components-ui';
     import {
         ALL_SEARCH_SOURCE_KINDS,
         createDefaultSearchFilters,
@@ -85,6 +68,30 @@
     }>();
 
     const selectedPeriodPreset = ref<'all' | '1h' | '24h' | '7d' | '30d'>('all');
+
+    const projectOptions = computed(() => [
+        { label: 'Todos os projetos', value: '' },
+        ...props.projects.map((p) => ({ label: p.title, value: p.id }))
+    ]);
+
+    const exitOptions = [
+        { label: 'Qualquer', value: 'any' },
+        { label: 'Sucesso (exit 0)', value: 'success' },
+        { label: 'Erro (exit != 0)', value: 'error' }
+    ];
+
+    const periodOptions = [
+        { label: 'Qualquer data', value: 'all' },
+        { label: 'Última hora', value: '1h' },
+        { label: 'Últimas 24h', value: '24h' },
+        { label: 'Últimos 7 dias', value: '7d' },
+        { label: 'Últimos 30 dias', value: '30d' }
+    ];
+
+    const sortOptions = [
+        { label: 'Mais recentes primeiro', value: 'recent' },
+        { label: 'Mais relevantes', value: 'relevance' }
+    ];
 
     const hasActiveFilters = computed<boolean>(() => {
         const f = props.filters;
@@ -144,25 +151,22 @@
         return null;
     });
 
-    function onProjectChange(event: Event): void {
-        const target = event.target as HTMLSelectElement;
-        const val = target.value.trim();
+    function onProjectSelectChange(value: unknown): void {
+        const val = typeof value === 'string' ? value.trim() : '';
         emit('update:filters', {
             projectId: val.length > 0 ? val : null
         });
     }
 
-    function onExitChange(event: Event): void {
-        const target = event.target as HTMLSelectElement;
-        const kind = target.value as ExitFilter['kind'];
+    function onExitSelectChange(value: unknown): void {
+        const kind = (typeof value === 'string' ? value : 'any') as ExitFilter['kind'];
         emit('update:filters', {
             exit: { kind }
         });
     }
 
-    function onPeriodPresetChange(event: Event): void {
-        const target = event.target as HTMLSelectElement;
-        const preset = target.value as 'all' | '1h' | '24h' | '7d' | '30d';
+    function onPeriodPresetSelectChange(value: unknown): void {
+        const preset = (typeof value === 'string' ? value : 'all') as 'all' | '1h' | '24h' | '7d' | '30d';
         selectedPeriodPreset.value = preset;
         const now = Date.now();
         if (preset === 'all') {
@@ -181,9 +185,8 @@
         });
     }
 
-    function onSortChange(event: Event): void {
-        const target = event.target as HTMLSelectElement;
-        const kind = target.value as SearchSort['kind'];
+    function onSortSelectChange(value: unknown): void {
+        const kind = (typeof value === 'string' ? value : 'recent') as SearchSort['kind'];
         emit('update:sort', { kind });
     }
 
@@ -235,17 +238,8 @@
     }
 
     .search-filter-bar__select {
-        padding: 3px 8px;
-        border: 1px solid var(--mt-ui-border, var(--background-100));
-        border-radius: 4px;
-        background: var(--mt-ui-surface, var(--background-0));
-        color: var(--mt-ui-text, var(--background-800));
+        min-width: 130px;
         font-size: 11px;
-        outline: none;
-
-        &:focus {
-            border-color: var(--max-primary-500);
-        }
     }
 
     .search-filter-bar__clear {

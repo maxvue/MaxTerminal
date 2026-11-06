@@ -30,7 +30,7 @@
                 <div class="project-add-modal__field">
                     <label for="project-add-color" class="project-add-modal__label">Cor (#RRGGBB)</label>
                     <div class="project-add-modal__color-row">
-                        <input v-model="colorInput" type="color" class="project-add-modal__color-picker" aria-label="Selecionar cor" @input="onColorManualEdit">
+                        <MaxColorPicker v-model="colorInput" format="hex" aria-label="Selecionar cor" class="project-add-modal__color-picker" @update:model-value="onColorPickerChange" />
                         <MaxInputText id="project-add-color" v-model="colorInput" class="project-add-modal__input" placeholder="#14B8A6" maxlength="7" aria-label="Cor (#RRGGBB)" @input="onColorManualEdit" />
                     </div>
                 </div>
@@ -55,6 +55,7 @@
     import {
         MaxAlert,
         MaxButton,
+        MaxColorPicker,
         MaxIcon,
         MaxInputText,
         MaxModal
@@ -222,6 +223,14 @@
     function onColorManualEdit(): void {
         colorTouched.value = true;
         errorMessage.value = null;
+    }
+
+    function onColorPickerChange(val: unknown): void {
+        if (typeof val === 'string' && val.length > 0) {
+            colorTouched.value = true;
+            errorMessage.value = null;
+            colorInput.value = val.startsWith('#') ? val : `#${val}`;
+        }
     }
 
     async function handlePickFolder(): Promise<void> {

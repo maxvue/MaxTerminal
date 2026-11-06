@@ -22,10 +22,10 @@
             </div>
             <div class="theme-swatch__actions" @click.stop @keydown.enter.stop @keydown.space.stop>
                 <MaxTag v-if="active" value="Ativo" severity="success" :no-uppercase="true" class="theme-swatch__active-tag" />
-                <MaxIconButton icon="lucide:pencil" :disabled="summary.origin === 'builtin'" :title="editTitle" :aria-label="editAriaLabel" size="small" variant="text" class="theme-swatch__icon-btn" @click="onEditClick" />
-                <MaxIconButton icon="lucide:copy" title="Duplicar tema" :aria-label="`Duplicar tema ${summary.name}`" size="small" variant="text" class="theme-swatch__icon-btn" @click="emit('duplicate', summary.id)" />
-                <MaxIconButton v-if="summary.origin !== 'builtin'" icon="lucide:download" title="Exportar tema" :aria-label="`Exportar tema ${summary.name}`" size="small" variant="text" class="theme-swatch__icon-btn" @click="emit('export', summary.id)" />
-                <MaxIconButton v-if="summary.origin !== 'builtin'" icon="lucide:trash-2" title="Excluir tema" :aria-label="`Excluir tema ${summary.name}`" size="small" variant="text" severity="danger" class="theme-swatch__icon-btn theme-swatch__icon-btn--danger" @click="emit('delete', summary.id)" />
+                <MaxIconButton icon="lucide:pencil" :disabled="summary.origin === 'builtin'" :title="editTitle" :aria-label="editAriaLabel" :size="0.875" class="theme-swatch__icon-btn" @click="onEditClick" />
+                <MaxIconButton icon="lucide:copy" title="Duplicar tema" :aria-label="`Duplicar tema ${summary.name}`" :size="0.875" class="theme-swatch__icon-btn" @click="emit('duplicate', summary.id)" />
+                <MaxIconButton v-if="summary.origin !== 'builtin'" icon="lucide:download" title="Exportar tema" :aria-label="`Exportar tema ${summary.name}`" :size="0.875" class="theme-swatch__icon-btn" @click="emit('export', summary.id)" />
+                <MaxIconButton v-if="summary.origin !== 'builtin'" icon="lucide:trash-2" title="Excluir tema" :aria-label="`Excluir tema ${summary.name}`" :size="0.875" class="theme-swatch__icon-btn theme-swatch__icon-btn--danger" @click="emit('delete', summary.id)" />
             </div>
         </div>
     </div>

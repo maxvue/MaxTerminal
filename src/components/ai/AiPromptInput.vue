@@ -5,11 +5,9 @@
             <span>{{ badgeText }}</span>
         </div>
 
-        <select v-if="activeMode.kind === 'rag' && slugs.length > 0" v-model="selectedSlug" class="ai-prompt-input__slug" aria-label="Base de documentação RAG" data-testid="ai-prompt-rag-slug">
-            <option v-for="s in slugs" :key="s.slug" :value="s.slug">{{ s.title || s.slug }}</option>
-        </select>
+        <MaxInputSelect v-if="activeMode.kind === 'rag' && slugs.length > 0" :model-value="selectedSlug" :options="ragSlugOptions" option-label="label" option-value="value" option-name="label" class="ai-prompt-input__slug" aria-label="Base de documentação RAG" data-testid="ai-prompt-rag-slug" @update:model-value="onSlugSelectChange" />
 
-        <input ref="inputEl" v-model="promptText" type="text" class="ai-prompt-input__field" :placeholder="placeholderText" autocomplete="off" data-testid="ai-prompt-field" @keydown.esc.prevent="onCancel">
+        <MaxInputText ref="inputEl" v-model="promptText" class="ai-prompt-input__field" :placeholder="placeholderText" autocomplete="off" data-testid="ai-prompt-field" @keydown.esc.prevent="onCancel" />
 
         <MaxButton type="submit" size="small" class="ai-prompt-input__submit" :disabled="!promptText.trim() || loading" :loading="loading" data-testid="ai-prompt-submit">
             <MaxIcon :icon="loading ? 'lucide:loader-circle' : 'lucide:send'" />
@@ -22,7 +20,7 @@
 
 <script setup lang="ts">
     import { computed, nextTick, ref, watch } from 'vue';
-    import { MaxButton, MaxIcon, MaxIconButton } from '@maxvue/max-components-ui';
+    import { MaxButton, MaxIcon, MaxIconButton, MaxInputSelect, MaxInputText } from '@maxvue/max-components-ui';
     import { useAiSuggestion } from '@/composables/ai/useAiSuggestion';
     import { useRagSearch } from '@/composables/ai/useRagSearch';
     import { useAiStore } from '@/stores/ai';
@@ -39,7 +37,17 @@
     const { slugs, selectedSlug, loading: ragLoading, loadSlugs, search } = useRagSearch(() => props.paneId);
 
     const promptText = ref<string>('');
-    const inputEl = ref<HTMLInputElement | null>(null);
+    const inputEl = ref<{ focus?: () => void; setFocus?: () => void; input?: { focus?: () => void } } | HTMLInputElement | null>(null);
+
+    const ragSlugOptions = computed(() =>
+        slugs.value.map((s) => ({ label: s.title || s.slug, value: s.slug }))
+    );
+
+    function onSlugSelectChange(value: unknown): void {
+        if (typeof value === 'string') {
+            selectedSlug.value = value;
+        }
+    }
 
     const loading = computed<boolean>(() => isStreaming.value || ragLoading.value);
 
@@ -79,7 +87,13 @@
                 void loadSlugs();
             }
             await nextTick();
-            inputEl.value?.focus();
+            if (inputEl.value) {
+                if (typeof inputEl.value.focus === 'function') {
+                    inputEl.value.focus();
+                } else if ('setFocus' in inputEl.value && typeof inputEl.value.setFocus === 'function') {
+                    inputEl.value.setFocus();
+                }
+            }
             if (mode.kind === 'rag' && mode.initialPrompt && mode.initialPrompt.trim().length > 0) {
                 await search(mode.initialPrompt.trim()).catch(() => {});
             }
@@ -145,15 +159,6 @@
     .ai-prompt-input__field {
         flex: 1;
         min-width: 0;
-        padding: 0.25rem 0.5rem;
-        border: none;
-        background: transparent;
-        color: var(--background-50);
-        font-size: 0.8125rem;
-
-        &:focus {
-            outline: none;
-        }
     }
 
     .ai-prompt-input__submit {

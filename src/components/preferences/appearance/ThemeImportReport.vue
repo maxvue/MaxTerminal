@@ -7,7 +7,7 @@
                 <MaxTag v-if="report.errors.length > 0" :value="`${report.errors.length} falha(s)`" severity="danger" :no-uppercase="true" class="import-report__badge import-report__badge--danger" />
                 <MaxTag v-if="report.skipped.length > 0" :value="`${report.skipped.length} ignorado(s)`" severity="secondary" :no-uppercase="true" class="import-report__badge" />
             </div>
-            <MaxIconButton icon="lucide:x" size="small" variant="text" class="import-report__close" aria-label="Fechar relatório de importação" @click="emit('close')" />
+            <MaxIconButton icon="lucide:x" :size="0.875" class="import-report__close" aria-label="Fechar relatório de importação" title="Fechar relatório de importação" @click="emit('close')" />
         </div>
 
         <ul v-if="report.warnings.length > 0" class="import-report__list import-report__list--warning">
