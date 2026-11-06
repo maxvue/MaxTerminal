@@ -7,7 +7,7 @@
 
         <MaxInputSelect v-if="activeMode.kind === 'rag' && slugs.length > 0" :model-value="selectedSlug" :options="ragSlugOptions" option-label="label" option-value="value" option-name="label" class="ai-prompt-input__slug" aria-label="Base de documentação RAG" data-testid="ai-prompt-rag-slug" @update:model-value="onSlugSelectChange" />
 
-        <MaxInputText ref="inputEl" v-model="promptText" class="ai-prompt-input__field" :placeholder="placeholderText" autocomplete="off" data-testid="ai-prompt-field" @keydown.esc.prevent="onCancel" />
+        <MaxInputText ref="inputEl" v-model="promptText" class="ai-prompt-input__field" :placeholder="placeholderText" aria-label="Prompt de inteligência artificial" autocomplete="off" data-testid="ai-prompt-field" @keydown.esc.prevent="onCancel" />
 
         <MaxButton type="submit" size="small" class="ai-prompt-input__submit" :disabled="!promptText.trim() || loading" :loading="loading" data-testid="ai-prompt-submit">
             <MaxIcon :icon="loading ? 'lucide:loader-circle' : 'lucide:send'" />

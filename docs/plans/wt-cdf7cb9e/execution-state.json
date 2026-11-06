@@ -1,0 +1,156 @@
+{
+  "version": 2,
+  "planRevision": "528710da22267078ea3cde5ddfabca1b3e09f7f2ce3fd9931a6f7ec1ac4a6ebc",
+  "tasks": [
+    {
+      "id": "etapa-1",
+      "status": "completed",
+      "files": [],
+      "validations": [
+        {
+          "command": "npx --no-install vitest run tests/components/modals/MaxModalCloseProtocol.spec.ts tests/components/a11y/MaxComponentsUiA11y.spec.ts",
+          "revision": "92a3b235037ae065e6c5a7a95abbd1237d07feefcb9245cb80ba607009f888e2",
+          "result": "passed"
+        }
+      ],
+      "revision": "92a3b235037ae065e6c5a7a95abbd1237d07feefcb9245cb80ba607009f888e2"
+    },
+    {
+      "id": "etapa-2",
+      "status": "completed",
+      "files": [
+        "src/components/horizon/HorizonModal.vue",
+        "src/components/preferences/appearance/ThemeEditorDialog.vue",
+        "src/components/preferences/appearance/AppearancePreferences.vue",
+        "tests/components/preferences/appearance/AppearancePreferences.spec.ts"
+      ],
+      "validations": [
+        {
+          "command": "npx --no-install vitest run tests/components/modals/MaxModalCloseProtocol.spec.ts tests/components/preferences/appearance/AppearancePreferences.spec.ts tests/components/preferences/appearance/ThemeEditorDialog.spec.ts",
+          "revision": "92a3b235037ae065e6c5a7a95abbd1237d07feefcb9245cb80ba607009f888e2",
+          "result": "passed"
+        }
+      ],
+      "revision": "92a3b235037ae065e6c5a7a95abbd1237d07feefcb9245cb80ba607009f888e2"
+    },
+    {
+      "id": "etapa-3",
+      "status": "completed",
+      "files": [
+        "src/components/ai/AiPromptInput.vue",
+        "src/components/agents/AgentLauncherMenu.vue",
+        "src/components/preferences/AiPreferences.vue"
+      ],
+      "validations": [
+        {
+          "command": "npx --no-install vitest run tests/components/a11y/MaxComponentsUiA11y.spec.ts tests/frontend/preferences/AiPreferencesLimits.spec.ts",
+          "revision": "92a3b235037ae065e6c5a7a95abbd1237d07feefcb9245cb80ba607009f888e2",
+          "result": "passed"
+        }
+      ],
+      "revision": "92a3b235037ae065e6c5a7a95abbd1237d07feefcb9245cb80ba607009f888e2"
+    },
+    {
+      "id": "etapa-4",
+      "status": "completed",
+      "files": [
+        "src/components/workspace/TabBar.vue",
+        "src/components/projects/ProjectIdentityForm.vue",
+        "src/components/terminal/TerminalSearchBar.vue"
+      ],
+      "validations": [
+        {
+          "command": "npx --no-install vitest run tests/frontend/workspace/workspace-components.spec.ts tests/commandGroups/CommandGroupModal.spec.ts",
+          "revision": "92a3b235037ae065e6c5a7a95abbd1237d07feefcb9245cb80ba607009f888e2",
+          "result": "passed"
+        }
+      ],
+      "revision": "92a3b235037ae065e6c5a7a95abbd1237d07feefcb9245cb80ba607009f888e2"
+    },
+    {
+      "id": "etapa-5",
+      "status": "completed",
+      "files": [
+        "tests/components/modals/MaxModalCloseProtocol.spec.ts",
+        "tests/components/a11y/MaxComponentsUiA11y.spec.ts"
+      ],
+      "validations": [
+        {
+          "command": "npx --no-install vitest run tests/components/modals/MaxModalCloseProtocol.spec.ts tests/components/a11y/MaxComponentsUiA11y.spec.ts",
+          "revision": "92a3b235037ae065e6c5a7a95abbd1237d07feefcb9245cb80ba607009f888e2",
+          "result": "passed"
+        }
+      ],
+      "revision": "92a3b235037ae065e6c5a7a95abbd1237d07feefcb9245cb80ba607009f888e2"
+    },
+    {
+      "id": "etapa-6",
+      "status": "completed",
+      "files": [
+        "src/components/terminal/RichInput.vue",
+        "src/components/search/GlobalSearchPalette.vue",
+        "src/components/terminal/TerminalSearchBar.vue"
+      ],
+      "validations": [
+        {
+          "command": "npm run typecheck",
+          "revision": "92a3b235037ae065e6c5a7a95abbd1237d07feefcb9245cb80ba607009f888e2",
+          "result": "passed"
+        }
+      ],
+      "revision": "92a3b235037ae065e6c5a7a95abbd1237d07feefcb9245cb80ba607009f888e2"
+    },
+    {
+      "id": "etapa-7",
+      "status": "completed",
+      "files": [
+        "package.json"
+      ],
+      "validations": [
+        {
+          "command": "npm run build",
+          "revision": "92a3b235037ae065e6c5a7a95abbd1237d07feefcb9245cb80ba607009f888e2",
+          "result": "passed"
+        }
+      ],
+      "revision": "92a3b235037ae065e6c5a7a95abbd1237d07feefcb9245cb80ba607009f888e2"
+    }
+  ],
+  "verification": {
+    "revision": "92a3b235037ae065e6c5a7a95abbd1237d07feefcb9245cb80ba607009f888e2",
+    "checks": [
+      {
+        "command": "npx --no-install vitest run tests/components/modals/MaxModalCloseProtocol.spec.ts tests/components/a11y/MaxComponentsUiA11y.spec.ts tests/components/preferences/appearance/AppearancePreferences.spec.ts tests/components/preferences/appearance/ThemeEditorDialog.spec.ts tests/components/horizon/HorizonModal.spec.ts tests/frontend/workspace/workspace-components.spec.ts tests/frontend/preferences/AiPreferencesLimits.spec.ts",
+        "revision": "92a3b235037ae065e6c5a7a95abbd1237d07feefcb9245cb80ba607009f888e2",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run typecheck",
+        "revision": "92a3b235037ae065e6c5a7a95abbd1237d07feefcb9245cb80ba607009f888e2",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run build",
+        "revision": "92a3b235037ae065e6c5a7a95abbd1237d07feefcb9245cb80ba607009f888e2",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run lint",
+        "revision": "92a3b235037ae065e6c5a7a95abbd1237d07feefcb9245cb80ba607009f888e2",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm test",
+        "revision": "92a3b235037ae065e6c5a7a95abbd1237d07feefcb9245cb80ba607009f888e2",
+        "result": "passed",
+        "exitCode": 0
+      }
+    ]
+  },
+  "updatedAt": 1793976500000,
+  "nextAction": "Aguardar confirmacao explicita do usuario para acoes Git"
+}

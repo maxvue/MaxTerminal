@@ -174,12 +174,20 @@
         }
     });
 
-    function handleBeforeCloseMain(): boolean {
-        return !store.isBusy;
+    async function handleBeforeCloseMain(event?: { preventDefault: () => void }): Promise<boolean> {
+        if (store.isBusy) {
+            event?.preventDefault();
+            return false;
+        }
+        return true;
     }
 
-    function handleBeforeCloseClear(): boolean {
-        return !store.isClearing;
+    async function handleBeforeCloseClear(event?: { preventDefault: () => void }): Promise<boolean> {
+        if (store.isClearing) {
+            event?.preventDefault();
+            return false;
+        }
+        return true;
     }
 
     function handleModalVisible(visible: boolean): void {

@@ -485,10 +485,10 @@ describe('AppearancePreferences e subcomponentes', () => {
         expect(deleteModal.props('dismissable')).toBe(true);
         expect(deleteModal.props('closeOnEscape')).toBe(true);
 
-        const beforeCloseFn = deleteModal.props('beforeClose') as (event: { preventDefault: () => void }) => boolean | void;
+        const beforeCloseFn = deleteModal.props('beforeClose') as (event: { preventDefault: () => void }) => Promise<boolean>;
         expect(typeof beforeCloseFn).toBe('function');
         const mockEvBefore = { preventDefault: vi.fn() };
-        expect(beforeCloseFn(mockEvBefore)).toBeUndefined();
+        expect(await beforeCloseFn(mockEvBefore)).toBe(true);
         expect(mockEvBefore.preventDefault).not.toHaveBeenCalled();
 
         // Dispara a exclusão para manter isDeleting ativo
@@ -504,7 +504,7 @@ describe('AppearancePreferences e subcomponentes', () => {
 
         // O hook beforeClose previne o evento e retorna false
         const mockEvDuring = { preventDefault: vi.fn() };
-        const resultDuring = beforeCloseFn(mockEvDuring);
+        const resultDuring = await beforeCloseFn(mockEvDuring);
         expect(resultDuring).toBe(false);
         expect(mockEvDuring.preventDefault).toHaveBeenCalled();
 

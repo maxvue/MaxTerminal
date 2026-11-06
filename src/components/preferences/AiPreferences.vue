@@ -59,7 +59,7 @@
                     <span class="ai-preferences__row-title">Atraso de debounce do diagnóstico (ms)</span>
                     <span class="ai-preferences__row-desc">Tempo de espera após a falha do comando antes de consultar o gateway.</span>
                 </div>
-                <MaxInputNumber v-model="draft.diagnosis.debounceMs" :min="0" :max="10000" class="is-narrow" data-testid="input-diagnosis-debounce" />
+                <MaxInputNumber v-model="draft.diagnosis.debounceMs" :min="0" :max="10000" aria-label="Atraso de debounce do diagnóstico em milissegundos" class="is-narrow" data-testid="input-diagnosis-debounce" />
             </label>
 
             <label class="ai-preferences__row">
@@ -67,7 +67,7 @@
                     <span class="ai-preferences__row-title">Quantidade de trechos RAG (topK)</span>
                     <span class="ai-preferences__row-desc">Número máximo de resultados retornados por consulta de documentação (1 a 20).</span>
                 </div>
-                <MaxInputNumber v-model="draft.rag.topK" :min="1" :max="20" class="is-narrow" data-testid="input-rag-topk" />
+                <MaxInputNumber v-model="draft.rag.topK" :min="1" :max="20" aria-label="Quantidade de trechos RAG" class="is-narrow" data-testid="input-rag-topk" />
             </label>
 
             <label class="ai-preferences__row">

@@ -258,10 +258,12 @@
         editorStore.data.draft.ansi[key] = normalizeHexFromPicker(val);
     }
 
-    function onBeforeClose(event: { preventDefault: () => void }): void {
+    async function onBeforeClose(event: { preventDefault: () => void }): Promise<boolean> {
         if (editorStore.saving) {
             event.preventDefault();
+            return false;
         }
+        return true;
     }
 
     async function onSubmit(): Promise<void> {

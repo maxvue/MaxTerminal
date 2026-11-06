@@ -205,11 +205,12 @@
         pendingDeleteTheme.value = found;
     }
 
-    function handleBeforeDeleteModalClose(event?: { preventDefault: () => void }): boolean | void {
+    async function handleBeforeDeleteModalClose(event?: { preventDefault: () => void }): Promise<boolean> {
         if (isDeleting.value) {
             event?.preventDefault();
             return false;
         }
+        return true;
     }
 
     function onDeleteModalVisibilityChange(visible: boolean): void {
