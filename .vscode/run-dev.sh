@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # RUN DEV — Inicia o MaxTerminal em modo de desenvolvimento (npm run tauri dev)
 # com Vite HMR no frontend e recompilação do backend nativo Rust.
-# Inclui sincronização de bibliotecas locais (@maxvue/*), limpeza de cache
+# Inclui sincronização de bibliotecas locais (@maxvue/*), cache gerenciado pelo Vite
 # e controle de PID/lockfile para evitar instâncias duplicadas ou portas presas.
 set -u
 cd -P "$(dirname "$0")/.." || exit 1
@@ -20,7 +20,7 @@ fi
 
 # Se invocado pelo beforeDevCommand do próprio Tauri, sobe apenas o servidor Vite
 if [ "${MAXTERMINAL_RUN_DEV_ACTIVE:-0}" = "1" ]; then
-  exec npx --no-install vite --host 127.0.0.1 --port 5177 --strictPort
+  exec node scripts/run-vite.mjs
 fi
 export MAXTERMINAL_RUN_DEV_ACTIVE=1
 
@@ -128,8 +128,9 @@ cleanup() {
 finish() {
   local status=$?
   trap - EXIT SIGINT SIGTERM
-  cleanup || status=1
+  # Uma task que perdeu a identidade não pode limpar os processos da sucessora.
   if [ "$(cat "$LOCKFILE" 2>/dev/null)" = "$TASK_IDENTITY" ]; then
+    cleanup || status=1
     rm -f "$LOCKFILE"
   fi
   exit "$status"
@@ -137,6 +138,10 @@ finish() {
 
 TASK_PID=''
 TASK_START=''
+# Serializa a troca de proprietário e toda a preparação. O arquivo .lock permanece
+# para que processos concorrentes sempre bloqueiem o mesmo inode.
+exec 9>"${LOCKFILE}.lock" || exit 1
+flock -x 9 || exit 1
 take_over || exit 1
 TASK_IDENTITY="$$ $(process_start "$$")"
 echo "$TASK_IDENTITY" > "$LOCKFILE"
@@ -147,15 +152,23 @@ trap 'exit 143' SIGTERM
 # Sincroniza bibliotecas locais (@maxvue/*) se o script existir
 if [ -f "scripts/sync-local-libs.mjs" ]; then
   echo "→ Sincronizando bibliotecas locais (@maxvue/*)..."
-  node scripts/sync-local-libs.mjs >/dev/null 2>&1 || true
+  node scripts/sync-local-libs.mjs
+  SYNC_CODE=$?
+  if [ "$SYNC_CODE" -ne 0 ]; then
+    echo "→ Falha ao sincronizar bibliotecas locais (código $SYNC_CODE); o Tauri não será iniciado." >&2
+    exit "$SYNC_CODE"
+  fi
 fi
 
-# Limpa o cache de pré-bundling do Vite ao iniciar
-echo "→ Limpando cache de dependências do Vite (node_modules/.vite/deps)..."
-rm -rf node_modules/.vite/deps >/dev/null 2>&1 || true
+# O cacheDir está em vite.config.ts. Não apaga node_modules, que pode ser compartilhado.
+echo "→ Preservando cache gerenciado pelo Vite (.tmp/vite)..."
 
 # Limpa instâncias antigas presas antes de subir
 cleanup || exit 1
+
+# Não deixa os filhos herdarem o bloqueio de preparação.
+flock -u 9
+exec 9>&-
 
 echo "→ Iniciando MaxTerminal Desktop (npm run tauri dev)..."
 npm run tauri dev &

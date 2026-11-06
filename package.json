@@ -14,7 +14,7 @@
   },
   "scripts": {
     "dev": "bash .vscode/run-dev.sh",
-    "dev:vite": "vite --host 127.0.0.1 --port 5177 --strictPort",
+    "dev:vite": "node scripts/run-vite.mjs",
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1 --port 4173 --strictPort",
     "tauri": "tauri",

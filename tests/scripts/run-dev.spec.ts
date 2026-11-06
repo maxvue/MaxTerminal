@@ -13,6 +13,7 @@ describe('limpeza da task DEV', () => {
     let app: string;
     let backend: string;
     const children: ChildProcess[] = [];
+    const outputs = new WeakMap<ChildProcess, { stdout: string; stderr: string }>();
 
     beforeEach(() => {
         fs.mkdirSync('.tmp', { recursive: true });
@@ -79,8 +80,12 @@ describe('limpeza da task DEV', () => {
                 FIXTURE_BACKEND: backend,
                 FIXTURE_PID_FILE: path.join(root, 'backend.pid')
             },
-            stdio: 'ignore'
+            stdio: ['ignore', 'pipe', 'pipe']
         });
+        const output = { stdout: '', stderr: '' };
+        outputs.set(child, output);
+        child.stdout!.on('data', (chunk) => { output.stdout += String(chunk); });
+        child.stderr!.on('data', (chunk) => { output.stderr += String(chunk); });
         children.push(child);
         await once(child, 'spawn');
         return child;
@@ -185,6 +190,55 @@ describe('limpeza da task DEV', () => {
         await new Promise(setImmediate);
         expect(() => process.kill(child.pid!, 0)).not.toThrow();
     });
+
+    it('não limpa os processos de uma task que já assumiu o controle', async () => {
+        const child = await startBackend(path.join(app, 'src-tauri'));
+        fs.writeFileSync(path.join(root, 'task.pid'), 'nova identidade\n');
+        runFunction("TASK_IDENTITY='identidade anterior'; TASK_PID=''; TASK_START=''; finish");
+        expect(fs.existsSync(`/proc/${child.pid}/exe`)).toBe(true);
+        expect(fs.readFileSync(path.join(root, 'task.pid'), 'utf8')).toBe('nova identidade\n');
+    });
+
+    it('interrompe a task e mostra a falha de sincronização sem iniciar o Tauri', async () => {
+        fs.mkdirSync(path.join(app, 'scripts'), { recursive: true });
+        fs.writeFileSync(path.join(app, 'scripts/sync-local-libs.mjs'), 'console.error("Artefato local ausente"); process.exit(17);');
+        const task = await startTask('echo iniciado > "$FIXTURE_PID_FILE"');
+        const [code] = await once(task, 'exit');
+        expect(code).toBe(17);
+        expect(outputs.get(task)!.stderr).toContain('Artefato local ausente');
+        expect(fs.existsSync(path.join(root, 'backend.pid'))).toBe(false);
+    });
+
+    it('preserva o cache gerenciado pelo Vite em vez de apagar dependências compartilhadas', async () => {
+        const cache = path.join(app, 'node_modules/.vite/deps');
+        fs.mkdirSync(cache, { recursive: true });
+        fs.writeFileSync(path.join(cache, 'sentinel'), 'cache compartilhado');
+        const task = await startTask('exit 0');
+        expect((await once(task, 'exit'))[0]).toBe(0);
+        expect(fs.existsSync(path.join(cache, 'sentinel'))).toBe(true);
+        expect(outputs.get(task)!.stdout).toContain('.tmp/vite');
+    });
+
+    it('serializa duas inicializações que encontram o arquivo de controle ausente', async () => {
+        fs.mkdirSync(path.join(root, 'bin'), { recursive: true });
+        // Amplia a janela entre take_over e a gravação da identidade, sem simular flock.
+        fs.writeFileSync(path.join(root, 'bin/cat'), '#!/bin/bash\ncase "$1" in /proc/*/stat) sleep 0.2 ;; esac\nexec /usr/bin/cat "$@"\n', { mode: 0o755 });
+        const script = 'echo $$ > "$FIXTURE_PID_FILE"\nexec "$(dirname "$0")/slow-task" 60';
+        const tasks = await Promise.all([startTask(script), startTask(script)]);
+        try {
+            await expect.poll(() => fs.existsSync(path.join(root, 'backend.pid')), { timeout: 10_000 }).toBe(true);
+            await expect.poll(() => tasks.filter((task) => task.exitCode === null && task.signalCode === null).length, { timeout: 8000 }).toBe(1);
+            expect(tasks.some((task) => task.exitCode === 143)).toBe(true);
+        } finally {
+            for (const task of tasks) {
+                if (task.exitCode === null && task.signalCode === null) {
+                    const exited = once(task, 'exit');
+                    task.kill('SIGTERM');
+                    await exited;
+                }
+            }
+        }
+    }, 30_000);
 
     it('preserva o código da falha e limpa o backend iniciado pela task', async () => {
         const task = await startTask('cd src-tauri\n"$FIXTURE_BACKEND" 60 </dev/null >/dev/null 2>&1 &\necho $! > "$FIXTURE_PID_FILE"\nexit 23');
