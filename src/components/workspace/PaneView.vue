@@ -3,9 +3,9 @@
         <header class="pane-view__toolbar">
             <span class="pane-view__cwd" :title="props.pane.cwd">{{ shortCwd }}</span>
             <div class="pane-view__actions">
-                <MaxIconButton icon="lucide:columns-2" label="Dividir painel verticalmente" variant="text" severity="secondary" class="pane-view__action-btn" title="Dividir verticalmente" :disabled="!props.canSplit" @click.stop="emit('split', props.pane.id, 'vertical')" />
-                <MaxIconButton icon="lucide:rows-2" label="Dividir painel horizontalmente" variant="text" severity="secondary" class="pane-view__action-btn" title="Dividir horizontalmente" :disabled="!props.canSplit" @click.stop="emit('split', props.pane.id, 'horizontal')" />
-                <MaxIconButton icon="lucide:x" label="Fechar painel" variant="text" severity="danger" class="pane-view__action-btn pane-view__action-btn--danger" title="Fechar painel" @click.stop="emit('close', props.pane.id)" />
+                <MaxIconButton icon="lucide:columns-2" aria-label="Dividir painel verticalmente" class="pane-view__action-btn" title="Dividir verticalmente" :disabled="!props.canSplit" @click.stop="emit('split', props.pane.id, 'vertical')" />
+                <MaxIconButton icon="lucide:rows-2" aria-label="Dividir painel horizontalmente" class="pane-view__action-btn" title="Dividir horizontalmente" :disabled="!props.canSplit" @click.stop="emit('split', props.pane.id, 'horizontal')" />
+                <MaxIconButton icon="lucide:x" aria-label="Fechar painel" class="pane-view__action-btn pane-view__action-btn--danger" title="Fechar painel" @click.stop="emit('close', props.pane.id)" />
             </div>
         </header>
         <div class="pane-view__body">

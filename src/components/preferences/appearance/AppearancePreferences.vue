@@ -46,7 +46,10 @@
 
         <ThemeEditorDialog @saved="onThemeSaved" />
 
-        <MaxModal :visible="Boolean(pendingDeleteTheme)" title="Confirmar Exclusão de Tema" :no-button="true" width="30rem" :closable="!isDeleting" @update:visible="onDeleteModalVisibilityChange">
+        <MaxModal :visible="Boolean(pendingDeleteTheme)" title="Confirmar Exclusão de Tema" :no-button="true" width="30rem" :dismissable="!isDeleting" :close-on-escape="!isDeleting" :before-close="handleBeforeDeleteModalClose" @update:visible="onDeleteModalVisibilityChange">
+            <template #close="{ close }">
+                <MaxIconButton icon="lucide:x" aria-label="Fechar" title="Fechar" :disabled="isDeleting" class="prefs-appearance__delete-close-btn" @click="close" />
+            </template>
             <div v-if="pendingDeleteTheme" class="prefs-appearance__delete-confirm">
                 <p class="prefs-appearance__delete-text">{{ deleteImpactSummary }}</p>
                 <footer class="prefs-appearance__delete-footer">
@@ -64,6 +67,7 @@
         MaxAlert,
         MaxButton,
         MaxCodeBlock,
+        MaxIconButton,
         MaxInputCheckbox,
         MaxInputText,
         MaxModal
@@ -199,6 +203,13 @@
             return;
         }
         pendingDeleteTheme.value = found;
+    }
+
+    function handleBeforeDeleteModalClose(event?: { preventDefault: () => void }): boolean | void {
+        if (isDeleting.value) {
+            event?.preventDefault();
+            return false;
+        }
     }
 
     function onDeleteModalVisibilityChange(visible: boolean): void {

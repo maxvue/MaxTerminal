@@ -445,6 +445,75 @@ describe('AppearancePreferences e subcomponentes', () => {
         expect(deleteModal.props('visible')).toBe(false);
     });
 
+    it('bloqueia os 3 caminhos de fechamento (dismissable, closeOnEscape e beforeClose) enquanto isDeleting for verdadeiro', async () => {
+        const customSummary: ThemeSummary = {
+            ...sampleSummary,
+            id: 'custom-blocked',
+            name: 'Custom Blocked',
+            origin: 'custom'
+        };
+
+        const ipc = await import('@/ipc/themes');
+        vi.mocked(ipc.themeList).mockResolvedValue([sampleSummary, customSummary]);
+
+        let resolveDeletePromise: (() => void) | undefined;
+        const deletePromise = new Promise<null>((resolve) => {
+            resolveDeletePromise = () => resolve(null);
+        });
+        vi.mocked(ipc.themeDelete).mockReturnValueOnce(deletePromise);
+
+        const wrapper = mount(AppearancePreferences, {
+            global: {
+                plugins: [pinia]
+            }
+        });
+        const { useThemeStore } = await import('@/stores/theme');
+        const themeStore = useThemeStore();
+        await themeStore.init();
+        await flushPromises();
+
+        const picker = wrapper.findComponent({ name: 'ThemePicker' });
+        picker.vm.$emit('delete', 'custom-blocked');
+        await wrapper.vm.$nextTick();
+
+        const deleteModal = wrapper
+            .findAllComponents({ name: 'MaxModal' })
+            .find((m) => m.props('title') === 'Confirmar Exclusão de Tema')!;
+        expect(deleteModal?.exists()).toBe(true);
+
+        // Antes de iniciar a exclusão, os caminhos estão habilitados
+        expect(deleteModal.props('dismissable')).toBe(true);
+        expect(deleteModal.props('closeOnEscape')).toBe(true);
+
+        const beforeCloseFn = deleteModal.props('beforeClose') as (event: { preventDefault: () => void }) => boolean | void;
+        expect(typeof beforeCloseFn).toBe('function');
+        const mockEvBefore = { preventDefault: vi.fn() };
+        expect(beforeCloseFn(mockEvBefore)).toBeUndefined();
+        expect(mockEvBefore.preventDefault).not.toHaveBeenCalled();
+
+        // Dispara a exclusão para manter isDeleting ativo
+        const confirmBtn = wrapper
+            .findAll('button')
+            .find((b) => b.text().includes('Confirmar exclusão'));
+        await confirmBtn!.trigger('click');
+        await wrapper.vm.$nextTick();
+
+        // Durante a exclusão, dismissable e closeOnEscape passam para false
+        expect(deleteModal.props('dismissable')).toBe(false);
+        expect(deleteModal.props('closeOnEscape')).toBe(false);
+
+        // O hook beforeClose previne o evento e retorna false
+        const mockEvDuring = { preventDefault: vi.fn() };
+        const resultDuring = beforeCloseFn(mockEvDuring);
+        expect(resultDuring).toBe(false);
+        expect(mockEvDuring.preventDefault).toHaveBeenCalled();
+
+        // Libera a promise e conclui
+        resolveDeletePromise!();
+        await flushPromises();
+        expect(deleteModal.props('visible')).toBe(false);
+    });
+
     it('onThemeSaved atualiza o catálogo via themeStore.refreshCatalog e não quebra se refresh falhar', async () => {
         const wrapper = mount(AppearancePreferences, {
             global: {

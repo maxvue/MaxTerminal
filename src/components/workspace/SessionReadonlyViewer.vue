@@ -6,7 +6,7 @@
                 <span class="session-viewer__badge" :class="{ 'is-archived': props.detail.summary.archived }">{{ props.detail.summary.archived ? 'Arquivada' : 'Ativa' }}</span>
                 <span v-if="props.detail.summary.endReason" class="session-viewer__reason">{{ reasonLabel }}</span>
             </div>
-            <MaxIconButton icon="lucide:x" label="Fechar visualizador de sessão" variant="text" class="session-viewer__close" @click="emit('close')" />
+            <MaxIconButton icon="lucide:x" aria-label="Fechar visualizador de sessão" title="Fechar visualizador de sessão" class="session-viewer__close" @click="emit('close')" />
         </header>
         <div v-if="props.detail.panes.length > 1" class="session-viewer__panes" role="tablist" aria-label="Painéis da sessão">
             <button v-for="(pane, idx) in props.detail.panes" :key="pane.sessionId" type="button" class="session-viewer__pane-tab" :class="{ 'is-active': selectedSessionId === pane.sessionId }" role="tab" :aria-selected="selectedSessionId === pane.sessionId" @click="selectPaneSession(pane.sessionId)">Painel {{ idx + 1 }} (geração {{ pane.generation }})</button>

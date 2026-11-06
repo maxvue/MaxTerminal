@@ -4,7 +4,7 @@
             <h3 class="group-suggest-panel__title">Sugestão Assistida com IA</h3>
             <p class="group-suggest-panel__desc">Descreva o objetivo do grupo em português para gerar uma proposta de itens e modo de execução.</p>
 
-            <textarea v-model="goalText" rows="3" class="group-suggest-panel__textarea" data-testid="suggest-goal-input" placeholder="Ex.: Subir servidor Vite, fila Horizon e acompanhar logs em desenvolvimento" :disabled="loading" />
+            <MaxInputTextArea v-model="goalText" :rows="3" class="group-suggest-panel__textarea" data-testid="suggest-goal-input" placeholder="Ex.: Subir servidor Vite, fila Horizon e acompanhar logs em desenvolvimento" :disabled="loading" />
 
             <div class="group-suggest-panel__actions">
                 <MaxButton :label="loading ? 'Gerando sugestão…' : 'Sugerir com IA'" icon="lucide:sparkles" class="group-suggest-panel__btn group-suggest-panel__btn--primary" data-testid="btn-suggest-ai" :disabled="loading || goalText.trim().length === 0" :loading="loading" @click="onRequestSuggestion" />
@@ -46,7 +46,7 @@
 
 <script setup lang="ts">
     import { computed, ref, watch } from 'vue';
-    import { MaxButton } from '@maxvue/max-components-ui';
+    import { MaxButton, MaxInputTextArea } from '@maxvue/max-components-ui';
     import { createGroupRequestId } from '@/composables/commandGroups/useCommandGroupRun';
     import { aiIpc } from '@/ipc/ai';
     import { isMtIpcError } from '@/ipc/core';
@@ -209,14 +209,7 @@
 
     .group-suggest-panel__textarea {
         width: 100%;
-        padding: 0.5rem;
-        border: 1px solid var(--mt-ui-border, var(--background-100));
-        border-radius: 0.25rem;
-        background: var(--mt-ui-surface-panel, var(--background-25));
-        color: var(--mt-ui-text-strong, var(--background-950));
         font-size: 0.8125rem;
-        resize: vertical;
-        outline: none;
     }
 
     .group-suggest-panel__actions {

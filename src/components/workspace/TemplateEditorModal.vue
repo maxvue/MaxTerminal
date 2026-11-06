@@ -72,7 +72,7 @@
                     <MaxInputText v-model="row.key" class="template-modal__input template-modal__input--mono" placeholder="NOME_VAR" />
                     <MaxInputSelect v-model="row.kind" :options="envKindOptions" option-label="label" option-value="value" option-name="label" class="template-modal__select" />
                     <MaxInputText v-model="row.value" class="template-modal__input template-modal__input--mono" :placeholder="row.kind === 'inherited' ? 'VAR_HOST' : 'valor'" />
-                    <MaxIconButton icon="lucide:trash-2" label="Remover variável" variant="text" severity="danger" class="template-modal__remove-env" @click="removeEnvRow(idx)" />
+                    <MaxIconButton icon="lucide:trash-2" aria-label="Remover variável" title="Remover variável" class="template-modal__remove-env" @click="removeEnvRow(idx)" />
                 </div>
             </div>
             <footer class="template-modal__footer">

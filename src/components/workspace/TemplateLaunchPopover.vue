@@ -20,9 +20,9 @@
                     </div>
                 </button>
                 <div class="template-popover__actions">
-                    <MaxIconButton v-if="!tpl.isDefault" icon="lucide:star" :label="`Definir ${tpl.config.name} como padrão`" variant="text" class="template-popover__action-btn" title="Definir como padrão" @click.stop="emit('set-default', tpl.id)" />
-                    <MaxIconButton icon="lucide:pencil" :label="`Editar ${tpl.config.name}`" variant="text" class="template-popover__action-btn" title="Editar template" @click.stop="emit('edit-template', tpl)" />
-                    <MaxIconButton v-if="!tpl.isDefault" icon="lucide:trash-2" :label="`Excluir ${tpl.config.name}`" severity="danger" class="template-popover__action-btn template-popover__action-btn--danger" title="Excluir template" @click.stop="emit('delete-template', tpl)" />
+                    <MaxIconButton v-if="!tpl.isDefault" icon="lucide:star" :aria-label="`Definir ${tpl.config.name} como padrão`" class="template-popover__action-btn" title="Definir como padrão" @click.stop="emit('set-default', tpl.id)" />
+                    <MaxIconButton icon="lucide:pencil" :aria-label="`Editar ${tpl.config.name}`" class="template-popover__action-btn" title="Editar template" @click.stop="emit('edit-template', tpl)" />
+                    <MaxIconButton v-if="!tpl.isDefault" icon="lucide:trash-2" :aria-label="`Excluir ${tpl.config.name}`" class="template-popover__action-btn template-popover__action-btn--danger" title="Excluir template" @click.stop="emit('delete-template', tpl)" />
                 </div>
             </li>
         </ul>

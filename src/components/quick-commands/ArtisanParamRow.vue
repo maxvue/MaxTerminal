@@ -3,9 +3,9 @@
         <div class="param-row__topbar">
             <MaxTag :value="modelValue.kind === 'argument' ? 'Argumento' : 'Opção (--flag)'" :severity="modelValue.kind === 'argument' ? 'info' : 'secondary'" size="sm" class="param-row__badge" />
             <div class="param-row__actions">
-                <MaxIconButton icon="mdi:arrow-up" label="Mover parâmetro para cima" variant="text" severity="secondary" class="param-row__icon-btn" :disabled="index === 0" title="Mover para cima" @click="emit('move', -1)" />
-                <MaxIconButton icon="mdi:arrow-down" label="Mover parâmetro para baixo" variant="text" severity="secondary" class="param-row__icon-btn" :disabled="index >= total - 1" title="Mover para baixo" @click="emit('move', 1)" />
-                <MaxIconButton icon="mdi:trash-can-outline" label="Remover parâmetro" variant="text" severity="danger" class="param-row__icon-btn param-row__icon-btn--danger" title="Remover parâmetro" @click="emit('remove')" />
+                <MaxIconButton icon="mdi:arrow-up" aria-label="Mover parâmetro para cima" class="param-row__icon-btn" :disabled="index === 0" title="Mover para cima" @click="emit('move', -1)" />
+                <MaxIconButton icon="mdi:arrow-down" aria-label="Mover parâmetro para baixo" class="param-row__icon-btn" :disabled="index >= total - 1" title="Mover para baixo" @click="emit('move', 1)" />
+                <MaxIconButton icon="mdi:trash-can-outline" aria-label="Remover parâmetro" class="param-row__icon-btn param-row__icon-btn--danger" title="Remover parâmetro" @click="emit('remove')" />
             </div>
         </div>
 

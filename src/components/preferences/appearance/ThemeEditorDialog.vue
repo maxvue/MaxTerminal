@@ -231,9 +231,10 @@
         }
     }
 
-    function onSelectionAlphaChange(val: number | null | undefined): void {
-        if (typeof val === 'number' && Number.isFinite(val)) {
-            const clamped = Math.min(100, Math.max(5, Math.round(val / 5) * 5));
+    function onSelectionAlphaChange(val: unknown): void {
+        const num = typeof val === 'number' ? val : Number.parseFloat(String(val ?? '').replace(',', '.'));
+        if (Number.isFinite(num)) {
+            const clamped = Math.min(100, Math.max(5, Math.round(num / 5) * 5));
             editorStore.setSelectionColor(editorStore.selectionParts.hex, clamped);
         }
     }

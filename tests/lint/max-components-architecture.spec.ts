@@ -81,12 +81,38 @@ describe('Auditoria Arquitetural MaxComponentsUi (T6)', () => {
 
         expect(textareasFound.length).toBeGreaterThan(0);
         const allowedFiles = new Set([
-            'src/components/terminal/RichInput.vue',
-            'src/components/commandGroups/CommandGroupSuggestPanel.vue'
+            'src/components/terminal/RichInput.vue'
         ]);
 
         for (const item of textareasFound) {
             expect(allowedFiles.has(item.file), `Textarea não permitida encontrada em ${item.file}:${item.line}`).toBe(true);
+        }
+    });
+
+    it('nenhum elemento <select> nativo não documentado existe nos componentes vue', () => {
+        const selectsFound: { file: string; line: number }[] = [];
+        for (const filePath of vueFiles) {
+            const content = fs.readFileSync(filePath, 'utf-8');
+            const lines = content.split('\n');
+            lines.forEach((line, idx) => {
+                if (/<select\b/.test(line)) {
+                    selectsFound.push({ file: path.relative(workspaceRoot, filePath), line: idx + 1 });
+                }
+            });
+        }
+        expect(selectsFound).toHaveLength(0);
+    });
+
+    it('MaxIconButton não utiliza props inválidas (variant, severity, size="small")', () => {
+        for (const file of vueFiles) {
+            const content = fs.readFileSync(file, 'utf-8');
+            const relativePath = path.relative(workspaceRoot, file);
+
+            // MaxIconButton não suporta variant nem severity
+            expect(content, `${relativePath} contém MaxIconButton com variant`).not.toMatch(/<MaxIconButton[^>]*\bvariant=/);
+            expect(content, `${relativePath} contém MaxIconButton com severity`).not.toMatch(/<MaxIconButton[^>]*\bseverity=/);
+            // MaxIconButton size aceita número, não string nominal 'small'
+            expect(content, `${relativePath} contém MaxIconButton com size="small"`).not.toMatch(/<MaxIconButton[^>]*\bsize=["']small["']/);
         }
     });
 

@@ -7,7 +7,7 @@
             </div>
             <div class="session-drawer__header-actions">
                 <MaxButton label="Iniciar nova Sessão" icon="lucide:rotate-ccw" severity="secondary" size="small" class="session-drawer__new-btn" @click="emit('new-session')" />
-                <MaxIconButton icon="lucide:x" label="Fechar histórico de sessões" variant="text" class="session-drawer__close-btn" @click="emit('close')" />
+                <MaxIconButton icon="lucide:x" aria-label="Fechar histórico de sessões" title="Fechar histórico de sessões" class="session-drawer__close-btn" @click="emit('close')" />
             </div>
         </header>
         <div class="session-drawer__search">

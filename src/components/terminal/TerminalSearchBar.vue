@@ -16,9 +16,9 @@
             {{ statusLabel }}
         </span>
         <div class="search-nav">
-            <MaxIconButton icon="lucide:arrow-up" label="Resultado anterior" variant="text" severity="secondary" class="nav-btn" title="Resultado anterior (Shift+Enter)" @click="prev" />
-            <MaxIconButton icon="lucide:arrow-down" label="Próximo resultado" variant="text" severity="secondary" class="nav-btn" title="Próximo resultado (Enter)" @click="next" />
-            <MaxIconButton icon="lucide:x" label="Fechar busca" variant="text" severity="secondary" class="nav-btn close-btn" title="Fechar busca (Escape)" @click="handleClose" />
+            <MaxIconButton icon="lucide:arrow-up" aria-label="Resultado anterior" class="nav-btn" title="Resultado anterior (Shift+Enter)" @click="prev" />
+            <MaxIconButton icon="lucide:arrow-down" aria-label="Próximo resultado" class="nav-btn" title="Próximo resultado (Enter)" @click="next" />
+            <MaxIconButton icon="lucide:x" aria-label="Fechar busca" class="nav-btn close-btn" title="Fechar busca (Escape)" @click="handleClose" />
         </div>
     </div>
 </template>

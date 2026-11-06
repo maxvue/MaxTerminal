@@ -30,7 +30,7 @@
 
                     <MaxButton v-if="canRestartBusyOriginPane" label="Encerrar e reiniciar painel" icon="lucide:rotate-ccw" severity="secondary" size="small" class="group-run-panel__restart-btn" data-testid="group-run-restart-pane-btn" @click="onRestartBusyPane" />
                     <MaxButton v-if="isRunActive" label="Cancelar tudo" icon="lucide:octagon-x" severity="danger" size="small" class="group-run-panel__cancel-all-btn" data-testid="group-run-cancel-all-btn" @click="emit('cancel-run', props.run.id)" />
-                    <MaxIconButton icon="lucide:x" label="Fechar painel de execução" variant="text" class="group-run-panel__close-btn" @click="emit('close')" />
+                    <MaxIconButton icon="lucide:x" aria-label="Fechar painel de execução" title="Fechar painel de execução" class="group-run-panel__close-btn" @click="emit('close')" />
                 </div>
             </header>
 

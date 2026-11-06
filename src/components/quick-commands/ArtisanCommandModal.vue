@@ -6,7 +6,7 @@
                 <h2 class="artisan-modal__title">Criar comando Artisan</h2>
                 <span v-if="root" class="artisan-modal__root">{{ root }}</span>
             </div>
-            <MaxIconButton icon="lucide:x" label="Fechar modal" variant="text" class="artisan-modal__close-btn" data-testid="btn-close-artisan-modal" @click="handleClose" />
+            <MaxIconButton icon="lucide:x" aria-label="Fechar modal" title="Fechar modal" class="artisan-modal__close-btn" data-testid="btn-close-artisan-modal" @click="handleClose" />
         </template>
 
         <div v-if="store.modal.lastCreateResult" class="artisan-modal__created-banner" data-testid="artisan-created-banner">

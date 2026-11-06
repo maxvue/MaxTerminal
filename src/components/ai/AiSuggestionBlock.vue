@@ -29,7 +29,7 @@
         <div v-else-if="state.status === 'completed'" class="ai-suggestion-block__body">
             <label class="ai-suggestion-block__cmd-field">
                 <span class="ai-suggestion-block__cmd-label">Comando sugerido (editável antes de executar):</span>
-                <input :value="effectiveCommand" type="text" class="ai-suggestion-block__cmd-input" spellcheck="false" autocomplete="off" data-testid="suggestion-command-input" @input="onCommandInput">
+                <MaxInputText :model-value="effectiveCommand" class="ai-suggestion-block__cmd-input" :spellcheck="false" autocomplete="off" data-testid="suggestion-command-input" @update:model-value="onCommandChange" />
             </label>
 
             <p v-if="state.suggestion?.explanation" class="ai-suggestion-block__explanation" data-testid="suggestion-explanation">{{ state.suggestion.explanation }}</p>
@@ -82,7 +82,8 @@
         MaxAlert,
         MaxButton,
         MaxIcon,
-        MaxIconButton
+        MaxIconButton,
+        MaxInputText
     } from '@maxvue/max-components-ui';
     import AiContextPreview from '@/components/ai/AiContextPreview.vue';
     import DestructiveConfirm from '@/components/ai/DestructiveConfirm.vue';
@@ -177,8 +178,8 @@
         return 'Executar';
     });
 
-    async function onCommandInput(ev: Event): Promise<void> {
-        const nextVal = (ev.target as HTMLInputElement).value;
+    async function onCommandChange(val: unknown): Promise<void> {
+        const nextVal = typeof val === 'string' ? val : '';
         cautionConfirmOpen.value = false;
         await updateEditedCommand(nextVal);
     }
@@ -358,18 +359,8 @@
     }
 
     .ai-suggestion-block__cmd-input {
-        padding: 0.4375rem 0.625rem;
-        border-radius: 0.375rem;
-        border: 1px solid var(--background-700);
-        background: var(--background-950);
-        color: var(--background-50);
         font-family: var(--mt-font-mono);
         font-size: 0.8125rem;
-
-        &:focus {
-            outline: none;
-            border-color: var(--max-primary-500);
-        }
     }
 
     .ai-suggestion-block__explanation {
