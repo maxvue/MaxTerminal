@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "runId": "27a2a8dd-1d02-4c4f-a39e-500e08514460",
+  "snapshotSha256": "3fe9deb75df1c34cd7e3e9428075d41d8c2dae98b6e7b51977efd80233dbc0aa",
+  "issues": [
+    1,
+    2,
+    3
+  ],
+  "grupos": [],
+  "rubrica": {
+    "versao": "dedup-jev-v1",
+    "limiares": {
+      "confirma": 0.95,
+      "separa": 0.05,
+      "confiancaMinimaDoDetalhamento": 0.8
+    }
+  },
+  "modelosUsados": [
+    "jev-1.14.0"
+  ],
+  "completude": "complete",
+  "incertezas": {
+    "paresIncertos": 0,
+    "componentesConflitantes": 0,
+    "detalhamentosIncertos": 0
+  },
+  "totalDePares": 3,
+  "paresAvaliados": 3,
+  "requisicoes": 1,
+  "arquivos": [
+    {
+      "caminho": "docs/issues/1/duplicatas.json",
+      "sha256": "13a7e43d6a86a2e070fcea13f6bca1625a78b0622d6591e99790c10f7719aa83"
+    },
+    {
+      "caminho": "docs/issues/2/duplicatas.json",
+      "sha256": "d336c80df7f81654b8d9b6210d25bb8dbbd0dc17f43b4f4d8233e2b2a9e7d7f9"
+    },
+    {
+      "caminho": "docs/issues/3/duplicatas.json",
+      "sha256": "f25d803cca8bb1a648691776b06f267959488d9b9317690457c6418c4f2a8d3c"
+    }
+  ]
+}
