@@ -12,9 +12,7 @@
                     <p class="skill-conflict-list__reason">{{ formatConflictReason(item.conflict) }}</p>
                 </div>
                 <div class="skill-conflict-list__actions" role="radiogroup" :aria-label="`Resolução para ${item.skill}`">
-                    <MaxButton type="button" size="sm" class="skill-conflict-list__btn" :class="resolutionFor(item.skill) === 'keep' ? 'skill-conflict-list__btn--active' : 'skill-conflict-list__btn--secondary'" :data-testid="`resolve-keep-${item.skill}`" @click="setResolution(item.skill, 'keep')">Manter atual</MaxButton>
-                    <MaxButton type="button" size="sm" class="skill-conflict-list__btn" :class="resolutionFor(item.skill) === 'overwrite' ? 'skill-conflict-list__btn--active' : 'skill-conflict-list__btn--secondary'" :data-testid="`resolve-overwrite-${item.skill}`" @click="setResolution(item.skill, 'overwrite')">Sobrescrever com backup</MaxButton>
-                    <MaxButton type="button" size="sm" class="skill-conflict-list__btn" :class="resolutionFor(item.skill) === 'adopt' ? 'skill-conflict-list__btn--active' : 'skill-conflict-list__btn--secondary'" :data-testid="`resolve-adopt-${item.skill}`" @click="setResolution(item.skill, 'adopt')">Adotar</MaxButton>
+                    <MaxSegmentedControl :model-value="resolutionFor(item.skill)" :options="resolutionOptions" size="small" :aria-label="`Resolução para ${item.skill}`" :ariaLabel="`Resolução para ${item.skill}`" @update:model-value="setResolution(item.skill, $event as ConflictResolution)" />
                 </div>
             </div>
         </div>
@@ -22,7 +20,7 @@
 </template>
 
 <script setup lang="ts">
-    import { MaxButton, MaxIcon } from '@maxvue/max-components-ui';
+    import { MaxIcon, MaxSegmentedControl } from '@maxvue/max-components-ui';
     import type { ConflictKind, ConflictResolution, SyncAction } from '@/types/bindings';
 
     export type ConflictSyncAction = Extract<SyncAction, { action: 'conflict' }>;
@@ -37,6 +35,12 @@
     const emit = defineEmits<{
         'update:modelValue': [value: Record<string, ConflictResolution>];
     }>();
+
+    const resolutionOptions = [
+        { label: 'Manter atual', value: 'keep' },
+        { label: 'Sobrescrever com backup', value: 'overwrite' },
+        { label: 'Adotar', value: 'adopt' }
+    ];
 
     function resolutionFor(skill: string): ConflictResolution {
         return props.modelValue[skill] ?? 'keep';

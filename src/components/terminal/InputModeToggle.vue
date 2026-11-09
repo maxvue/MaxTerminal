@@ -1,12 +1,13 @@
 <template>
-    <button type="button" class="input-mode-toggle" :class="{ 'is-passthrough': isPassthrough }" :disabled="isForcedByTui" :title="tooltipText" :aria-label="labelText" @click="onToggleClick">
+    <MaxButton type="button" class="input-mode-toggle" :class="isPassthrough ? 'is-passthrough' : ''" :disabled="isForcedByTui" :title="tooltipText" :aria-label="labelText" @click="onToggleClick">
         <span class="mode-dot" />
         <span class="mode-label">{{ labelText }}</span>
-    </button>
+    </MaxButton>
 </template>
 
 <script setup lang="ts">
     import { computed } from 'vue';
+    import { MaxButton } from '@maxvue/max-components-ui';
     import type { PaneId } from '@/types/bindings';
     import { useTerminalStore } from '@/stores/terminal';
 

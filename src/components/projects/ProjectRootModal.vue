@@ -1,5 +1,5 @@
 <template>
-    <MaxModal :visible="props.visible" :title="props.root ? 'Configurar pasta de projetos' : 'Adicionar pasta de projetos'" :no-button="true" max-width="32rem" class="project-root-modal" :dismissable="!submitting" :close-on-escape="!submitting" @update:visible="emit('update:visible', $event)">
+    <MaxModal :visible="props.visible" :title="props.root ? 'Configurar pasta de projetos' : 'Adicionar pasta de projetos'" :no-button="true" max-width="32rem" class="project-root-modal" :dismissable="!submitting" :close-on-escape="!submitting" :before-close="onBeforeClose" @update:visible="onUpdateVisible">
         <form class="project-root-modal__form" @submit.prevent="handleSubmit">
             <div class="project-root-modal__field">
                 <label for="project-root-path" class="project-root-modal__label">Caminho da pasta de projetos</label>
@@ -113,8 +113,28 @@
         }
     }
 
+    async function onBeforeClose(event: { preventDefault: () => void }): Promise<boolean> {
+        if (submitting.value) {
+            event.preventDefault();
+            return false;
+        }
+        return true;
+    }
+
     function handleClose(): void {
+        if (submitting.value) {
+            return;
+        }
         emit('update:visible', false);
+    }
+
+    function onUpdateVisible(visible: boolean): void {
+        if (!visible) {
+            if (submitting.value) {
+                return;
+            }
+            handleClose();
+        }
     }
 
     async function handleRescan(): Promise<void> {

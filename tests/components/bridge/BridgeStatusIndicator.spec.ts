@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
+import { MaxButton } from '@maxvue/max-components-ui';
 import BridgeStatusIndicator from '@/components/bridge/BridgeStatusIndicator.vue';
 import { useMaxCodeBridgeStore } from '@/stores/maxCodeBridge';
 import { useWindowStore } from '@/stores/window';
@@ -31,8 +32,9 @@ describe('BridgeStatusIndicator.vue', () => {
         const wrapper = mount(BridgeStatusIndicator);
         expect(wrapper.classes()).toContain('is-success');
         expect(wrapper.text()).toContain('MaxCode conectado');
-        expect(wrapper.attributes('title')).toContain('Porta 49100');
-        expect(wrapper.attributes('title')).toContain('1 conexão');
+        const title = wrapper.attributes('title') ?? wrapper.findComponent(MaxButton).props('title');
+        expect(title).toContain('Porta 49100');
+        expect(title).toContain('1 conexão');
 
         store.status.state = 'disconnected';
         await wrapper.vm.$nextTick();

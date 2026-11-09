@@ -1,13 +1,10 @@
 <template>
-    <span v-if="props.connection && props.connection.kind === 'ssh'" class="ssh-badge" :title="badgeTitle">
-        <MaxIcon icon="lucide:server" size="0.6875" class="ssh-badge__icon" />
-        <span class="ssh-badge__label">SSH: {{ props.connection.user }}@{{ props.connection.host }}</span>
-    </span>
+    <MaxTag v-if="props.connection && props.connection.kind === 'ssh'" :value="`SSH: ${props.connection.user}@${props.connection.host}`" icon="lucide:server" class="ssh-badge" :title="badgeTitle" :no-uppercase="true" />
 </template>
 
 <script setup lang="ts">
     import { computed } from 'vue';
-    import { MaxIcon } from '@maxvue/max-components-ui';
+    import { MaxIcon, MaxTag } from '@maxvue/max-components-ui';
     import type { TemplateConnection_Serialize } from '@/types/bindings';
 
     export interface SshBadgeProps {

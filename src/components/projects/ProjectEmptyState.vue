@@ -1,23 +1,25 @@
 <template>
-    <div class="project-empty-state">
-        <div class="project-empty-state__icon-box" aria-hidden="true">
-            <MaxIcon icon="mdi:folder-plus-outline" size="1.5" class="project-empty-state__icon" />
-        </div>
-        <h3 class="project-empty-state__title">Nenhum projeto cadastrado</h3>
-        <p class="project-empty-state__desc">Adicione um projeto individual ou cadastre uma pasta de projetos para descobrir subpastas automaticamente.</p>
-        <div class="project-empty-state__actions">
-            <MaxButton class="project-empty-state__btn project-empty-state__btn--primary" @click="emit('add-project')">
-                Adicionar projeto
-            </MaxButton>
-            <MaxButton severity="secondary" class="project-empty-state__btn project-empty-state__btn--secondary" @click="emit('add-root')">
-                Adicionar pasta de projetos
-            </MaxButton>
-        </div>
-    </div>
+    <MaxEmptyDiv class="project-empty-state" icon="mdi:folder-plus-outline" :icon-size="1.5">
+        <template #default>
+            <div class="project-empty-state__icon-box">
+                <MaxIcon icon="mdi:folder-plus-outline" size="1.5" class="project-empty-state__icon" />
+            </div>
+            <h3 class="project-empty-state__title">Nenhum projeto cadastrado</h3>
+            <p class="project-empty-state__desc">Adicione um projeto individual ou cadastre uma pasta de projetos para descobrir subpastas automaticamente.</p>
+            <div class="project-empty-state__actions">
+                <MaxButton class="project-empty-state__btn project-empty-state__btn--primary" @click="emit('add-project')">
+                    Adicionar projeto
+                </MaxButton>
+                <MaxButton severity="secondary" class="project-empty-state__btn project-empty-state__btn--secondary" @click="emit('add-root')">
+                    Adicionar pasta de projetos
+                </MaxButton>
+            </div>
+        </template>
+    </MaxEmptyDiv>
 </template>
 
 <script setup lang="ts">
-    import { MaxButton, MaxIcon } from '@maxvue/max-components-ui';
+    import { MaxButton, MaxEmptyDiv, MaxIcon } from '@maxvue/max-components-ui';
 
     const emit = defineEmits<{
         'add-project': [];

@@ -1,70 +1,74 @@
 <template>
     <div class="php-preview" data-testid="artisan-php-preview">
-        <div class="php-preview__tabs" role="tablist">
-            <button type="button" role="tab" class="php-preview__tab" :class="{ 'php-preview__tab--active': activeTab === 'php' }" :aria-selected="activeTab === 'php'" data-testid="preview-tab-php" @click="activeTab = 'php'">
-                <span>Comando PHP</span>
-            </button>
-            <button type="button" role="tab" class="php-preview__tab" :class="{ 'php-preview__tab--active': activeTab === 'routes' }" :aria-selected="activeTab === 'routes'" data-testid="preview-tab-routes" @click="activeTab = 'routes'">
-                <span>routes/console.php</span>
-                <span v-if="preview?.consolePatch" class="php-preview__pill" :class="preview.consolePatch.manualOnly ? 'php-preview__pill--warn' : 'php-preview__pill--info'">
-                    {{ preview.consolePatch.manualOnly ? 'Manual' : preview.consolePatch.willCreate ? 'Novo' : 'Patch' }}
-                </span>
-            </button>
-            <button type="button" role="tab" class="php-preview__tab" :class="{ 'php-preview__tab--active': activeTab === 'manual' }" :aria-selected="activeTab === 'manual'" data-testid="preview-tab-manual" @click="activeTab = 'manual'">
-                <span>Passos manuais</span>
-                <span v-if="manualCount > 0" class="php-preview__pill php-preview__pill--warn">{{ manualCount }}</span>
-            </button>
-        </div>
-
-        <div v-if="loading" class="php-preview__loading" data-testid="preview-loading">
-            Atualizando prévia…
-        </div>
-
-        <div v-if="activeTab === 'php'" class="php-preview__panel">
-            <div v-if="preview" class="php-preview__meta">
-                <span class="php-preview__path" data-testid="preview-file-path">{{ preview.path }}</span>
-                <code class="php-preview__sig" data-testid="preview-signature">{{ preview.signature }}</code>
-            </div>
-            <pre v-if="preview?.php" class="php-preview__code" data-testid="preview-php-code"><code>{{ preview.php }}</code></pre>
-            <div v-else class="php-preview__placeholder" data-testid="preview-php-empty">
-                Preencha os campos obrigatórios sem erros para visualizar o código PHP gerado.
-            </div>
-        </div>
-
-        <div v-else-if="activeTab === 'routes'" class="php-preview__panel">
-            <template v-if="preview?.consolePatch">
-                <div class="php-preview__meta">
-                    <span class="php-preview__path">{{ preview.consolePatch.path }}</span>
-                    <span class="php-preview__hint">
-                        {{ preview.consolePatch.manualOnly ? 'Aplicação manual necessária' : preview.consolePatch.willCreate ? 'O arquivo será criado automaticamente' : 'Bloco delimitado será atualizado' }}
+        <MaxTabs v-model:value="activeTab" class="php-preview__tabs-root">
+            <MaxTabList class="php-preview__tabs">
+                <MaxTab value="php" class="php-preview__tab" :class="{ 'php-preview__tab--active': activeTab === 'php' }" data-testid="preview-tab-php">
+                    <span>Comando PHP</span>
+                </MaxTab>
+                <MaxTab value="routes" class="php-preview__tab" :class="{ 'php-preview__tab--active': activeTab === 'routes' }" data-testid="preview-tab-routes">
+                    <span>routes/console.php</span>
+                    <span v-if="preview?.consolePatch" class="php-preview__pill" :class="preview.consolePatch.manualOnly ? 'php-preview__pill--warn' : 'php-preview__pill--info'">
+                        {{ preview.consolePatch.manualOnly ? 'Manual' : preview.consolePatch.willCreate ? 'Novo' : 'Patch' }}
                     </span>
-                </div>
-                <pre class="php-preview__code" data-testid="preview-routes-diff"><code>{{ preview.consolePatch.unifiedDiff }}</code></pre>
-            </template>
-            <div v-else class="php-preview__placeholder">
-                Ative a opção de Agendamento (Schedule) para visualizar as alterações em routes/console.php.
-            </div>
-        </div>
+                </MaxTab>
+                <MaxTab value="manual" class="php-preview__tab" :class="{ 'php-preview__tab--active': activeTab === 'manual' }" data-testid="preview-tab-manual">
+                    <span>Passos manuais</span>
+                    <span v-if="manualCount > 0" class="php-preview__pill php-preview__pill--warn">{{ manualCount }}</span>
+                </MaxTab>
+            </MaxTabList>
 
-        <div v-else class="php-preview__panel">
-            <template v-if="manualSteps.length > 0">
-                <ol class="php-preview__steps" data-testid="preview-manual-steps">
-                    <li v-for="(step, idx) in manualSteps" :key="idx" class="php-preview__step">
-                        <pre class="php-preview__step-text"><code>{{ step }}</code></pre>
-                        <MaxButton label="Copiar trecho" icon="mdi:content-copy" variant="text" size="small" class="php-preview__copy-btn" data-testid="copy-manual-step-btn" @click="copyText(step)" />
-                    </li>
-                </ol>
-            </template>
-            <div v-else class="php-preview__placeholder">
-                Nenhum passo manual adicional é necessário.
+            <div v-if="loading" class="php-preview__loading" data-testid="preview-loading">
+                Atualizando prévia…
             </div>
-        </div>
+
+            <MaxTabPanels class="php-preview__panels">
+                <MaxTabPanel value="php" class="php-preview__panel">
+                    <div v-if="preview" class="php-preview__meta">
+                        <span class="php-preview__path" data-testid="preview-file-path">{{ preview.path }}</span>
+                        <code class="php-preview__sig" data-testid="preview-signature">{{ preview.signature }}</code>
+                    </div>
+                    <pre v-if="preview?.php" class="php-preview__code" data-testid="preview-php-code"><code>{{ preview.php }}</code></pre>
+                    <div v-else class="php-preview__placeholder" data-testid="preview-php-empty">
+                        Preencha os campos obrigatórios sem erros para visualizar o código PHP gerado.
+                    </div>
+                </MaxTabPanel>
+
+                <MaxTabPanel value="routes" class="php-preview__panel">
+                    <template v-if="preview?.consolePatch">
+                        <div class="php-preview__meta">
+                            <span class="php-preview__path">{{ preview.consolePatch.path }}</span>
+                            <span class="php-preview__hint">
+                                {{ preview.consolePatch.manualOnly ? 'Aplicação manual necessária' : preview.consolePatch.willCreate ? 'O arquivo será criado automaticamente' : 'Bloco delimitado será atualizado' }}
+                            </span>
+                        </div>
+                        <pre class="php-preview__code" data-testid="preview-routes-diff"><code>{{ preview.consolePatch.unifiedDiff }}</code></pre>
+                    </template>
+                    <div v-else class="php-preview__placeholder">
+                        Ative a opção de Agendamento (Schedule) para visualizar as alterações em routes/console.php.
+                    </div>
+                </MaxTabPanel>
+
+                <MaxTabPanel value="manual" class="php-preview__panel">
+                    <template v-if="manualSteps.length > 0">
+                        <ol class="php-preview__steps" data-testid="preview-manual-steps">
+                            <li v-for="(step, idx) in manualSteps" :key="idx" class="php-preview__step">
+                                <pre class="php-preview__step-text"><code>{{ step }}</code></pre>
+                                <MaxButton label="Copiar trecho" icon="mdi:content-copy" variant="text" size="small" class="php-preview__copy-btn" data-testid="copy-manual-step-btn" @click="copyText(step)" />
+                            </li>
+                        </ol>
+                    </template>
+                    <div v-else class="php-preview__placeholder">
+                        Nenhum passo manual adicional é necessário.
+                    </div>
+                </MaxTabPanel>
+            </MaxTabPanels>
+        </MaxTabs>
     </div>
 </template>
 
 <script setup lang="ts">
     import { computed, ref, watch } from 'vue';
-    import { MaxButton } from '@maxvue/max-components-ui';
+    import { MaxButton, MaxTab, MaxTabList, MaxTabPanel, MaxTabPanels, MaxTabs } from '@maxvue/max-components-ui';
     import type { ArtisanPreview } from '@/types/bindings';
 
     export interface ArtisanPhpPreviewProps {

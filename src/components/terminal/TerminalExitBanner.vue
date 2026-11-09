@@ -1,13 +1,15 @@
 <template>
-    <div class="terminal-exit-banner" role="status" aria-live="polite">
+    <MaxAlert class="terminal-exit-banner" severity="info" role="status" aria-live="polite">
         <span class="exit-message">{{ exitMessage }}</span>
-        <MaxButton label="Reiniciar" severity="secondary" size="small" class="restart-btn" @click="onRestartClick" />
-    </div>
+        <template #actions>
+            <MaxButton label="Reiniciar" severity="secondary" size="small" class="restart-btn" @click="onRestartClick" />
+        </template>
+    </MaxAlert>
 </template>
 
 <script setup lang="ts">
     import { computed } from 'vue';
-    import { MaxButton } from '@maxvue/max-components-ui';
+    import { MaxAlert, MaxButton } from '@maxvue/max-components-ui';
     import type { ExitInfo } from '@/types/bindings';
 
     export interface TerminalExitBannerProps {

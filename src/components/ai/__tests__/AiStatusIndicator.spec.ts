@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { MaxButton } from '@maxvue/max-components-ui';
 import AiStatusIndicator from '@/components/ai/AiStatusIndicator.vue';
 import { DEFAULT_AI_SETTINGS, useAiStore } from '@/stores/ai';
 import { useWindowStore } from '@/stores/window';
@@ -37,7 +38,8 @@ describe('AiStatusIndicator.vue (Fase 12 — Unidade 05)', () => {
         const wrapper = mount(AiStatusIndicator);
         expect(wrapper.classes()).toContain('is-success');
         expect(wrapper.text()).toContain('MaxAiManager Online');
-        expect(wrapper.attributes('title')).toContain('1.4.0');
+        const title = wrapper.attributes('title') ?? wrapper.findComponent(MaxButton).props('title');
+        expect(title).toContain('1.4.0');
 
         await wrapper.trigger('click');
         expect(wrapper.emitted('openSettings')).toBeTruthy();

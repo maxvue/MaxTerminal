@@ -1,18 +1,22 @@
 <template>
-    <div v-if="(isAwaiting || isSuspected) && !isAcknowledged" class="agent-attention-indicator" :class="{ 'is-awaiting': isAwaiting, 'is-suspected': isSuspected }" role="status" aria-live="polite" :title="tooltipText">
-        <MaxIcon :icon="isAwaiting ? 'lucide:shield-alert' : 'lucide:circle-help'" size="0.875" class="agent-attention-indicator__icon" aria-hidden="true" />
+    <MaxAlert v-if="(isAwaiting || isSuspected) && !isAcknowledged" :class="`agent-attention-indicator ${isAwaiting ? 'is-awaiting' : ''} ${isSuspected ? 'is-suspected' : ''}`.trim()" :severity="isAwaiting ? 'danger' : 'warning'" role="status" aria-live="polite" :title="tooltipText">
+        <template #icon>
+            <MaxIcon :icon="isAwaiting ? 'lucide:shield-alert' : 'lucide:circle-help'" size="0.875" class="agent-attention-indicator__icon" aria-hidden="true" />
+        </template>
         <span class="agent-attention-indicator__badge">{{ badgeLabel }}</span>
         <span v-if="sourceLabel" class="agent-attention-indicator__source">({{ sourceLabel }})</span>
-        <div class="agent-attention-indicator__actions">
-            <MaxButton type="button" severity="secondary" size="small" class="agent-attention-indicator__btn agent-attention-indicator__btn--focus" aria-label="Visualizar aba do agente" @click.stop="onFocus">Visualizar</MaxButton>
-            <MaxButton type="button" severity="secondary" size="small" class="agent-attention-indicator__btn agent-attention-indicator__btn--dismiss" aria-label="Dispensar aviso de atenção" @click.stop="onDismiss">Dispensar aviso</MaxButton>
-        </div>
-    </div>
+        <template #actions>
+            <div class="agent-attention-indicator__actions">
+                <MaxButton type="button" severity="secondary" size="small" class="agent-attention-indicator__btn agent-attention-indicator__btn--focus" aria-label="Visualizar aba do agente" @click.stop="onFocus">Visualizar</MaxButton>
+                <MaxButton type="button" severity="secondary" size="small" class="agent-attention-indicator__btn agent-attention-indicator__btn--dismiss" aria-label="Dispensar aviso de atenção" @click.stop="onDismiss">Dispensar aviso</MaxButton>
+            </div>
+        </template>
+    </MaxAlert>
 </template>
 
 <script setup lang="ts">
     import { computed } from 'vue';
-    import { MaxButton, MaxIcon } from '@maxvue/max-components-ui';
+    import { MaxAlert, MaxButton, MaxIcon } from '@maxvue/max-components-ui';
     import { useAgentAttention } from '@/composables/useAgentAttention';
     import type { TabId } from '@/types/bindings';
 

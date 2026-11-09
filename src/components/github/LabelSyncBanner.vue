@@ -1,20 +1,22 @@
 <template>
-    <div v-if="props.missingCount > 0 || reportMessage" class="label-sync-banner" role="region" aria-label="Sincronização de labels canônicas MaxCode">
-        <div class="label-sync-banner__info">
+    <MaxAlert v-if="props.missingCount > 0 || reportMessage" class="label-sync-banner" severity="info" role="region" aria-label="Sincronização de labels canônicas MaxCode">
+        <template #icon>
             <MaxIcon icon="lucide:tags" />
-            <span v-if="reportMessage">{{ reportMessage }}</span>
-            <span v-else>Faltam {{ props.missingCount }} labels canônicas do workflow MaxCode neste repositório.</span>
-        </div>
-        <div class="label-sync-banner__actions">
-            <MaxButton v-if="props.missingCount > 0" label="Sincronizar 24 labels MaxCode" icon="lucide:refresh-cw" severity="secondary" size="small" class="label-sync-banner__btn" :disabled="syncing" :loading="syncing" @click="onSync" />
-            <MaxButton v-if="reportMessage" label="OK" variant="text" severity="secondary" size="small" class="label-sync-banner__dismiss" aria-label="Fechar aviso" @click="reportMessage = null" />
-        </div>
-    </div>
+        </template>
+        <span v-if="reportMessage">{{ reportMessage }}</span>
+        <span v-else>Faltam {{ props.missingCount }} labels canônicas do workflow MaxCode neste repositório.</span>
+        <template #actions>
+            <div class="label-sync-banner__actions">
+                <MaxButton v-if="props.missingCount > 0" label="Sincronizar 24 labels MaxCode" icon="lucide:refresh-cw" severity="secondary" size="small" class="label-sync-banner__btn" :disabled="syncing" :loading="syncing" @click="onSync" />
+                <MaxButton v-if="reportMessage" label="OK" variant="text" severity="secondary" size="small" class="label-sync-banner__dismiss" aria-label="Fechar aviso" @click="reportMessage = null" />
+            </div>
+        </template>
+    </MaxAlert>
 </template>
 
 <script setup lang="ts">
     import { ref } from 'vue';
-    import { MaxButton, MaxIcon } from '@maxvue/max-components-ui';
+    import { MaxAlert, MaxButton, MaxIcon } from '@maxvue/max-components-ui';
 
     export interface LabelSyncBannerProps {
         missingCount: number;

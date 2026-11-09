@@ -1,10 +1,10 @@
 <template>
     <section v-if="props.items.length > 0" class="project-discovery" aria-label="Novas pastas encontradas">
         <div class="project-discovery__header">
-            <button type="button" class="project-discovery__toggle" :aria-expanded="expanded ? 'true' : 'false'" @click="expanded = !expanded">
+            <MaxButton type="button" class="project-discovery__toggle" :aria-expanded="expanded ? 'true' : 'false'" @click="expanded = !expanded">
                 <MaxIcon :icon="expanded ? 'mdi:chevron-down' : 'mdi:chevron-right'" />
                 <span>Novas pastas encontradas ({{ props.items.length }})</span>
-            </button>
+            </MaxButton>
             <MaxButton class="project-discovery__accept-all" @click="acceptAll">
                 Adicionar todas
             </MaxButton>

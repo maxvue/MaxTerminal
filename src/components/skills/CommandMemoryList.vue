@@ -12,14 +12,14 @@
 
         <ul v-if="filteredEntries.length > 0" class="command-memory-list__items" role="listbox" aria-label="Comandos recorrentes do projeto">
             <li v-for="entry in filteredEntries" :key="entry.command" class="command-memory-list__item" :data-testid="`memory-item-${entry.command}`">
-                <button type="button" class="command-memory-list__select-btn" :title="`Inserir no draft: ${entry.command}`" @click="onSelectCommand(entry)">
+                <MaxButton type="button" class="command-memory-list__select-btn" :title="`Inserir no draft: ${entry.command}`" @click="onSelectCommand(entry)">
                     <code class="command-memory-list__cmd">{{ entry.command }}</code>
                     <span class="command-memory-list__meta">
                         <span>{{ entry.useCount }}x</span>
                         <span>{{ formatSuccessRate(entry) }}% sucesso</span>
                         <span v-if="entry.lastCwd" class="command-memory-list__cwd">{{ entry.lastCwd }}</span>
                     </span>
-                </button>
+                </MaxButton>
                 <div class="command-memory-list__actions">
                     <MaxIconButton icon="lucide:pin" :size="0.75" class="command-memory-list__action-btn" :class="entry.pinned ? 'command-memory-list__action-btn--active' : ''" :aria-label="entry.pinned ? 'Desafixar comando' : 'Fixar comando'" :data-testid="`memory-pin-${entry.command}`" @click="onTogglePin(entry)" />
                     <MaxIconButton :icon="entry.hidden ? 'lucide:eye' : 'lucide:eye-off'" :size="0.75" class="command-memory-list__action-btn" :class="entry.hidden ? 'command-memory-list__action-btn--active' : ''" :aria-label="entry.hidden ? 'Reexibir comando' : 'Ocultar comando'" :data-testid="`memory-hide-${entry.command}`" @click="onToggleHide(entry)" />

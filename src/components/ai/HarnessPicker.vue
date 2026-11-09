@@ -1,56 +1,56 @@
 <template>
     <div class="harness-picker" data-testid="harness-picker">
         <div class="harness-picker__steps">
-            <button type="button" class="harness-picker__step" :class="{ 'is-active': stage === 0 }" data-testid="step-harness" @click="goToStage(0)">
+            <MaxButton type="button" class="harness-picker__step" :class="stage === 0 ? 'is-active' : ''" data-testid="step-harness" @click="goToStage(0)">
                 <span>1. Harness</span>
                 <MaxTag v-if="selectedHarness" size="sm" severity="info" :value="selectedHarness.label" class="harness-picker__step-val" />
-            </button>
-            <button type="button" class="harness-picker__step" :class="{ 'is-active': stage === 1 }" :disabled="!selectedHarness" data-testid="step-model" @click="goToStage(1)">
+            </MaxButton>
+            <MaxButton type="button" class="harness-picker__step" :class="stage === 1 ? 'is-active' : ''" :disabled="!selectedHarness" data-testid="step-model" @click="goToStage(1)">
                 <span>2. Modelo</span>
                 <MaxTag v-if="selectedModel" size="sm" severity="info" :value="selectedModel.label" class="harness-picker__step-val" />
-            </button>
-            <button v-if="hasReasoningLevels" type="button" class="harness-picker__step" :class="{ 'is-active': stage === 2 }" :disabled="!selectedModel" data-testid="step-reasoning" @click="goToStage(2)">
+            </MaxButton>
+            <MaxButton v-if="hasReasoningLevels" type="button" class="harness-picker__step" :class="stage === 2 ? 'is-active' : ''" :disabled="!selectedModel" data-testid="step-reasoning" @click="goToStage(2)">
                 <span>3. Raciocínio</span>
                 <MaxTag v-if="selectedReasoningId" size="sm" severity="info" :value="selectedReasoningId" class="harness-picker__step-val" />
-            </button>
+            </MaxButton>
         </div>
 
         <div v-if="stage === 0" class="harness-picker__list" role="listbox" aria-label="Selecionar Harness" data-testid="stage-harnesses">
-            <button v-for="harness in harnesses" :key="harness.id" type="button" role="option" class="harness-picker__option" :class="{ 'is-selected': selectedHarness?.id === harness.id }" :aria-selected="selectedHarness?.id === harness.id" :data-testid="`harness-opt-${harness.id}`" @click="onPickHarness(harness)">
+            <MaxButton v-for="harness in harnesses" :key="harness.id" type="button" role="option" class="harness-picker__option" :class="selectedHarness?.id === harness.id ? 'is-selected' : ''" :aria-selected="selectedHarness?.id === harness.id" :data-testid="`harness-opt-${harness.id}`" @click="onPickHarness(harness)">
                 <MaxIcon :icon="harness.icon || 'lucide:bot'" :size="1" class="harness-picker__option-icon" />
                 <div class="harness-picker__option-info">
                     <span class="harness-picker__option-label">{{ harness.label }}</span>
                     <MaxTag size="sm" severity="secondary" :value="`${harness.models.length} modelo(s)`" class="harness-picker__option-meta" />
                 </div>
-            </button>
+            </MaxButton>
         </div>
 
         <div v-else-if="stage === 1" class="harness-picker__list" role="listbox" aria-label="Selecionar Modelo" data-testid="stage-models">
             <p v-if="availableModels.length === 0" class="harness-picker__empty" data-testid="empty-models">Nenhum modelo carregado para {{ selectedHarness?.label }}.</p>
-            <button v-for="model in availableModels" :key="model.id" type="button" role="option" class="harness-picker__option" :class="{ 'is-selected': selectedModel?.id === model.id }" :aria-selected="selectedModel?.id === model.id" :data-testid="`model-opt-${model.id}`" @click="onPickModel(model)">
+            <MaxButton v-for="model in availableModels" :key="model.id" type="button" role="option" class="harness-picker__option" :class="selectedModel?.id === model.id ? 'is-selected' : ''" :aria-selected="selectedModel?.id === model.id" :data-testid="`model-opt-${model.id}`" @click="onPickModel(model)">
                 <MaxIcon icon="lucide:cpu" :size="1" class="harness-picker__option-icon" />
                 <div class="harness-picker__option-info">
                     <span class="harness-picker__option-label">{{ model.label }}</span>
                     <span class="harness-picker__option-meta">{{ model.id }}</span>
                 </div>
-            </button>
+            </MaxButton>
         </div>
 
         <div v-else class="harness-picker__list" role="listbox" aria-label="Selecionar Nível de Raciocínio" data-testid="stage-reasoning">
-            <button v-for="level in availableReasoningLevels" :key="level.id" type="button" role="option" class="harness-picker__option" :class="{ 'is-selected': selectedReasoningId === level.id }" :aria-selected="selectedReasoningId === level.id" :data-testid="`reasoning-opt-${level.id}`" @click="onPickReasoning(level)">
+            <MaxButton v-for="level in availableReasoningLevels" :key="level.id" type="button" role="option" class="harness-picker__option" :class="selectedReasoningId === level.id ? 'is-selected' : ''" :aria-selected="selectedReasoningId === level.id" :data-testid="`reasoning-opt-${level.id}`" @click="onPickReasoning(level)">
                 <MaxIcon icon="lucide:brain-circuit" :size="1" class="harness-picker__option-icon" />
                 <div class="harness-picker__option-info">
                     <span class="harness-picker__option-label">{{ level.label }}</span>
                     <span class="harness-picker__option-meta">{{ level.id }}</span>
                 </div>
-            </button>
+            </MaxButton>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
     import { computed, ref, watch } from 'vue';
-    import { MaxIcon, MaxTag } from '@maxvue/max-components-ui';
+    import { MaxButton, MaxIcon, MaxTag } from '@maxvue/max-components-ui';
     import { CANONICAL_HARNESSES_FALLBACK } from '@/stores/ai';
     import type {
         AiModel_Serialize,

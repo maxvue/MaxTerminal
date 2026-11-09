@@ -9,14 +9,14 @@
                 <MaxButton label="Encerrar (Kill)" severity="danger" size="small" class="pg-btn pg-btn-danger" :disabled="!activeSlot.ptyId" @click="killActiveSlot" />
             </div>
             <div class="toolbar-group">
-                <button type="button" class="pg-btn pg-tab-btn" :class="{ 'is-active': activeSlotIndex === 0 }" @click="switchSlot(0)">
+                <MaxButton type="button" class="pg-btn pg-tab-btn" :class="activeSlotIndex === 0 ? 'is-active' : ''" @click="switchSlot(0)">
                     <span>Aba 1 (pane-1)</span>
                     <TabStatusIndicator :status="slotTabStatus(0)" size="sm" :show-label="true" />
-                </button>
-                <button type="button" class="pg-btn pg-tab-btn" :class="{ 'is-active': activeSlotIndex === 1 }" @click="switchSlot(1)">
+                </MaxButton>
+                <MaxButton type="button" class="pg-btn pg-tab-btn" :class="activeSlotIndex === 1 ? 'is-active' : ''" @click="switchSlot(1)">
                     <span>Aba 2 (pane-2)</span>
                     <TabStatusIndicator :status="slotTabStatus(1)" size="sm" :show-label="true" />
-                </button>
+                </MaxButton>
                 <MaxButton label="Perder contexto WebGL" severity="secondary" size="small" class="pg-btn" @click="triggerWebglLoss" />
                 <MaxButton :label="demoTriggersEnabled ? 'Gatilhos Demo: ON' : 'Gatilhos Demo: OFF'" severity="secondary" size="small" :class="demoTriggersEnabled ? 'pg-btn is-active' : 'pg-btn'" @click="toggleDemoTriggers" />
             </div>

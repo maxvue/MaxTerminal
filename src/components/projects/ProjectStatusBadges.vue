@@ -1,18 +1,19 @@
 <template>
     <div v-if="hasAnyVisibleBadge" class="project-status-badges" :class="{ 'project-status-badges--compact': props.compact }" role="group" aria-label="Status das abas do projeto">
-        <span v-for="badge in visibleNativeBadges" :key="badge.key" class="project-status-badges__pill" :data-badge-key="badge.key" :style="{ '--mt-badge-color': `var(${badge.colorVar})` }" :title="badge.tooltip" :aria-label="badge.ariaLabel">
+        <MaxBadge v-for="badge in visibleNativeBadges" :key="badge.key" :label="badge.count" class="project-status-badges__pill" :data-badge-key="badge.key" :style="{ '--mt-badge-color': `var(${badge.colorVar})` }" :title="badge.tooltip" :aria-label="badge.ariaLabel">
             <span class="project-status-badges__dot" aria-hidden="true" />
             <span class="project-status-badges__count">{{ badge.count }}</span>
-        </span>
-        <span v-for="ext in visibleProviderBadges" :key="ext.id" class="project-status-badges__pill project-status-badges__pill--provider" :data-badge-key="ext.id" :style="{ '--mt-badge-color': `var(${ext.colorVar})` }" :title="ext.tooltip" :aria-label="ext.tooltip">
+        </MaxBadge>
+        <MaxBadge v-for="ext in visibleProviderBadges" :key="ext.id" :label="ext.count" class="project-status-badges__pill project-status-badges__pill--provider" :data-badge-key="ext.id" :style="{ '--mt-badge-color': `var(${ext.colorVar})` }" :title="ext.tooltip" :aria-label="ext.tooltip">
             <MaxIcon :icon="ext.icon" size="0.75" class="project-status-badges__icon" />
             <span class="project-status-badges__count">{{ ext.count }}</span>
-        </span>
+        </MaxBadge>
     </div>
 </template>
 
 <script setup lang="ts">
     import { computed } from 'vue';
+    import { MaxBadge, MaxIcon } from '@maxvue/max-components-ui';
     import { evaluateBadgeProviderCount, useProjectBadgeRegistry } from '@/composables/useProjectBadgeRegistry';
     import type { ProjectStatusCounters } from '@/stores/projects';
     import type { ProjectId } from '@/types/bindings';

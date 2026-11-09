@@ -2,11 +2,11 @@
     <div class="tab-workspace">
         <TabBar :tabs="projectTabs" :active-tab-id="pinnedIssuesActive ? null : (activeTab?.id ?? null)" :templates="projectTemplates" :can-split-active-pane="canSplitActive && !pinnedIssuesActive" @select-tab="onSelectTab" @close-tab="onCloseTab" @reorder-tabs="onReorderTabs" @add-default-tab="onAddDefaultTab" @launch-template="onLaunchTemplate" @create-template="onOpenCreateTemplate" @edit-template="onOpenEditTemplate" @delete-template="onDeleteTemplate" @set-default-template="onSetDefaultTemplate" @split-active-pane="onSplitActivePane" @new-session="onStartNewSession" @open-session-history="onToggleHistoryDrawer">
             <template #pinned>
-                <button v-if="isProjectGithubRepo" type="button" role="tab" class="tab-workspace__pinned-issues" :class="{ 'tab-workspace__pinned-issues--active': pinnedIssuesActive }" :aria-selected="pinnedIssuesActive" aria-label="Aba fixa Issues do GitHub" @click="onSelectPinnedIssuesTab">
+                <MaxButton v-if="isProjectGithubRepo" type="button" role="tab" class="tab-workspace__pinned-issues" :class="pinnedIssuesActive ? 'tab-workspace__pinned-issues--active' : ''" :aria-selected="pinnedIssuesActive" aria-label="Aba fixa Issues do GitHub" @click="onSelectPinnedIssuesTab">
                     <MaxIcon icon="lucide:circle-dot" />
                     <span>Issues</span>
                     <span v-if="projectOpenIssuesCount !== null" class="tab-workspace__pinned-badge">{{ projectOpenIssuesCount }}</span>
-                </button>
+                </MaxButton>
             </template>
             <template #tab-indicators="{ tab }">
                 <slot name="tab-indicators" :tab="tab">

@@ -1,9 +1,7 @@
 <template>
     <div class="command-block-status" role="status" :aria-label="primaryLabel">
-        <span class="cbs-badge" :class="badgeClass" :title="primaryLabel">
-            <MaxIcon :icon="statusIcon" class="cbs-icon" />
-            <span class="cbs-label status-text">{{ primaryLabel }}</span>
-        </span>
+        <MaxBadge class="cbs-badge" :class="badgeClass" :label="primaryLabel" :icon="statusIcon" :no-uppercase="true" :title="primaryLabel" />
+        <span class="cbs-label status-text sr-only">{{ primaryLabel }}</span>
         <MaxTag v-if="showExitCode" :value="`Código de saída ${effectiveExitCode} (exit ${effectiveExitCode})`" severity="danger" :no-uppercase="true" class="cbs-chip cbs-chip-danger block-exit-code" />
         <MaxTag v-if="isUnknownOutcome" value="Resultado desconhecido" severity="warning" :no-uppercase="true" class="cbs-chip cbs-chip-warning" />
         <MaxTag v-if="persistence === 'failed'" value="Histórico não salvo" severity="warning" :no-uppercase="true" class="cbs-chip cbs-chip-warning" title="Falha ao persistir este bloco no banco SQLite" />
@@ -13,7 +11,7 @@
 
 <script setup lang="ts">
     import { computed } from 'vue';
-    import { MaxIcon, MaxTag } from '@maxvue/max-components-ui';
+    import { MaxBadge, MaxIcon, MaxTag } from '@maxvue/max-components-ui';
     import type { BlockStatus, ObservationConfidence, PersistenceState } from '@/types/bindings';
     import type { CommandBlockStatus as FrontendBlockStatus } from '@/types/terminal';
 

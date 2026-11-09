@@ -103,6 +103,53 @@ describe('Auditoria Arquitetural MaxComponentsUi (T6)', () => {
         expect(selectsFound).toHaveLength(0);
     });
 
+    it('nenhum elemento <button> nativo não documentado existe nos componentes vue', () => {
+        const buttonsFound: { file: string; line: number; text: string }[] = [];
+        for (const filePath of vueFiles) {
+            const content = fs.readFileSync(filePath, 'utf-8');
+            const lines = content.split('\n');
+            lines.forEach((line, idx) => {
+                if (/<button\b/.test(line)) {
+                    buttonsFound.push({
+                        file: path.relative(workspaceRoot, filePath),
+                        line: idx + 1,
+                        text: line.trim()
+                    });
+                }
+            });
+        }
+        expect(buttonsFound, `Botões nativos não autorizados encontrados: ${JSON.stringify(buttonsFound)}`).toHaveLength(0);
+    });
+
+    it('exceções de <input> nativo correspondem estritamente aos casos documentados (Seção 4.2)', () => {
+        const inputsFound: { file: string; line: number; text: string }[] = [];
+        for (const filePath of vueFiles) {
+            const content = fs.readFileSync(filePath, 'utf-8');
+            const lines = content.split('\n');
+            lines.forEach((line, idx) => {
+                if (/<input\b/.test(line)) {
+                    inputsFound.push({
+                        file: path.relative(workspaceRoot, filePath),
+                        line: idx + 1,
+                        text: line.trim()
+                    });
+                }
+            });
+        }
+
+        const allowedInputFiles = new Set([
+            'src/components/search/GlobalSearchPalette.vue'
+        ]);
+
+        for (const item of inputsFound) {
+            expect(
+                allowedInputFiles.has(item.file),
+                `Elemento <input> nativo não documentado encontrado em ${item.file}:${item.line}: ${item.text}`
+            ).toBe(true);
+        }
+        expect(inputsFound.length).toBe(1);
+    });
+
     it('MaxIconButton não utiliza props inválidas (variant, severity, size="small")', () => {
         for (const file of vueFiles) {
             const content = fs.readFileSync(file, 'utf-8');

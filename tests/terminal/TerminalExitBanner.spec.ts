@@ -1,8 +1,13 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { createPinia, setActivePinia } from 'pinia';
 import { mount } from '@vue/test-utils';
 import TerminalExitBanner from '@/components/terminal/TerminalExitBanner.vue';
 
 describe('TerminalExitBanner.vue', () => {
+    beforeEach(() => {
+        setActivePinia(createPinia());
+    });
+
     it('exibe mensagem por código de saída ou sinal e emite restart-requested ao clicar em Reiniciar', async () => {
         const wrapperCode = mount(TerminalExitBanner, {
             props: {

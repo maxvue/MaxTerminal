@@ -1,16 +1,10 @@
 <template>
     <div class="terminal-search-bar" role="search" aria-label="Buscar no terminal" @keydown="onBarKeydown">
-        <input ref="inputRef" v-model="query" type="text" class="search-input" placeholder="Buscar no terminal..." aria-label="Termo de busca">
+        <MaxInputText ref="inputRef" v-model="query" type="text" class="search-input" placeholder="Buscar no terminal..." aria-label="Termo de busca" />
         <div class="search-toggles">
-            <button type="button" class="toggle-btn" :class="{ 'is-active': options.caseSensitive }" :aria-pressed="options.caseSensitive" title="Diferenciar maiúsculas/minúsculas" @click="toggleCaseSensitive">
-                Aa
-            </button>
-            <button type="button" class="toggle-btn" :class="{ 'is-active': options.wholeWord }" :aria-pressed="options.wholeWord" title="Palavra inteira" @click="toggleWholeWord">
-                Palavra
-            </button>
-            <button type="button" class="toggle-btn" :class="{ 'is-active': options.regex }" :aria-pressed="options.regex" title="Expressão regular" @click="toggleRegex">
-                .*
-            </button>
+            <MaxButton type="button" class="toggle-btn" :class="options.caseSensitive ? 'is-active' : ''" :aria-pressed="options.caseSensitive" title="Diferenciar maiúsculas/minúsculas" @click="toggleCaseSensitive">Aa</MaxButton>
+            <MaxButton type="button" class="toggle-btn" :class="options.wholeWord ? 'is-active' : ''" :aria-pressed="options.wholeWord" title="Palavra inteira" @click="toggleWholeWord">Palavra</MaxButton>
+            <MaxButton type="button" class="toggle-btn" :class="options.regex ? 'is-active' : ''" :aria-pressed="options.regex" title="Expressão regular" @click="toggleRegex">.*</MaxButton>
         </div>
         <span class="search-counter" :class="{ 'is-error': Boolean(regexError) }" role="status">
             {{ statusLabel }}
@@ -25,7 +19,7 @@
 
 <script setup lang="ts">
     import { computed, onMounted, ref, toRef } from 'vue';
-    import { MaxIconButton } from '@maxvue/max-components-ui';
+    import { MaxButton, MaxIconButton, MaxInputText } from '@maxvue/max-components-ui';
     import type { PaneId } from '@/types/bindings';
     import { useTerminalSearch } from '@/composables/terminal/useTerminalSearch';
     import { useSearchStore } from '@/stores/search';
@@ -43,7 +37,7 @@
     }>();
 
     const searchStore = useSearchStore();
-    const inputRef = ref<HTMLInputElement | null>(null);
+    const inputRef = ref<InstanceType<typeof MaxInputText> | null>(null);
     const paneIdRef = toRef(props, 'paneId');
     const { query, options, resultIndex, resultCount, limitExceeded, regexError, next, prev, close } =
         useTerminalSearch(paneIdRef);
@@ -117,8 +111,9 @@
     }
 
     onMounted(() => {
-        inputRef.value?.focus();
-        inputRef.value?.select();
+        const inputEl = (inputRef.value as any)?.input ?? (inputRef.value as any)?.$el?.querySelector?.('input') ?? (inputRef.value as any);
+        inputEl?.focus?.();
+        inputEl?.select?.();
     });
 </script>
 

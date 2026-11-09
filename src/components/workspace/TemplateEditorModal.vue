@@ -1,5 +1,5 @@
 <template>
-    <MaxModal :visible="props.open" :title="modalTitle" :no-button="true" max-width="38rem" class="template-modal" :dismissable="!props.saving" :close-on-escape="!props.saving" @update:visible="emit('close')">
+    <MaxModal :visible="props.open" :title="modalTitle" :no-button="true" max-width="38rem" class="template-modal" :dismissable="!props.saving" :close-on-escape="!props.saving" :before-close="onBeforeClose" @update:visible="onUpdateVisible">
         <form class="template-modal__form" @submit.prevent="handleSubmit">
             <MaxAlert v-if="localError || props.errorMessage" severity="danger" role="alert" :message="localError || props.errorMessage" class="template-modal__error" />
             <div class="template-modal__row">
@@ -14,8 +14,8 @@
             </div>
 
             <div class="template-modal__field">
-                <span class="template-modal__label">Origem da Conexão</span>
-                <MaxInputSelect id="template-origin-select" v-model="origin" :options="originOptions" option-label="label" option-value="value" option-name="label" class="template-modal__select-input" />
+                <span id="template-origin-label" class="template-modal__label">Origem da Conexão</span>
+                <MaxInputSelect id="template-origin-select" v-model="origin" :options="originOptions" option-label="label" option-value="value" option-name="label" aria-labelledby="template-origin-label" aria-label="Origem da Conexão" class="template-modal__select-input" />
             </div>
 
             <div v-if="origin === 'remote'" class="template-modal__remote-box">
@@ -70,13 +70,13 @@
                 </div>
                 <div v-for="(row, idx) in envRows" :key="idx" class="template-modal__env-row">
                     <MaxInputText v-model="row.key" class="template-modal__input template-modal__input--mono" placeholder="NOME_VAR" />
-                    <MaxInputSelect v-model="row.kind" :options="envKindOptions" option-label="label" option-value="value" option-name="label" class="template-modal__select" />
+                    <MaxInputSelect v-model="row.kind" :options="envKindOptions" option-label="label" option-value="value" option-name="label" aria-label="Tipo de variável dinâmica" class="template-modal__select" />
                     <MaxInputText v-model="row.value" class="template-modal__input template-modal__input--mono" :placeholder="row.kind === 'inherited' ? 'VAR_HOST' : 'valor'" />
                     <MaxIconButton icon="lucide:trash-2" aria-label="Remover variável" title="Remover variável" class="template-modal__remove-env" @click="removeEnvRow(idx)" />
                 </div>
             </div>
             <footer class="template-modal__footer">
-                <MaxButton label="Cancelar" variant="text" severity="secondary" class="template-modal__btn template-modal__btn--ghost" @click="emit('close')" />
+                <MaxButton label="Cancelar" variant="text" severity="secondary" class="template-modal__btn template-modal__btn--ghost" @click="handleCancel" />
                 <MaxButton type="submit" :label="props.saving ? 'Salvando...' : 'Salvar Template'" class="template-modal__btn template-modal__btn--primary" :disabled="props.saving" :loading="props.saving" />
             </footer>
         </form>
@@ -243,6 +243,30 @@
 
     function removeEnvRow(idx: number): void {
         envRows.value.splice(idx, 1);
+    }
+
+    async function onBeforeClose(event: { preventDefault: () => void }): Promise<boolean> {
+        if (props.saving) {
+            event.preventDefault();
+            return false;
+        }
+        return true;
+    }
+
+    function handleCancel(): void {
+        if (props.saving) {
+            return;
+        }
+        emit('close');
+    }
+
+    function onUpdateVisible(visible: boolean): void {
+        if (!visible) {
+            if (props.saving) {
+                return;
+            }
+            emit('close');
+        }
     }
 
     function buildConnectionInput(): TemplateConnectionInput_Deserialize | null {

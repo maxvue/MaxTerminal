@@ -1,13 +1,10 @@
 <template>
-    <span v-if="props.worktree && props.worktree.isLinked" class="worktree-badge" :class="kindClass" :title="badgeTitle">
-        <MaxIcon icon="lucide:git-fork" size="0.6875" class="worktree-badge__icon" />
-        <span class="worktree-badge__label">WT: {{ props.worktree.name }}</span>
-        <MaxIcon v-if="props.worktree.locked" icon="lucide:lock" size="0.6875" class="worktree-badge__lock" aria-label="Worktree bloqueada" />
-    </span>
+    <MaxTag v-if="props.worktree && props.worktree.isLinked" :value="`WT: ${props.worktree.name}`" icon="lucide:git-fork" class="worktree-badge" :class="kindClass" :title="badgeTitle" :no-uppercase="true" />
 </template>
 
 <script setup lang="ts">
     import { computed } from 'vue';
+    import { MaxIcon, MaxTag } from '@maxvue/max-components-ui';
     import type { GitWorktree } from '@/types/bindings';
 
     export interface WorktreeBadgeProps {
