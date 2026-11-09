@@ -1,5 +1,5 @@
 <template>
-    <MaxModal :visible="props.visible" title="Adicionar projeto" :no-button="true" max-width="32rem" class="project-add-modal" :dismissable="!submitting" :close-on-escape="!submitting" @update:visible="emit('update:visible', $event)">
+    <MaxModal :visible="props.visible" title="Adicionar projeto" :no-button="true" max-width="32rem" class="project-add-modal" :dismissable="!submitting" :close-on-escape="!submitting" :before-close="onBeforeClose" @update:visible="onUpdateVisible">
         <form class="project-add-modal__form" @submit.prevent="handleSubmit">
             <div class="project-add-modal__field">
                 <label for="project-add-path" class="project-add-modal__label">Pasta do projeto</label>
@@ -243,10 +243,30 @@
         schedulePreview(chosen);
     }
 
+    async function onBeforeClose(event: { preventDefault: () => void }): Promise<boolean> {
+        if (submitting.value) {
+            event.preventDefault();
+            return false;
+        }
+        return true;
+    }
+
     function handleClose(): void {
+        if (submitting.value) {
+            return;
+        }
         clearPreviewTimer();
         previewRequestToken += 1;
         emit('update:visible', false);
+    }
+
+    function onUpdateVisible(visible: boolean): void {
+        if (!visible) {
+            if (submitting.value) {
+                return;
+            }
+            handleClose();
+        }
     }
 
     async function handleSubmit(): Promise<void> {

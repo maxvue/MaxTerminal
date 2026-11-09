@@ -1,15 +1,15 @@
 <template>
     <div v-if="props.ports.length > 0" class="port-badge" @click.stop>
         <div v-for="item in visiblePorts" :key="item.id" class="port-badge__item">
-            <button type="button" class="port-badge__open-btn" :title="`Abrir no navegador (${item.browserUrl}) — ${item.processName} (PID ${item.pid})`" @click.stop="emit('open-browser', item)">
+            <MaxButton type="button" class="port-badge__open-btn" :title="`Abrir no navegador (${item.browserUrl}) — ${item.processName} (PID ${item.pid})`" @click.stop="emit('open-browser', item)">
                 <span class="port-badge__dot" />
                 <span class="port-badge__number">:{{ item.port }}</span>
-            </button>
+            </MaxButton>
             <MaxIconButton icon="lucide:square" :size="0.625" :disabled="Boolean(props.killingByPortId?.[item.id])" :aria-label="`Encerrar processo da porta :${item.port}`" :title="`Encerrar processo ${item.processName} (PID ${item.pid})`" class="port-badge__kill-btn" @click.stop="requestKill(item)" />
         </div>
-        <button v-if="overflowCount > 0" type="button" class="port-badge__overflow" :title="`Mais ${overflowCount} porta(s) ativa(s)`" @click.stop="popoverOpen = !popoverOpen">
+        <MaxButton v-if="overflowCount > 0" type="button" class="port-badge__overflow" :title="`Mais ${overflowCount} porta(s) ativa(s)`" @click.stop="popoverOpen = !popoverOpen">
             <span>+{{ overflowCount }}</span>
-        </button>
+        </MaxButton>
         <div v-if="confirmingPort" class="port-badge__confirm" role="alertdialog" aria-label="Confirmar encerramento da porta">
             <span class="port-badge__confirm-text">Encerrar {{ confirmingPort.processName }} (PID {{ confirmingPort.pid }}) na porta :{{ confirmingPort.port }}?</span>
             <div class="port-badge__confirm-actions">
@@ -19,10 +19,10 @@
         </div>
         <div v-if="popoverOpen && overflowCount > 0" class="port-badge__list-popover" role="dialog" aria-label="Todas as portas ativas">
             <div v-for="item in props.ports" :key="item.id" class="port-badge__popover-row">
-                <button type="button" class="port-badge__popover-open" @click.stop="emit('open-browser', item)">
+                <MaxButton type="button" class="port-badge__popover-open" @click.stop="emit('open-browser', item)">
                     <strong>:{{ item.port }}</strong>
                     <span>{{ item.processName }} (PID {{ item.pid }})</span>
-                </button>
+                </MaxButton>
                 <MaxButton type="button" size="sm" severity="danger" @click.stop="requestKill(item)">Encerrar</MaxButton>
             </div>
         </div>

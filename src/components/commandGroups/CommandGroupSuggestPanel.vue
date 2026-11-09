@@ -35,10 +35,10 @@
             <h3 class="group-suggest-panel__title">Comandos recorrentes do projeto</h3>
             <p class="group-suggest-panel__desc">Clique em um comando recorrente para adicioná-lo como item editável ao rascunho.</p>
             <div class="group-suggest-panel__chips">
-                <button v-for="(entry, idx) in recurringItems" :key="idx" type="button" class="group-suggest-panel__chip" :data-testid="`recurring-chip-${idx}`" @click="emit('append-recurring-item', entry)">
+                <MaxButton v-for="(entry, idx) in recurringItems" :key="idx" type="button" class="group-suggest-panel__chip" :data-testid="`recurring-chip-${idx}`" @click="emit('append-recurring-item', entry)">
                     <code>{{ entry.command }}</code>
                     <span class="group-suggest-panel__chip-meta">{{ entry.frequency }}x</span>
-                </button>
+                </MaxButton>
             </div>
         </div>
     </aside>

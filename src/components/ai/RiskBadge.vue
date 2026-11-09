@@ -1,14 +1,10 @@
 <template>
-    <div class="risk-badge" :class="[`is-${level}`, { 'is-compact': compact }]" :title="tooltipText" data-testid="risk-badge">
-        <MaxIcon :icon="iconName" :size="0.75" class="risk-badge__icon" />
-        <span class="risk-badge__label">{{ labelText }}</span>
-        <span v-if="!compact && reasons.length > 0" class="risk-badge__count">({{ reasons.length }})</span>
-    </div>
+    <MaxTag :value="!compact && reasons.length > 0 ? `${labelText} (${reasons.length})` : labelText" :icon="iconName" :severity="level === 'destructive' ? 'danger' : (level === 'caution' ? 'warning' : 'success')" class="risk-badge" :class="`is-${level}${compact ? ' is-compact' : ''}`" :title="tooltipText" :no-uppercase="true" data-testid="risk-badge" />
 </template>
 
 <script setup lang="ts">
     import { computed } from 'vue';
-    import MaxIcon from '@maxvue/max-components-ui/components/MaxIcon';
+    import { MaxIcon, MaxTag } from '@maxvue/max-components-ui';
     import type { RiskAssessment_Serialize, RiskLevel, RiskReason } from '@/types/bindings';
 
     export interface RiskBadgeProps {

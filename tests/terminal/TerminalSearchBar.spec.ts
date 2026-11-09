@@ -40,7 +40,7 @@ describe('TerminalSearchBar.vue', () => {
             props: { paneId: 'pane-search' }
         });
 
-        const input = wrapper.find('input.search-input');
+        const input = wrapper.find('.search-input input');
         await input.setValue('erro');
         expect(findNextSpy).toHaveBeenCalled();
 
@@ -52,7 +52,7 @@ describe('TerminalSearchBar.vue', () => {
         expect(findPrevSpy).toHaveBeenCalledTimes(1);
 
         // Ativa toggle de regex e digita regex inválida.
-        const toggles = wrapper.findAll('button.toggle-btn');
+        const toggles = wrapper.findAll('.toggle-btn');
         await toggles[2]!.trigger('click'); // ".*"
         await input.setValue('[regex-invalida');
         expect(wrapper.find('.search-counter').text()).toBe('Expressão regular inválida');

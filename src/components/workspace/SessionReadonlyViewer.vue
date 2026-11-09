@@ -8,9 +8,11 @@
             </div>
             <MaxIconButton icon="lucide:x" aria-label="Fechar visualizador de sessão" title="Fechar visualizador de sessão" class="session-viewer__close" @click="emit('close')" />
         </header>
-        <div v-if="props.detail.panes.length > 1" class="session-viewer__panes" role="tablist" aria-label="Painéis da sessão">
-            <button v-for="(pane, idx) in props.detail.panes" :key="pane.sessionId" type="button" class="session-viewer__pane-tab" :class="{ 'is-active': selectedSessionId === pane.sessionId }" role="tab" :aria-selected="selectedSessionId === pane.sessionId" @click="selectPaneSession(pane.sessionId)">Painel {{ idx + 1 }} (geração {{ pane.generation }})</button>
-        </div>
+        <MaxTabs v-if="props.detail.panes.length > 1" :value="selectedSessionId" class="session-viewer__panes-tabs" @update:value="selectPaneSession($event as SessionId)">
+            <MaxTabList class="session-viewer__panes" aria-label="Painéis da sessão">
+                <MaxTab v-for="(pane, idx) in props.detail.panes" :key="pane.sessionId" :value="pane.sessionId" class="session-viewer__pane-tab" :class="{ 'is-active': selectedSessionId === pane.sessionId }">Painel {{ idx + 1 }} (geração {{ pane.generation }})</MaxTab>
+            </MaxTabList>
+        </MaxTabs>
         <div class="session-viewer__scrollback" role="log" aria-live="off">
             <div v-if="props.chunks.length === 0" class="session-viewer__empty">Nenhum scrollback gravado para este painel nesta sessão.</div>
             <template v-else>
@@ -23,7 +25,7 @@
 
 <script setup lang="ts">
     import { computed, ref, watch } from 'vue';
-    import { MaxButton, MaxIconButton } from '@maxvue/max-components-ui';
+    import { MaxButton, MaxIconButton, MaxTab, MaxTabList, MaxTabs } from '@maxvue/max-components-ui';
     import type { ScrollbackChunk, SessionDetail_Serialize, SessionEndReason, SessionId } from '@/types/bindings';
 
     export interface SessionReadonlyViewerProps {

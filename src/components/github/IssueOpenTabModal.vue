@@ -1,5 +1,5 @@
 <template>
-    <MaxModal v-if="props.issue" :visible="props.open" :title="`Abrir Aba no MaxTerminal — Issue #${props.issue.number}`" :no-button="true" max-width="36rem" class="issue-open-tab-modal" :dismissable="!props.submitting" :close-on-escape="!props.submitting" @update:visible="emit('close')">
+    <MaxModal v-if="props.issue" :visible="props.open" :title="`Abrir Aba no MaxTerminal — Issue #${props.issue.number}`" :no-button="true" max-width="36rem" class="issue-open-tab-modal" :dismissable="!props.submitting" :close-on-escape="!props.submitting" :before-close="onBeforeClose" @update:visible="onUpdateVisible">
         <div class="issue-open-tab-modal__body">
             <div class="issue-open-tab-modal__section">
                 <span class="issue-open-tab-modal__label">Tipo de Aba:</span>
@@ -25,7 +25,7 @@
             <MaxInputCheckbox v-model="createWorktreeIfMissing" label="Criar worktree isolada automaticamente caso ainda não exista" />
         </div>
         <footer class="issue-open-tab-modal__footer">
-            <MaxButton label="Cancelar" severity="secondary" class="issue-open-tab-modal__btn" @click="emit('close')" />
+            <MaxButton label="Cancelar" severity="secondary" class="issue-open-tab-modal__btn" @click="handleCancel" />
             <MaxButton :label="props.submitting ? 'Abrindo...' : 'Abrir Aba'" class="issue-open-tab-modal__btn issue-open-tab-modal__btn--primary" :disabled="props.submitting" :loading="props.submitting" @click="onConfirm" />
         </footer>
     </MaxModal>
@@ -93,6 +93,30 @@
             target,
             directory
         });
+    }
+
+    async function onBeforeClose(event: { preventDefault: () => void }): Promise<boolean> {
+        if (props.submitting) {
+            event.preventDefault();
+            return false;
+        }
+        return true;
+    }
+
+    function handleCancel(): void {
+        if (props.submitting) {
+            return;
+        }
+        emit('close');
+    }
+
+    function onUpdateVisible(visible: boolean): void {
+        if (!visible) {
+            if (props.submitting) {
+                return;
+            }
+            emit('close');
+        }
     }
 </script>
 

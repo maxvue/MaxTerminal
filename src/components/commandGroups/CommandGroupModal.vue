@@ -38,10 +38,7 @@
 
                         <div class="command-group-modal__field">
                             <span class="command-group-modal__label">Escopo</span>
-                            <div class="command-group-modal__segmented">
-                                <button type="button" class="command-group-modal__seg-btn" :class="{ 'is-active': editor.draft.value.scope === 'local' }" data-testid="btn-scope-local" :disabled="editor.isEditMode.value || !projectId" @click="editor.setScope('local', projectId)">Local (Projeto)</button>
-                                <button type="button" class="command-group-modal__seg-btn" :class="{ 'is-active': editor.draft.value.scope === 'global' }" data-testid="btn-scope-global" :disabled="editor.isEditMode.value" @click="editor.setScope('global', null)">Global</button>
-                            </div>
+                            <MaxSegmentedControl :model-value="editor.draft.value.scope" :options="scopeOptions" aria-label="Escopo do grupo" ariaLabel="Escopo do grupo" data-testid="modal-scope-segmented" :disabled="editor.isEditMode.value" @update:model-value="onScopeChange" />
                             <span v-if="editor.fieldErrors.value['projectId']" class="command-group-modal__error">{{ editor.fieldErrors.value['projectId'] }}</span>
                         </div>
                     </div>
@@ -55,19 +52,12 @@
                     <div class="command-group-modal__grid">
                         <div class="command-group-modal__field">
                             <span class="command-group-modal__label">Modo de Execução Padrão</span>
-                            <div class="command-group-modal__segmented">
-                                <button type="button" class="command-group-modal__seg-btn" :class="{ 'is-active': editor.draft.value.mode === 'sequential' }" data-testid="btn-mode-sequential" @click="editor.setMode('sequential')">Sequencial na mesma aba</button>
-                                <button type="button" class="command-group-modal__seg-btn" :class="{ 'is-active': editor.draft.value.mode === 'parallel' }" data-testid="btn-mode-parallel" @click="editor.setMode('parallel')">Paralelo em Background</button>
-                                <button type="button" class="command-group-modal__seg-btn" :class="{ 'is-active': editor.draft.value.mode === 'multi_tabs' }" data-testid="btn-mode-multi-tabs" @click="editor.setMode('multi_tabs')">Multi-Abas</button>
-                            </div>
+                            <MaxSegmentedControl :model-value="editor.draft.value.mode" :options="modeOptions" aria-label="Modo de execução padrão" ariaLabel="Modo de execução padrão" data-testid="modal-mode-segmented" @update:model-value="editor.setMode($event as any)" />
                         </div>
 
                         <div v-if="editor.draft.value.mode === 'sequential'" class="command-group-modal__field" data-testid="sequential-separator-group">
                             <span class="command-group-modal__label">Política de Continuação Sequencial</span>
-                            <div class="command-group-modal__segmented">
-                                <button type="button" class="command-group-modal__seg-btn" :class="{ 'is-active': editor.draft.value.separator === 'and' }" data-testid="btn-sep-and" @click="editor.setSeparator('and')">&amp;&amp; (Parar na primeira falha)</button>
-                                <button type="button" class="command-group-modal__seg-btn" :class="{ 'is-active': editor.draft.value.separator === 'semicolon' }" data-testid="btn-sep-semicolon" @click="editor.setSeparator('semicolon')">; (Continuar mesmo após falha)</button>
-                            </div>
+                            <MaxSegmentedControl :model-value="editor.draft.value.separator" :options="separatorOptions" aria-label="Política de continuação sequencial" ariaLabel="Política de continuação sequencial" data-testid="modal-sep-segmented" @update:model-value="editor.setSeparator($event as any)" />
                         </div>
                     </div>
 
@@ -85,9 +75,9 @@
                             <div class="command-group-modal__labels-box">
                                 <span v-for="(lbl, idx) in editor.draft.value.labels" :key="lbl" class="command-group-modal__label-chip" :data-testid="`group-label-${idx}`">
                                     <span>#{{ lbl }}</span>
-                                    <button type="button" class="command-group-modal__chip-remove" :aria-label="`Remover etiqueta ${lbl}`" @click="editor.removeLabel(idx)">×</button>
+                                    <MaxIconButton icon="lucide:x" :size="0.625" class="command-group-modal__chip-remove" :aria-label="`Remover etiqueta ${lbl}`" @click="editor.removeLabel(idx)" />
                                 </span>
-                                <input v-model="newLabelInput" type="text" class="command-group-modal__label-input" data-testid="input-add-label" placeholder="Adicionar label + Enter" @keydown.enter.prevent="onAddLabel">
+                                <MaxInputText v-model="newLabelInput" class="command-group-modal__label-input" data-testid="input-add-label" placeholder="Adicionar label + Enter" @keydown.enter.prevent="onAddLabel" />
                             </div>
                             <span v-if="editor.fieldErrors.value['labels']" class="command-group-modal__error">{{ editor.fieldErrors.value['labels'] }}</span>
                         </div>
@@ -129,8 +119,8 @@
 </template>
 
 <script setup lang="ts">
-    import { ref, watch } from 'vue';
-    import { MaxButton, MaxIcon, MaxIconButton, MaxInputText } from '@maxvue/max-components-ui';
+    import { computed, ref, watch } from 'vue';
+    import { MaxButton, MaxIcon, MaxIconButton, MaxInputText, MaxSegmentedControl } from '@maxvue/max-components-ui';
     import CommandGroupItemRow from '@/components/commandGroups/CommandGroupItemRow.vue';
     import CommandGroupSuggestPanel from '@/components/commandGroups/CommandGroupSuggestPanel.vue';
     import { useCommandGroupEditor } from '@/composables/commandGroups/useCommandGroupEditor';
@@ -164,6 +154,30 @@
     });
 
     const newLabelInput = ref<string>('');
+
+    const scopeOptions = computed(() => [
+        { label: 'Local (Projeto)', value: 'local', disabled: editor.isEditMode.value || !props.projectId },
+        { label: 'Global', value: 'global', disabled: editor.isEditMode.value }
+    ]);
+
+    const modeOptions = [
+        { label: 'Sequencial na mesma aba', value: 'sequential' },
+        { label: 'Paralelo em Background', value: 'parallel' },
+        { label: 'Multi-Abas', value: 'multi_tabs' }
+    ];
+
+    const separatorOptions = [
+        { label: '&& (Parar na primeira falha)', value: 'and' },
+        { label: '; (Continuar mesmo após falha)', value: 'semicolon' }
+    ];
+
+    function onScopeChange(val: unknown): void {
+        if (val === 'local') {
+            editor.setScope('local', props.projectId);
+        } else if (val === 'global') {
+            editor.setScope('global', null);
+        }
+    }
 
     watch(
         () => [props.modelValue, props.group, props.scope, props.projectId, props.initialName] as const,

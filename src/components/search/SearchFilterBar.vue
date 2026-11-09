@@ -25,9 +25,9 @@
         </div>
 
         <div class="search-filter-bar__chips" role="group" aria-label="Fontes de busca">
-            <button v-for="kind in ALL_SEARCH_SOURCE_KINDS" :key="kind" type="button" class="search-filter-bar__chip" :class="{ 'is-active': isSourceSelected(kind), 'is-incompatible': !isSourceCompatible(kind) }" :aria-pressed="isSourceSelected(kind)" :title="chipTooltip(kind)" @click="toggleSource(kind)">
+            <MaxButton v-for="kind in ALL_SEARCH_SOURCE_KINDS" :key="kind" type="button" class="search-filter-bar__chip" :class="`${isSourceSelected(kind) ? 'is-active ' : ''}${!isSourceCompatible(kind) ? 'is-incompatible' : ''}`.trim()" :aria-pressed="isSourceSelected(kind)" :title="chipTooltip(kind)" @click="toggleSource(kind)">
                 {{ SEARCH_SECTION_LABELS[kind] }}
-            </button>
+            </MaxButton>
         </div>
 
         <p v-if="incompatibleSourcesNotice" class="search-filter-bar__notice" role="status">

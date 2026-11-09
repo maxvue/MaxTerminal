@@ -1,12 +1,13 @@
 <template>
-    <button type="button" class="bridge-status-indicator" :class="[`is-${indicator.color}`, { 'is-compact': compact }]" :title="tooltipText" :aria-label="tooltipText" @click="onOpenSettings">
+    <MaxButton type="button" class="bridge-status-indicator" :class="`is-${indicator.color}${compact ? ' is-compact' : ''}`" :title="tooltipText" :aria-label="tooltipText" @click="onOpenSettings">
         <span class="bridge-status-indicator__dot" />
         <span v-if="!compact" class="bridge-status-indicator__label">{{ indicator.label }}</span>
-    </button>
+    </MaxButton>
 </template>
 
 <script setup lang="ts">
     import { computed } from 'vue';
+    import { MaxButton } from '@maxvue/max-components-ui';
     import { useMaxCodeBridgeStore } from '@/stores/maxCodeBridge';
     import { useWindowStore } from '@/stores/window';
 

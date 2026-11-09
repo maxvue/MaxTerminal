@@ -12,9 +12,7 @@
                 <MaxInputText v-model="iconInput" label="Ícone (Iconify)" :disabled="submitting" class="project-identity-form__icon-input" @input="identityEdited = true" />
             </div>
             <div class="project-identity-form__suggestions">
-                <button v-for="sugIcon in PROJECT_ICON_SUGGESTIONS" :key="sugIcon" type="button" class="project-identity-form__sug-btn" :title="sugIcon" :disabled="submitting" @click="selectIcon(sugIcon)">
-                    <MaxIcon :icon="sugIcon" />
-                </button>
+                <MaxIconButton v-for="sugIcon in PROJECT_ICON_SUGGESTIONS" :key="sugIcon" :icon="sugIcon" :title="sugIcon" :aria-label="`Selecionar ícone ${sugIcon}`" class="project-identity-form__sug-btn" :disabled="submitting" @click="selectIcon(sugIcon)" />
             </div>
         </div>
 
@@ -24,7 +22,7 @@
                 <MaxInputText v-model="colorInput" label="Cor (#RRGGBB)" maxlength="7" :disabled="submitting" class="project-identity-form__color-input" @input="identityEdited = true" />
             </div>
             <div class="project-identity-form__palette">
-                <button v-for="swatch in PROJECT_COLOR_SUGGESTIONS" :key="swatch" type="button" class="project-identity-form__swatch" :style="{ backgroundColor: swatch }" :title="swatch" :disabled="submitting" @click="selectColor(swatch)" />
+                <MaxButton v-for="swatch in PROJECT_COLOR_SUGGESTIONS" :key="swatch" type="button" class="project-identity-form__swatch" :style="{ backgroundColor: swatch }" :title="swatch" :aria-label="`Selecionar cor ${swatch}`" :disabled="submitting" @click="selectColor(swatch)" />
             </div>
         </div>
 
@@ -45,7 +43,7 @@
 
 <script setup lang="ts">
     import { computed, ref, watch } from 'vue';
-    import { MaxAlert, MaxButton, MaxColorPicker, MaxInputText } from '@maxvue/max-components-ui';
+    import { MaxAlert, MaxButton, MaxColorPicker, MaxIconButton, MaxInputText } from '@maxvue/max-components-ui';
     import { useIpcError } from '@/composables/useIpcError';
     import {
         isValidProjectColor,

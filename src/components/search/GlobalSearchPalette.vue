@@ -6,15 +6,9 @@
             <div class="global-search-palette__top">
                 <MaxIcon icon="lucide:search" class="global-search-palette__search-icon" aria-hidden="true" />
                 <input ref="inputRef" :value="searchStore.query" type="text" class="global-search-palette__input" role="combobox" aria-label="Buscar em tudo…" :aria-expanded="hasResults" aria-controls="global-search-results-listbox" aria-autocomplete="list" :aria-activedescendant="activeDescendantId" placeholder="Buscar em tudo… (comandos, saídas, sessões, projetos, templates, grupos, issues)" @input="onQueryInput" @compositionstart="onCompositionStart" @compositionend="onCompositionEndEvent">
-                <button v-if="searchStore.query.length > 0" type="button" class="global-search-palette__clear" aria-label="Limpar consulta" @click="clearQuery">
-                    Limpar
-                </button>
-                <button v-if="searchStore.query.length > 0" type="button" class="global-search-palette__refresh" aria-label="Atualizar resultados da busca" @click="() => void searchStore.run()">
-                    Atualizar
-                </button>
-                <button type="button" class="global-search-palette__close" aria-label="Fechar busca global (Escape)" @click="handleClose">
-                    Esc
-                </button>
+                <MaxButton v-if="searchStore.query.length > 0" type="button" class="global-search-palette__clear" aria-label="Limpar consulta" @click="clearQuery">Limpar</MaxButton>
+                <MaxButton v-if="searchStore.query.length > 0" type="button" class="global-search-palette__refresh" aria-label="Atualizar resultados da busca" @click="() => void searchStore.run()">Atualizar</MaxButton>
+                <MaxButton type="button" class="global-search-palette__close" aria-label="Fechar busca global (Escape)" @click="handleClose">Esc</MaxButton>
             </div>
 
             <SearchFilterBar :filters="searchStore.filters" :sort="searchStore.sort" :projects="projectsStore.projects" @update:filters="(p) => searchStore.updateFilters(p)" @update:sort="(s) => searchStore.updateSort(s)" />
@@ -34,9 +28,7 @@
 
                 <div v-else-if="searchStore.status === 'error' && searchStore.error" class="global-search-palette__state is-error" role="option" aria-selected="false">
                     <p class="global-search-palette__error-msg">{{ errorBannerMessage }}</p>
-                    <button type="button" class="global-search-palette__retry" @click="() => void searchStore.run()">
-                        Atualizar resultados
-                    </button>
+                    <MaxButton type="button" class="global-search-palette__retry" @click="() => void searchStore.run()">Atualizar resultados</MaxButton>
                 </div>
 
                 <div v-else-if="searchStore.status === 'empty' || searchStore.sections.length === 0" class="global-search-palette__state" role="option" aria-selected="false">
@@ -60,6 +52,7 @@
 
 <script setup lang="ts">
     import { computed, nextTick, onMounted, ref, watch } from 'vue';
+    import { MaxButton } from '@maxvue/max-components-ui';
     import SearchFilterBar from '@/components/search/SearchFilterBar.vue';
     import SearchResultSection from '@/components/search/SearchResultSection.vue';
     import { useGlobalSearch } from '@/composables/search/useGlobalSearch';

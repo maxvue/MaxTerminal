@@ -1,11 +1,11 @@
 <template>
     <div v-if="repositoryContext" class="git-indicator">
-        <button type="button" class="git-indicator__chip" :class="chipStateClass" :title="tooltipText" @click.stop="toggleDetails">
+        <MaxButton type="button" class="git-indicator__chip" :class="chipStateClass" :title="tooltipText" @click.stop="toggleDetails">
             <MaxIcon icon="lucide:git-branch" :size="0.75" class="git-indicator__icon" />
             <span class="git-indicator__branch">{{ branchLabel }}</span>
             <span v-if="repositoryContext.changes.dirty" class="git-indicator__dirty-dot" aria-label="Repositório com alterações locais" />
             <span v-if="upstreamSummary" class="git-indicator__upstream">{{ upstreamSummary }}</span>
-        </button>
+        </MaxButton>
         <div v-if="detailsOpen" class="git-indicator__popover" role="dialog" aria-label="Detalhes do Git" @click.stop>
             <div class="git-indicator__popover-head">
                 <span class="git-indicator__popover-title">{{ branchLabel }}</span>

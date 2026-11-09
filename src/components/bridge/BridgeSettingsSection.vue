@@ -136,8 +136,8 @@
             emit('saved', updated);
             return;
         }
-        const num = typeof val === 'number' ? val : Number.parseInt(String(val), 10);
-        if (Number.isNaN(num) || num < 1024 || num > 65535) {
+        const num = typeof val === 'number' ? val : Number(val);
+        if (Number.isNaN(num) || !Number.isInteger(num) || num < 1024 || num > 65535) {
             return;
         }
         const updated = await bridgeStore.updateSettings({ preferredPort: num });

@@ -1,5 +1,5 @@
 <template>
-    <MaxModal :visible="props.open" title="Criar Nova Issue" :no-button="true" max-width="36rem" class="issue-create-modal" :dismissable="!props.submitting" :close-on-escape="!props.submitting" @update:visible="emit('close')">
+    <MaxModal :visible="props.open" title="Criar Nova Issue" :no-button="true" max-width="36rem" class="issue-create-modal" :dismissable="!props.submitting" :close-on-escape="!props.submitting" :before-close="onBeforeClose" @update:visible="onUpdateVisible">
         <form class="issue-create-modal__card" @submit.prevent="onSubmit">
             <div class="issue-create-modal__body">
                 <div class="issue-create-modal__field">
@@ -11,8 +11,8 @@
                     <MaxInputTextArea v-model="bodyMarkdown" class="issue-create-modal__textarea" :rows="6" placeholder="Passos para reproduzir, comportamento esperado ou especificação..." />
                 </div>
                 <div class="issue-create-modal__field">
-                    <span class="issue-create-modal__label">Estado Inicial MaxCode</span>
-                    <MaxInputSelect v-model="stateLabel" :options="stateOptions" option-label="label" option-value="value" option-name="label" class="issue-create-modal__select" />
+                    <span id="issue-state-label" class="issue-create-modal__label">Estado Inicial MaxCode</span>
+                    <MaxInputSelect v-model="stateLabel" :options="stateOptions" option-label="label" option-value="value" option-name="label" aria-labelledby="issue-state-label" aria-label="Estado Inicial MaxCode" class="issue-create-modal__select" />
                 </div>
                 <div class="issue-create-modal__categories" role="group" aria-label="Categorias da nova issue">
                     <span class="issue-create-modal__label">Categorias:</span>
@@ -21,7 +21,7 @@
                 <MaxAlert v-if="validationError" severity="danger" role="alert" :message="validationError" class="issue-create-modal__error" />
             </div>
             <footer class="issue-create-modal__footer">
-                <MaxButton label="Cancelar" severity="secondary" class="issue-create-modal__btn" @click="emit('close')" />
+                <MaxButton label="Cancelar" severity="secondary" class="issue-create-modal__btn" @click="handleCancel" />
                 <MaxButton type="submit" :label="props.submitting ? 'Criando...' : 'Criar Issue'" class="issue-create-modal__btn issue-create-modal__btn--primary" :disabled="props.submitting" :loading="props.submitting" />
             </footer>
         </form>
@@ -94,6 +94,30 @@
         });
         title.value = '';
         bodyMarkdown.value = '';
+    }
+
+    async function onBeforeClose(event: { preventDefault: () => void }): Promise<boolean> {
+        if (props.submitting) {
+            event.preventDefault();
+            return false;
+        }
+        return true;
+    }
+
+    function handleCancel(): void {
+        if (props.submitting) {
+            return;
+        }
+        emit('close');
+    }
+
+    function onUpdateVisible(visible: boolean): void {
+        if (!visible) {
+            if (props.submitting) {
+                return;
+            }
+            emit('close');
+        }
     }
 </script>
 

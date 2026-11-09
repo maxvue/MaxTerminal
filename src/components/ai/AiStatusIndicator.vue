@@ -1,12 +1,13 @@
 <template>
-    <button type="button" class="ai-status-indicator" :class="[`is-${indicator.color}`, { 'is-compact': compact }]" :title="tooltipText" :aria-label="tooltipText" data-testid="ai-status-indicator" @click="onOpenSettings">
+    <MaxButton type="button" class="ai-status-indicator" :class="`is-${indicator.color}${compact ? ' is-compact' : ''}`" :title="tooltipText" :aria-label="tooltipText" data-testid="ai-status-indicator" @click="onOpenSettings">
         <span class="ai-status-indicator__dot" />
         <span v-if="!compact" class="ai-status-indicator__label">{{ indicator.label }}</span>
-    </button>
+    </MaxButton>
 </template>
 
 <script setup lang="ts">
     import { computed } from 'vue';
+    import { MaxButton } from '@maxvue/max-components-ui';
     import { useAiStore } from '@/stores/ai';
     import { useWindowStore } from '@/stores/window';
 

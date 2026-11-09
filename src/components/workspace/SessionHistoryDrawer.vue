@@ -18,9 +18,9 @@
             <span class="session-drawer__section-label">Resultados da busca ({{ props.searchHits.length }})</span>
             <ul class="session-drawer__hit-list">
                 <li v-for="(hit, idx) in props.searchHits" :key="`${hit.sessionId}:${hit.seq}:${idx}`" class="session-drawer__hit-item">
-                    <button type="button" class="session-drawer__hit-btn" @click="emit('inspect-session', hit.tabSessionId, hit.sessionId)">
+                    <MaxButton type="button" class="session-drawer__hit-btn" @click="emit('inspect-session', hit.tabSessionId, hit.sessionId)">
                         <span class="session-drawer__hit-snippet">{{ hit.snippet }}</span>
-                    </button>
+                    </MaxButton>
                 </li>
             </ul>
         </div>
@@ -28,7 +28,7 @@
             <div v-if="props.sessions.length === 0" class="session-drawer__empty">Nenhuma sessão encontrada para esta aba.</div>
             <ul v-else class="session-drawer__list">
                 <li v-for="session in props.sessions" :key="session.id" class="session-drawer__item" :class="{ 'is-selected': selectedId === session.id }">
-                    <button type="button" class="session-drawer__item-btn" @click="onSelectSession(session.id)">
+                    <MaxButton type="button" class="session-drawer__item-btn" @click="onSelectSession(session.id)">
                         <div class="session-drawer__item-top">
                             <span class="session-drawer__seq">Sessão #{{ session.seq }}</span>
                             <span class="session-drawer__status" :class="{ 'is-active': !session.archived }">{{ session.archived ? 'Arquivada' : 'Ativa' }}</span>
@@ -38,7 +38,7 @@
                             <span v-if="session.failedCommandCount > 0" class="session-drawer__failed">{{ session.failedCommandCount }} erros</span>
                             <span v-if="session.truncated" class="session-drawer__truncated">Truncada</span>
                         </div>
-                    </button>
+                    </MaxButton>
                 </li>
             </ul>
         </div>

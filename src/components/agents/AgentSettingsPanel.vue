@@ -47,7 +47,7 @@
 
                         <div class="agent-settings-panel__agent-row">
                             <label class="agent-settings-panel__field-label" :for="`shortcut-${info.descriptor.kind}`">Atalho:</label>
-                            <input :id="`shortcut-${info.descriptor.kind}`" type="text" class="agent-settings-panel__input" data-shortcut-recorder="true" :value="shortcutFor(info.descriptor.kind, info.descriptor.shortcut)" :data-testid="`shortcut-input-${info.descriptor.kind}`" @input="onShortcutInput(info.descriptor.kind, $event)">
+                            <MaxInputText :id="`shortcut-${info.descriptor.kind}`" type="text" class="agent-settings-panel__input" data-shortcut-recorder="true" :model-value="shortcutFor(info.descriptor.kind, info.descriptor.shortcut)" :data-testid="`shortcut-input-${info.descriptor.kind}`" @input="onShortcutInput(info.descriptor.kind, $event)" />
                         </div>
 
                         <MaxInputCheckbox :model-value="isInjectEnabled(info.descriptor.kind)" label="Injetar hooks/statusLine observacionais" :data-testid="`agent-inject-${info.descriptor.kind}`" @update:model-value="onToggleInjectValue(info.descriptor.kind, $event)" />
@@ -90,7 +90,7 @@
 
 <script setup lang="ts">
     import { computed, onMounted, ref, watch } from 'vue';
-    import { MaxAlert, MaxButton, MaxInputCheckbox } from '@maxvue/max-components-ui';
+    import { MaxAlert, MaxButton, MaxInputCheckbox, MaxInputText } from '@maxvue/max-components-ui';
     import { normalizeAccelerator as normalizeShortcutCombo } from '@/composables/useAgentShortcuts';
     import { useAgentsStore } from '@/stores/agents';
     import type { AgentKind, AgentsSettings_Serialize, CapabilitySupport } from '@/types/bindings';

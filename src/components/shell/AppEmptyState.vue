@@ -1,18 +1,21 @@
 <template>
-    <section class="app-empty-state" flex flex-col items-center justify-center gap-3 p-6 text-center>
-        <div class="app-empty-state__badge" flex items-center justify-center w-12 h-12 rounded-full>
-            <MaxIcon :icon="props.icon ?? 'mdi:console-line'" size="1.5" class="app-empty-state__icon" />
-        </div>
-        <h2 class="app-empty-state__title" text-base font-semibold m-0>{{ props.title }}</h2>
-        <p v-if="props.description" class="app-empty-state__description" text-sm op-75 m-0>{{ props.description }}</p>
-        <div v-if="slots.default" mt-2>
-            <slot />
-        </div>
-    </section>
+    <MaxEmptyDiv class="app-empty-state" :icon="props.icon ?? 'mdi:console-line'" :icon-size="1.5">
+        <template #default>
+            <div class="app-empty-state__badge" flex items-center justify-center w-12 h-12 rounded-full>
+                <MaxIcon :icon="props.icon ?? 'mdi:console-line'" size="1.5" class="app-empty-state__icon" />
+            </div>
+            <h2 class="app-empty-state__title" text-base font-semibold m-0>{{ props.title }}</h2>
+            <p v-if="props.description" class="app-empty-state__description" text-sm op-75 m-0>{{ props.description }}</p>
+            <div v-if="slots.default" mt-2>
+                <slot />
+            </div>
+        </template>
+    </MaxEmptyDiv>
 </template>
 
 <script setup lang="ts">
     import { useSlots } from 'vue';
+    import { MaxEmptyDiv, MaxIcon } from '@maxvue/max-components-ui';
 
     interface AppEmptyStateProps {
         icon?: string;

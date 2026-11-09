@@ -7,7 +7,7 @@
         <div v-if="props.templates.length === 0" class="template-popover__empty">Nenhum template cadastrado neste projeto.</div>
         <ul v-else class="template-popover__list" role="menu">
             <li v-for="tpl in props.templates" :key="tpl.id" class="template-popover__item" role="none">
-                <button type="button" class="template-popover__launch" role="menuitem" @click="emit('launch', tpl.id)">
+                <MaxButton type="button" class="template-popover__launch" role="menuitem" @click="emit('launch', tpl.id)">
                     <MaxIcon :icon="tpl.config.icon || 'lucide:terminal'" class="template-popover__icon" />
                     <div class="template-popover__info">
                         <div class="template-popover__name-row">
@@ -18,7 +18,7 @@
                         </div>
                         <span v-if="tpl.config.initialCommand" class="template-popover__cmd">{{ tpl.config.initialCommand }}</span>
                     </div>
-                </button>
+                </MaxButton>
                 <div class="template-popover__actions">
                     <MaxIconButton v-if="!tpl.isDefault" icon="lucide:star" :aria-label="`Definir ${tpl.config.name} como padrão`" class="template-popover__action-btn" title="Definir como padrão" @click.stop="emit('set-default', tpl.id)" />
                     <MaxIconButton icon="lucide:pencil" :aria-label="`Editar ${tpl.config.name}`" class="template-popover__action-btn" title="Editar template" @click.stop="emit('edit-template', tpl)" />

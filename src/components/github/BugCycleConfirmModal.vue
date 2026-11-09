@@ -1,5 +1,5 @@
 <template>
-    <MaxModal :visible="props.open" title="Corrigir todos os Bugs — Prévia do Ciclo MaxCode" :no-button="true" max-width="36rem" class="bug-cycle-confirm-modal" :dismissable="!props.submitting" :close-on-escape="!props.submitting" @update:visible="emit('close')">
+    <MaxModal :visible="props.open" title="Corrigir todos os Bugs — Prévia do Ciclo MaxCode" :no-button="true" max-width="36rem" class="bug-cycle-confirm-modal" :dismissable="!props.submitting" :close-on-escape="!props.submitting" :before-close="onBeforeClose" @update:visible="onUpdateVisible">
         <div class="bug-cycle-confirm-modal__body">
             <div v-if="!props.preview" class="bug-cycle-confirm-modal__loading">Calculando fila elegível de bugs...</div>
             <template v-else>
@@ -27,7 +27,7 @@
             </template>
         </div>
         <footer class="bug-cycle-confirm-modal__footer">
-            <MaxButton label="Cancelar" severity="secondary" class="bug-cycle-confirm-modal__btn" @click="emit('close')" />
+            <MaxButton label="Cancelar" severity="secondary" class="bug-cycle-confirm-modal__btn" @click="handleCancel" />
             <MaxButton :label="props.submitting ? 'Iniciando...' : `Iniciar Ciclo (${props.preview?.candidates.length ?? 0} Bugs)`" icon="lucide:play" class="bug-cycle-confirm-modal__btn bug-cycle-confirm-modal__btn--primary" :disabled="!props.preview || props.preview.candidates.length === 0 || props.submitting" :loading="props.submitting" @click="onStartCycle" />
         </footer>
     </MaxModal>
@@ -62,6 +62,30 @@
             issueNumbers: props.preview.candidates.map((c) => c.issueNumber),
             includeReplanAndRejected: true
         });
+    }
+
+    async function onBeforeClose(event: { preventDefault: () => void }): Promise<boolean> {
+        if (props.submitting) {
+            event.preventDefault();
+            return false;
+        }
+        return true;
+    }
+
+    function handleCancel(): void {
+        if (props.submitting) {
+            return;
+        }
+        emit('close');
+    }
+
+    function onUpdateVisible(visible: boolean): void {
+        if (!visible) {
+            if (props.submitting) {
+                return;
+            }
+            emit('close');
+        }
     }
 </script>
 

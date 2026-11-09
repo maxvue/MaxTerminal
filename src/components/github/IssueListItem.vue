@@ -1,5 +1,5 @@
 <template>
-    <button type="button" class="issue-list-item" :class="{ 'issue-list-item--selected': props.selected }" :aria-selected="props.selected" @click="emit('select', props.issue.number)">
+    <MaxButton type="button" class="issue-list-item" :class="props.selected ? 'issue-list-item--selected' : ''" :aria-selected="props.selected" @click="emit('select', props.issue.number)">
         <div class="issue-list-item__top">
             <span class="issue-list-item__number">#{{ props.issue.number }}</span>
             <span class="issue-list-item__title">{{ props.issue.title }}</span>
@@ -15,11 +15,12 @@
                 <span>{{ props.issue.commentsCount }}</span>
             </span>
         </div>
-    </button>
+    </MaxButton>
 </template>
 
 <script setup lang="ts">
     import { computed } from 'vue';
+    import { MaxButton } from '@maxvue/max-components-ui';
     import { sortLabelsCanonically } from '@/constants/githubLabels';
     import type { IssueSummary, RepoLabel } from '@/types/bindings';
     import IssueLabelChip from './IssueLabelChip.vue';

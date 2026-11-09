@@ -1,5 +1,5 @@
 <template>
-    <button v-if="props.totalRuns > 0" type="button" class="group-run-indicator" :class="{ 'is-running': props.activeCount > 0, 'is-open': props.open }" data-testid="group-run-indicator" :title="tooltipLabel" @click="emit('toggle')">
+    <MaxButton v-if="props.totalRuns > 0" type="button" class="group-run-indicator" :class="`${props.activeCount > 0 ? 'is-running ' : ''}${props.open ? 'is-open' : ''}`.trim()" data-testid="group-run-indicator" :title="tooltipLabel" @click="emit('toggle')">
         <MaxIcon icon="lucide:layers" class="group-run-indicator__icon" />
         <span class="group-run-indicator__label">
             Grupos
@@ -7,11 +7,12 @@
         <span class="group-run-indicator__badge">
             {{ props.activeCount > 0 ? `${props.activeCount} ativo(s)` : props.totalRuns }}
         </span>
-    </button>
+    </MaxButton>
 </template>
 
 <script setup lang="ts">
     import { computed } from 'vue';
+    import { MaxButton } from '@maxvue/max-components-ui';
 
     export interface GroupRunIndicatorProps {
         activeCount: number;

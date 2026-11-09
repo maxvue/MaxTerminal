@@ -1,12 +1,13 @@
 <template>
-    <span class="issue-label-chip" :class="{ 'issue-label-chip--canonical': Boolean(props.label.canonicalGroup), 'issue-label-chip--compact': props.compact }" :style="chipStyle" :title="chipTooltip">
+    <MaxTag class="issue-label-chip" :class="{ 'issue-label-chip--canonical': Boolean(props.label.canonicalGroup), 'issue-label-chip--compact': props.compact }" :background="`#${normalizedHex}`" :text-color="textColor" :no-uppercase="true" :title="chipTooltip">
         <span v-if="groupIndicator" class="issue-label-chip__dot" :aria-label="groupIndicator" />
         <span class="issue-label-chip__name">{{ props.label.name }}</span>
-    </span>
+    </MaxTag>
 </template>
 
 <script setup lang="ts">
     import { computed } from 'vue';
+    import { MaxTag } from '@maxvue/max-components-ui';
     import { computeContrastTextColor, normalizeHexColor } from '@/constants/githubLabels';
     import type { RepoLabel } from '@/types/bindings';
 

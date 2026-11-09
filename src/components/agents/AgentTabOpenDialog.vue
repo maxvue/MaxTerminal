@@ -1,9 +1,9 @@
 <template>
-    <MaxModal :visible="props.modelValue" title="Iniciar Agente CLI" :no-button="true" max-width="32rem" class="agent-open-dialog" :dismissable="!submitting" :close-on-escape="!submitting" @update:visible="emit('update:modelValue', $event)">
+    <MaxModal :visible="props.modelValue" title="Iniciar Agente CLI" :no-button="true" max-width="32rem" class="agent-open-dialog" :dismissable="!submitting" :close-on-escape="!submitting" :before-close="onBeforeClose" @update:visible="onUpdateVisible">
         <div class="agent-open-dialog__body">
             <div class="agent-open-dialog__field">
-                <span class="agent-open-dialog__label">Agente CLI</span>
-                <MaxInputSelect v-model="selectedAgent" :options="agentOptions" option-label="label" option-value="value" option-name="label" class="agent-open-dialog__select" />
+                <span id="agent-cli-label" class="agent-open-dialog__label">Agente CLI</span>
+                <MaxInputSelect v-model="selectedAgent" :options="agentOptions" option-label="label" option-value="value" option-name="label" aria-labelledby="agent-cli-label" aria-label="Agente CLI" class="agent-open-dialog__select" />
             </div>
             <div class="agent-open-dialog__field">
                 <span class="agent-open-dialog__label">Modelo CLI (opcional)</span>
@@ -18,8 +18,8 @@
             <div v-if="isolationMode === 'create'" class="agent-open-dialog__worktree-box">
                 <div class="agent-open-dialog__row">
                     <div class="agent-open-dialog__field">
-                        <span class="agent-open-dialog__label">Localização da Worktree</span>
-                        <MaxInputSelect v-model="location" :options="locationOptions" option-label="label" option-value="value" option-name="label" class="agent-open-dialog__select" />
+                        <span id="agent-worktree-location-label" class="agent-open-dialog__label">Localização da Worktree</span>
+                        <MaxInputSelect v-model="location" :options="locationOptions" option-label="label" option-value="value" option-name="label" aria-labelledby="agent-worktree-location-label" aria-label="Localização da Worktree" class="agent-open-dialog__select" />
                     </div>
                     <div class="agent-open-dialog__field">
                         <span class="agent-open-dialog__label">Sugestão de Slug (opcional)</span>
@@ -169,8 +169,28 @@
         }
     });
 
+    async function onBeforeClose(event: { preventDefault: () => void }): Promise<boolean> {
+        if (submitting.value) {
+            event.preventDefault();
+            return false;
+        }
+        return true;
+    }
+
     function closeDialog(): void {
+        if (submitting.value) {
+            return;
+        }
         emit('update:modelValue', false);
+    }
+
+    function onUpdateVisible(visible: boolean): void {
+        if (!visible) {
+            if (submitting.value) {
+                return;
+            }
+            emit('update:modelValue', false);
+        }
     }
 
     async function onSubmit(): Promise<void> {

@@ -1,5 +1,5 @@
 <template>
-    <MaxModal v-if="props.modelValue && currentInspection" :visible="props.modelValue" title="Resolver Git Worktree pós-fechamento" :no-button="true" max-width="36rem" class="agent-close-dialog" :dismissable="!submitting" :close-on-escape="!submitting" @update:visible="emit('update:modelValue', $event)">
+    <MaxModal v-if="props.modelValue && currentInspection" :visible="props.modelValue" title="Resolver Git Worktree pós-fechamento" :no-button="true" max-width="36rem" class="agent-close-dialog" :dismissable="!submitting" :close-on-escape="!submitting" :before-close="onBeforeClose" @update:visible="onUpdateVisible">
         <div class="agent-close-dialog__body">
             <div class="agent-close-dialog__meta">
                 <div class="agent-close-dialog__meta-row">
@@ -116,6 +116,23 @@
         }
         return reasons;
     });
+
+    async function onBeforeClose(event: { preventDefault: () => void }): Promise<boolean> {
+        if (submitting.value) {
+            event.preventDefault();
+            return false;
+        }
+        return true;
+    }
+
+    function onUpdateVisible(visible: boolean): void {
+        if (!visible) {
+            if (submitting.value) {
+                return;
+            }
+            emit('update:modelValue', false);
+        }
+    }
 
     async function onResolve(action: WorktreeResolution): Promise<void> {
         const insp = currentInspection.value;

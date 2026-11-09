@@ -1,6 +1,6 @@
 <template>
     <div class="project-item" :class="{ 'project-item--selected': props.selected, 'project-item--missing': props.project.missing }" :style="{ '--project-color': safeColor, '--mt-project-color': safeColor }" :data-project-id="props.project.id" @contextmenu.prevent="toggleMenu">
-        <button type="button" class="project-item__main" :aria-current="props.selected ? 'true' : undefined" :title="props.project.path" @click="emit('select', props.project.id)">
+        <MaxButton type="button" class="project-item__main" :aria-current="props.selected ? 'true' : undefined" :title="props.project.path" @click="emit('select', props.project.id)">
             <span class="project-item__avatar" aria-hidden="true">
                 <MaxIcon :icon="safeIcon" size="1.125" class="project-item__icon" />
             </span>
@@ -12,15 +12,15 @@
                 <span class="project-item__path">{{ props.project.path }}</span>
                 <ProjectStatusBadges :project-id="props.project.id" :counters="props.counters" compact />
             </span>
-        </button>
+        </MaxButton>
 
         <div class="project-item__actions">
             <MaxButton class="project-item__visibility-btn" :label="props.hidden ? 'Mostrar' : 'Ocultar'" :loading="props.pending" :disabled="props.disabled || props.pending" size="small" slim variant="text" :title="props.hidden ? 'Mostrar projeto' : 'Ocultar projeto'" :aria-label="props.hidden ? 'Mostrar projeto' : 'Ocultar projeto'" @click.stop="handleVisibilityToggle" />
             <MaxPopoverMenu ref="popoverMenuRef" :items="menuItems" aria-label="Opções do projeto">
                 <template #trigger="slotProps">
-                    <button type="button" class="project-item__menu-trigger" v-bind="(slotProps as any)" aria-label="Opções do projeto" title="Opções do projeto">
+                    <MaxButton type="button" class="project-item__menu-trigger" v-bind="(slotProps as any)" aria-label="Opções do projeto" title="Opções do projeto">
                         <MaxIcon icon="mdi:dots-vertical" />
-                    </button>
+                    </MaxButton>
                 </template>
                 <template #item="{ data }">
                     <span class="project-item__menu-btn" :class="{ 'project-item__menu-btn--danger': data.danger }" :data-action="data.actionKey">

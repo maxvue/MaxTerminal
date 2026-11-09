@@ -1,0 +1,218 @@
+{
+  "version": 2,
+  "planRevision": "aef0ef9e42199a6f044883d9d3aee5da6d9217d9935cae2ba8ac1713acb4b1b2",
+  "tasks": [
+    {
+      "id": "task-1",
+      "status": "completed",
+      "files": [
+        "tests/lint/max-components-architecture.spec.ts"
+      ],
+      "validations": [
+        {
+          "command": "npx --no-install vitest run tests/lint/max-components-architecture.spec.ts",
+          "revision": "ca3b09d5d397797ddfb4005175a588dc35ec6aff4a4d3f0c87384a008a03df30",
+          "result": "passed"
+        }
+      ],
+      "revision": "ca3b09d5d397797ddfb4005175a588dc35ec6aff4a4d3f0c87384a008a03df30"
+    },
+    {
+      "id": "task-2",
+      "status": "completed",
+      "files": [
+        "src/components/workspace/TemplateEditorModal.vue",
+        "src/components/github/IssueCreateModal.vue",
+        "src/components/github/IssueOpenTabModal.vue",
+        "src/components/github/BugCycleConfirmModal.vue",
+        "src/components/agents/AgentTabOpenDialog.vue",
+        "src/components/agents/AgentWorktreeCloseDialog.vue",
+        "src/components/projects/ProjectAddModal.vue",
+        "src/components/projects/ProjectRootModal.vue",
+        "tests/components/modals/MaxModalBusyGuards.spec.ts"
+      ],
+      "validations": [
+        {
+          "command": "npx --no-install vitest run tests/components/modals/MaxModalBusyGuards.spec.ts",
+          "revision": "ca3b09d5d397797ddfb4005175a588dc35ec6aff4a4d3f0c87384a008a03df30",
+          "result": "passed"
+        }
+      ],
+      "revision": "ca3b09d5d397797ddfb4005175a588dc35ec6aff4a4d3f0c87384a008a03df30"
+    },
+    {
+      "id": "task-3",
+      "status": "completed",
+      "files": [
+        "src/components/agents/AgentTabOpenDialog.vue",
+        "src/components/github/IssueCreateModal.vue",
+        "src/components/workspace/TemplateEditorModal.vue"
+      ],
+      "validations": [
+        {
+          "command": "npx --no-install vitest run tests/a11y/workspace-modals.a11y.spec.ts",
+          "revision": "ca3b09d5d397797ddfb4005175a588dc35ec6aff4a4d3f0c87384a008a03df30",
+          "result": "passed"
+        }
+      ],
+      "revision": "ca3b09d5d397797ddfb4005175a588dc35ec6aff4a4d3f0c87384a008a03df30"
+    },
+    {
+      "id": "task-4",
+      "status": "completed",
+      "files": [
+        "src/components/bridge/BridgeSettingsSection.vue",
+        "src/components/preferences/AiPreferences.vue",
+        "src/components/preferences/appearance/TerminalFontSettings.vue",
+        "src/components/preferences/appearance/ThemeEditorDialog.vue",
+        "src/components/preferences/system/PreferencesSystemSection.vue",
+        "src/components/quick-commands/ArtisanSchedulePicker.vue",
+        "tests/components/preferences/NumericInputContracts.spec.ts"
+      ],
+      "validations": [
+        {
+          "command": "npx --no-install vitest run tests/components/preferences/NumericInputContracts.spec.ts",
+          "revision": "ca3b09d5d397797ddfb4005175a588dc35ec6aff4a4d3f0c87384a008a03df30",
+          "result": "passed"
+        }
+      ],
+      "revision": "ca3b09d5d397797ddfb4005175a588dc35ec6aff4a4d3f0c87384a008a03df30"
+    },
+    {
+      "id": "task-5",
+      "status": "completed",
+      "files": [
+        "src/components/agents/AgentLauncherMenu.vue",
+        "src/components/agents/AgentSettingsPanel.vue",
+        "src/components/ai/AiStatusIndicator.vue",
+        "src/components/ai/HarnessPicker.vue",
+        "src/components/bridge/BridgeStatusIndicator.vue",
+        "src/components/commandGroups/CommandGroupModal.vue",
+        "src/components/commandGroups/CommandGroupSuggestPanel.vue",
+        "src/components/commandGroups/GroupRunIndicator.vue",
+        "src/components/github/IssueListItem.vue",
+        "src/components/indicators/GitIndicator.vue",
+        "src/components/indicators/PortBadge.vue",
+        "src/components/projects/ProjectDiscoveryPanel.vue",
+        "src/components/projects/ProjectIdentityForm.vue",
+        "src/components/projects/ProjectItem.vue",
+        "src/components/quick-commands/ArtisanPhpPreview.vue",
+        "src/components/search/GlobalSearchPalette.vue",
+        "src/components/search/SearchFilterBar.vue",
+        "src/components/skills/CommandMemoryList.vue",
+        "src/components/skills/SkillConflictList.vue",
+        "src/components/terminal/InputModeToggle.vue",
+        "src/components/terminal/TerminalSearchBar.vue",
+        "src/components/terminal/__dev__/TerminalPlayground.vue",
+        "src/components/workspace/SessionHistoryDrawer.vue",
+        "src/components/workspace/SessionReadonlyViewer.vue",
+        "src/components/workspace/TabWorkspaceView.vue",
+        "src/components/workspace/TemplateLaunchPopover.vue",
+        "tests/terminal/TerminalSearchBar.spec.ts"
+      ],
+      "validations": [
+        {
+          "command": "npx --no-install vitest run tests/terminal/TerminalSearchBar.spec.ts",
+          "revision": "ca3b09d5d397797ddfb4005175a588dc35ec6aff4a4d3f0c87384a008a03df30",
+          "result": "passed"
+        }
+      ],
+      "revision": "ca3b09d5d397797ddfb4005175a588dc35ec6aff4a4d3f0c87384a008a03df30"
+    },
+    {
+      "id": "task-6",
+      "status": "completed",
+      "files": [
+        "src/components/agents/AgentAttentionIndicator.vue",
+        "src/components/ai/RiskBadge.vue",
+        "src/components/github/IssueLabelChip.vue",
+        "src/components/github/LabelSyncBanner.vue",
+        "src/components/indicators/PortBadge.vue",
+        "src/components/indicators/SshBadge.vue",
+        "src/components/indicators/WorktreeBadge.vue",
+        "src/components/projects/ProjectEmptyState.vue",
+        "src/components/projects/ProjectStatusBadges.vue",
+        "src/components/shell/AppEmptyState.vue",
+        "src/components/shell/CommandBlockStatus.vue",
+        "src/components/terminal/TerminalExitBanner.vue"
+      ],
+      "validations": [
+        {
+          "command": "npx --no-install vitest run src/components/indicators/__tests__/WorktreeBadge.spec.ts src/components/ai/__tests__/RiskBadge.spec.ts tests/components/indicators/SshBadge.spec.ts tests/terminal/CommandBlock.spec.ts tests/terminal/TerminalExitBanner.spec.ts",
+          "revision": "ca3b09d5d397797ddfb4005175a588dc35ec6aff4a4d3f0c87384a008a03df30",
+          "result": "passed"
+        }
+      ],
+      "revision": "ca3b09d5d397797ddfb4005175a588dc35ec6aff4a4d3f0c87384a008a03df30"
+    },
+    {
+      "id": "task-7",
+      "status": "completed",
+      "files": [
+        "tests/lint/max-components-architecture.spec.ts"
+      ],
+      "validations": [
+        {
+          "command": "npx --no-install vitest run tests/lint/max-components-architecture.spec.ts",
+          "revision": "ca3b09d5d397797ddfb4005175a588dc35ec6aff4a4d3f0c87384a008a03df30",
+          "result": "passed"
+        }
+      ],
+      "revision": "ca3b09d5d397797ddfb4005175a588dc35ec6aff4a4d3f0c87384a008a03df30"
+    }
+  ],
+  "verification": {
+    "revision": "ca3b09d5d397797ddfb4005175a588dc35ec6aff4a4d3f0c87384a008a03df30",
+    "checks": [
+      {
+        "command": "npx --no-install vitest run tests/lint/max-components-architecture.spec.ts",
+        "revision": "ca3b09d5d397797ddfb4005175a588dc35ec6aff4a4d3f0c87384a008a03df30",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npx --no-install vitest run tests/components/modals/MaxModalBusyGuards.spec.ts",
+        "revision": "ca3b09d5d397797ddfb4005175a588dc35ec6aff4a4d3f0c87384a008a03df30",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npx --no-install vitest run tests/components/preferences/NumericInputContracts.spec.ts",
+        "revision": "ca3b09d5d397797ddfb4005175a588dc35ec6aff4a4d3f0c87384a008a03df30",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npx --no-install vitest run tests/terminal/TerminalSearchBar.spec.ts",
+        "revision": "ca3b09d5d397797ddfb4005175a588dc35ec6aff4a4d3f0c87384a008a03df30",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run typecheck",
+        "revision": "ca3b09d5d397797ddfb4005175a588dc35ec6aff4a4d3f0c87384a008a03df30",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run typecheck:vue",
+        "revision": "ca3b09d5d397797ddfb4005175a588dc35ec6aff4a4d3f0c87384a008a03df30",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npm run build",
+        "revision": "ca3b09d5d397797ddfb4005175a588dc35ec6aff4a4d3f0c87384a008a03df30",
+        "result": "passed",
+        "exitCode": 0
+      },
+      {
+        "command": "npx --no-install vitest run",
+        "revision": "ca3b09d5d397797ddfb4005175a588dc35ec6aff4a4d3f0c87384a008a03df30",
+        "result": "passed",
+        "exitCode": 0
+      }
+    ]
+  },
+  "updatedAt": 1794236000000
+}
