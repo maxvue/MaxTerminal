@@ -8,6 +8,8 @@ import { defineConfig } from 'vite';
 
 const workspaceRoot = fileURLToPath(new URL('.', import.meta.url));
 const srcDir = path.resolve(workspaceRoot, 'src');
+const ignoredWatchRoots = ['.max-code-worktrees', '.worktrees', '.tmp']
+    .map((folder) => path.resolve(workspaceRoot, folder));
 
 function resolveAllowedFsRoots(): string[] {
     const defaultFallback = fs.existsSync('/home/johnattas/GitHub')
@@ -74,6 +76,10 @@ export default defineConfig({
         host: '127.0.0.1',
         port: 5177,
         strictPort: true,
+        watch: {
+            // Exclui apenas artefatos internos; a raiz ativa pode estar em uma worktree.
+            ignored: (file) => ignoredWatchRoots.some((root) => file === root || file.startsWith(`${root}${path.sep}`))
+        },
         fs: {
             strict: true,
             allow: resolveAllowedFsRoots()
