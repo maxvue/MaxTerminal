@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "runId": "81bea132-f28e-49f6-95ef-02695e4d30a6",
+  "snapshotSha256": "26b51f55ffedcf600481d8515ce8b779d3ef6b5cffb67fd86a11d46998badbb7",
+  "issues": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    20,
+    21
+  ],
+  "grupos": [],
+  "rubrica": {
+    "versao": "dedup-jev-v1",
+    "limiares": {
+      "confirma": 0.95,
+      "separa": 0.05,
+      "confiancaMinimaDoDetalhamento": 0.8
+    }
+  },
+  "modelosUsados": [
+    "jev-1.14.0"
+  ],
+  "completude": "uncertain",
+  "incertezas": {
+    "paresIncertos": 13,
+    "componentesConflitantes": 0,
+    "detalhamentosIncertos": 0
+  },
+  "totalDePares": 171,
+  "paresAvaliados": 171,
+  "requisicoes": 15,
+  "arquivos": [
+    {
+      "caminho": "docs/issues/1/duplicatas.json",
+      "sha256": "13a7e43d6a86a2e070fcea13f6bca1625a78b0622d6591e99790c10f7719aa83"
+    },
+    {
+      "caminho": "docs/issues/2/duplicatas.json",
+      "sha256": "d336c80df7f81654b8d9b6210d25bb8dbbd0dc17f43b4f4d8233e2b2a9e7d7f9"
+    },
+    {
+      "caminho": "docs/issues/3/duplicatas.json",
+      "sha256": "f25d803cca8bb1a648691776b06f267959488d9b9317690457c6418c4f2a8d3c"
+    },
+    {
+      "caminho": "docs/issues/4/duplicatas.json",
+      "sha256": "9f9fcbf5d3f5565339dfba1908a4e87588ba4f8130d196e6ec1a4a1c3ca138ec"
+    },
+    {
+      "caminho": "docs/issues/5/duplicatas.json",
+      "sha256": "86af6f3d31acf306f9be3c2b76b771c1ffb7c8a59a7c7230c84d99d136863953"
+    },
+    {
+      "caminho": "docs/issues/6/duplicatas.json",
+      "sha256": "a8d5a7526410cf36d872d9cc5eb82552d1d2fc272392c31b61abe6b77382eed5"
+    },
+    {
+      "caminho": "docs/issues/7/duplicatas.json",
+      "sha256": "f75cb83078c531228e74670aaa37ce81f245178c9b22db91ad1912f3ab1334ac"
+    },
+    {
+      "caminho": "docs/issues/8/duplicatas.json",
+      "sha256": "aa5b73b4d83147b605ddf817d312546a0b3df82bfb26dd850daf09821eeb8fd2"
+    },
+    {
+      "caminho": "docs/issues/9/duplicatas.json",
+      "sha256": "273c28c62ba83bc086378a3b39a44a9793c212f25d6e0ffb90cc4042cd2fb9c8"
+    },
+    {
+      "caminho": "docs/issues/10/duplicatas.json",
+      "sha256": "e6f0b85a7f5a51801c73de10a799ad4852d2f965a17a26d1cf5445814a54e7e4"
+    },
+    {
+      "caminho": "docs/issues/11/duplicatas.json",
+      "sha256": "322ec8e8ce59a24c83d48947bfd37a6835d8969d265fe408c3482e2b2ece0520"
+    },
+    {
+      "caminho": "docs/issues/12/duplicatas.json",
+      "sha256": "ff7072cb82a9f8ca71ab95254539a99f79cd8fce04f9a06640344784d223fc1e"
+    },
+    {
+      "caminho": "docs/issues/13/duplicatas.json",
+      "sha256": "2b9994dab2f7bee47bb324cd8cfdb9905fae39b79dac4c4d36fe1f674684fdfb"
+    },
+    {
+      "caminho": "docs/issues/14/duplicatas.json",
+      "sha256": "26d072ed5dc0a9be203953cba04bebc84008adf4c6fcda75d0ecb0c48bacc6b1"
+    },
+    {
+      "caminho": "docs/issues/15/duplicatas.json",
+      "sha256": "c354a83b6fef88ddb317423022aa2ec40c591f5dd426f1d9280dd8c4755ecc7e"
+    },
+    {
+      "caminho": "docs/issues/16/duplicatas.json",
+      "sha256": "a42a075b1c7ed8e24e14d7e3840627f0f7915a19a8db9188d7f18063ce07c230"
+    },
+    {
+      "caminho": "docs/issues/17/duplicatas.json",
+      "sha256": "6918e477f8265bf05ede1a874d9e8441c8af8c48bf32c6451b49b17fb6a541c2"
+    },
+    {
+      "caminho": "docs/issues/20/duplicatas.json",
+      "sha256": "6b88c9f95290dab889c683fb8c90cbb4787b0ff6c99110cca665f9ec9accc2cd"
+    },
+    {
+      "caminho": "docs/issues/21/duplicatas.json",
+      "sha256": "52287e52e93bba968cd3620776818153e782aa36c1b1fd3c87c7bcf2357d29ee"
+    }
+  ]
+}
